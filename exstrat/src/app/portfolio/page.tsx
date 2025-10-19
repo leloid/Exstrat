@@ -3,12 +3,12 @@
 import React, { useState, useEffect } from 'react';
 import { usePortfolio } from '@/contexts/PortfolioContext';
 import * as portfoliosApi from '@/lib/portfolios-api';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { Badge } from '@/components/ui/badge';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card';
+import { Button } from '@/components/ui/Button';
+import { Input } from '@/components/ui/Input';
+import { Label } from '@/components/ui/Label';
+import { Textarea } from '@/components/ui/Textarea';
+import { Badge } from '@/components/ui/Badge';
 import { 
   PlusIcon as Plus,
   WalletIcon as Wallet,
@@ -17,6 +17,7 @@ import {
   CheckIcon as Check
 } from '@heroicons/react/24/outline';
 import { formatCurrency, formatPercentage } from '@/lib/format';
+import type { Holding } from '@/types/portfolio';
 
 export default function PortfolioPage() {
   const { 
@@ -37,6 +38,7 @@ export default function PortfolioPage() {
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [editingPortfolio, setEditingPortfolio] = useState<string | null>(null);
   const [portfolioValues, setPortfolioValues] = useState<Record<string, {invested: number, value: number}>>({});
+  const [holdingsByPortfolio, setHoldingsByPortfolio] = useState<Record<string, Holding[]>>({});
   const [formData, setFormData] = useState({
     name: '',
     description: '',
@@ -49,10 +51,19 @@ export default function PortfolioPage() {
   const currentPortfolioProfitLoss = currentPortfolioValue - currentPortfolioInvested;
   const currentPortfolioProfitLossPercentage = currentPortfolioInvested > 0 ? (currentPortfolioProfitLoss / currentPortfolioInvested) * 100 : 0;
 
+  // Statistiques globales (tous les portfolios)
+  const totalPortfolios = portfolios.length;
+  const totalPositions = portfolios.reduce((sum, p) => sum + (p.holdingsCount || 0), 0);
+  const globalInvested = Object.values(portfolioValues).reduce((sum, v) => sum + (v?.invested || 0), 0);
+  const globalValue = Object.values(portfolioValues).reduce((sum, v) => sum + (v?.value || 0), 0);
+  const globalProfitLoss = globalValue - globalInvested;
+  const globalProfitLossPercentage = globalInvested > 0 ? (globalProfitLoss / globalInvested) * 100 : 0;
+
   // Charger les valeurs de tous les portfolios
   useEffect(() => {
     const loadAllPortfolioValues = async () => {
       const values: Record<string, {invested: number, value: number}> = {};
+      const byPortfolio: Record<string, Holding[]> = {};
       
       for (const portfolio of portfolios) {
         try {
@@ -60,13 +71,16 @@ export default function PortfolioPage() {
           const invested = portfolioHoldings.reduce((sum, holding) => sum + holding.investedAmount, 0);
           const value = portfolioHoldings.reduce((sum, holding) => sum + (holding.currentValue || 0), 0);
           values[portfolio.id] = { invested, value };
+          byPortfolio[portfolio.id] = portfolioHoldings;
         } catch (error) {
           console.error(`Erreur lors du chargement des holdings pour ${portfolio.name}:`, error);
           values[portfolio.id] = { invested: 0, value: 0 };
+          byPortfolio[portfolio.id] = [] as Holding[];
         }
       }
       
       setPortfolioValues(values);
+      setHoldingsByPortfolio(byPortfolio);
     };
     
     if (portfolios.length > 0) {
@@ -145,6 +159,42 @@ export default function PortfolioPage() {
           <p className="mt-2 text-gray-600">
             Créez et gérez vos portfolios de crypto-monnaies
           </p>
+        </div>
+
+        {/* Aperçu global */}
+        <div className="mb-8">
+          <Card>
+            <CardContent className="py-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 text-center">
+                <div>
+                  <div className="text-sm text-muted-foreground">Portfolios</div>
+                  <div className="mt-1 text-2xl font-bold">{totalPortfolios}</div>
+                </div>
+                <div>
+                  <div className="text-sm text-muted-foreground">Positions</div>
+                  <div className="mt-1 text-2xl font-bold">{totalPositions}</div>
+                </div>
+                <div>
+                  <div className="text-sm text-muted-foreground">Investi (total)</div>
+                  <div className="mt-1 text-2xl font-bold">{formatCurrency(globalInvested)}</div>
+                </div>
+                <div>
+                  <div className="text-sm text-muted-foreground">Valeur actuelle</div>
+                  <div className="mt-1 text-2xl font-bold">{formatCurrency(globalValue)}</div>
+                </div>
+              </div>
+
+              <div className="mt-6 grid grid-cols-1 lg:grid-cols-3 gap-6 text-center">
+                <div className="lg:col-start-2">
+                  <div className="text-sm text-muted-foreground">P/L global</div>
+                  <div className={`mt-1 text-2xl font-bold ${globalProfitLoss >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                    {formatCurrency(globalProfitLoss)}
+                    <span className="ml-2 text-base font-medium text-gray-600">{formatPercentage(globalProfitLossPercentage)}</span>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
         </div>
 
         {/* Contenu principal */}
@@ -313,91 +363,42 @@ export default function PortfolioPage() {
                     
                     {/* Tokens du portfolio */}
                     <div className="border-t pt-4">
-                      <h4 className="text-sm font-medium text-muted-foreground mb-2">Tokens dans ce portfolio</h4>
-                      <div className="text-center py-4 text-muted-foreground">
-                        <p className="text-sm">
-                          {portfolio.holdingsCount > 0 
-                            ? `${portfolio.holdingsCount} token(s) - Cliquez sur "Sélectionner" pour voir les détails`
-                            : "Aucun token dans ce portfolio"
-                          }
-                        </p>
-                      </div>
+                      <h4 className="text-sm font-medium text-muted-foreground mb-2">Tokens détenus</h4>
+                      {holdingsByPortfolio[portfolio.id] && holdingsByPortfolio[portfolio.id].length > 0 ? (
+                        <div className="space-y-2">
+                          {holdingsByPortfolio[portfolio.id].map((holding) => (
+                            <div key={holding.id} className="flex items-center justify-between p-2 bg-gray-50 rounded-lg">
+                              <div className="flex items-center gap-2">
+                                <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                                  <span className="text-xs font-bold text-blue-600">
+                                    {holding.token.symbol.charAt(0)}
+                                  </span>
+                                </div>
+                                <div>
+                                  <div className="font-medium">{holding.token.symbol}</div>
+                                  <div className="text-xs text-muted-foreground">{holding.token.name}</div>
+                                </div>
+                              </div>
+                              <div className="text-right">
+                                <div className="font-medium">{holding.quantity} {holding.token.symbol}</div>
+                                <div className="text-xs text-muted-foreground">
+                                  {formatCurrency(holding.investedAmount)}
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="text-center py-4 text-muted-foreground">
+                          <p className="text-sm">Aucun token dans ce portfolio</p>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </CardContent>
               </Card>
             ))}
           </div>
-
-          {/* Détails du portfolio sélectionné */}
-          {currentPortfolio && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Wallet className="h-5 w-5" />
-                  Détails du portfolio: {currentPortfolio.name}
-                </CardTitle>
-                <CardDescription>
-                  {currentPortfolio.description}
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                {holdings.length > 0 ? (
-                  <div className="space-y-4">
-                    <div className="grid grid-cols-3 gap-4 text-center">
-                      <div>
-                        <div className="text-2xl font-bold">{holdings.length}</div>
-                        <div className="text-sm text-muted-foreground">Positions</div>
-                      </div>
-                      <div>
-                        <div className="text-2xl font-bold">{formatCurrency(currentPortfolioInvested)}</div>
-                        <div className="text-sm text-muted-foreground">Investi</div>
-                      </div>
-                      <div>
-                        <div className="text-2xl font-bold">{formatCurrency(currentPortfolioValue)}</div>
-                        <div className="text-sm text-muted-foreground">Valeur actuelle</div>
-                      </div>
-                    </div>
-                    
-                    <div className="border-t pt-4">
-                      <h4 className="text-lg font-medium mb-4">Tokens détenus</h4>
-                      <div className="space-y-2">
-                        {holdings.map((holding) => (
-                          <div key={holding.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                            <div className="flex items-center gap-3">
-                              <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
-                                <span className="text-sm font-bold text-blue-600">
-                                  {holding.token.symbol.charAt(0)}
-                                </span>
-                              </div>
-                              <div>
-                                <div className="font-medium">{holding.token.symbol}</div>
-                                <div className="text-sm text-muted-foreground">{holding.token.name}</div>
-                              </div>
-                            </div>
-                            <div className="text-right">
-                              <div className="font-medium">{holding.quantity} {holding.token.symbol}</div>
-                              <div className="text-sm text-muted-foreground">
-                                {formatCurrency(holding.investedAmount)}
-                              </div>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="text-center py-8">
-                    <Wallet className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-                    <h3 className="text-lg font-medium mb-2">Aucun token dans ce portfolio</h3>
-                    <p className="text-muted-foreground">
-                      Ajoutez des transactions pour voir vos tokens apparaître ici.
-                    </p>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          )}
 
           {/* Message si pas de portfolios */}
           {portfolios.length === 0 && (
