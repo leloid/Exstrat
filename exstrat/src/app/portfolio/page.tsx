@@ -29,7 +29,8 @@ export default function PortfolioPage() {
     deletePortfolio,
     setCurrentPortfolio,
     refreshPortfolios,
-    syncPortfolios 
+    refreshHoldings,
+    syncPortfolios
   } = usePortfolio();
 
   const [showCreateForm, setShowCreateForm] = useState(false);
@@ -129,20 +130,12 @@ export default function PortfolioPage() {
                 {portfolios.length} portfolio{portfolios.length > 1 ? 's' : ''} • {holdings.length} position{holdings.length > 1 ? 's' : ''}
               </p>
             </div>
-            <div className="flex gap-2">
-              <Button 
-                onClick={syncPortfolios} 
-                variant="outline" 
-                className="flex items-center gap-2"
-              >
-                <Check className="h-4 w-4" />
-                Synchroniser
-              </Button>
-              <Button onClick={() => setShowCreateForm(true)} className="flex items-center gap-2">
-                <Plus className="h-4 w-4" />
-                Nouveau Portfolio
-              </Button>
-            </div>
+                <div className="flex gap-2">
+                  <Button onClick={() => setShowCreateForm(true)} className="flex items-center gap-2">
+                    <Plus className="h-4 w-4" />
+                    Nouveau Portfolio
+                  </Button>
+                </div>
           </div>
 
           {/* Formulaire de création/modification */}

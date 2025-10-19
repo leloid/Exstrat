@@ -710,33 +710,39 @@ export class PortfoliosService {
         where: { portfolio: { userId } }
       });
 
-      // 4. Récupérer tous les tokens uniques des transactions
-      const transactions = await this.prisma.transaction.findMany({
+      // 4. Récupérer tous les portfolios de l'utilisateur
+      const userPortfolios = await this.prisma.portfolio.findMany({
         where: { userId },
-        select: { symbol: true, name: true, cmcId: true },
-        distinct: ['symbol'],
+        include: {
+          transactions: {
+            select: { symbol: true, name: true, cmcId: true },
+            distinct: ['symbol']
+          }
+        }
       });
 
-      // 5. Pour chaque token, créer le token et synchroniser le holding
-      for (const tx of transactions) {
-        // Créer le token s'il n'existe pas
-        let token = await this.prisma.token.findUnique({
-          where: { symbol: tx.symbol },
-        });
-
-        if (!token) {
-          token = await this.prisma.token.create({
-            data: {
-              symbol: tx.symbol,
-              name: tx.name,
-              cmcId: tx.cmcId,
-            },
+      // 5. Pour chaque portfolio, recalculer les holdings
+      for (const portfolio of userPortfolios) {
+        for (const tx of portfolio.transactions) {
+          // Créer le token s'il n'existe pas
+          let token = await this.prisma.token.findUnique({
+            where: { symbol: tx.symbol },
           });
-        }
 
-        // Synchroniser le holding
-        await this.recalculateHolding(userId, defaultPortfolio.id, token.id, tx.symbol);
-        holdingsUpdated++;
+          if (!token) {
+            token = await this.prisma.token.create({
+              data: {
+                symbol: tx.symbol,
+                name: tx.name,
+                cmcId: tx.cmcId,
+              },
+            });
+          }
+
+          // Recalculer le holding pour ce portfolio spécifique
+          await this.recalculateHolding(userId, portfolio.id, token.id, tx.symbol);
+          holdingsUpdated++;
+        }
       }
 
       return {
