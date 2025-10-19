@@ -21,18 +21,19 @@ export class RefreshGuard extends AuthGuard('jwt') {
     }
 
     try {
-      // Vérifier que le token n'est pas expiré
+      // Vérifier le token même s'il est expiré (ignoreExpiration: true)
       const payload = this.jwtService.verify(token, {
         secret: this.configService.get<string>('JWT_SECRET') || 'fallback-secret',
         issuer: 'exstrat-api',
         audience: 'exstrat-client',
+        ignoreExpiration: true, // Accepter les tokens expirés pour le refresh
       });
 
       // Ajouter le payload à la requête pour l'utiliser dans le contrôleur
       request.user = payload;
       return true;
     } catch (error) {
-      throw new UnauthorizedException('Token de rafraîchissement invalide ou expiré');
+      throw new UnauthorizedException('Token de rafraîchissement invalide');
     }
   }
 
