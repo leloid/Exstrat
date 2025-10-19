@@ -1,7 +1,8 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { usePortfolio } from '@/contexts/PortfolioContext';
+import * as portfoliosApi from '@/lib/portfolios-api';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -35,6 +36,7 @@ export default function PortfolioPage() {
 
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [editingPortfolio, setEditingPortfolio] = useState<string | null>(null);
+  const [portfolioValues, setPortfolioValues] = useState<Record<string, {invested: number, value: number}>>({});
   const [formData, setFormData] = useState({
     name: '',
     description: '',
@@ -46,6 +48,31 @@ export default function PortfolioPage() {
   const currentPortfolioInvested = currentPortfolio ? holdings.reduce((sum, holding) => sum + holding.investedAmount, 0) : 0;
   const currentPortfolioProfitLoss = currentPortfolioValue - currentPortfolioInvested;
   const currentPortfolioProfitLossPercentage = currentPortfolioInvested > 0 ? (currentPortfolioProfitLoss / currentPortfolioInvested) * 100 : 0;
+
+  // Charger les valeurs de tous les portfolios
+  useEffect(() => {
+    const loadAllPortfolioValues = async () => {
+      const values: Record<string, {invested: number, value: number}> = {};
+      
+      for (const portfolio of portfolios) {
+        try {
+          const portfolioHoldings = await portfoliosApi.getPortfolioHoldings(portfolio.id);
+          const invested = portfolioHoldings.reduce((sum, holding) => sum + holding.investedAmount, 0);
+          const value = portfolioHoldings.reduce((sum, holding) => sum + (holding.currentValue || 0), 0);
+          values[portfolio.id] = { invested, value };
+        } catch (error) {
+          console.error(`Erreur lors du chargement des holdings pour ${portfolio.name}:`, error);
+          values[portfolio.id] = { invested: 0, value: 0 };
+        }
+      }
+      
+      setPortfolioValues(values);
+    };
+    
+    if (portfolios.length > 0) {
+      loadAllPortfolioValues();
+    }
+  }, [portfolios]);
 
   const handleCreatePortfolio = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -236,11 +263,23 @@ export default function PortfolioPage() {
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={() => {
+                          onClick={async () => {
                             setCurrentPortfolio(portfolio);
                             // Charger les holdings de ce portfolio
                             if (portfolio.id) {
-                              refreshHoldings(portfolio.id);
+                              await refreshHoldings(portfolio.id);
+                              // Mettre à jour les valeurs de ce portfolio
+                              try {
+                                const portfolioHoldings = await portfoliosApi.getPortfolioHoldings(portfolio.id);
+                                const invested = portfolioHoldings.reduce((sum, holding) => sum + holding.investedAmount, 0);
+                                const value = portfolioHoldings.reduce((sum, holding) => sum + (holding.currentValue || 0), 0);
+                                setPortfolioValues(prev => ({
+                                  ...prev,
+                                  [portfolio.id]: { invested, value }
+                                }));
+                              } catch (error) {
+                                console.error('Erreur lors du chargement des valeurs:', error);
+                              }
                             }
                           }}
                         >
@@ -259,11 +298,15 @@ export default function PortfolioPage() {
                         <div className="text-sm text-muted-foreground">Positions</div>
                       </div>
                       <div>
-                        <div className="text-2xl font-bold">{formatCurrency(0)}</div>
+                        <div className="text-2xl font-bold">
+                          {formatCurrency(portfolioValues[portfolio.id]?.invested || 0)}
+                        </div>
                         <div className="text-sm text-muted-foreground">Investi</div>
                       </div>
                       <div>
-                        <div className="text-2xl font-bold">{formatCurrency(0)}</div>
+                        <div className="text-2xl font-bold">
+                          {formatCurrency(portfolioValues[portfolio.id]?.value || 0)}
+                        </div>
                         <div className="text-sm text-muted-foreground">Valeur actuelle</div>
                       </div>
                     </div>

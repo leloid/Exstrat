@@ -3,7 +3,6 @@
 import React from 'react';
 import { usePortfolio } from '@/contexts/PortfolioContext';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { 
   ArrowTrendingUpIcon as TrendingUp,
@@ -38,7 +37,7 @@ export const PortfolioSummary: React.FC = () => {
         </CardHeader>
         <CardContent>
           <div className="flex items-center justify-center py-8">
-            <RefreshCw className="h-6 w-6 animate-spin" />
+            <div className="h-6 w-6 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
             <span className="ml-2">Chargement...</span>
           </div>
         </CardContent>
@@ -58,10 +57,9 @@ export const PortfolioSummary: React.FC = () => {
         <CardContent>
           <div className="text-center py-8">
             <p className="text-red-500 mb-4">{error}</p>
-            <Button onClick={handleRefresh} variant="outline">
-              <RefreshCw className="h-4 w-4 mr-2" />
-              Réessayer
-            </Button>
+            <p className="text-muted-foreground">
+              Veuillez recharger la page pour réessayer.
+            </p>
           </div>
         </CardContent>
       </Card>
