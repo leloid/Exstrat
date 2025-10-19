@@ -53,3 +53,17 @@ export const formatUSD = (amount: number | null | undefined, prefix: string = '$
   }
   return `${prefix}${amount.toLocaleString()}`;
 };
+
+/**
+ * Formate un montant en devise de manière sécurisée
+ * @param amount - Le montant à formater (peut être null ou undefined)
+ * @param currency - Devise (défaut: '€')
+ * @param decimals - Nombre de décimales (défaut: 2)
+ * @returns Montant formaté avec devise
+ */
+export const formatCurrency = (amount: number | null | undefined, currency: string = '€', decimals: number = 2): string => {
+  if (amount === null || amount === undefined || isNaN(amount)) {
+    return `${currency}0.00`;
+  }
+  return `${currency}${amount.toLocaleString('fr-FR', { minimumFractionDigits: decimals, maximumFractionDigits: decimals })}`;
+};

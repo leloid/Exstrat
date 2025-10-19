@@ -21,11 +21,12 @@ export class TransactionsService {
         transactionDate: createTransactionDto.transactionDate ? new Date(createTransactionDto.transactionDate) : new Date(),
         notes: createTransactionDto.notes,
         exchangeId: createTransactionDto.exchangeId,
+        portfolioId: createTransactionDto.portfolioId,
       },
     });
 
     // Synchroniser avec le système de portfolios
-    await this.syncTransactionWithPortfolio(userId, transaction);
+    await this.syncTransactionWithPortfolio(userId, transaction, createTransactionDto.portfolioId);
 
     return this.mapToResponseDto(transaction);
   }
@@ -231,14 +232,25 @@ export class TransactionsService {
         portfoliosCreated = 1;
       }
 
-      // 2. Récupérer tous les tokens uniques des transactions
+      // 2. Mettre à jour toutes les transactions existantes pour leur assigner le portfolio par défaut
+      await this.prisma.transaction.updateMany({
+        where: { 
+          userId,
+          portfolioId: null // Seulement les transactions sans portfolioId
+        },
+        data: {
+          portfolioId: defaultPortfolio.id,
+        },
+      });
+
+      // 3. Récupérer tous les tokens uniques des transactions
       const transactions = await this.prisma.transaction.findMany({
         where: { userId },
         select: { symbol: true, name: true, cmcId: true },
         distinct: ['symbol'],
       });
 
-      // 3. Pour chaque token, créer le token et synchroniser le holding
+      // 4. Pour chaque token, créer le token et synchroniser le holding
       for (const tx of transactions) {
         // Créer le token s'il n'existe pas
         let token = await this.prisma.token.findUnique({
@@ -292,24 +304,37 @@ export class TransactionsService {
 
   /**
    * Synchronise une transaction avec le système de portfolios
-   * Crée automatiquement un portfolio par défaut et met à jour les holdings
+   * Utilise le portfolio spécifié ou crée un portfolio par défaut
    */
-  private async syncTransactionWithPortfolio(userId: string, transaction: any): Promise<void> {
+  private async syncTransactionWithPortfolio(userId: string, transaction: any, portfolioId?: string): Promise<void> {
     try {
-      // 1. S'assurer qu'un portfolio par défaut existe
-      let defaultPortfolio = await this.prisma.portfolio.findFirst({
-        where: { userId, isDefault: true },
-      });
+      let targetPortfolio;
 
-      if (!defaultPortfolio) {
-        defaultPortfolio = await this.prisma.portfolio.create({
-          data: {
-            userId,
-            name: 'Portfolio Principal',
-            description: 'Portfolio créé automatiquement à partir des transactions',
-            isDefault: true,
-          },
+      if (portfolioId) {
+        // Utiliser le portfolio spécifié
+        targetPortfolio = await this.prisma.portfolio.findFirst({
+          where: { id: portfolioId, userId },
         });
+
+        if (!targetPortfolio) {
+          throw new Error(`Portfolio ${portfolioId} non trouvé ou n'appartient pas à l'utilisateur`);
+        }
+      } else {
+        // Utiliser le portfolio par défaut ou en créer un
+        targetPortfolio = await this.prisma.portfolio.findFirst({
+          where: { userId, isDefault: true },
+        });
+
+        if (!targetPortfolio) {
+          targetPortfolio = await this.prisma.portfolio.create({
+            data: {
+              userId,
+              name: 'Portfolio Principal',
+              description: 'Portfolio créé automatiquement à partir des transactions',
+              isDefault: true,
+            },
+          });
+        }
       }
 
       // 2. S'assurer que le token existe
@@ -328,7 +353,7 @@ export class TransactionsService {
       }
 
       // 3. Calculer le nouveau holding basé sur toutes les transactions
-      await this.recalculateHolding(userId, defaultPortfolio.id, token.id, transaction.symbol);
+      await this.recalculateHolding(userId, targetPortfolio.id, token.id, transaction.symbol);
     } catch (error) {
       console.error('Erreur lors de la synchronisation avec le portfolio:', error);
       // Ne pas faire échouer la transaction si la sync échoue
@@ -336,12 +361,16 @@ export class TransactionsService {
   }
 
   /**
-   * Recalcule le holding d'un token basé sur toutes les transactions
+   * Recalcule le holding d'un token basé sur les transactions du portfolio spécifique
    */
   private async recalculateHolding(userId: string, portfolioId: string, tokenId: string, symbol: string): Promise<void> {
-    // Récupérer toutes les transactions pour ce token
+    // Récupérer toutes les transactions pour ce token dans ce portfolio spécifique
     const transactions = await this.prisma.transaction.findMany({
-      where: { userId, symbol },
+      where: { 
+        userId, 
+        symbol,
+        portfolioId: portfolioId // Seulement les transactions de ce portfolio
+      },
       orderBy: { transactionDate: 'asc' },
     });
 

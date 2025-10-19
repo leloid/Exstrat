@@ -1,12 +1,14 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/Select';
 import { TokenSearch } from './TokenSearch';
 import { TokenSearchResult, CreateTransactionDto } from '@/types/transactions';
 import { transactionsApi } from '@/lib/transactions-api';
+import { usePortfolio } from '@/contexts/PortfolioContext';
 import { formatUSD } from '@/lib/format';
 
 interface TransactionFormProps {
@@ -15,6 +17,7 @@ interface TransactionFormProps {
 }
 
 export const TransactionForm: React.FC<TransactionFormProps> = ({ onSuccess, onCancel }) => {
+  const { portfolios, currentPortfolio, selectPortfolio } = usePortfolio();
   const [selectedToken, setSelectedToken] = useState<TokenSearchResult | null>(null);
   const [formData, setFormData] = useState({
     quantity: '',
@@ -23,9 +26,20 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({ onSuccess, onC
     type: 'BUY' as const,
     transactionDate: new Date().toISOString().split('T')[0],
     notes: '',
+    portfolioId: currentPortfolio?.id || '',
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Mettre à jour le portfolioId quand currentPortfolio change
+  useEffect(() => {
+    if (currentPortfolio) {
+      setFormData(prev => ({
+        ...prev,
+        portfolioId: currentPortfolio.id,
+      }));
+    }
+  }, [currentPortfolio]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -97,7 +111,7 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({ onSuccess, onC
       return;
     }
 
-    if (!formData.quantity || !formData.averagePrice || !formData.amountInvested) {
+    if (!formData.quantity || !formData.averagePrice || !formData.amountInvested || !formData.portfolioId) {
       setError('Veuillez remplir tous les champs obligatoires');
       return;
     }
@@ -116,6 +130,7 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({ onSuccess, onC
         type: formData.type,
         transactionDate: new Date(formData.transactionDate).toISOString(),
         notes: formData.notes || undefined,
+        portfolioId: formData.portfolioId,
       };
 
       await transactionsApi.createTransaction(transactionData);
@@ -129,6 +144,7 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({ onSuccess, onC
         type: 'BUY',
         transactionDate: new Date().toISOString().split('T')[0],
         notes: '',
+        portfolioId: currentPortfolio?.id || '',
       });
 
       onSuccess?.();
@@ -155,6 +171,40 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({ onSuccess, onC
               onTokenSelect={handleTokenSelect}
               selectedToken={selectedToken}
             />
+          </div>
+
+          {/* Sélection du portefeuille */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Portefeuille *
+            </label>
+            <Select
+              value={formData.portfolioId}
+              onValueChange={(value) => {
+                setFormData(prev => ({ ...prev, portfolioId: value }));
+                // Mettre à jour le portfolio sélectionné dans le contexte
+                const portfolio = portfolios.find(p => p.id === value);
+                if (portfolio) {
+                  selectPortfolio(portfolio.id);
+                }
+              }}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Sélectionner un portefeuille" />
+              </SelectTrigger>
+              <SelectContent>
+                {portfolios.map((portfolio) => (
+                  <SelectItem key={portfolio.id} value={portfolio.id}>
+                    {portfolio.name} {portfolio.isDefault && '(Défaut)'}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {portfolios.length === 0 && (
+              <p className="text-sm text-gray-500 mt-1">
+                Aucun portefeuille disponible. Créez-en un d'abord.
+              </p>
+            )}
           </div>
 
           {/* Type de transaction */}

@@ -90,6 +90,14 @@ export class CreateTransactionDto {
   @IsOptional()
   @IsString()
   exchangeId?: string;
+
+  @ApiPropertyOptional({ 
+    description: 'ID du portefeuille cible',
+    example: 'cmgxik0zz000027gx4ab4now4'
+  })
+  @IsOptional()
+  @IsString()
+  portfolioId?: string;
 }
 
 export class UpdateTransactionDto {

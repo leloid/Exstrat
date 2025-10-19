@@ -12,6 +12,7 @@ import {
   HttpStatus,
 } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { Public } from '../auth/decorators/public.decorator';
 import { PortfoliosService } from './portfolios.service';
 import { CreatePortfolioDto, UpdatePortfolioDto } from './dto/portfolio.dto';
 import { CreateHoldingDto, UpdateHoldingDto } from './dto/holding.dto';
@@ -102,6 +103,11 @@ export class PortfoliosController {
     return this.portfoliosService.getUserStrategies(req.user.id);
   }
 
+  @Post('sync')
+  async syncPortfolios(@Request() req) {
+    return this.portfoliosService.syncAllPortfolios(req.user.id);
+  }
+
   @Get('strategies/:id')
   async getUserStrategyById(@Request() req, @Param('id') id: string) {
     return this.portfoliosService.getUserStrategyById(req.user.id, id);
@@ -139,16 +145,7 @@ export class PortfoliosController {
   }
 
   // ===== TEMPLATES =====
-
-  @Get('templates/strategies')
-  async getStrategyTemplates() {
-    return this.portfoliosService.getStrategyTemplates();
-  }
-
-  @Get('templates/profit-taking')
-  async getProfitTakingTemplates() {
-    return this.portfoliosService.getProfitTakingTemplates();
-  }
+  // Les templates sont gérés par TemplatesController
 
   // ===== SIMULATION =====
 

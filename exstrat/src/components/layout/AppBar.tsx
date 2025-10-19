@@ -22,7 +22,7 @@ const AppBar: React.FC = () => {
 
   const navigation = [
     { name: 'Dashboard', href: '/dashboard', icon: ChartBarIcon },
-    { name: 'Portfolio', href: '/portfolio', icon: CurrencyDollarIcon },
+    { name: 'Portfolios', href: '/portfolio', icon: CurrencyDollarIcon },
     { name: 'Transactions', href: '/transactions', icon: PlusIcon },
     { name: 'Stratégies', href: '/strategies', icon: ChartBarIcon },
     { name: 'Paramètres', href: '/settings', icon: Cog6ToothIcon },

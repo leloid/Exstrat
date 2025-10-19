@@ -49,6 +49,7 @@ export interface CreateTransactionDto {
   transactionDate: string;
   notes?: string;
   exchangeId?: string;
+  portfolioId?: string;
 }
 
 export interface TransactionResponse {

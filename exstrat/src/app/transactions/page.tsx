@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { TransactionForm } from '@/components/transactions/TransactionForm';
 import { TransactionList } from '@/components/transactions/TransactionList';
+import { PortfolioSummary } from '@/components/portfolio/PortfolioSummary';
 import { TransactionResponse } from '@/types/transactions';
 import { XMarkIcon } from '@heroicons/react/24/outline';
 import { usePortfolio } from '@/contexts/PortfolioContext';
@@ -11,7 +12,7 @@ export default function TransactionsPage() {
   const [showForm, setShowForm] = useState(false);
   const [editingTransaction, setEditingTransaction] = useState<TransactionResponse | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
-  const { refreshPortfolio } = usePortfolio();
+  const { refreshPortfolios } = usePortfolio();
 
   const handleAddTransaction = () => {
     setEditingTransaction(null);
@@ -28,8 +29,8 @@ export default function TransactionsPage() {
     setEditingTransaction(null);
     // Force le rechargement de la liste
     setRefreshKey(prev => prev + 1);
-    // Rafraîchir le portfolio
-    refreshPortfolio();
+    // Rafraîchir les portfolios
+    refreshPortfolios();
   };
 
   const handleFormCancel = () => {
@@ -40,8 +41,8 @@ export default function TransactionsPage() {
   const handleTransactionDeleted = () => {
     // Force le rechargement de la liste
     setRefreshKey(prev => prev + 1);
-    // Rafraîchir le portfolio
-    refreshPortfolio();
+    // Rafraîchir les portfolios
+    refreshPortfolios();
   };
 
   return (
@@ -57,6 +58,9 @@ export default function TransactionsPage() {
 
         {/* Contenu principal */}
         <div className="space-y-8">
+          {/* Résumé des portfolios */}
+          <PortfolioSummary />
+
           {/* Formulaire de transaction (modal-like) */}
           {showForm && (
             <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
