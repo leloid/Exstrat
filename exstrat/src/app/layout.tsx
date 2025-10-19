@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { PortfolioProvider } from "@/contexts/PortfolioContext";
+import Layout from "@/components/layout/Layout";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -33,7 +34,9 @@ export default function RootLayout({
       >
         <AuthProvider>
           <PortfolioProvider>
-            {children}
+            <Layout>
+              {children}
+            </Layout>
           </PortfolioProvider>
         </AuthProvider>
       </body>
