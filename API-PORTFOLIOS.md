@@ -4,6 +4,20 @@
 
 Cette API permet de gérer les portefeuilles, les avoirs de tokens, et de configurer des stratégies de trading personnalisées pour chaque token.
 
+## 🔄 Intégration avec les Transactions
+
+**IMPORTANT** : Les portfolios sont automatiquement synchronisés avec les transactions ! 
+
+- ✅ **Création automatique** : Un portfolio par défaut est créé automatiquement lors de la première transaction
+- ✅ **Synchronisation en temps réel** : Chaque transaction (ajout/modification/suppression) met à jour automatiquement les holdings
+- ✅ **Cohérence des données** : Les quantités et prix moyens sont recalculés automatiquement
+- ✅ **Migration des données existantes** : Un script de migration est disponible pour les données existantes
+
+### Workflow cohérent :
+1. **Phase 1** : L'utilisateur ajoute des transactions (BUY/SELL/TRANSFER)
+2. **Phase 2** : Les portfolios et holdings sont automatiquement créés/mis à jour
+3. **Phase 3** : L'utilisateur peut configurer des stratégies sur ses holdings existants
+
 ## Endpoints
 
 ### 🏦 Portfolios
@@ -186,6 +200,25 @@ Authorization: Bearer <token>
 POST /portfolios/strategies/:strategyId/simulate
 Authorization: Bearer <token>
 ```
+
+### 🔄 Synchronisation
+
+#### Synchroniser les portfolios avec les transactions existantes
+```http
+POST /transactions/sync-portfolios
+Authorization: Bearer <token>
+```
+
+**Réponse :**
+```json
+{
+  "message": "Portfolios synchronisés avec succès",
+  "portfoliosCreated": 1,
+  "holdingsUpdated": 5
+}
+```
+
+> **Note** : Cet endpoint est utile pour migrer les données existantes vers le nouveau système de portfolios.
 
 ## Modèles de données
 

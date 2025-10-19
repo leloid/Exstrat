@@ -24,6 +24,9 @@ export class TransactionsService {
       },
     });
 
+    // Synchroniser avec le système de portfolios
+    await this.syncTransactionWithPortfolio(userId, transaction);
+
     return this.mapToResponseDto(transaction);
   }
 
@@ -123,15 +126,21 @@ export class TransactionsService {
       data: updateData,
     });
 
+    // Re-synchroniser avec le système de portfolios
+    await this.syncTransactionWithPortfolio(userId, transaction);
+
     return this.mapToResponseDto(transaction);
   }
 
   async remove(userId: string, id: string): Promise<void> {
-    await this.findOne(userId, id); // Vérifie l'existence et les permissions
+    const transaction = await this.findOne(userId, id); // Vérifie l'existence et les permissions
 
     await this.prisma.transaction.delete({
       where: { id },
     });
+
+    // Re-synchroniser le portfolio après suppression
+    await this.syncTransactionWithPortfolio(userId, transaction);
   }
 
   async getPortfolioSummary(userId: string): Promise<any> {
@@ -196,6 +205,72 @@ export class TransactionsService {
     };
   }
 
+  /**
+   * Synchronise tous les portfolios avec les transactions existantes
+   * Utile pour migrer les données existantes
+   */
+  async syncAllPortfolios(userId: string): Promise<{ message: string; portfoliosCreated: number; holdingsUpdated: number }> {
+    let portfoliosCreated = 0;
+    let holdingsUpdated = 0;
+
+    try {
+      // 1. S'assurer qu'un portfolio par défaut existe
+      let defaultPortfolio = await this.prisma.portfolio.findFirst({
+        where: { userId, isDefault: true },
+      });
+
+      if (!defaultPortfolio) {
+        defaultPortfolio = await this.prisma.portfolio.create({
+          data: {
+            userId,
+            name: 'Portfolio Principal',
+            description: 'Portfolio créé automatiquement à partir des transactions',
+            isDefault: true,
+          },
+        });
+        portfoliosCreated = 1;
+      }
+
+      // 2. Récupérer tous les tokens uniques des transactions
+      const transactions = await this.prisma.transaction.findMany({
+        where: { userId },
+        select: { symbol: true, name: true, cmcId: true },
+        distinct: ['symbol'],
+      });
+
+      // 3. Pour chaque token, créer le token et synchroniser le holding
+      for (const tx of transactions) {
+        // Créer le token s'il n'existe pas
+        let token = await this.prisma.token.findUnique({
+          where: { symbol: tx.symbol },
+        });
+
+        if (!token) {
+          token = await this.prisma.token.create({
+            data: {
+              symbol: tx.symbol,
+              name: tx.name,
+              cmcId: tx.cmcId,
+            },
+          });
+        }
+
+        // Synchroniser le holding
+        await this.recalculateHolding(userId, defaultPortfolio.id, token.id, tx.symbol);
+        holdingsUpdated++;
+      }
+
+      return {
+        message: 'Portfolios synchronisés avec succès',
+        portfoliosCreated,
+        holdingsUpdated,
+      };
+    } catch (error) {
+      console.error('Erreur lors de la synchronisation des portfolios:', error);
+      throw error;
+    }
+  }
+
   private mapToResponseDto(transaction: any): TransactionResponseDto {
     return {
       id: transaction.id,
@@ -213,5 +288,111 @@ export class TransactionsService {
       createdAt: transaction.createdAt,
       updatedAt: transaction.updatedAt,
     };
+  }
+
+  /**
+   * Synchronise une transaction avec le système de portfolios
+   * Crée automatiquement un portfolio par défaut et met à jour les holdings
+   */
+  private async syncTransactionWithPortfolio(userId: string, transaction: any): Promise<void> {
+    try {
+      // 1. S'assurer qu'un portfolio par défaut existe
+      let defaultPortfolio = await this.prisma.portfolio.findFirst({
+        where: { userId, isDefault: true },
+      });
+
+      if (!defaultPortfolio) {
+        defaultPortfolio = await this.prisma.portfolio.create({
+          data: {
+            userId,
+            name: 'Portfolio Principal',
+            description: 'Portfolio créé automatiquement à partir des transactions',
+            isDefault: true,
+          },
+        });
+      }
+
+      // 2. S'assurer que le token existe
+      let token = await this.prisma.token.findUnique({
+        where: { symbol: transaction.symbol },
+      });
+
+      if (!token) {
+        token = await this.prisma.token.create({
+          data: {
+            symbol: transaction.symbol,
+            name: transaction.name,
+            cmcId: transaction.cmcId,
+          },
+        });
+      }
+
+      // 3. Calculer le nouveau holding basé sur toutes les transactions
+      await this.recalculateHolding(userId, defaultPortfolio.id, token.id, transaction.symbol);
+    } catch (error) {
+      console.error('Erreur lors de la synchronisation avec le portfolio:', error);
+      // Ne pas faire échouer la transaction si la sync échoue
+    }
+  }
+
+  /**
+   * Recalcule le holding d'un token basé sur toutes les transactions
+   */
+  private async recalculateHolding(userId: string, portfolioId: string, tokenId: string, symbol: string): Promise<void> {
+    // Récupérer toutes les transactions pour ce token
+    const transactions = await this.prisma.transaction.findMany({
+      where: { userId, symbol },
+      orderBy: { transactionDate: 'asc' },
+    });
+
+    let totalQuantity = 0;
+    let totalInvested = 0;
+
+    // Calculer les totaux
+    for (const tx of transactions) {
+      if (tx.type === 'BUY' || tx.type === 'TRANSFER_IN' || tx.type === 'STAKING' || tx.type === 'REWARD') {
+        totalQuantity += Number(tx.quantity);
+        totalInvested += Number(tx.amountInvested);
+      } else if (tx.type === 'SELL' || tx.type === 'TRANSFER_OUT') {
+        const sellValue = Number(tx.quantity) * Number(tx.averagePrice);
+        totalQuantity = Math.max(0, totalQuantity - Number(tx.quantity));
+        totalInvested = Math.max(0, totalInvested - (Number(tx.amountInvested) || sellValue));
+      }
+    }
+
+    const averagePrice = totalQuantity > 0 ? totalInvested / totalQuantity : 0;
+
+    // Mettre à jour ou créer le holding
+    if (totalQuantity > 0) {
+      await this.prisma.holding.upsert({
+        where: {
+          portfolioId_tokenId: {
+            portfolioId,
+            tokenId,
+          },
+        },
+        update: {
+          quantity: totalQuantity,
+          investedAmount: totalInvested,
+          averagePrice: averagePrice,
+          lastUpdated: new Date(),
+        },
+        create: {
+          portfolioId,
+          tokenId,
+          quantity: totalQuantity,
+          investedAmount: totalInvested,
+          averagePrice: averagePrice,
+        },
+      });
+    } else {
+      // Supprimer le holding si la quantité est 0
+      await this.prisma.holding.deleteMany({
+        where: {
+          portfolioId,
+          tokenId,
+        },
+      });
+    }
   }
 }

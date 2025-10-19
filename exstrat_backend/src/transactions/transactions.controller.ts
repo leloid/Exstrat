@@ -104,6 +104,25 @@ export class TransactionsController {
     return this.transactionsService.getPortfolioSummary(userId);
   }
 
+  @Post('sync-portfolios')
+  @ApiOperation({ summary: 'Synchroniser tous les portfolios avec les transactions existantes' })
+  @ApiResponse({ 
+    status: 200, 
+    description: 'Portfolios synchronisés avec succès',
+    schema: {
+      type: 'object',
+      properties: {
+        message: { type: 'string' },
+        portfoliosCreated: { type: 'number' },
+        holdingsUpdated: { type: 'number' }
+      }
+    }
+  })
+  @ApiResponse({ status: 401, description: 'Non autorisé' })
+  async syncPortfolios(@CurrentUser('id') userId: string) {
+    return this.transactionsService.syncAllPortfolios(userId);
+  }
+
   @Get(':id')
   @ApiOperation({ summary: 'Récupérer une transaction par son ID' })
   @ApiResponse({ 
