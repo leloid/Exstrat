@@ -1,0 +1,151 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+  previewFeatures = ["driverAdapters"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url = env("DATABASE_URL")
+}
+
+model User {
+  id           String        @id @default(cuid())
+  email        String        @unique
+  password     String
+  createdAt    DateTime      @default(now())
+  accounts     ExchangeAccount[]
+  strategies   Strategy[]
+  positions    Position[]
+  transactions Transaction[]
+}
+
+model ExchangeAccount {
+  id        String   @id @default(cuid())
+  userId    String
+  exchange  String   // 'binance' | 'coinbase'
+  apiKey    String   // chiffré
+  apiSecret String   // chiffré
+  apiPass   String?  // coinbase/kraken
+  nickname  String?
+  status    String   @default("connected") // connected | error | syncing
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id])
+  balances  Balance[]
+  trades    Trade[]
+  transfers Transfer[]
+}
+
+model Balance {
+  id        String   @id @default(cuid())
+  exchangeAccountId String
+  asset     String
+  free      Decimal  @db.Decimal(38,18)
+  locked    Decimal  @db.Decimal(38,18)
+  fetchedAt DateTime
+  account   ExchangeAccount @relation(fields: [exchangeAccountId], references: [id])
+}
+
+model Trade {
+  id        String   @id @default(cuid())
+  exchangeAccountId String
+  symbol    String   // 'ETH/USDT'
+  side      String   // buy | sell
+  price     Decimal  @db.Decimal(38,18)
+  amount    Decimal  @db.Decimal(38,18)
+  cost      Decimal? @db.Decimal(38,18) // price*amount
+  feeAsset  String?
+  feeCost   Decimal? @db.Decimal(38,18)
+  txId      String?  // exchange trade id
+  ts        DateTime
+  account   ExchangeAccount @relation(fields: [exchangeAccountId], references: [id])
+  @@index([exchangeAccountId, symbol, ts])
+}
+
+model Transfer {
+  id        String   @id @default(cuid())
+  exchangeAccountId String
+  type      String   // deposit | withdrawal
+  asset     String
+  amount    Decimal  @db.Decimal(38,18)
+  feeCost   Decimal? @db.Decimal(38,18)
+  ts        DateTime
+  account   ExchangeAccount @relation(fields: [exchangeAccountId], references: [id])
+}
+
+model Position {
+  id        String   @id @default(cuid())
+  userId    String
+  asset     String
+  quantity  Decimal  @db.Decimal(38,18)
+  avgPrice  Decimal  @db.Decimal(38,18) // en USDT/USDC
+  updatedAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id])
+  @@unique([userId, asset])
+}
+
+model Strategy {
+  id        String   @id @default(cuid())
+  userId    String
+  name      String   // nom de la stratégie
+  asset     String
+  baseQty   Decimal  @db.Decimal(38,18) // qty de référence (ex: 4 ETH)
+  refPrice  Decimal  @db.Decimal(38,18) // prix de référence (avgPrice ou custom)
+  status    String   @default("active") // active | paused | completed
+  notes     String?  // notes optionnelles
+  exchangeAccountId String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  steps     StrategyStep[]
+  user      User     @relation(fields: [userId], references: [id])
+}
+
+model StrategyStep {
+  id         String  @id @default(cuid())
+  strategyId String
+  targetType String  @default("percentage_of_average") // percentage_of_average | exact_price
+  targetPct  Decimal @db.Decimal(10,4) // +10 => 10
+  sellPct    Decimal @db.Decimal(10,4) // 20 => 20% de baseQty
+  targetPrice Decimal @db.Decimal(38,18)
+  state      String  @default("pending") // pending | triggered | done
+  notes      String? // notes optionnelles
+  triggeredAt DateTime?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  strategy   Strategy @relation(fields: [strategyId], references: [id])
+  @@index([strategyId, targetPrice])
+}
+
+model StrategyExecution {
+  id         String   @id @default(cuid())
+  strategyId String
+  stepId     String
+  executedQty Decimal @db.Decimal(38,18)
+  executionType String // 'alert' (V1) | 'order'
+  status     String    @default("created")
+  createdAt  DateTime  @default(now())
+}
+
+model Transaction {
+  id            String   @id @default(cuid())
+  userId        String
+  symbol        String   // BTC, ETH, etc.
+  name          String   // Bitcoin, Ethereum, etc.
+  cmcId         Int      // CoinMarketCap ID
+  quantity      Decimal  @db.Decimal(38,18)
+  amountInvested Decimal @db.Decimal(38,18) // en USD
+  averagePrice  Decimal  @db.Decimal(38,18) // en USD
+  type          String   // BUY, SELL, TRANSFER_IN, TRANSFER_OUT, STAKING, REWARD
+  transactionDate DateTime
+  notes         String?
+  exchangeId    String?  // ID de l'exchange si applicable
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  user          User     @relation(fields: [userId], references: [id])
+  
+  @@index([userId, symbol])
+  @@index([userId, transactionDate])
+  @@index([userId, type])
+}
