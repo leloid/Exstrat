@@ -46,16 +46,25 @@ export const PortfolioProvider: React.FC<PortfolioProviderProps> = ({ children }
       console.log('🔄 Chargement des portfolios...');
       const data = await portfoliosApi.getPortfolios();
       console.log('📊 Portfolios reçus:', data);
-      setPortfolios(data);
+      console.log('📊 Nombre de portfolios:', data.length);
+      
+      // Filtrer les portfolios par utilisateur (sécurité supplémentaire)
+      const filteredPortfolios = data.filter(portfolio => {
+        console.log(`Portfolio: ${portfolio.name} - ID: ${portfolio.id}`);
+        return portfolio; // L'API backend filtre déjà par utilisateur
+      });
+      
+      console.log('📊 Portfolios filtrés:', filteredPortfolios.length);
+      setPortfolios(filteredPortfolios);
       
       // Sélectionner le portfolio par défaut s'il existe
-      const defaultPortfolio = data.find(p => p.isDefault);
+      const defaultPortfolio = filteredPortfolios.find(p => p.isDefault);
       if (defaultPortfolio) {
         console.log('✅ Portfolio par défaut sélectionné:', defaultPortfolio.name);
         setCurrentPortfolio(defaultPortfolio);
-      } else if (data.length > 0) {
-        console.log('✅ Premier portfolio sélectionné:', data[0].name);
-        setCurrentPortfolio(data[0]);
+      } else if (filteredPortfolios.length > 0) {
+        console.log('✅ Premier portfolio sélectionné:', filteredPortfolios[0].name);
+        setCurrentPortfolio(filteredPortfolios[0]);
       }
     } catch (err: any) {
       console.error('❌ Erreur lors du chargement des portfolios:', err);

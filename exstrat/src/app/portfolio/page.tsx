@@ -40,10 +40,11 @@ export default function PortfolioPage() {
     isDefault: false
   });
 
-  const totalValue = holdings.reduce((sum, holding) => sum + (holding.currentValue || 0), 0);
-  const totalInvested = holdings.reduce((sum, holding) => sum + holding.investedAmount, 0);
-  const totalProfitLoss = totalValue - totalInvested;
-  const totalProfitLossPercentage = totalInvested > 0 ? (totalProfitLoss / totalInvested) * 100 : 0;
+  // Calculer les totaux pour le portfolio actuellement sélectionné
+  const currentPortfolioValue = currentPortfolio ? holdings.reduce((sum, holding) => sum + (holding.currentValue || 0), 0) : 0;
+  const currentPortfolioInvested = currentPortfolio ? holdings.reduce((sum, holding) => sum + holding.investedAmount, 0) : 0;
+  const currentPortfolioProfitLoss = currentPortfolioValue - currentPortfolioInvested;
+  const currentPortfolioProfitLossPercentage = currentPortfolioInvested > 0 ? (currentPortfolioProfitLoss / currentPortfolioInvested) * 100 : 0;
 
   const handleCreatePortfolio = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -242,7 +243,13 @@ export default function PortfolioPage() {
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={() => setCurrentPortfolio(portfolio)}
+                          onClick={() => {
+                            setCurrentPortfolio(portfolio);
+                            // Charger les holdings de ce portfolio
+                            if (portfolio.id) {
+                              refreshHoldings(portfolio.id);
+                            }
+                          }}
                         >
                           Sélectionner
                         </Button>
@@ -251,24 +258,110 @@ export default function PortfolioPage() {
                   </div>
                 </CardHeader>
                 <CardContent>
-                  <div className="grid grid-cols-3 gap-4 text-center">
-                    <div>
-                      <div className="text-2xl font-bold">{portfolio.holdingsCount || 0}</div>
-                      <div className="text-sm text-muted-foreground">Positions</div>
+                  <div className="space-y-4">
+                    {/* Statistiques du portfolio */}
+                    <div className="grid grid-cols-3 gap-4 text-center">
+                      <div>
+                        <div className="text-2xl font-bold">{portfolio.holdingsCount || 0}</div>
+                        <div className="text-sm text-muted-foreground">Positions</div>
+                      </div>
+                      <div>
+                        <div className="text-2xl font-bold">{formatCurrency(0)}</div>
+                        <div className="text-sm text-muted-foreground">Investi</div>
+                      </div>
+                      <div>
+                        <div className="text-2xl font-bold">{formatCurrency(0)}</div>
+                        <div className="text-sm text-muted-foreground">Valeur actuelle</div>
+                      </div>
                     </div>
-                    <div>
-                      <div className="text-2xl font-bold">{formatCurrency(totalInvested)}</div>
-                      <div className="text-sm text-muted-foreground">Investi</div>
-                    </div>
-                    <div>
-                      <div className="text-2xl font-bold">{formatCurrency(totalValue)}</div>
-                      <div className="text-sm text-muted-foreground">Valeur actuelle</div>
+                    
+                    {/* Tokens du portfolio */}
+                    <div className="border-t pt-4">
+                      <h4 className="text-sm font-medium text-muted-foreground mb-2">Tokens dans ce portfolio</h4>
+                      <div className="text-center py-4 text-muted-foreground">
+                        <p className="text-sm">
+                          {portfolio.holdingsCount > 0 
+                            ? `${portfolio.holdingsCount} token(s) - Cliquez sur "Sélectionner" pour voir les détails`
+                            : "Aucun token dans ce portfolio"
+                          }
+                        </p>
+                      </div>
                     </div>
                   </div>
                 </CardContent>
               </Card>
             ))}
           </div>
+
+          {/* Détails du portfolio sélectionné */}
+          {currentPortfolio && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Wallet className="h-5 w-5" />
+                  Détails du portfolio: {currentPortfolio.name}
+                </CardTitle>
+                <CardDescription>
+                  {currentPortfolio.description}
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {holdings.length > 0 ? (
+                  <div className="space-y-4">
+                    <div className="grid grid-cols-3 gap-4 text-center">
+                      <div>
+                        <div className="text-2xl font-bold">{holdings.length}</div>
+                        <div className="text-sm text-muted-foreground">Positions</div>
+                      </div>
+                      <div>
+                        <div className="text-2xl font-bold">{formatCurrency(currentPortfolioInvested)}</div>
+                        <div className="text-sm text-muted-foreground">Investi</div>
+                      </div>
+                      <div>
+                        <div className="text-2xl font-bold">{formatCurrency(currentPortfolioValue)}</div>
+                        <div className="text-sm text-muted-foreground">Valeur actuelle</div>
+                      </div>
+                    </div>
+                    
+                    <div className="border-t pt-4">
+                      <h4 className="text-lg font-medium mb-4">Tokens détenus</h4>
+                      <div className="space-y-2">
+                        {holdings.map((holding) => (
+                          <div key={holding.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                            <div className="flex items-center gap-3">
+                              <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+                                <span className="text-sm font-bold text-blue-600">
+                                  {holding.token.symbol.charAt(0)}
+                                </span>
+                              </div>
+                              <div>
+                                <div className="font-medium">{holding.token.symbol}</div>
+                                <div className="text-sm text-muted-foreground">{holding.token.name}</div>
+                              </div>
+                            </div>
+                            <div className="text-right">
+                              <div className="font-medium">{holding.quantity} {holding.token.symbol}</div>
+                              <div className="text-sm text-muted-foreground">
+                                {formatCurrency(holding.investedAmount)}
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="text-center py-8">
+                    <Wallet className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+                    <h3 className="text-lg font-medium mb-2">Aucun token dans ce portfolio</h3>
+                    <p className="text-muted-foreground">
+                      Ajoutez des transactions pour voir vos tokens apparaître ici.
+                    </p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          )}
 
           {/* Message si pas de portfolios */}
           {portfolios.length === 0 && (
