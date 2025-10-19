@@ -1,0 +1,668 @@
+import { Injectable, NotFoundException, ConflictException, BadRequestException } from '@nestjs/common';
+import { PrismaService } from '../prisma/prisma.service';
+import { CreatePortfolioDto, UpdatePortfolioDto, PortfolioResponseDto } from './dto/portfolio.dto';
+import { CreateHoldingDto, UpdateHoldingDto, HoldingResponseDto } from './dto/holding.dto';
+import { CreateUserStrategyDto, UpdateUserStrategyDto, UserStrategyResponseDto, TokenStrategyConfigDto, TokenStrategyConfigResponseDto } from './dto/user-strategy.dto';
+import { StrategyTemplateResponseDto, ProfitTakingTemplateResponseDto, SimulationResultDto } from './dto/template.dto';
+
+@Injectable()
+export class PortfoliosService {
+  constructor(private prisma: PrismaService) {}
+
+  // ===== PORTFOLIOS =====
+
+  async createPortfolio(userId: string, createPortfolioDto: CreatePortfolioDto): Promise<PortfolioResponseDto> {
+    const { name, description, isDefault } = createPortfolioDto;
+
+    // Si c'est le portfolio par défaut, désactiver les autres
+    if (isDefault) {
+      await this.prisma.portfolio.updateMany({
+        where: { userId, isDefault: true },
+        data: { isDefault: false },
+      });
+    }
+
+    const portfolio = await this.prisma.portfolio.create({
+      data: {
+        userId,
+        name,
+        description,
+        isDefault: isDefault || false,
+      },
+    });
+
+    return this.formatPortfolioResponse(portfolio);
+  }
+
+  async getUserPortfolios(userId: string): Promise<PortfolioResponseDto[]> {
+    const portfolios = await this.prisma.portfolio.findMany({
+      where: { userId },
+      orderBy: [{ isDefault: 'desc' }, { createdAt: 'desc' }],
+      include: {
+        _count: {
+          select: { holdings: true },
+        },
+      },
+    });
+
+    return portfolios.map(portfolio => ({
+      ...this.formatPortfolioResponse(portfolio),
+      holdingsCount: portfolio._count.holdings,
+    }));
+  }
+
+  async getPortfolioById(userId: string, portfolioId: string): Promise<PortfolioResponseDto> {
+    const portfolio = await this.prisma.portfolio.findFirst({
+      where: { id: portfolioId, userId },
+      include: {
+        _count: {
+          select: { holdings: true },
+        },
+      },
+    });
+
+    if (!portfolio) {
+      throw new NotFoundException('Portfolio non trouvé');
+    }
+
+    return {
+      ...this.formatPortfolioResponse(portfolio),
+      holdingsCount: portfolio._count.holdings,
+    };
+  }
+
+  async updatePortfolio(userId: string, portfolioId: string, updatePortfolioDto: UpdatePortfolioDto): Promise<PortfolioResponseDto> {
+    const { name, description, isDefault } = updatePortfolioDto;
+
+    // Vérifier que le portfolio existe
+    const existingPortfolio = await this.prisma.portfolio.findFirst({
+      where: { id: portfolioId, userId },
+    });
+
+    if (!existingPortfolio) {
+      throw new NotFoundException('Portfolio non trouvé');
+    }
+
+    // Si c'est le portfolio par défaut, désactiver les autres
+    if (isDefault) {
+      await this.prisma.portfolio.updateMany({
+        where: { userId, isDefault: true, id: { not: portfolioId } },
+        data: { isDefault: false },
+      });
+    }
+
+    const portfolio = await this.prisma.portfolio.update({
+      where: { id: portfolioId },
+      data: {
+        ...(name && { name }),
+        ...(description !== undefined && { description }),
+        ...(isDefault !== undefined && { isDefault }),
+      },
+    });
+
+    return this.formatPortfolioResponse(portfolio);
+  }
+
+  async deletePortfolio(userId: string, portfolioId: string): Promise<void> {
+    const portfolio = await this.prisma.portfolio.findFirst({
+      where: { id: portfolioId, userId },
+    });
+
+    if (!portfolio) {
+      throw new NotFoundException('Portfolio non trouvé');
+    }
+
+    await this.prisma.portfolio.delete({
+      where: { id: portfolioId },
+    });
+  }
+
+  // ===== HOLDINGS =====
+
+  async getPortfolioHoldings(userId: string, portfolioId: string): Promise<HoldingResponseDto[]> {
+    // Vérifier que le portfolio appartient à l'utilisateur
+    const portfolio = await this.prisma.portfolio.findFirst({
+      where: { id: portfolioId, userId },
+    });
+
+    if (!portfolio) {
+      throw new NotFoundException('Portfolio non trouvé');
+    }
+
+    const holdings = await this.prisma.holding.findMany({
+      where: { portfolioId },
+      include: {
+        token: true,
+      },
+      orderBy: { token: { symbol: 'asc' } },
+    });
+
+    return holdings.map(holding => this.formatHoldingResponse(holding));
+  }
+
+  async addHolding(userId: string, portfolioId: string, createHoldingDto: CreateHoldingDto): Promise<HoldingResponseDto> {
+    // Vérifier que le portfolio appartient à l'utilisateur
+    const portfolio = await this.prisma.portfolio.findFirst({
+      where: { id: portfolioId, userId },
+    });
+
+    if (!portfolio) {
+      throw new NotFoundException('Portfolio non trouvé');
+    }
+
+    // Vérifier que le token existe
+    const token = await this.prisma.token.findUnique({
+      where: { id: createHoldingDto.tokenId },
+    });
+
+    if (!token) {
+      throw new NotFoundException('Token non trouvé');
+    }
+
+    // Vérifier qu'il n'y a pas déjà un holding pour ce token dans ce portfolio
+    const existingHolding = await this.prisma.holding.findUnique({
+      where: {
+        portfolioId_tokenId: {
+          portfolioId,
+          tokenId: createHoldingDto.tokenId,
+        },
+      },
+    });
+
+    if (existingHolding) {
+      throw new ConflictException('Ce token existe déjà dans ce portfolio');
+    }
+
+    const holding = await this.prisma.holding.create({
+      data: {
+        portfolioId,
+        tokenId: createHoldingDto.tokenId,
+        quantity: createHoldingDto.quantity,
+        investedAmount: createHoldingDto.investedAmount,
+        averagePrice: createHoldingDto.averagePrice,
+        currentPrice: createHoldingDto.currentPrice,
+      },
+      include: {
+        token: true,
+      },
+    });
+
+    return this.formatHoldingResponse(holding);
+  }
+
+  async updateHolding(userId: string, portfolioId: string, holdingId: string, updateHoldingDto: UpdateHoldingDto): Promise<HoldingResponseDto> {
+    // Vérifier que le holding appartient au portfolio de l'utilisateur
+    const holding = await this.prisma.holding.findFirst({
+      where: {
+        id: holdingId,
+        portfolio: { userId, id: portfolioId },
+      },
+      include: {
+        token: true,
+      },
+    });
+
+    if (!holding) {
+      throw new NotFoundException('Holding non trouvé');
+    }
+
+    const updatedHolding = await this.prisma.holding.update({
+      where: { id: holdingId },
+      data: {
+        ...(updateHoldingDto.quantity !== undefined && { quantity: updateHoldingDto.quantity }),
+        ...(updateHoldingDto.investedAmount !== undefined && { investedAmount: updateHoldingDto.investedAmount }),
+        ...(updateHoldingDto.averagePrice !== undefined && { averagePrice: updateHoldingDto.averagePrice }),
+        ...(updateHoldingDto.currentPrice !== undefined && { currentPrice: updateHoldingDto.currentPrice }),
+      },
+      include: {
+        token: true,
+      },
+    });
+
+    return this.formatHoldingResponse(updatedHolding);
+  }
+
+  async deleteHolding(userId: string, portfolioId: string, holdingId: string): Promise<void> {
+    // Vérifier que le holding appartient au portfolio de l'utilisateur
+    const holding = await this.prisma.holding.findFirst({
+      where: {
+        id: holdingId,
+        portfolio: { userId, id: portfolioId },
+      },
+    });
+
+    if (!holding) {
+      throw new NotFoundException('Holding non trouvé');
+    }
+
+    await this.prisma.holding.delete({
+      where: { id: holdingId },
+    });
+  }
+
+  // ===== USER STRATEGIES =====
+
+  async createUserStrategy(userId: string, createUserStrategyDto: CreateUserStrategyDto): Promise<UserStrategyResponseDto> {
+    const { portfolioId, name, description, status } = createUserStrategyDto;
+
+    // Vérifier que le portfolio appartient à l'utilisateur
+    const portfolio = await this.prisma.portfolio.findFirst({
+      where: { id: portfolioId, userId },
+    });
+
+    if (!portfolio) {
+      throw new NotFoundException('Portfolio non trouvé');
+    }
+
+    const userStrategy = await this.prisma.userStrategy.create({
+      data: {
+        userId,
+        portfolioId,
+        name,
+        description,
+        status: status || 'draft',
+      },
+      include: {
+        portfolio: true,
+        _count: {
+          select: { tokenConfigs: true },
+        },
+      },
+    });
+
+    return {
+      ...this.formatUserStrategyResponse(userStrategy),
+      tokenConfigsCount: userStrategy._count.tokenConfigs,
+    };
+  }
+
+  async getUserStrategies(userId: string): Promise<UserStrategyResponseDto[]> {
+    const strategies = await this.prisma.userStrategy.findMany({
+      where: { userId },
+      include: {
+        portfolio: true,
+        _count: {
+          select: { tokenConfigs: true },
+        },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    return strategies.map(strategy => ({
+      ...this.formatUserStrategyResponse(strategy),
+      tokenConfigsCount: strategy._count.tokenConfigs,
+    }));
+  }
+
+  async getUserStrategyById(userId: string, strategyId: string): Promise<UserStrategyResponseDto> {
+    const strategy = await this.prisma.userStrategy.findFirst({
+      where: { id: strategyId, userId },
+      include: {
+        portfolio: true,
+        _count: {
+          select: { tokenConfigs: true },
+        },
+      },
+    });
+
+    if (!strategy) {
+      throw new NotFoundException('Stratégie non trouvée');
+    }
+
+    return {
+      ...this.formatUserStrategyResponse(strategy),
+      tokenConfigsCount: strategy._count.tokenConfigs,
+    };
+  }
+
+  async updateUserStrategy(userId: string, strategyId: string, updateUserStrategyDto: UpdateUserStrategyDto): Promise<UserStrategyResponseDto> {
+    const strategy = await this.prisma.userStrategy.findFirst({
+      where: { id: strategyId, userId },
+    });
+
+    if (!strategy) {
+      throw new NotFoundException('Stratégie non trouvée');
+    }
+
+    const updatedStrategy = await this.prisma.userStrategy.update({
+      where: { id: strategyId },
+      data: {
+        ...(updateUserStrategyDto.name && { name: updateUserStrategyDto.name }),
+        ...(updateUserStrategyDto.description !== undefined && { description: updateUserStrategyDto.description }),
+        ...(updateUserStrategyDto.status && { status: updateUserStrategyDto.status }),
+      },
+      include: {
+        portfolio: true,
+        _count: {
+          select: { tokenConfigs: true },
+        },
+      },
+    });
+
+    return {
+      ...this.formatUserStrategyResponse(updatedStrategy),
+      tokenConfigsCount: updatedStrategy._count.tokenConfigs,
+    };
+  }
+
+  async deleteUserStrategy(userId: string, strategyId: string): Promise<void> {
+    const strategy = await this.prisma.userStrategy.findFirst({
+      where: { id: strategyId, userId },
+    });
+
+    if (!strategy) {
+      throw new NotFoundException('Stratégie non trouvée');
+    }
+
+    await this.prisma.userStrategy.delete({
+      where: { id: strategyId },
+    });
+  }
+
+  // ===== TOKEN STRATEGY CONFIGURATIONS =====
+
+  async configureTokenStrategy(userId: string, strategyId: string, tokenConfigDto: TokenStrategyConfigDto): Promise<TokenStrategyConfigResponseDto> {
+    // Vérifier que la stratégie appartient à l'utilisateur
+    const strategy = await this.prisma.userStrategy.findFirst({
+      where: { id: strategyId, userId },
+    });
+
+    if (!strategy) {
+      throw new NotFoundException('Stratégie non trouvée');
+    }
+
+    // Vérifier que le holding existe et appartient au portfolio de la stratégie
+    const holding = await this.prisma.holding.findFirst({
+      where: {
+        id: tokenConfigDto.holdingId,
+        portfolioId: strategy.portfolioId,
+      },
+      include: {
+        token: true,
+      },
+    });
+
+    if (!holding) {
+      throw new NotFoundException('Holding non trouvé');
+    }
+
+    // Créer ou mettre à jour la configuration
+    const config = await this.prisma.tokenStrategyConfiguration.upsert({
+      where: {
+        userStrategyId_holdingId: {
+          userStrategyId: strategyId,
+          holdingId: tokenConfigDto.holdingId,
+        },
+      },
+      update: {
+        strategyTemplateId: tokenConfigDto.strategyTemplateId,
+        profitTakingTemplateId: tokenConfigDto.profitTakingTemplateId,
+        customProfitTakingRules: tokenConfigDto.customProfitTakingRules,
+      },
+      create: {
+        userStrategyId: strategyId,
+        holdingId: tokenConfigDto.holdingId,
+        strategyTemplateId: tokenConfigDto.strategyTemplateId,
+        profitTakingTemplateId: tokenConfigDto.profitTakingTemplateId,
+        customProfitTakingRules: tokenConfigDto.customProfitTakingRules,
+      },
+      include: {
+        holding: {
+          include: {
+            token: true,
+          },
+        },
+        strategyTemplate: true,
+        profitTakingTemplate: true,
+      },
+    });
+
+    return this.formatTokenStrategyConfigResponse(config);
+  }
+
+  async getTokenStrategyConfigs(userId: string, strategyId: string): Promise<TokenStrategyConfigResponseDto[]> {
+    // Vérifier que la stratégie appartient à l'utilisateur
+    const strategy = await this.prisma.userStrategy.findFirst({
+      where: { id: strategyId, userId },
+    });
+
+    if (!strategy) {
+      throw new NotFoundException('Stratégie non trouvée');
+    }
+
+    const configs = await this.prisma.tokenStrategyConfiguration.findMany({
+      where: { userStrategyId: strategyId },
+      include: {
+        holding: {
+          include: {
+            token: true,
+          },
+        },
+        strategyTemplate: true,
+        profitTakingTemplate: true,
+      },
+    });
+
+    return configs.map(config => this.formatTokenStrategyConfigResponse(config));
+  }
+
+  // ===== TEMPLATES =====
+
+  async getStrategyTemplates(): Promise<StrategyTemplateResponseDto[]> {
+    const templates = await this.prisma.strategyTemplate.findMany({
+      where: { isActive: true },
+      orderBy: [{ isDefault: 'desc' }, { name: 'asc' }],
+    });
+
+    return templates.map(template => this.formatStrategyTemplateResponse(template));
+  }
+
+  async getProfitTakingTemplates(): Promise<ProfitTakingTemplateResponseDto[]> {
+    const templates = await this.prisma.profitTakingTemplate.findMany({
+      where: { isActive: true },
+      orderBy: [{ isDefault: 'desc' }, { name: 'asc' }],
+    });
+
+    return templates.map(template => this.formatProfitTakingTemplateResponse(template));
+  }
+
+  // ===== SIMULATION =====
+
+  async simulateStrategy(userId: string, strategyId: string): Promise<SimulationResultDto[]> {
+    // Vérifier que la stratégie appartient à l'utilisateur
+    const strategy = await this.prisma.userStrategy.findFirst({
+      where: { id: strategyId, userId },
+    });
+
+    if (!strategy) {
+      throw new NotFoundException('Stratégie non trouvée');
+    }
+
+    // Récupérer les configurations de tokens
+    const configs = await this.prisma.tokenStrategyConfiguration.findMany({
+      where: { userStrategyId: strategyId, isActive: true },
+      include: {
+        holding: {
+          include: {
+            token: true,
+          },
+        },
+        strategyTemplate: true,
+        profitTakingTemplate: true,
+      },
+    });
+
+    if (configs.length === 0) {
+      throw new BadRequestException('Aucune configuration de token trouvée pour cette stratégie');
+    }
+
+    // Simuler les résultats (logique simplifiée pour l'instant)
+    const simulationResults = await Promise.all(
+      configs.map(async (config) => {
+        const { holding } = config;
+        const currentPrice = holding.currentPrice || holding.averagePrice;
+        const projectedValue = Number(holding.quantity) * Number(currentPrice);
+        const returnPercentage = ((Number(currentPrice) - Number(holding.averagePrice)) / Number(holding.averagePrice)) * 100;
+        const remainingTokens = Number(holding.quantity); // Simplifié pour l'instant
+
+        // Sauvegarder le résultat de simulation
+        const simulationResult = await this.prisma.simulationResult.create({
+          data: {
+            userStrategyId: strategyId,
+            tokenStrategyConfigId: config.id,
+            projectedValue,
+            return: returnPercentage,
+            remainingTokens,
+          },
+          include: {
+            tokenStrategyConfig: {
+              include: {
+                holding: {
+                  include: {
+                    token: true,
+                  },
+                },
+              },
+            },
+          },
+        });
+
+        return this.formatSimulationResultResponse(simulationResult);
+      })
+    );
+
+    return simulationResults;
+  }
+
+  // ===== HELPER METHODS =====
+
+  private formatPortfolioResponse(portfolio: any): PortfolioResponseDto {
+    return {
+      id: portfolio.id,
+      name: portfolio.name,
+      description: portfolio.description,
+      isDefault: portfolio.isDefault,
+      createdAt: portfolio.createdAt,
+      updatedAt: portfolio.updatedAt,
+    };
+  }
+
+  private formatHoldingResponse(holding: any): HoldingResponseDto {
+    const currentPrice = holding.currentPrice || holding.averagePrice;
+    const currentValue = Number(holding.quantity) * Number(currentPrice);
+    const profitLoss = currentValue - Number(holding.investedAmount);
+    const profitLossPercentage = (profitLoss / Number(holding.investedAmount)) * 100;
+
+    return {
+      id: holding.id,
+      quantity: Number(holding.quantity),
+      investedAmount: Number(holding.investedAmount),
+      averagePrice: Number(holding.averagePrice),
+      currentPrice: holding.currentPrice ? Number(holding.currentPrice) : undefined,
+      lastUpdated: holding.lastUpdated,
+      token: {
+        id: holding.token.id,
+        symbol: holding.token.symbol,
+        name: holding.token.name,
+        logoUrl: holding.token.logoUrl,
+      },
+      currentValue,
+      profitLoss,
+      profitLossPercentage,
+    };
+  }
+
+  private formatUserStrategyResponse(strategy: any): UserStrategyResponseDto {
+    return {
+      id: strategy.id,
+      name: strategy.name,
+      description: strategy.description,
+      status: strategy.status,
+      createdAt: strategy.createdAt,
+      updatedAt: strategy.updatedAt,
+      portfolio: {
+        id: strategy.portfolio.id,
+        name: strategy.portfolio.name,
+      },
+    };
+  }
+
+  private formatTokenStrategyConfigResponse(config: any): TokenStrategyConfigResponseDto {
+    return {
+      id: config.id,
+      holdingId: config.holdingId,
+      strategyTemplateId: config.strategyTemplateId,
+      profitTakingTemplateId: config.profitTakingTemplateId,
+      customProfitTakingRules: config.customProfitTakingRules,
+      isActive: config.isActive,
+      createdAt: config.createdAt,
+      updatedAt: config.updatedAt,
+      holding: {
+        id: config.holding.id,
+        quantity: Number(config.holding.quantity),
+        investedAmount: Number(config.holding.investedAmount),
+        averagePrice: Number(config.holding.averagePrice),
+        token: {
+          id: config.holding.token.id,
+          symbol: config.holding.token.symbol,
+          name: config.holding.token.name,
+        },
+      },
+      strategyTemplate: config.strategyTemplate ? {
+        id: config.strategyTemplate.id,
+        name: config.strategyTemplate.name,
+        type: config.strategyTemplate.type,
+      } : undefined,
+      profitTakingTemplate: config.profitTakingTemplate ? {
+        id: config.profitTakingTemplate.id,
+        name: config.profitTakingTemplate.name,
+        rules: config.profitTakingTemplate.rules,
+      } : undefined,
+    };
+  }
+
+  private formatStrategyTemplateResponse(template: any): StrategyTemplateResponseDto {
+    return {
+      id: template.id,
+      name: template.name,
+      description: template.description,
+      type: template.type,
+      isDefault: template.isDefault,
+      isActive: template.isActive,
+      createdAt: template.createdAt,
+      updatedAt: template.updatedAt,
+    };
+  }
+
+  private formatProfitTakingTemplateResponse(template: any): ProfitTakingTemplateResponseDto {
+    return {
+      id: template.id,
+      name: template.name,
+      description: template.description,
+      rules: template.rules,
+      isDefault: template.isDefault,
+      isActive: template.isActive,
+      createdAt: template.createdAt,
+      updatedAt: template.updatedAt,
+    };
+  }
+
+  private formatSimulationResultResponse(result: any): SimulationResultDto {
+    return {
+      id: result.id,
+      projectedValue: Number(result.projectedValue),
+      return: Number(result.return),
+      remainingTokens: Number(result.remainingTokens),
+      simulationDate: result.simulationDate,
+      tokenStrategyConfig: {
+        id: result.tokenStrategyConfig.id,
+        holding: {
+          token: {
+            symbol: result.tokenStrategyConfig.holding.token.symbol,
+            name: result.tokenStrategyConfig.holding.token.name,
+          },
+        },
+      },
+    };
+  }
+}

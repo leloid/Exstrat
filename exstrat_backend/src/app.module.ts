@@ -6,6 +6,7 @@ import { AuthModule } from './auth/auth.module';
 import { TokensModule } from './tokens/tokens.module';
 import { TransactionsModule } from './transactions/transactions.module';
 import { StrategiesModule } from './strategies/strategies.module';
+import { PortfoliosModule } from './portfolios/portfolios.module';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 
@@ -20,6 +21,7 @@ import { AppService } from './app.service';
     TokensModule,
     TransactionsModule,
     StrategiesModule,
+    PortfoliosModule,
   ],
   controllers: [AppController],
   providers: [AppService],
