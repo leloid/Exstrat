@@ -6,11 +6,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { 
-  ArrowPathIcon as RefreshCw,
   ArrowTrendingUpIcon as TrendingUp,
   ArrowTrendingDownIcon as TrendingDown,
-  WalletIcon as Wallet,
-  ArrowsRightLeftIcon as Sync
+  WalletIcon as Wallet
 } from '@heroicons/react/24/outline';
 import { formatCurrency, formatPercentage } from '@/lib/format';
 
@@ -20,9 +18,7 @@ export const PortfolioSummary: React.FC = () => {
     currentPortfolio, 
     holdings, 
     isLoading, 
-    error, 
-    refreshPortfolios, 
-    syncPortfolios 
+    error
   } = usePortfolio();
 
   const totalValue = holdings.reduce((sum, holding) => sum + (holding.currentValue || 0), 0);
@@ -30,21 +26,6 @@ export const PortfolioSummary: React.FC = () => {
   const totalProfitLoss = totalValue - totalInvested;
   const totalProfitLossPercentage = totalInvested > 0 ? (totalProfitLoss / totalInvested) * 100 : 0;
 
-  const handleSync = async () => {
-    try {
-      await syncPortfolios();
-    } catch (error) {
-      console.error('Erreur lors de la synchronisation:', error);
-    }
-  };
-
-  const handleRefresh = async () => {
-    try {
-      await refreshPortfolios();
-    } catch (error) {
-      console.error('Erreur lors du rafraîchissement:', error);
-    }
-  };
 
   if (isLoading) {
     return (
@@ -99,16 +80,6 @@ export const PortfolioSummary: React.FC = () => {
           <p className="text-muted-foreground">
             {portfolios.length} portfolio{portfolios.length > 1 ? 's' : ''} • {holdings.length} position{holdings.length > 1 ? 's' : ''}
           </p>
-        </div>
-        <div className="flex gap-2">
-          <Button onClick={handleSync} variant="outline" size="sm">
-            <Sync className="h-4 w-4 mr-2" />
-            Synchroniser
-          </Button>
-          <Button onClick={handleRefresh} variant="outline" size="sm">
-            <RefreshCw className="h-4 w-4 mr-2" />
-            Actualiser
-          </Button>
         </div>
       </div>
 
@@ -208,10 +179,6 @@ export const PortfolioSummary: React.FC = () => {
             <p className="text-muted-foreground mb-4">
               Ce portfolio ne contient encore aucune position. Ajoutez des transactions pour voir vos avoirs.
             </p>
-            <Button onClick={handleSync} variant="outline">
-              <Sync className="h-4 w-4 mr-2" />
-              Synchroniser avec les transactions
-            </Button>
           </CardContent>
         </Card>
       )}
