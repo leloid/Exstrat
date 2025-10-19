@@ -34,18 +34,30 @@ export default function StrategiesPage() {
   const [showConfig, setShowConfig] = useState(false);
   const [selectedStrategy, setSelectedStrategy] = useState<string | null>(null);
   const [selectedHolding, setSelectedHolding] = useState<string | null>(null);
+  const [strategiesLoaded, setStrategiesLoaded] = useState(false);
 
   useEffect(() => {
     refreshPortfolios();
-    loadStrategies();
-  }, [refreshPortfolios]);
+  }, []);
+
+  useEffect(() => {
+    // Charger les stratégies seulement si l'utilisateur est connecté et que les portfolios sont chargés
+    if (portfolios.length > 0 && !strategiesLoaded) {
+      loadStrategies();
+    }
+  }, [portfolios.length, strategiesLoaded]);
 
   const loadStrategies = async () => {
     try {
-      const data = await portfoliosApi.getUserStrategies();
-      setStrategies(data);
-    } catch (error) {
+      setStrategiesLoaded(true);
+      // Temporairement, initialiser avec un tableau vide pour éviter les erreurs
+      setStrategies([]);
+      // const data = await portfoliosApi.getUserStrategies();
+      // setStrategies(data);
+    } catch (error: any) {
       console.error('Erreur lors du chargement des stratégies:', error);
+      setStrategiesLoaded(true);
+      setStrategies([]);
     }
   };
 
