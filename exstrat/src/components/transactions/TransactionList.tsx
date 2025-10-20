@@ -45,6 +45,11 @@ export const TransactionList: React.FC<TransactionListProps> = ({
         limit: pagination.limit,
       });
       
+      console.log('📊 Transactions reçues:', response.transactions);
+      console.log('📊 Première transaction:', response.transactions[0]);
+      console.log('📊 portfolioId:', response.transactions[0]?.portfolioId);
+      console.log('📊 portfolio:', response.transactions[0]?.portfolio);
+      
       setTransactions(response.transactions);
       setPagination({
         page: response.page,
@@ -133,19 +138,23 @@ export const TransactionList: React.FC<TransactionListProps> = ({
     );
   }
 
+  // Grouper par portfolio (wallet)
+  const groupedByPortfolio: Record<string, TransactionResponse[]> = transactions.reduce((acc, tx) => {
+    // Utiliser le nom du portfolio s'il existe, sinon "Sans portfolio"
+    const portfolioName = tx.portfolio?.name;
+    const key = portfolioName || 'Sans portfolio';
+    
+    console.log(`📋 Transaction ${tx.symbol}: portfolioId=${tx.portfolioId}, portfolio.name=${portfolioName}, key=${key}`);
+    
+    if (!acc[key]) acc[key] = [];
+    acc[key].push(tx);
+    return acc;
+  }, {} as Record<string, TransactionResponse[]>);
+
   return (
     <Card>
       <CardHeader>
-        <div className="flex items-center justify-between">
-          <CardTitle>Mes Transactions</CardTitle>
-          <Button
-            onClick={onAddTransaction}
-            className="bg-blue-600 hover:bg-blue-700"
-          >
-            <PlusIcon className="h-4 w-4 mr-2" />
-            Ajouter une transaction
-          </Button>
-        </div>
+        <CardTitle>Mes Transactions</CardTitle>
       </CardHeader>
       <CardContent>
         {error && (
@@ -167,70 +176,59 @@ export const TransactionList: React.FC<TransactionListProps> = ({
           </div>
         ) : (
           <>
-            {/* Liste des transactions */}
-            <div className="space-y-4">
-              {transactions.map((transaction) => (
+            {/* Groupes par portfolio */}
+            <div className="space-y-8">
+              {Object.entries(groupedByPortfolio).map(([portfolioName, txs]) => (
                 <div
-                  key={transaction.id}
-                  className="border border-gray-200 rounded-lg p-4 hover:bg-gray-50 transition-colors"
+                  key={portfolioName}
+                  className="border border-gray-200 rounded-lg p-4"
                 >
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-3">
-                      {getTransactionIcon(transaction.type)}
-                      <div>
-                        <div className="flex items-center space-x-2">
-                          <span className="font-medium text-gray-900">
-                            {transaction.symbol}
-                          </span>
-                          <span className="text-sm text-gray-500">
-                            {transaction.name}
-                          </span>
-                          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getTransactionTypeColor(transaction.type)}`}>
-                            {getTransactionTypeLabel(transaction.type)}
-                          </span>
-                        </div>
-                        <div className="text-sm text-gray-500">
-                          {new Date(transaction.transactionDate).toLocaleDateString('fr-FR')}
-                        </div>
-                      </div>
-                    </div>
-                    
-                    <div className="text-right">
-                      <div className="font-medium text-gray-900">
-                        {transaction.quantity} {transaction.symbol}
-                      </div>
-                      <div className="text-sm text-gray-500">
-                        ${transaction.amountInvested.toLocaleString()}
-                      </div>
-                      <div className="text-xs text-gray-400">
-                        @ ${transaction.averagePrice.toLocaleString()}
-                      </div>
-                    </div>
-
-                    <div className="flex items-center space-x-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => onEditTransaction?.(transaction)}
-                      >
-                        <PencilIcon className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleDeleteTransaction(transaction.id)}
-                        className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                      >
-                        <TrashIcon className="h-4 w-4" />
-                      </Button>
-                    </div>
+                  <div className="mb-4 flex items-center justify-between">
+                    <h3 className="text-lg font-semibold text-gray-900">{portfolioName}</h3>
                   </div>
-                  
-                  {transaction.notes && (
-                    <div className="mt-2 text-sm text-gray-600">
-                      {transaction.notes}
-                    </div>
-                  )}
+
+                  <div className="space-y-4">
+                    {txs.map((transaction) => (
+                      <div key={transaction.id} className="border border-gray-200 rounded-lg p-4 hover:bg-gray-50 transition-colors">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center space-x-3">
+                            {getTransactionIcon(transaction.type)}
+                            <div>
+                              <div className="flex items-center space-x-2">
+                                <span className="font-medium text-gray-900">{transaction.symbol}</span>
+                                <span className="text-sm text-gray-500">{transaction.name}</span>
+                                <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getTransactionTypeColor(transaction.type)}`}>
+                                  {getTransactionTypeLabel(transaction.type)}
+                                </span>
+                              </div>
+                              <div className="text-sm text-gray-500">
+                                {new Date(transaction.transactionDate).toLocaleDateString('fr-FR')}
+                              </div>
+                            </div>
+                          </div>
+
+                          <div className="text-right">
+                            <div className="font-medium text-gray-900">{transaction.quantity} {transaction.symbol}</div>
+                            <div className="text-sm text-gray-500">${transaction.amountInvested.toLocaleString()}</div>
+                            <div className="text-xs text-gray-400">@ ${transaction.averagePrice.toLocaleString()}</div>
+                          </div>
+
+                          <div className="flex items-center space-x-2">
+                            <Button variant="outline" size="sm" onClick={() => onEditTransaction?.(transaction)}>
+                              <PencilIcon className="h-4 w-4" />
+                            </Button>
+                            <Button variant="outline" size="sm" onClick={() => handleDeleteTransaction(transaction.id)} className="text-red-600 hover:text-red-700 hover:bg-red-50">
+                              <TrashIcon className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </div>
+
+                        {transaction.notes && (
+                          <div className="mt-2 text-sm text-gray-600">{transaction.notes}</div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
                 </div>
               ))}
             </div>

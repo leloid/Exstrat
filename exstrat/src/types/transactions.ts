@@ -65,6 +65,8 @@ export interface TransactionResponse {
   transactionDate: string;
   notes?: string;
   exchangeId?: string;
+  portfolioId?: string | null;
+  portfolio?: { id: string; name: string; isDefault: boolean };
   createdAt: string;
   updatedAt: string;
 }

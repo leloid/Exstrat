@@ -1,16 +1,42 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { TransactionForm } from '@/components/transactions/TransactionForm';
 import { TransactionList } from '@/components/transactions/TransactionList';
-import { PortfolioSummary } from '@/components/portfolio/PortfolioSummary';
 import { TransactionResponse } from '@/types/transactions';
-import { XMarkIcon } from '@heroicons/react/24/outline';
+import { XMarkIcon, PlusIcon as Plus } from '@heroicons/react/24/outline';
+import { usePortfolio } from '@/contexts/PortfolioContext';
+import { Button } from '@/components/ui/Button';
+import { formatCurrency } from '@/lib/format';
+import * as portfoliosApi from '@/lib/portfolios-api';
 
 export default function TransactionsPage() {
   const [showForm, setShowForm] = useState(false);
   const [editingTransaction, setEditingTransaction] = useState<TransactionResponse | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
+  const { portfolios } = usePortfolio();
+  const [globalInvested, setGlobalInvested] = useState(0);
+  const [globalValue, setGlobalValue] = useState(0);
+
+  // Calcule les totaux globaux (tous portfolios)
+  useEffect(() => {
+    const loadGlobalTotals = async () => {
+      let invested = 0;
+      let value = 0;
+      for (const p of portfolios) {
+        try {
+          const hs = await portfoliosApi.getPortfolioHoldings(p.id);
+          invested += hs.reduce((s, h) => s + h.investedAmount, 0);
+          value += hs.reduce((s, h) => s + (h.currentValue || 0), 0);
+        } catch (e) {
+          // ignore errors per portfolio
+        }
+      }
+      setGlobalInvested(invested);
+      setGlobalValue(value);
+    };
+    if (portfolios.length > 0) loadGlobalTotals();
+  }, [portfolios]);
 
   const handleAddTransaction = () => {
     setEditingTransaction(null);
@@ -50,10 +76,26 @@ export default function TransactionsPage() {
           </p>
         </div>
 
+        {/* Bandeau global (tous portfolios) */}
+        <div className="mb-6 rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <h2 className="text-lg font-semibold text-gray-900">Total (tous les portfolios)</h2>
+              <p className="text-sm text-gray-600">
+                Investi: {formatCurrency(globalInvested)} • Valeur: {formatCurrency(globalValue)}
+              </p>
+            </div>
+            <div>
+              <Button onClick={handleAddTransaction} className="flex items-center gap-2">
+                <Plus className="h-4 w-4" />
+                Ajouter une transaction
+              </Button>
+            </div>
+          </div>
+        </div>
+
         {/* Contenu principal */}
         <div className="space-y-8">
-          {/* Résumé des portfolios */}
-          <PortfolioSummary />
 
           {/* Formulaire de transaction (modal-like) */}
           {showForm && (

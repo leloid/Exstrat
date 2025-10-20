@@ -204,6 +204,27 @@ export class TransactionResponseDto {
 
   @ApiProperty({ description: 'Date de mise à jour' })
   updatedAt: Date;
+
+  @ApiPropertyOptional({ 
+    description: 'ID du portefeuille associé',
+    example: 'cmgxik0zz000027gx4ab4now4'
+  })
+  portfolioId?: string;
+
+  @ApiPropertyOptional({ 
+    description: 'Détails du portefeuille associé',
+    type: 'object',
+    properties: {
+      id: { type: 'string' },
+      name: { type: 'string' },
+      isDefault: { type: 'boolean' }
+    }
+  })
+  portfolio?: {
+    id: string;
+    name: string;
+    isDefault: boolean;
+  };
 }
 
 export class TransactionSearchDto {

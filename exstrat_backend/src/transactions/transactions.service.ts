@@ -28,7 +28,12 @@ export class TransactionsService {
     // Synchroniser avec le système de portfolios
     await this.syncTransactionWithPortfolio(userId, transaction, createTransactionDto.portfolioId);
 
-    return this.mapToResponseDto(transaction);
+    // Recharger la transaction avec son portfolio pour la réponse
+    const txWithPortfolio = await this.prisma.transaction.findUnique({
+      where: { id: transaction.id },
+      include: { portfolio: { select: { id: true, name: true, isDefault: true } } },
+    });
+    return this.mapToResponseDto(txWithPortfolio);
   }
 
   async findAll(userId: string, searchDto: TransactionSearchDto): Promise<{ transactions: TransactionResponseDto[], total: number, page: number, limit: number }> {
@@ -62,6 +67,7 @@ export class TransactionsService {
     const [transactions, total] = await Promise.all([
       this.prisma.transaction.findMany({
         where,
+        include: { portfolio: { select: { id: true, name: true, isDefault: true } } },
         orderBy: {
           transactionDate: 'desc',
         },
@@ -82,6 +88,7 @@ export class TransactionsService {
   async findOne(userId: string, id: string): Promise<TransactionResponseDto> {
     const transaction = await this.prisma.transaction.findUnique({
       where: { id },
+      include: { portfolio: { select: { id: true, name: true, isDefault: true } } },
     });
 
     if (!transaction) {
@@ -130,7 +137,11 @@ export class TransactionsService {
     // Re-synchroniser avec le système de portfolios
     await this.syncTransactionWithPortfolio(userId, transaction);
 
-    return this.mapToResponseDto(transaction);
+    const txWithPortfolio = await this.prisma.transaction.findUnique({
+      where: { id: transaction.id },
+      include: { portfolio: { select: { id: true, name: true, isDefault: true } } },
+    });
+    return this.mapToResponseDto(txWithPortfolio);
   }
 
   async remove(userId: string, id: string): Promise<void> {
@@ -297,6 +308,10 @@ export class TransactionsService {
       transactionDate: transaction.transactionDate,
       notes: transaction.notes,
       exchangeId: transaction.exchangeId,
+      portfolioId: transaction.portfolioId ?? undefined,
+      portfolio: transaction.portfolio
+        ? { id: transaction.portfolio.id, name: transaction.portfolio.name, isDefault: transaction.portfolio.isDefault }
+        : undefined,
       createdAt: transaction.createdAt,
       updatedAt: transaction.updatedAt,
     };
