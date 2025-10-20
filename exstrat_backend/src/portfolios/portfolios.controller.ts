@@ -23,6 +23,69 @@ import { CreateUserStrategyDto, UpdateUserStrategyDto, TokenStrategyConfigDto } 
 export class PortfoliosController {
   constructor(private readonly portfoliosService: PortfoliosService) {}
 
+  // ===== ROUTES SPÉCIFIQUES (DOIVENT ÊTRE AVANT LES ROUTES AVEC PARAMÈTRES) =====
+
+  // Synchronisation
+  @Post('sync')
+  async syncPortfolios(@Request() req) {
+    return this.portfoliosService.syncAllPortfolios(req.user.id);
+  }
+
+  // ===== USER STRATEGIES =====
+
+  @Post('strategies')
+  async createUserStrategy(@Request() req, @Body() createUserStrategyDto: CreateUserStrategyDto) {
+    return this.portfoliosService.createUserStrategy(req.user.id, createUserStrategyDto);
+  }
+
+  @Get('strategies')
+  async getUserStrategies(@Request() req) {
+    return this.portfoliosService.getUserStrategies(req.user.id);
+  }
+
+  @Get('strategies/:id')
+  async getUserStrategyById(@Request() req, @Param('id') id: string) {
+    return this.portfoliosService.getUserStrategyById(req.user.id, id);
+  }
+
+  @Put('strategies/:id')
+  async updateUserStrategy(
+    @Request() req,
+    @Param('id') id: string,
+    @Body() updateUserStrategyDto: UpdateUserStrategyDto,
+  ) {
+    return this.portfoliosService.updateUserStrategy(req.user.id, id, updateUserStrategyDto);
+  }
+
+  @Delete('strategies/:id')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async deleteUserStrategy(@Request() req, @Param('id') id: string) {
+    await this.portfoliosService.deleteUserStrategy(req.user.id, id);
+  }
+
+  // ===== TOKEN STRATEGY CONFIGURATIONS =====
+
+  @Post('strategies/:strategyId/token-configs')
+  async configureTokenStrategy(
+    @Request() req,
+    @Param('strategyId') strategyId: string,
+    @Body() tokenConfigDto: TokenStrategyConfigDto,
+  ) {
+    return this.portfoliosService.configureTokenStrategy(req.user.id, strategyId, tokenConfigDto);
+  }
+
+  @Get('strategies/:strategyId/token-configs')
+  async getTokenStrategyConfigs(@Request() req, @Param('strategyId') strategyId: string) {
+    return this.portfoliosService.getTokenStrategyConfigs(req.user.id, strategyId);
+  }
+
+  // ===== SIMULATION =====
+
+  @Post('strategies/:strategyId/simulate')
+  async simulateStrategy(@Request() req, @Param('strategyId') strategyId: string) {
+    return this.portfoliosService.simulateStrategy(req.user.id, strategyId);
+  }
+
   // ===== PORTFOLIOS =====
 
   @Post()
@@ -91,73 +154,6 @@ export class PortfoliosController {
     await this.portfoliosService.deleteHolding(req.user.id, portfolioId, holdingId);
   }
 
-  // ===== USER STRATEGIES =====
-
-  @Post('strategies')
-  async createUserStrategy(@Request() req, @Body() createUserStrategyDto: CreateUserStrategyDto) {
-    return this.portfoliosService.createUserStrategy(req.user.id, createUserStrategyDto);
-  }
-
-  @Get('strategies')
-  @Public()
-  async getUserStrategies(@Request() req) {
-    try {
-      // Pour l'instant, retourner un tableau vide pour éviter les erreurs
-      return [];
-    } catch (error) {
-      console.error('Erreur dans getUserStrategies:', error);
-      return [];
-    }
-  }
-
-  @Post('sync')
-  async syncPortfolios(@Request() req) {
-    return this.portfoliosService.syncAllPortfolios(req.user.id);
-  }
-
-  @Get('strategies/:id')
-  async getUserStrategyById(@Request() req, @Param('id') id: string) {
-    return this.portfoliosService.getUserStrategyById(req.user.id, id);
-  }
-
-  @Put('strategies/:id')
-  async updateUserStrategy(
-    @Request() req,
-    @Param('id') id: string,
-    @Body() updateUserStrategyDto: UpdateUserStrategyDto,
-  ) {
-    return this.portfoliosService.updateUserStrategy(req.user.id, id, updateUserStrategyDto);
-  }
-
-  @Delete('strategies/:id')
-  @HttpCode(HttpStatus.NO_CONTENT)
-  async deleteUserStrategy(@Request() req, @Param('id') id: string) {
-    await this.portfoliosService.deleteUserStrategy(req.user.id, id);
-  }
-
-  // ===== TOKEN STRATEGY CONFIGURATIONS =====
-
-  @Post('strategies/:strategyId/token-configs')
-  async configureTokenStrategy(
-    @Request() req,
-    @Param('strategyId') strategyId: string,
-    @Body() tokenConfigDto: TokenStrategyConfigDto,
-  ) {
-    return this.portfoliosService.configureTokenStrategy(req.user.id, strategyId, tokenConfigDto);
-  }
-
-  @Get('strategies/:strategyId/token-configs')
-  async getTokenStrategyConfigs(@Request() req, @Param('strategyId') strategyId: string) {
-    return this.portfoliosService.getTokenStrategyConfigs(req.user.id, strategyId);
-  }
-
   // ===== TEMPLATES =====
   // Les templates sont gérés par TemplatesController
-
-  // ===== SIMULATION =====
-
-  @Post('strategies/:strategyId/simulate')
-  async simulateStrategy(@Request() req, @Param('strategyId') strategyId: string) {
-    return this.portfoliosService.simulateStrategy(req.user.id, strategyId);
-  }
 }

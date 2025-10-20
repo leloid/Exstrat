@@ -368,17 +368,45 @@ export class PortfoliosService {
   }
 
   async deleteUserStrategy(userId: string, strategyId: string): Promise<void> {
+    console.log(`🗑️ Tentative de suppression de la stratégie ${strategyId} pour l'utilisateur ${userId}`);
+    
     const strategy = await this.prisma.userStrategy.findFirst({
       where: { id: strategyId, userId },
     });
 
     if (!strategy) {
+      console.log(`❌ Stratégie non trouvée: ${strategyId}`);
       throw new NotFoundException('Stratégie non trouvée');
     }
 
-    await this.prisma.userStrategy.delete({
-      where: { id: strategyId },
-    });
+    console.log(`✅ Stratégie trouvée: ${strategy.name}`);
+
+    try {
+      // Supprimer dans l'ordre pour respecter les contraintes de clés étrangères
+      // 1. Supprimer les résultats de simulation
+      console.log(`🔄 Suppression des résultats de simulation...`);
+      const simResults = await this.prisma.simulationResult.deleteMany({
+        where: { userStrategyId: strategyId },
+      });
+      console.log(`✅ ${simResults.count} résultats de simulation supprimés`);
+
+      // 2. Supprimer les configurations de tokens
+      console.log(`🔄 Suppression des configurations de tokens...`);
+      const tokenConfigs = await this.prisma.tokenStrategyConfiguration.deleteMany({
+        where: { userStrategyId: strategyId },
+      });
+      console.log(`✅ ${tokenConfigs.count} configurations de tokens supprimées`);
+
+      // 3. Supprimer la stratégie
+      console.log(`🔄 Suppression de la stratégie...`);
+      await this.prisma.userStrategy.delete({
+        where: { id: strategyId },
+      });
+      console.log(`✅ Stratégie ${strategyId} supprimée avec succès`);
+    } catch (error) {
+      console.error(`❌ Erreur lors de la suppression:`, error);
+      throw error;
+    }
   }
 
   // ===== TOKEN STRATEGY CONFIGURATIONS =====
