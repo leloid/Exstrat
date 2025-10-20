@@ -208,45 +208,6 @@ export default function StrategiesPage() {
             ))}
           </div>
         )}
-
-        {/* Statistiques globales */}
-        {strategies.length > 0 && (
-          <Card className="mt-8">
-            <CardHeader>
-              <CardTitle>Résumé Global</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-                <div>
-                  <p className="text-sm text-gray-500">Stratégies actives</p>
-                  <p className="text-2xl font-bold">
-                    {strategies.filter(s => s.status === 'active').length}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-sm text-gray-500">Total investi</p>
-                  <p className="text-2xl font-bold">
-                    {formatCurrency(strategies.reduce((sum, s) => sum + s.totalInvested, 0))}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-sm text-gray-500">Profit attendu</p>
-                  <p className="text-2xl font-bold text-green-600">
-                    {formatCurrency(strategies.reduce((sum, s) => sum + s.expectedProfit, 0))}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-sm text-gray-500">Rendement moyen</p>
-                  <p className="text-2xl font-bold text-green-600">
-                    {formatPercentage(
-                      strategies.reduce((sum, s) => sum + s.returnPercentage, 0) / strategies.length
-                    )}
-                  </p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        )}
       </div>
     </div>
   );

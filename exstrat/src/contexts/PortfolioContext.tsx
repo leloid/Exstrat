@@ -3,6 +3,7 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { Portfolio, Holding, PortfolioContextType, CreatePortfolioDto, UpdatePortfolioDto } from '@/types/portfolio';
 import * as portfoliosApi from '@/lib/portfolios-api';
+import { useAuth } from './AuthContext';
 
 const PortfolioContext = createContext<PortfolioContextType | undefined>(undefined);
 
@@ -19,16 +20,26 @@ interface PortfolioProviderProps {
 }
 
 export const PortfolioProvider: React.FC<PortfolioProviderProps> = ({ children }) => {
+  const { isAuthenticated } = useAuth();
   const [portfolios, setPortfolios] = useState<Portfolio[]>([]);
   const [currentPortfolio, setCurrentPortfolio] = useState<Portfolio | null>(null);
   const [holdings, setHoldings] = useState<Holding[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Charger les portfolios au démarrage
+  // Charger les portfolios seulement si l'utilisateur est authentifié
   useEffect(() => {
-    loadPortfolios();
-  }, []);
+    if (isAuthenticated) {
+      loadPortfolios();
+    } else {
+      // Réinitialiser l'état si l'utilisateur n'est pas authentifié
+      setPortfolios([]);
+      setCurrentPortfolio(null);
+      setHoldings([]);
+      setIsLoading(false);
+      setError(null);
+    }
+  }, [isAuthenticated]);
 
   // Charger les holdings quand le portfolio courant change
   useEffect(() => {
