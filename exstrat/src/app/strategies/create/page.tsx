@@ -40,7 +40,61 @@ export default function CreateStrategyPage() {
   // États de chargement
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isEditMode, setIsEditMode] = useState(false);
+  const [editingStrategyId, setEditingStrategyId] = useState<string | null>(null);
   
+  // Charger la stratégie à modifier si un ID est fourni
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const strategyId = urlParams.get('id');
+    
+    if (strategyId) {
+      setIsEditMode(true);
+      setEditingStrategyId(strategyId);
+      loadStrategyForEdit(strategyId);
+    }
+  }, []);
+
+  // Charger une stratégie existante pour l'édition
+  const loadStrategyForEdit = async (strategyId: string) => {
+    try {
+      setLoading(true);
+      const strategy = await portfoliosApi.getTheoreticalStrategyById(strategyId);
+      
+      // Pré-remplir le formulaire
+      setStrategyName(strategy.name);
+      setQuantity(strategy.quantity.toString());
+      setAveragePrice(strategy.averagePrice.toString());
+      setNumberOfTargets(strategy.numberOfTargets);
+      
+      // Pré-remplir le token
+      setSelectedToken({
+        id: 0, // Pas d'ID CMC pour les stratégies théoriques
+        name: strategy.tokenName,
+        symbol: strategy.tokenSymbol,
+        slug: strategy.tokenSymbol.toLowerCase(),
+        cmc_rank: 0,
+        quote: null,
+      });
+      
+      // Pré-remplir les cibles de profit
+      const targets: ProfitTarget[] = strategy.profitTargets.map((target: any, index: number) => ({
+        id: `target-${index}`,
+        targetType: target.targetType,
+        targetValue: target.targetValue,
+        sellPercentage: target.sellPercentage,
+      }));
+      setProfitTargets(targets);
+      
+    } catch (error) {
+      console.error('Erreur lors du chargement de la stratégie:', error);
+      alert('Erreur lors du chargement de la stratégie à modifier');
+      router.push('/strategies');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // Initialiser les cibles de profit quand le nombre change
   useEffect(() => {
     const newTargets: ProfitTarget[] = [];
@@ -156,11 +210,16 @@ export default function CreateStrategyPage() {
       
       console.log('📤 Données de la stratégie:', strategyData);
       
-      // Appel à l'API
-      const createdStrategy = await portfoliosApi.createTheoreticalStrategy(strategyData);
-      console.log('✅ Stratégie créée:', createdStrategy);
-      
-      alert('Stratégie créée avec succès !');
+      // Appel à l'API (création ou modification)
+      if (isEditMode && editingStrategyId) {
+        const updatedStrategy = await portfoliosApi.updateTheoreticalStrategy(editingStrategyId, strategyData);
+        console.log('✅ Stratégie modifiée:', updatedStrategy);
+        alert('Stratégie modifiée avec succès !');
+      } else {
+        const createdStrategy = await portfoliosApi.createTheoreticalStrategy(strategyData);
+        console.log('✅ Stratégie créée:', createdStrategy);
+        alert('Stratégie créée avec succès !');
+      }
       
       // Rediriger vers la liste des stratégies
       router.push('/strategies');
@@ -179,9 +238,14 @@ export default function CreateStrategyPage() {
         {/* Header */}
         <div className="mb-8 flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">Créer une Stratégie</h1>
+            <h1 className="text-3xl font-bold text-gray-900">
+              {isEditMode ? 'Modifier la Stratégie' : 'Créer une Stratégie'}
+            </h1>
             <p className="mt-2 text-gray-600">
-              Définissez vos cibles de profit théoriques pour n'importe quel token
+              {isEditMode 
+                ? 'Modifiez les paramètres de votre stratégie existante'
+                : 'Définissez vos cibles de profit théoriques pour n'importe quel token'
+              }
             </p>
           </div>
           <Button variant="outline" onClick={() => router.push('/strategies')} className="flex items-center gap-2">
@@ -435,7 +499,10 @@ export default function CreateStrategyPage() {
               disabled={loading || !selectedToken || !quantity || !averagePrice || !strategyName}
               className="w-full"
             >
-              {loading ? 'Création...' : 'Créer la stratégie'}
+              {loading 
+                ? (isEditMode ? 'Modification...' : 'Création...') 
+                : (isEditMode ? 'Modifier la stratégie' : 'Créer la stratégie')
+              }
             </Button>
           </div>
         </div>

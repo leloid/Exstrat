@@ -65,7 +65,7 @@ export default function StrategiesPage() {
   };
 
   const handleEditStrategy = (strategyId: string) => {
-    router.push(`/strategies/edit/${strategyId}`);
+    router.push(`/strategies/create?id=${strategyId}`);
   };
 
   const handleDeleteStrategy = async (strategyId: string) => {
