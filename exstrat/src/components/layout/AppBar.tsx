@@ -25,7 +25,7 @@ const AppBar: React.FC = () => {
     { name: 'Portfolios', href: '/portfolio', icon: CurrencyDollarIcon },
     { name: 'Transactions', href: '/transactions', icon: PlusIcon },
     { name: 'Stratégies', href: '/strategies', icon: ChartBarIcon },
-    { name: 'Paramètres', href: '/settings', icon: Cog6ToothIcon },
+    { name: 'Configuration', href: '/config', icon: Cog6ToothIcon },
   ];
 
   const handleSignOut = async () => {
