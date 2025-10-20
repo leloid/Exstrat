@@ -48,11 +48,13 @@ export default function TransactionsPage() {
     setShowForm(true);
   };
 
-  const handleFormSuccess = () => {
+  const handleFormSuccess = async () => {
     setShowForm(false);
     setEditingTransaction(null);
     // Force le rechargement de la liste
     setRefreshKey(prev => prev + 1);
+    // Recharger les totaux globaux
+    await reloadGlobalTotals();
   };
 
   const handleFormCancel = () => {
@@ -60,9 +62,27 @@ export default function TransactionsPage() {
     setEditingTransaction(null);
   };
 
-  const handleTransactionDeleted = () => {
+  const handleTransactionDeleted = async () => {
     // Force le rechargement de la liste
     setRefreshKey(prev => prev + 1);
+    // Recharger les totaux globaux
+    await reloadGlobalTotals();
+  };
+
+  const reloadGlobalTotals = async () => {
+    let invested = 0;
+    let value = 0;
+    for (const p of portfolios) {
+      try {
+        const hs = await portfoliosApi.getPortfolioHoldings(p.id);
+        invested += hs.reduce((s, h) => s + h.investedAmount, 0);
+        value += hs.reduce((s, h) => s + (h.currentValue || 0), 0);
+      } catch (e) {
+        // ignore errors per portfolio
+      }
+    }
+    setGlobalInvested(invested);
+    setGlobalValue(value);
   };
 
   return (
@@ -116,6 +136,7 @@ export default function TransactionsPage() {
                   <TransactionForm
                     onSuccess={handleFormSuccess}
                     onCancel={handleFormCancel}
+                    initialData={editingTransaction}
                   />
                 </div>
               </div>

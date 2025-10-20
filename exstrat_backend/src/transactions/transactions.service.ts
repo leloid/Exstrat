@@ -134,8 +134,26 @@ export class TransactionsService {
       data: updateData,
     });
 
-    // Re-synchroniser avec le système de portfolios
-    await this.syncTransactionWithPortfolio(userId, transaction);
+    // Re-synchroniser avec le système de portfolios (recalculer les holdings)
+    const portfolioId = existingTransaction.portfolioId;
+    const symbol = existingTransaction.symbol;
+    
+    if (portfolioId) {
+      try {
+        // Récupérer le token
+        const token = await this.prisma.token.findUnique({
+          where: { symbol },
+        });
+
+        if (token) {
+          // Recalculer le holding pour ce token dans ce portfolio
+          await this.recalculateHolding(userId, portfolioId, token.id, symbol);
+        }
+      } catch (error) {
+        console.error('Erreur lors de la synchronisation après modification:', error);
+        // Ne pas faire échouer la modification si la sync échoue
+      }
+    }
 
     const txWithPortfolio = await this.prisma.transaction.findUnique({
       where: { id: transaction.id },

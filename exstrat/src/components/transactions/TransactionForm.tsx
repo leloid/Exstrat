@@ -14,9 +14,10 @@ import { formatUSD } from '@/lib/format';
 interface TransactionFormProps {
   onSuccess?: () => void;
   onCancel?: () => void;
+  initialData?: any; // Transaction à modifier
 }
 
-export const TransactionForm: React.FC<TransactionFormProps> = ({ onSuccess, onCancel }) => {
+export const TransactionForm: React.FC<TransactionFormProps> = ({ onSuccess, onCancel, initialData }) => {
   const { portfolios, currentPortfolio, selectPortfolio } = usePortfolio();
   const [selectedToken, setSelectedToken] = useState<TokenSearchResult | null>(null);
   const [formData, setFormData] = useState({
@@ -30,16 +31,47 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({ onSuccess, onC
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isEditMode, setIsEditMode] = useState(false);
 
-  // Mettre à jour le portfolioId quand currentPortfolio change
+  // Initialiser le formulaire avec les données existantes (mode édition)
   useEffect(() => {
-    if (currentPortfolio) {
+    if (initialData) {
+      setIsEditMode(true);
+      setFormData({
+        quantity: initialData.quantity?.toString() || '',
+        amountInvested: initialData.amountInvested?.toString() || '',
+        averagePrice: initialData.averagePrice?.toString() || '',
+        type: initialData.type || 'BUY',
+        transactionDate: initialData.transactionDate 
+          ? new Date(initialData.transactionDate).toISOString().split('T')[0]
+          : new Date().toISOString().split('T')[0],
+        notes: initialData.notes || '',
+        portfolioId: initialData.portfolioId || currentPortfolio?.id || '',
+      });
+      
+      // Pré-remplir le token sélectionné
+      if (initialData.symbol && initialData.name && initialData.cmcId) {
+        setSelectedToken({
+          id: initialData.cmcId,
+          name: initialData.name,
+          symbol: initialData.symbol,
+          slug: initialData.symbol.toLowerCase(),
+          cmc_rank: 0,
+          quote: null,
+        });
+      }
+    }
+  }, [initialData, currentPortfolio]);
+
+  // Mettre à jour le portfolioId quand currentPortfolio change (seulement en mode création)
+  useEffect(() => {
+    if (currentPortfolio && !isEditMode) {
       setFormData(prev => ({
         ...prev,
         portfolioId: currentPortfolio.id,
       }));
     }
-  }, [currentPortfolio]);
+  }, [currentPortfolio, isEditMode]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -120,20 +152,33 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({ onSuccess, onC
     setError(null);
 
     try {
-      const transactionData: CreateTransactionDto = {
-        symbol: selectedToken.symbol,
-        name: selectedToken.name,
-        cmcId: selectedToken.id,
-        quantity: parseFloat(formData.quantity),
-        amountInvested: parseFloat(formData.amountInvested),
-        averagePrice: parseFloat(formData.averagePrice),
-        type: formData.type,
-        transactionDate: new Date(formData.transactionDate).toISOString(),
-        notes: formData.notes || undefined,
-        portfolioId: formData.portfolioId,
-      };
-
-      await transactionsApi.createTransaction(transactionData);
+      if (isEditMode && initialData?.id) {
+        // Mode édition : envoyer seulement les champs modifiables
+        const updateData = {
+          quantity: parseFloat(formData.quantity),
+          amountInvested: parseFloat(formData.amountInvested),
+          averagePrice: parseFloat(formData.averagePrice),
+          type: formData.type,
+          transactionDate: new Date(formData.transactionDate).toISOString(),
+          notes: formData.notes || undefined,
+        };
+        await transactionsApi.updateTransaction(initialData.id, updateData);
+      } else {
+        // Mode création : envoyer tous les champs
+        const transactionData: CreateTransactionDto = {
+          symbol: selectedToken.symbol,
+          name: selectedToken.name,
+          cmcId: selectedToken.id,
+          quantity: parseFloat(formData.quantity),
+          amountInvested: parseFloat(formData.amountInvested),
+          averagePrice: parseFloat(formData.averagePrice),
+          type: formData.type,
+          transactionDate: new Date(formData.transactionDate).toISOString(),
+          notes: formData.notes || undefined,
+          portfolioId: formData.portfolioId,
+        };
+        await transactionsApi.createTransaction(transactionData);
+      }
       
       // Reset form
       setSelectedToken(null);
@@ -146,10 +191,12 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({ onSuccess, onC
         notes: '',
         portfolioId: currentPortfolio?.id || '',
       });
+      setIsEditMode(false);
 
       onSuccess?.();
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Erreur lors de la création de la transaction');
+      const action = isEditMode ? 'modification' : 'création';
+      setError(err.response?.data?.message || `Erreur lors de la ${action} de la transaction`);
     } finally {
       setLoading(false);
     }
@@ -158,7 +205,7 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({ onSuccess, onC
   return (
     <Card className="w-full max-w-2xl mx-auto">
       <CardHeader>
-        <CardTitle>Ajouter une Transaction</CardTitle>
+        <CardTitle>{isEditMode ? 'Modifier la transaction' : 'Ajouter une Transaction'}</CardTitle>
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-6">
@@ -331,7 +378,10 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({ onSuccess, onC
               disabled={loading || !selectedToken}
               className="bg-blue-600 hover:bg-blue-700"
             >
-              {loading ? 'Création...' : 'Créer la transaction'}
+              {loading 
+                ? (isEditMode ? 'Modification...' : 'Création...') 
+                : (isEditMode ? 'Modifier la transaction' : 'Créer la transaction')
+              }
             </Button>
           </div>
         </form>
