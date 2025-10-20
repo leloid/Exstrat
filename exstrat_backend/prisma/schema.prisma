@@ -12,16 +12,17 @@ datasource db {
 }
 
 model User {
-  id           String        @id @default(cuid())
-  email        String        @unique
-  password     String
-  createdAt    DateTime      @default(now())
-  accounts     ExchangeAccount[]
-  strategies   Strategy[]
-  positions    Position[]
-  transactions Transaction[]
-  portfolios   Portfolio[]
-  userStrategies UserStrategy[]
+  id                    String                 @id @default(cuid())
+  email                 String                 @unique
+  password              String
+  createdAt             DateTime               @default(now())
+  accounts              ExchangeAccount[]
+  strategies            Strategy[]
+  positions             Position[]
+  transactions          Transaction[]
+  portfolios            Portfolio[]
+  userStrategies        UserStrategy[]
+  theoreticalStrategies TheoreticalStrategy[]
 }
 
 model ExchangeAccount {
@@ -281,4 +282,25 @@ model SimulationResult {
   
   @@index([userStrategyId])
   @@index([tokenStrategyConfigId])
+}
+
+// ===== STRATÉGIES THÉORIQUES (indépendantes des holdings) =====
+
+model TheoreticalStrategy {
+  id            String   @id @default(cuid())
+  userId        String
+  name          String
+  description   String?
+  tokenSymbol   String
+  tokenName     String
+  quantity      Decimal  @db.Decimal(38,18)
+  averagePrice  Decimal  @db.Decimal(38,18)
+  profitTargets Json     // Array of {order, targetType, targetValue, sellPercentage}
+  status        String   @default("active") // draft | active | paused | completed
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  user          User     @relation(fields: [userId], references: [id])
+  
+  @@index([userId])
+  @@index([tokenSymbol])
 }

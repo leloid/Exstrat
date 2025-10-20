@@ -923,4 +923,128 @@ export class PortfoliosService {
       });
     }
   }
+
+  // ===== STRATÉGIES THÉORIQUES =====
+
+  async createTheoreticalStrategy(userId: string, data: any): Promise<any> {
+    const strategy = await this.prisma.theoreticalStrategy.create({
+      data: {
+        userId,
+        name: data.name,
+        description: data.description,
+        tokenSymbol: data.tokenSymbol,
+        tokenName: data.tokenName,
+        quantity: data.quantity,
+        averagePrice: data.averagePrice,
+        profitTargets: data.profitTargets,
+        status: data.status || 'active',
+      },
+    });
+
+    return this.formatTheoreticalStrategyResponse(strategy);
+  }
+
+  async getTheoreticalStrategies(userId: string): Promise<any[]> {
+    const strategies = await this.prisma.theoreticalStrategy.findMany({
+      where: { userId },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    return strategies.map(strategy => this.formatTheoreticalStrategyResponse(strategy));
+  }
+
+  async getTheoreticalStrategyById(userId: string, id: string): Promise<any> {
+    const strategy = await this.prisma.theoreticalStrategy.findFirst({
+      where: { id, userId },
+    });
+
+    if (!strategy) {
+      throw new NotFoundException('Stratégie non trouvée');
+    }
+
+    return this.formatTheoreticalStrategyResponse(strategy);
+  }
+
+  async updateTheoreticalStrategy(userId: string, id: string, data: any): Promise<any> {
+    const strategy = await this.prisma.theoreticalStrategy.findFirst({
+      where: { id, userId },
+    });
+
+    if (!strategy) {
+      throw new NotFoundException('Stratégie non trouvée');
+    }
+
+    const updated = await this.prisma.theoreticalStrategy.update({
+      where: { id },
+      data: {
+        ...(data.name && { name: data.name }),
+        ...(data.description !== undefined && { description: data.description }),
+        ...(data.quantity !== undefined && { quantity: data.quantity }),
+        ...(data.averagePrice !== undefined && { averagePrice: data.averagePrice }),
+        ...(data.profitTargets && { profitTargets: data.profitTargets }),
+        ...(data.status && { status: data.status }),
+      },
+    });
+
+    return this.formatTheoreticalStrategyResponse(updated);
+  }
+
+  async deleteTheoreticalStrategy(userId: string, id: string): Promise<void> {
+    const strategy = await this.prisma.theoreticalStrategy.findFirst({
+      where: { id, userId },
+    });
+
+    if (!strategy) {
+      throw new NotFoundException('Stratégie non trouvée');
+    }
+
+    await this.prisma.theoreticalStrategy.delete({
+      where: { id },
+    });
+  }
+
+  private formatTheoreticalStrategyResponse(strategy: any): any {
+    const quantity = Number(strategy.quantity);
+    const averagePrice = Number(strategy.averagePrice);
+    const totalInvested = quantity * averagePrice;
+
+    // Calculer le profit attendu
+    let expectedProfit = 0;
+    const profitTargets = strategy.profitTargets as any[];
+    
+    profitTargets.forEach((target: any) => {
+      const tokensToSell = (quantity * target.sellPercentage) / 100;
+      let targetPrice = 0;
+      
+      if (target.targetType === 'percentage') {
+        targetPrice = averagePrice * (1 + target.targetValue / 100);
+      } else {
+        targetPrice = target.targetValue;
+      }
+      
+      const profit = tokensToSell * (targetPrice - averagePrice);
+      expectedProfit += profit;
+    });
+
+    const returnPercentage = totalInvested > 0 ? (expectedProfit / totalInvested) * 100 : 0;
+
+    return {
+      id: strategy.id,
+      userId: strategy.userId,
+      name: strategy.name,
+      description: strategy.description,
+      tokenSymbol: strategy.tokenSymbol,
+      tokenName: strategy.tokenName,
+      quantity,
+      averagePrice,
+      profitTargets: strategy.profitTargets,
+      status: strategy.status,
+      createdAt: strategy.createdAt,
+      updatedAt: strategy.updatedAt,
+      totalInvested,
+      expectedProfit,
+      returnPercentage,
+      numberOfTargets: profitTargets.length,
+    };
+  }
 }

@@ -2,23 +2,22 @@
 
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { usePortfolio } from '@/contexts/PortfolioContext';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Label } from '@/components/ui/Label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/Select';
+import { Slider } from '@/components/ui/Slider';
 import { 
-  PlusIcon,
-  MinusIcon,
-  ArrowPathIcon,
-  PencilIcon,
-  TrashIcon,
+  ArrowLeftIcon,
   InformationCircleIcon,
-  ArrowLeftIcon
+  ChartBarIcon,
+  PencilIcon
 } from '@heroicons/react/24/outline';
 import { formatCurrency, formatPercentage } from '@/lib/format';
 import * as portfoliosApi from '@/lib/portfolios-api';
+import { TokenSearch } from '@/components/transactions/TokenSearch';
+import { TokenSearchResult } from '@/types/transactions';
 
 interface ProfitTarget {
   id: string;
@@ -29,29 +28,18 @@ interface ProfitTarget {
 
 export default function CreateStrategyPage() {
   const router = useRouter();
-  const { portfolios, holdings, refreshPortfolios, refreshHoldings } = usePortfolio();
   
   // État du formulaire
-  const [selectedPortfolioId, setSelectedPortfolioId] = useState<string>('');
-  const [selectedTokenSymbol, setSelectedTokenSymbol] = useState<string>('');
   const [strategyName, setStrategyName] = useState<string>('');
+  const [selectedToken, setSelectedToken] = useState<TokenSearchResult | null>(null);
+  const [quantity, setQuantity] = useState<string>('');
+  const [averagePrice, setAveragePrice] = useState<string>('');
   const [numberOfTargets, setNumberOfTargets] = useState<number>(3);
   const [profitTargets, setProfitTargets] = useState<ProfitTarget[]>([]);
   
-  // Données du token sélectionné
-  const [tokenData, setTokenData] = useState<any>(null);
-  
-  // Charger les portfolios au démarrage
-  useEffect(() => {
-    refreshPortfolios();
-  }, []);
-  
-  // Charger les holdings quand le portfolio change
-  useEffect(() => {
-    if (selectedPortfolioId) {
-      refreshHoldings(selectedPortfolioId);
-    }
-  }, [selectedPortfolioId]);
+  // États de chargement
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   
   // Initialiser les cibles de profit quand le nombre change
   useEffect(() => {
@@ -66,126 +54,122 @@ export default function CreateStrategyPage() {
     }
     setProfitTargets(newTargets);
   }, [numberOfTargets]);
-  
-  // Récupérer les données du token sélectionné
-  useEffect(() => {
-    if (selectedTokenSymbol && holdings.length > 0) {
-      const holding = holdings.find(h => h.token.symbol === selectedTokenSymbol);
-      if (holding) {
-        setTokenData({
-          symbol: holding.token.symbol,
-          name: holding.token.name,
-          quantity: holding.quantity,
-          investedAmount: holding.investedAmount,
-          averagePrice: holding.averagePrice,
-          currentPrice: holding.averagePrice, // TODO: Récupérer le prix actuel depuis une API
-        });
-      }
+
+  // Auto-remplir le prix moyen avec le prix actuel du token
+  const handleTokenSelect = (token: TokenSearchResult | null) => {
+    setSelectedToken(token);
+    if (token && token.quote?.USD?.price) {
+      setAveragePrice(token.quote.USD.price.toFixed(2));
     }
-  }, [selectedTokenSymbol, holdings]);
-  
-  // Calculer les simulations
-  const calculateSimulations = () => {
-    if (!tokenData) return [];
-    
-    let remainingTokens = tokenData.quantity;
-    
-    return profitTargets.map((target, index) => {
-      const tokensToSell = (tokenData.quantity * target.sellPercentage) / 100;
-      remainingTokens = remainingTokens - tokensToSell;
-      
-      let targetPrice = 0;
-      if (target.targetType === 'percentage') {
-        targetPrice = tokenData.averagePrice * (1 + target.targetValue / 100);
-      } else {
-        targetPrice = target.targetValue;
-      }
-      
-      const profitRealized = tokensToSell * (targetPrice - tokenData.averagePrice);
-      const profitUnrealized = remainingTokens * (targetPrice - tokenData.averagePrice);
-      const tokenValueAtTarget = remainingTokens * targetPrice;
-      
-      return {
-        targetNumber: index + 1,
-        targetPrice,
-        tokensToSell,
-        remainingTokens,
-        profitRealized,
-        profitUnrealized,
-        tokenValueAtTarget,
-      };
-    });
   };
   
-  const simulations = calculateSimulations();
-  
-  // Calculer les totaux
-  const totalInvested = tokenData?.investedAmount || 0;
-  const totalProfitRealized = simulations.reduce((sum, sim) => sum + sim.profitRealized, 0);
-  const totalReturn = totalInvested > 0 ? (totalProfitRealized / totalInvested) * 100 : 0;
-  const tokensRemaining = simulations.length > 0 ? simulations[simulations.length - 1].remainingTokens : 0;
-  
-  const updateProfitTarget = (index: number, field: keyof ProfitTarget, value: any) => {
+  // Gérer les modifications des cibles
+  const handleTargetChange = (index: number, field: keyof ProfitTarget, value: any) => {
     const newTargets = [...profitTargets];
     newTargets[index] = { ...newTargets[index], [field]: value };
     setProfitTargets(newTargets);
   };
   
+  // Calculer les simulations
+  const calculateSimulations = () => {
+    const qty = parseFloat(quantity);
+    const avgPrice = parseFloat(averagePrice);
+    
+    if (isNaN(qty) || isNaN(avgPrice) || qty <= 0 || avgPrice <= 0) {
+      return [];
+    }
+    
+    let remainingTokens = qty;
+    const results: any[] = [];
+    
+    profitTargets.forEach((target) => {
+      const tokensToSell = (qty * target.sellPercentage) / 100;
+      
+      let targetPrice = 0;
+      if (target.targetType === 'percentage') {
+        targetPrice = avgPrice * (1 + target.targetValue / 100);
+      } else {
+        targetPrice = target.targetValue;
+      }
+      
+      const profitRealized = tokensToSell * (targetPrice - avgPrice);
+      remainingTokens = remainingTokens - tokensToSell;
+      
+      results.push({
+        targetPrice,
+        tokensToSell,
+        profitRealized,
+        remainingTokens,
+      });
+    });
+    
+    return results;
+  };
+  
+  const simulations = calculateSimulations();
+  const totalInvested = parseFloat(quantity) * parseFloat(averagePrice) || 0;
+  const totalProfitRealized = simulations.reduce((sum, sim) => sum + sim.profitRealized, 0);
+  const totalReturnPercentage = totalInvested > 0 ? (totalProfitRealized / totalInvested) * 100 : 0;
+  
+  // Sauvegarder la stratégie
   const handleSaveStrategy = async () => {
-    if (!selectedPortfolioId || !selectedTokenSymbol || !strategyName) {
-      alert('Veuillez remplir tous les champs obligatoires');
+    // Validation
+    if (!strategyName.trim()) {
+      alert('Veuillez entrer un nom pour la stratégie');
+      return;
+    }
+    if (!selectedToken) {
+      alert('Veuillez sélectionner un token');
+      return;
+    }
+    if (!quantity || parseFloat(quantity) <= 0) {
+      alert('Veuillez entrer une quantité valide');
+      return;
+    }
+    if (!averagePrice || parseFloat(averagePrice) <= 0) {
+      alert('Veuillez entrer un prix moyen valide');
       return;
     }
     
+    setLoading(true);
+    setError(null);
+    
     try {
-      console.log('💾 Sauvegarde de la stratégie...');
+      console.log('💾 Création de la stratégie...');
       
-      // 1. Créer la stratégie
+      // Préparer les données de la stratégie
       const strategyData = {
-        portfolioId: selectedPortfolioId,
         name: strategyName,
-        description: `Stratégie pour ${selectedTokenSymbol} avec ${numberOfTargets} cibles de profit`,
-        status: 'active' as const,
-      };
-      
-      console.log('📤 Données de la stratégie:', strategyData);
-      
-      const createdStrategy = await portfoliosApi.createUserStrategy(strategyData);
-      console.log('✅ Stratégie créée:', createdStrategy);
-      
-      // 2. Trouver le holding correspondant au token sélectionné
-      const holding = holdings.find(h => h.token.symbol === selectedTokenSymbol);
-      if (!holding) {
-        throw new Error('Holding introuvable pour ce token');
-      }
-      
-      // 3. Configurer les règles de prise de profit personnalisées
-      const customRules = {
-        levels: profitTargets.map((target, index) => ({
+        description: `Stratégie pour ${selectedToken.symbol} - ${numberOfTargets} cibles de profit`,
+        tokenSymbol: selectedToken.symbol,
+        tokenName: selectedToken.name,
+        quantity: parseFloat(quantity),
+        averagePrice: parseFloat(averagePrice),
+        profitTargets: profitTargets.map((target, index) => ({
           order: index + 1,
           targetType: target.targetType,
           targetValue: target.targetValue,
           sellPercentage: target.sellPercentage,
         })),
+        status: 'active',
       };
       
-      const tokenConfigData = {
-        holdingId: holding.id,
-        customProfitTakingRules: customRules,
-      };
+      console.log('📤 Données de la stratégie:', strategyData);
       
-      console.log('📤 Configuration du token:', tokenConfigData);
-      
-      await portfoliosApi.configureTokenStrategy(createdStrategy.id, tokenConfigData);
-      console.log('✅ Configuration du token créée');
+      // Appel à l'API
+      const createdStrategy = await portfoliosApi.createTheoreticalStrategy(strategyData);
+      console.log('✅ Stratégie créée:', createdStrategy);
       
       alert('Stratégie créée avec succès !');
       
       // Rediriger vers la liste des stratégies
       router.push('/strategies');
     } catch (error: any) {
-      console.error('❌ Erreur lors de la sauvegarde:', error);
-      alert(`Erreur lors de la sauvegarde de la stratégie: ${error.response?.data?.message || error.message}`);
+      console.error('❌ Erreur:', error);
+      setError(error.response?.data?.message || error.message);
+      alert(`Erreur: ${error.response?.data?.message || error.message}`);
+    } finally {
+      setLoading(false);
     }
   };
   
@@ -194,336 +178,267 @@ export default function CreateStrategyPage() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header */}
         <div className="mb-8 flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => router.push('/strategies')}
-            >
-              <ArrowLeftIcon className="h-4 w-4 mr-2" />
-              Retour
-            </Button>
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900">Nouvelle Stratégie</h1>
-              <p className="mt-2 text-gray-600">
-                Configurez votre stratégie de prise de profit automatisée
-              </p>
-            </div>
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900">Créer une Stratégie</h1>
+            <p className="mt-2 text-gray-600">
+              Définissez vos cibles de profit théoriques pour n'importe quel token
+            </p>
           </div>
+          <Button variant="outline" onClick={() => router.push('/strategies')} className="flex items-center gap-2">
+            <ArrowLeftIcon className="h-4 w-4" />
+            Retour
+          </Button>
         </div>
-        
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Colonne gauche : Paramètres */}
-          <div className="space-y-6">
-            {/* Paramètres de la stratégie */}
+
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {/* Colonne gauche: Configuration */}
+          <div className="lg:col-span-2 space-y-6">
+            {/* Informations de base */}
             <Card>
               <CardHeader>
-                <CardTitle>Paramètres de la stratégie</CardTitle>
-                <CardDescription>
-                  Choisissez le portfolio, le token concerné, et une stratégie existante ou à créer.
-                  Définissez ensuite le nombre de prises de profit que vous souhaitez planifier.
-                </CardDescription>
+                <CardTitle className="flex items-center gap-2">
+                  <ChartBarIcon className="h-5 w-5 text-blue-600" />
+                  Informations de la Stratégie
+                </CardTitle>
+                <CardDescription>Définissez le nom et le token cible</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                {/* Sélection du portfolio */}
                 <div>
-                  <Label htmlFor="portfolio">Portfolios *</Label>
-                  <Select value={selectedPortfolioId} onValueChange={setSelectedPortfolioId}>
-                    <SelectTrigger id="portfolio">
-                      <SelectValue placeholder="Sélectionner un portfolio" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {portfolios.map((portfolio) => (
-                        <SelectItem key={portfolio.id} value={portfolio.id}>
-                          {portfolio.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <Label htmlFor="strategyName">Nom de la stratégie *</Label>
+                  <Input
+                    id="strategyName"
+                    type="text"
+                    value={strategyName}
+                    onChange={(e) => setStrategyName(e.target.value)}
+                    placeholder="Ex: Stratégie BTC Conservative"
+                    required
+                  />
                 </div>
                 
-                {/* Sélection du token */}
                 <div>
-                  <Label htmlFor="token">Tokens *</Label>
-                  <Select 
-                    value={selectedTokenSymbol} 
-                    onValueChange={setSelectedTokenSymbol}
-                    disabled={!selectedPortfolioId}
-                  >
-                    <SelectTrigger id="token">
-                      <SelectValue placeholder="Sélectionner un token" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {holdings.map((holding) => (
-                        <SelectItem key={holding.id} value={holding.token.symbol}>
-                          {holding.token.symbol}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <Label htmlFor="token">Token *</Label>
+                  <TokenSearch
+                    onTokenSelect={handleTokenSelect}
+                    selectedToken={selectedToken}
+                  />
                 </div>
                 
-                {/* Nom de la stratégie */}
-                <div>
-                  <Label htmlFor="strategy">Nom de la stratégie *</Label>
-                  <div className="flex gap-2">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="quantity">Quantité *</Label>
                     <Input
-                      id="strategy"
-                      value={strategyName}
-                      onChange={(e) => setStrategyName(e.target.value)}
-                      placeholder="Ex: Stratégie BTC conservatrice"
+                      id="quantity"
+                      type="number"
+                      value={quantity}
+                      onChange={(e) => setQuantity(e.target.value)}
+                      placeholder="Ex: 1.5"
+                      step="0.00000001"
+                      required
                     />
-                    <Button variant="outline" size="sm">
-                      <ArrowPathIcon className="h-4 w-4" />
-                    </Button>
-                    <Button variant="outline" size="sm">
-                      <PencilIcon className="h-4 w-4" />
-                    </Button>
+                  </div>
+                  <div>
+                    <Label htmlFor="averagePrice">Prix moyen (USD) *</Label>
+                    <Input
+                      id="averagePrice"
+                      type="number"
+                      value={averagePrice}
+                      onChange={(e) => setAveragePrice(e.target.value)}
+                      placeholder="Ex: 45000"
+                      step="0.01"
+                      required
+                    />
                   </div>
                 </div>
-                
-                {/* Nombre de sorties */}
+              </CardContent>
+            </Card>
+
+            {/* Configuration des cibles */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <PencilIcon className="h-5 w-5 text-purple-600" />
+                  Cibles de Prise de Profit
+                </CardTitle>
+                <CardDescription>Définissez vos points de sortie</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
                 <div>
-                  <Label htmlFor="targets">Nombre de sorties *</Label>
+                  <Label htmlFor="numberOfTargets">Nombre de sorties (1-10)</Label>
                   <Input
-                    id="targets"
+                    id="numberOfTargets"
                     type="number"
                     min="1"
                     max="10"
                     value={numberOfTargets}
-                    onChange={(e) => setNumberOfTargets(parseInt(e.target.value) || 1)}
+                    onChange={(e) => {
+                      const val = parseInt(e.target.value);
+                      if (!isNaN(val) && val >= 1 && val <= 10) {
+                        setNumberOfTargets(val);
+                      }
+                    }}
+                    className="w-24"
                   />
                 </div>
-              </CardContent>
-            </Card>
-            
-            {/* Cibles de sortie */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Cibles de sortie</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-6">
+
                 {profitTargets.map((target, index) => (
-                  <div key={target.id} className="space-y-4 pb-6 border-b last:border-b-0">
-                    <div className="flex items-center gap-2">
-                      <div className="flex items-center justify-center w-8 h-8 rounded-full bg-blue-100 text-blue-600 font-semibold">
-                        {index + 1}
-                      </div>
-                      <h3 className="font-medium">Cible de sortie</h3>
-                      <Button variant="outline" size="sm" className="ml-auto">
-                        <ArrowPathIcon className="h-4 w-4" />
-                      </Button>
-                    </div>
-                    
-                    <div className="space-y-3">
-                      {/* Type de cible */}
-                      <div className="flex items-center gap-2">
-                        <Label className="text-sm">Cible de sortie</Label>
-                        <button
-                          onClick={() => updateProfitTarget(index, 'targetType', target.targetType === 'percentage' ? 'price' : 'percentage')}
-                          className="text-sm text-blue-600 hover:text-blue-700"
-                        >
-                          {target.targetType === 'percentage' ? 'Pourcentage du prix moyen d\'achat' : 'Valeur exacte du token'}
-                        </button>
-                      </div>
-                      
-                      {/* Valeur de la cible */}
-                      <div className="flex items-center gap-2">
-                        {target.targetType === 'percentage' ? (
-                          <>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => updateProfitTarget(index, 'targetValue', Math.max(0, target.targetValue - 10))}
-                            >
-                              <MinusIcon className="h-4 w-4" />
-                            </Button>
-                            <Input
-                              type="number"
-                              value={target.targetValue}
-                              onChange={(e) => updateProfitTarget(index, 'targetValue', parseFloat(e.target.value) || 0)}
-                              className="text-center"
-                            />
-                            <span className="text-sm">%</span>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => updateProfitTarget(index, 'targetValue', target.targetValue + 10)}
-                            >
-                              <PlusIcon className="h-4 w-4" />
-                            </Button>
-                            <span className="ml-2 text-sm font-medium">
-                              {tokenData ? formatCurrency(tokenData.averagePrice * (1 + target.targetValue / 100)) : '$0.00'}
-                            </span>
-                          </>
-                        ) : (
-                          <>
-                            <span className="text-sm">$</span>
-                            <Input
-                              type="number"
-                              value={target.targetValue}
-                              onChange={(e) => updateProfitTarget(index, 'targetValue', parseFloat(e.target.value) || 0)}
-                              placeholder="0.00"
-                            />
-                          </>
-                        )}
-                      </div>
-                      
-                      {/* Quantité à vendre */}
+                  <div key={target.id} className="border p-4 rounded-lg space-y-3 bg-gray-50">
+                    <h3 className="text-md font-semibold">Cible #{index + 1}</h3>
+                    <div className="grid grid-cols-2 gap-4">
                       <div>
-                        <Label className="text-sm">Quantité à vendre</Label>
-                        <div className="flex items-center gap-2 mt-1">
-                          <div className="flex-1">
-                            <input
-                              type="range"
-                              min="0"
-                              max="100"
-                              value={target.sellPercentage}
-                              onChange={(e) => updateProfitTarget(index, 'sellPercentage', parseFloat(e.target.value))}
-                              className="w-full"
-                            />
-                          </div>
-                          <span className="text-sm font-medium w-16 text-right">
-                            {target.sellPercentage.toFixed(0)}%
-                          </span>
-                          <span className="text-sm text-gray-500">
-                            {tokenData ? (tokenData.quantity * target.sellPercentage / 100).toFixed(4) : '0.0000'}
-                          </span>
-                        </div>
+                        <Label htmlFor={`targetType-${index}`}>Type</Label>
+                        <Select
+                          value={target.targetType}
+                          onValueChange={(value: 'percentage' | 'price') => 
+                            handleTargetChange(index, 'targetType', value)
+                          }
+                        >
+                          <SelectTrigger id={`targetType-${index}`}>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="percentage">% de profit</SelectItem>
+                            <SelectItem value="price">Prix exact</SelectItem>
+                          </SelectContent>
+                        </Select>
                       </div>
+                      <div>
+                        <Label htmlFor={`targetValue-${index}`}>
+                          {target.targetType === 'percentage' ? 'Pourcentage (%)' : 'Prix (USD)'}
+                        </Label>
+                        <Input
+                          id={`targetValue-${index}`}
+                          type="number"
+                          value={target.targetValue}
+                          onChange={(e) => 
+                            handleTargetChange(index, 'targetValue', parseFloat(e.target.value))
+                          }
+                          step="0.01"
+                        />
+                      </div>
+                    </div>
+                    <div>
+                      <Label htmlFor={`sellPercentage-${index}`}>
+                        Quantité à vendre: {target.sellPercentage.toFixed(1)}%
+                      </Label>
+                      <Slider
+                        id={`sellPercentage-${index}`}
+                        min={0}
+                        max={100}
+                        step={1}
+                        value={[target.sellPercentage]}
+                        onValueChange={(value) => 
+                          handleTargetChange(index, 'sellPercentage', value[0])
+                        }
+                        className="w-full"
+                      />
                     </div>
                   </div>
                 ))}
               </CardContent>
             </Card>
           </div>
-          
-          {/* Colonne droite : Données d'investissement et Simulations */}
-          <div className="space-y-6">
-            {/* Données d'investissement */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Données d'investissement</CardTitle>
-                <CardDescription>
-                  Visualisez ici les informations clés liées à votre investissement sur ce token.
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                {tokenData ? (
-                  <div className="space-y-4">
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <p className="text-sm text-gray-500">Nombre de saisies</p>
-                        <p className="text-2xl font-bold">1</p>
+
+          {/* Colonne droite: Résumé et Simulation */}
+          <div className="lg:col-span-1 space-y-6">
+            {selectedToken && quantity && averagePrice && (
+              <>
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <InformationCircleIcon className="h-5 w-5 text-blue-600" />
+                      Données d'investissement
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-2 text-sm">
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Token:</span>
+                      <span className="font-medium">{selectedToken.symbol}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Quantité:</span>
+                      <span className="font-medium">{quantity}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Prix moyen:</span>
+                      <span className="font-medium">{formatCurrency(parseFloat(averagePrice))}</span>
+                    </div>
+                    <div className="flex justify-between border-t pt-2 mt-2">
+                      <span className="text-muted-foreground">Investi total:</span>
+                      <span className="font-medium">{formatCurrency(totalInvested)}</span>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <ChartBarIcon className="h-5 w-5 text-green-600" />
+                      Simulation
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    {simulations.map((sim, index) => (
+                      <div key={index} className="border-b pb-3 last:border-b-0">
+                        <h3 className="text-sm font-semibold mb-2">Cible #{index + 1}</h3>
+                        <div className="space-y-1 text-xs">
+                          <div className="flex justify-between">
+                            <span className="text-muted-foreground">Prix cible:</span>
+                            <span className="font-medium">{formatCurrency(sim.targetPrice)}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-muted-foreground">Tokens vendus:</span>
+                            <span className="font-medium">{sim.tokensToSell.toFixed(4)}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-muted-foreground">Profit:</span>
+                            <span className={`font-medium ${sim.profitRealized >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                              {formatCurrency(sim.profitRealized)}
+                            </span>
+                          </div>
+                        </div>
                       </div>
-                      <div>
-                        <p className="text-sm text-gray-500">Total investi</p>
-                        <p className="text-2xl font-bold">{formatCurrency(tokenData.investedAmount)}</p>
-                      </div>
-                      <div>
-                        <p className="text-sm text-gray-500">Tokens détenus</p>
-                        <p className="text-2xl font-bold">{tokenData.quantity.toFixed(4)}</p>
-                      </div>
-                      <div>
-                        <p className="text-sm text-gray-500">Prix moyen d'achat d'un token</p>
-                        <p className="text-2xl font-bold">{formatCurrency(tokenData.averagePrice)}</p>
+                    ))}
+
+                    <div className="pt-4 border-t space-y-2">
+                      <h3 className="font-semibold">Résumé Global</h3>
+                      <div className="space-y-1 text-sm">
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">Profit total:</span>
+                          <span className={`font-medium ${totalProfitRealized >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                            {formatCurrency(totalProfitRealized)}
+                          </span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">Rendement:</span>
+                          <span className={`font-medium ${totalReturnPercentage >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                            {formatPercentage(totalReturnPercentage)}
+                          </span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">Tokens restants:</span>
+                          <span className="font-medium">
+                            {simulations.length > 0 
+                              ? simulations[simulations.length - 1].remainingTokens.toFixed(4)
+                              : '0'
+                            }
+                          </span>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                ) : (
-                  <p className="text-gray-500 text-center py-8">
-                    Sélectionnez un portfolio et un token pour voir les données
-                  </p>
-                )}
-              </CardContent>
-            </Card>
-            
-            {/* Simulations */}
-            {tokenData && simulations.length > 0 && (
-              <Card>
-                <CardHeader>
-                  <div className="flex items-center gap-2">
-                    <InformationCircleIcon className="h-5 w-5 text-blue-600" />
-                    <CardTitle>Simulations</CardTitle>
-                  </div>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  {simulations.map((sim) => (
-                    <div key={sim.targetNumber} className="space-y-2">
-                      <div className="flex items-center gap-2">
-                        <div className="flex items-center justify-center w-6 h-6 rounded-full bg-blue-100 text-blue-600 text-sm font-semibold">
-                          {sim.targetNumber}
-                        </div>
-                      </div>
-                      <div className="grid grid-cols-4 gap-2 text-sm">
-                        <div>
-                          <p className="text-gray-500 text-xs">Valorisation des tokens restants</p>
-                          <p className="font-medium">{formatCurrency(sim.tokenValueAtTarget)}</p>
-                        </div>
-                        <div>
-                          <p className="text-gray-500 text-xs">Montant du profit réalisé</p>
-                          <p className="font-medium">{formatCurrency(sim.profitRealized)}</p>
-                        </div>
-                        <div>
-                          <p className="text-gray-500 text-xs">Montant du profit non réalisé</p>
-                          <p className="font-medium">{formatCurrency(sim.profitUnrealized)}</p>
-                        </div>
-                        <div>
-                          <p className="text-gray-500 text-xs">Nombre de tokens restants</p>
-                          <p className="font-medium">{sim.remainingTokens.toFixed(4)}</p>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </CardContent>
-              </Card>
+                  </CardContent>
+                </Card>
+              </>
             )}
+
+            <Button
+              onClick={handleSaveStrategy}
+              disabled={loading || !selectedToken || !quantity || !averagePrice || !strategyName}
+              className="w-full"
+            >
+              {loading ? 'Création...' : 'Créer la stratégie'}
+            </Button>
           </div>
         </div>
-        
-        {/* Footer avec résumé et actions */}
-        {tokenData && (
-          <Card className="mt-6">
-            <CardContent className="py-4">
-              <div className="flex items-center justify-between">
-                <div className="flex gap-8">
-                  <div>
-                    <span className="text-sm text-gray-500">Investi</span>
-                    <span className="ml-2 font-bold">{formatCurrency(totalInvested)}</span>
-                  </div>
-                  <div>
-                    <span className="text-sm text-gray-500">Profit total réalisé</span>
-                    <span className="ml-2 font-bold">{formatCurrency(totalProfitRealized)}</span>
-                  </div>
-                  <div>
-                    <span className="text-sm text-gray-500">Rendement</span>
-                    <span className="ml-2 font-bold">{formatPercentage(totalReturn)}</span>
-                  </div>
-                  <div>
-                    <span className="text-sm text-gray-500">Token restants</span>
-                    <span className="ml-2 font-bold">{tokensRemaining.toFixed(4)}</span>
-                  </div>
-                </div>
-                <div className="flex gap-2">
-                  <Button 
-                    variant="outline" 
-                    onClick={() => router.push('/strategies')}
-                  >
-                    Annuler
-                  </Button>
-                  <Button 
-                    onClick={handleSaveStrategy} 
-                    className="bg-blue-600 hover:bg-blue-700"
-                    disabled={!selectedPortfolioId || !selectedTokenSymbol || !strategyName}
-                  >
-                    <PencilIcon className="h-4 w-4 mr-2" />
-                    Créer la stratégie
-                  </Button>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        )}
       </div>
     </div>
   );

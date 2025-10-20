@@ -30,85 +30,26 @@ export default function StrategiesPage() {
   const loadStrategies = async () => {
     try {
       setIsLoading(true);
-      console.log('📥 Chargement des stratégies...');
+      console.log('📥 Chargement des stratégies théoriques...');
       
-      // Charger les stratégies depuis l'API
-      const data = await portfoliosApi.getUserStrategies();
+      // Charger les stratégies théoriques depuis l'API
+      const data = await portfoliosApi.getTheoreticalStrategies();
       console.log('✅ Stratégies chargées:', data);
       
-      // Transformer les données pour l'affichage
-      const transformedStrategies = await Promise.all(
-        data.map(async (strategy) => {
-          try {
-            // Récupérer les configurations de tokens pour cette stratégie
-            const tokenConfigs = await portfoliosApi.getTokenStrategyConfigs(strategy.id);
-            console.log(`📋 Configs pour stratégie ${strategy.id}:`, tokenConfigs);
-            
-            // Calculer les statistiques à partir des configs
-            let totalInvested = 0;
-            let expectedProfit = 0;
-            let tokenSymbol = '';
-            let numberOfTargets = 0;
-            
-            if (tokenConfigs.length > 0) {
-              const config = tokenConfigs[0];
-              totalInvested = config.holding.investedAmount;
-              tokenSymbol = config.holding.token.symbol;
-              
-              // Calculer le profit attendu à partir des règles personnalisées
-              if (config.customProfitTakingRules?.levels) {
-                numberOfTargets = config.customProfitTakingRules.levels.length;
-                const levels = config.customProfitTakingRules.levels;
-                
-                levels.forEach((level: any) => {
-                  const tokensToSell = (config.holding.quantity * level.sellPercentage) / 100;
-                  let targetPrice = 0;
-                  
-                  if (level.targetType === 'percentage') {
-                    targetPrice = config.holding.averagePrice * (1 + level.targetValue / 100);
-                  } else {
-                    targetPrice = level.targetValue;
-                  }
-                  
-                  const profit = tokensToSell * (targetPrice - config.holding.averagePrice);
-                  expectedProfit += profit;
-                });
-              }
-            }
-            
-            const returnPercentage = totalInvested > 0 ? (expectedProfit / totalInvested) * 100 : 0;
-            
-            return {
-              id: strategy.id,
-              name: strategy.name,
-              portfolioName: strategy.portfolio.name,
-              tokenSymbol,
-              tokenName: tokenSymbol,
-              numberOfTargets,
-              totalInvested,
-              expectedProfit,
-              returnPercentage,
-              status: strategy.status,
-              createdAt: strategy.createdAt,
-            };
-          } catch (error) {
-            console.error(`Erreur lors du chargement des configs pour ${strategy.id}:`, error);
-            return {
-              id: strategy.id,
-              name: strategy.name,
-              portfolioName: strategy.portfolio.name,
-              tokenSymbol: '',
-              tokenName: '',
-              numberOfTargets: 0,
-              totalInvested: 0,
-              expectedProfit: 0,
-              returnPercentage: 0,
-              status: strategy.status,
-              createdAt: strategy.createdAt,
-            };
-          }
-        })
-      );
+      // Les stratégies théoriques contiennent déjà toutes les données calculées
+      const transformedStrategies = data.map((strategy) => ({
+        id: strategy.id,
+        name: strategy.name,
+        portfolioName: 'Théorique', // Les stratégies théoriques ne sont pas liées à un portfolio
+        tokenSymbol: strategy.tokenSymbol,
+        tokenName: strategy.tokenName,
+        numberOfTargets: strategy.numberOfTargets,
+        totalInvested: strategy.totalInvested,
+        expectedProfit: strategy.expectedProfit,
+        returnPercentage: strategy.returnPercentage,
+        status: strategy.status,
+        createdAt: strategy.createdAt,
+      }));
       
       setStrategies(transformedStrategies);
     } catch (error) {
@@ -134,7 +75,7 @@ export default function StrategiesPage() {
     
     try {
       console.log(`🗑️ Suppression de la stratégie ${strategyId}...`);
-      await portfoliosApi.deleteUserStrategy(strategyId);
+      await portfoliosApi.deleteTheoreticalStrategy(strategyId);
       console.log(`✅ Stratégie supprimée avec succès`);
       
       // Recharger la liste des stratégies

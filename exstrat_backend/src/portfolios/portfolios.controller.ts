@@ -31,6 +31,34 @@ export class PortfoliosController {
     return this.portfoliosService.syncAllPortfolios(req.user.id);
   }
 
+  // ===== STRATÉGIES THÉORIQUES =====
+
+  @Post('theoretical-strategies')
+  async createTheoreticalStrategy(@Request() req, @Body() data: any) {
+    return this.portfoliosService.createTheoreticalStrategy(req.user.id, data);
+  }
+
+  @Get('theoretical-strategies')
+  async getTheoreticalStrategies(@Request() req) {
+    return this.portfoliosService.getTheoreticalStrategies(req.user.id);
+  }
+
+  @Get('theoretical-strategies/:id')
+  async getTheoreticalStrategyById(@Request() req, @Param('id') id: string) {
+    return this.portfoliosService.getTheoreticalStrategyById(req.user.id, id);
+  }
+
+  @Put('theoretical-strategies/:id')
+  async updateTheoreticalStrategy(@Request() req, @Param('id') id: string, @Body() data: any) {
+    return this.portfoliosService.updateTheoreticalStrategy(req.user.id, id, data);
+  }
+
+  @Delete('theoretical-strategies/:id')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async deleteTheoreticalStrategy(@Request() req, @Param('id') id: string) {
+    await this.portfoliosService.deleteTheoreticalStrategy(req.user.id, id);
+  }
+
   // ===== USER STRATEGIES =====
 
   @Post('strategies')

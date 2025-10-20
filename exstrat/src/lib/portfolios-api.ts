@@ -129,6 +129,32 @@ export const simulateStrategy = async (strategyId: string): Promise<SimulationRe
   return response.data;
 };
 
+// ===== STRATÉGIES THÉORIQUES =====
+
+export const createTheoreticalStrategy = async (data: any): Promise<any> => {
+  const response = await api.post('/portfolios/theoretical-strategies', data);
+  return response.data;
+};
+
+export const getTheoreticalStrategies = async (): Promise<any[]> => {
+  const response = await api.get('/portfolios/theoretical-strategies');
+  return response.data;
+};
+
+export const getTheoreticalStrategyById = async (id: string): Promise<any> => {
+  const response = await api.get(`/portfolios/theoretical-strategies/${id}`);
+  return response.data;
+};
+
+export const updateTheoreticalStrategy = async (id: string, data: any): Promise<any> => {
+  const response = await api.put(`/portfolios/theoretical-strategies/${id}`, data);
+  return response.data;
+};
+
+export const deleteTheoreticalStrategy = async (id: string): Promise<void> => {
+  await api.delete(`/portfolios/theoretical-strategies/${id}`);
+};
+
 // ===== SYNCHRONISATION =====
 
 export const syncPortfolios = async (): Promise<{ message: string; portfoliosCreated: number; holdingsUpdated: number }> => {
