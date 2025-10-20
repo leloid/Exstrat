@@ -278,7 +278,7 @@ export default function PortfolioPage() {
           {/* Liste des portfolios */}
           <div className="grid gap-6">
             {portfolios.map((portfolio) => (
-              <Card key={portfolio.id} className={currentPortfolio?.id === portfolio.id ? 'ring-2 ring-blue-500' : ''}>
+              <Card key={portfolio.id}>
                 <CardHeader>
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
@@ -309,33 +309,6 @@ export default function PortfolioPage() {
                       >
                         <Delete className="h-4 w-4" />
                       </Button>
-                      {currentPortfolio?.id !== portfolio.id && (
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={async () => {
-                            setCurrentPortfolio(portfolio);
-                            // Charger les holdings de ce portfolio
-                            if (portfolio.id) {
-                              await refreshHoldings(portfolio.id);
-                              // Mettre à jour les valeurs de ce portfolio
-                              try {
-                                const portfolioHoldings = await portfoliosApi.getPortfolioHoldings(portfolio.id);
-                                const invested = portfolioHoldings.reduce((sum, holding) => sum + holding.investedAmount, 0);
-                                const value = portfolioHoldings.reduce((sum, holding) => sum + (holding.currentValue || 0), 0);
-                                setPortfolioValues(prev => ({
-                                  ...prev,
-                                  [portfolio.id]: { invested, value }
-                                }));
-                              } catch (error) {
-                                console.error('Erreur lors du chargement des valeurs:', error);
-                              }
-                            }
-                          }}
-                        >
-                          Sélectionner
-                        </Button>
-                      )}
                     </div>
                   </div>
                 </CardHeader>

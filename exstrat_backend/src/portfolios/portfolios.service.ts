@@ -115,6 +115,25 @@ export class PortfoliosService {
       throw new NotFoundException('Portfolio non trouvé');
     }
 
+    // Supprimer dans l'ordre pour respecter les contraintes de clés étrangères
+    // 1. Supprimer les holdings associés
+    await this.prisma.holding.deleteMany({
+      where: { portfolioId },
+    });
+
+    // 2. Supprimer les transactions associées (ou les réassigner à null)
+    // Option 1: Supprimer les transactions
+    await this.prisma.transaction.deleteMany({
+      where: { portfolioId },
+    });
+    
+    // Option 2 (alternative): Réassigner les transactions à null
+    // await this.prisma.transaction.updateMany({
+    //   where: { portfolioId },
+    //   data: { portfolioId: null },
+    // });
+
+    // 3. Supprimer le portfolio
     await this.prisma.portfolio.delete({
       where: { id: portfolioId },
     });
