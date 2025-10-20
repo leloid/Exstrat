@@ -73,12 +73,20 @@ export const TransactionList: React.FC<TransactionListProps> = ({
     }
 
     try {
+      console.log('🗑️ Suppression de la transaction:', id);
+      console.log('🔍 Type de l\'ID:', typeof id);
+      console.log('🔍 Est un UUID valide?', /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id));
       await transactionsApi.deleteTransaction(id);
+      console.log('✅ Transaction supprimée avec succès');
       await fetchTransactions(pagination.page);
       // Notifier le parent que la transaction a été supprimée
       onTransactionDeleted?.();
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Erreur lors de la suppression');
+      console.error('❌ Erreur lors de la suppression:', err);
+      console.error('❌ Détails de l\'erreur:', err.response?.data);
+      const errorMessage = err.response?.data?.message || err.response?.data?.error || 'Erreur lors de la suppression';
+      setError(errorMessage);
+      alert(`Erreur: ${errorMessage}`);
     }
   };
 

@@ -147,12 +147,33 @@ export class TransactionsService {
   async remove(userId: string, id: string): Promise<void> {
     const transaction = await this.findOne(userId, id); // Vérifie l'existence et les permissions
 
+    // Sauvegarder les infos nécessaires avant suppression
+    const portfolioId = transaction.portfolioId;
+    const symbol = transaction.symbol;
+    const userId_copy = userId;
+
+    // Supprimer la transaction
     await this.prisma.transaction.delete({
       where: { id },
     });
 
-    // Re-synchroniser le portfolio après suppression
-    await this.syncTransactionWithPortfolio(userId, transaction);
+    // Re-synchroniser le portfolio après suppression (recalculer les holdings)
+    if (portfolioId) {
+      try {
+        // Récupérer le token
+        const token = await this.prisma.token.findUnique({
+          where: { symbol },
+        });
+
+        if (token) {
+          // Recalculer le holding pour ce token dans ce portfolio
+          await this.recalculateHolding(userId_copy, portfolioId, token.id, symbol);
+        }
+      } catch (error) {
+        console.error('Erreur lors de la synchronisation après suppression:', error);
+        // Ne pas faire échouer la suppression si la sync échoue
+      }
+    }
   }
 
   async getPortfolioSummary(userId: string): Promise<any> {

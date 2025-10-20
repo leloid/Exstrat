@@ -7,8 +7,7 @@ import {
   Param, 
   Delete, 
   Query, 
-  UseGuards,
-  ParseUUIDPipe 
+  UseGuards
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
 import { TransactionsService } from './transactions.service';
@@ -135,7 +134,7 @@ export class TransactionsController {
   @ApiResponse({ status: 403, description: 'Accès non autorisé' })
   async findOne(
     @CurrentUser('id') userId: string,
-    @Param('id', ParseUUIDPipe) id: string
+    @Param('id') id: string
   ): Promise<TransactionResponseDto> {
     return this.transactionsService.findOne(userId, id);
   }
@@ -153,7 +152,7 @@ export class TransactionsController {
   @ApiResponse({ status: 404, description: 'Transaction non trouvée' })
   async update(
     @CurrentUser('id') userId: string,
-    @Param('id', ParseUUIDPipe) id: string,
+    @Param('id') id: string,
     @Body() updateTransactionDto: UpdateTransactionDto
   ): Promise<TransactionResponseDto> {
     return this.transactionsService.update(userId, id, updateTransactionDto);
@@ -167,7 +166,7 @@ export class TransactionsController {
   @ApiResponse({ status: 404, description: 'Transaction non trouvée' })
   async remove(
     @CurrentUser('id') userId: string,
-    @Param('id', ParseUUIDPipe) id: string
+    @Param('id') id: string
   ): Promise<{ message: string }> {
     await this.transactionsService.remove(userId, id);
     return { message: 'Transaction supprimée avec succès' };
