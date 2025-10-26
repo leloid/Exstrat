@@ -42,6 +42,7 @@ export const Select: React.FC<SelectProps> = ({
 }) => {
   const [isOpen, setIsOpen] = React.useState(false);
   const [selectedValue, setSelectedValue] = React.useState(value || '');
+  const selectRef = React.useRef<HTMLDivElement>(null);
 
   const handleSelect = (newValue: string) => {
     setSelectedValue(newValue);
@@ -49,8 +50,25 @@ export const Select: React.FC<SelectProps> = ({
     setIsOpen(false);
   };
 
+  // Close dropdown when clicking outside
+  React.useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (selectRef.current && !selectRef.current.contains(event.target as Node)) {
+        setIsOpen(false);
+      }
+    };
+
+    if (isOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isOpen]);
+
   return (
-    <div className={`relative ${className}`}>
+    <div ref={selectRef} className={`relative ${className}`}>
       <button
         type="button"
         onClick={() => !disabled && setIsOpen(!isOpen)}
@@ -71,10 +89,10 @@ export const Select: React.FC<SelectProps> = ({
       </button>
 
       {isOpen && (
-        <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg">
+        <div className="absolute z-[9999] w-full mt-1 bg-white border border-gray-300 rounded-md shadow-xl max-h-60 overflow-y-auto">
           {React.Children.map(children, (child) => {
             if (React.isValidElement(child) && child.type === SelectContent) {
-              return React.cloneElement(child, { onSelect: handleSelect });
+              return React.cloneElement(child as React.ReactElement<any>, { onSelect: handleSelect });
             }
             return child;
           })}
@@ -97,7 +115,7 @@ export const SelectContent: React.FC<SelectContentProps & { onSelect?: (value: s
     <div className={`py-1 ${className}`}>
       {React.Children.map(children, (child) => {
         if (React.isValidElement(child) && child.type === SelectItem) {
-          return React.cloneElement(child, { onSelect });
+          return React.cloneElement(child as React.ReactElement<any>, { onSelect });
         }
         return child;
       })}
