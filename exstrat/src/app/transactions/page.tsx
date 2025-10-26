@@ -86,30 +86,43 @@ export default function TransactionsPage() {
   };
 
   return (
-    <div className="py-8">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">Gestion des Transactions</h1>
-          <p className="mt-2 text-gray-600">
-            Ajoutez et gérez vos transactions crypto manuellement
-          </p>
-        </div>
-
-        {/* Bandeau global (tous portfolios) */}
-        <div className="mb-6 rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+    <div className="min-h-screen bg-white">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Header épuré */}
+        <div className="mb-12">
+          <div className="flex items-center justify-between">
             <div>
-              <h2 className="text-lg font-semibold text-gray-900">Total (tous les portfolios)</h2>
-              <p className="text-sm text-gray-600">
-                Investi: {formatCurrency(globalInvested)} • Valeur: {formatCurrency(globalValue)}
+              <h1 className="text-3xl font-semibold text-gray-900">Transactions</h1>
+              <p className="text-gray-500 mt-1">
+                Gérez vos transactions crypto de façon professionnelle
               </p>
             </div>
-            <div>
-              <Button onClick={handleAddTransaction} className="flex items-center gap-2">
-                <Plus className="h-4 w-4" />
-                Ajouter une transaction
-              </Button>
+            <Button 
+              onClick={handleAddTransaction} 
+              className="bg-gray-900 hover:bg-gray-800 text-white px-6 py-2 rounded-lg font-medium"
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              Nouvelle Transaction
+            </Button>
+          </div>
+        </div>
+
+        {/* Statistiques globales épurées */}
+        <div className="mb-12">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="bg-white border border-gray-200 rounded-lg p-6">
+              <div className="text-sm text-gray-500 mb-1">Total investi</div>
+              <div className="text-2xl font-semibold text-gray-900">{formatCurrency(globalInvested)}</div>
+            </div>
+            <div className="bg-white border border-gray-200 rounded-lg p-6">
+              <div className="text-sm text-gray-500 mb-1">Valeur actuelle</div>
+              <div className="text-2xl font-semibold text-gray-900">{formatCurrency(globalValue)}</div>
+            </div>
+            <div className="bg-white border border-gray-200 rounded-lg p-6">
+              <div className="text-sm text-gray-500 mb-1">Performance</div>
+              <div className={`text-2xl font-semibold ${globalValue >= globalInvested ? 'text-green-600' : 'text-red-600'}`}>
+                {formatCurrency(globalValue - globalInvested)}
+              </div>
             </div>
           </div>
         </div>
@@ -117,39 +130,39 @@ export default function TransactionsPage() {
         {/* Contenu principal */}
         <div className="space-y-8">
 
-          {/* Formulaire de transaction (modal-like) */}
-          {showForm && (
-            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-              <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-                <div className="flex items-center justify-between p-6 border-b border-gray-200">
-                  <h2 className="text-xl font-semibold text-gray-900">
-                    {editingTransaction ? 'Modifier la transaction' : 'Ajouter une transaction'}
-                  </h2>
-                  <button
-                    onClick={handleFormCancel}
-                    className="text-gray-400 hover:text-gray-600"
-                  >
-                    <XMarkIcon className="h-6 w-6" />
-                  </button>
-                </div>
-                <div className="p-6">
-                  <TransactionForm
-                    onSuccess={handleFormSuccess}
-                    onCancel={handleFormCancel}
-                    initialData={editingTransaction}
-                  />
-                </div>
+        {/* Formulaire de transaction épuré */}
+        {showForm && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+            <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+              <div className="flex items-center justify-between p-6 border-b border-gray-200">
+                <h2 className="text-lg font-semibold text-gray-900">
+                  {editingTransaction ? 'Modifier la transaction' : 'Nouvelle transaction'}
+                </h2>
+                <button
+                  onClick={handleFormCancel}
+                  className="text-gray-400 hover:text-gray-600 p-1"
+                >
+                  <XMarkIcon className="h-5 w-5" />
+                </button>
+              </div>
+              <div className="p-6">
+                <TransactionForm
+                  onSuccess={handleFormSuccess}
+                  onCancel={handleFormCancel}
+                  initialData={editingTransaction}
+                />
               </div>
             </div>
-          )}
+          </div>
+        )}
 
-          {/* Liste des transactions */}
-          <TransactionList
-            key={refreshKey}
-            onAddTransaction={handleAddTransaction}
-            onEditTransaction={handleEditTransaction}
-            onTransactionDeleted={handleTransactionDeleted}
-          />
+        {/* Liste des transactions */}
+        <TransactionList
+          key={refreshKey}
+          onAddTransaction={handleAddTransaction}
+          onEditTransaction={handleEditTransaction}
+          onTransactionDeleted={handleTransactionDeleted}
+        />
         </div>
       </div>
     </div>
