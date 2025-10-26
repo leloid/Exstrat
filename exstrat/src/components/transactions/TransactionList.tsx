@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { TransactionResponse, TransactionSearchResponse } from '@/types/transactions';
 import { transactionsApi } from '@/lib/transactions-api';
@@ -19,12 +18,16 @@ interface TransactionListProps {
   onAddTransaction?: () => void;
   onEditTransaction?: (transaction: TransactionResponse) => void;
   onTransactionDeleted?: () => void;
+  isDarkMode?: boolean;
+  language?: 'fr' | 'en';
 }
 
 export const TransactionList: React.FC<TransactionListProps> = ({ 
   onAddTransaction, 
   onEditTransaction,
-  onTransactionDeleted
+  onTransactionDeleted,
+  isDarkMode = true,
+  language = 'fr'
 }) => {
   const [transactions, setTransactions] = useState<TransactionResponse[]>([]);
   const [loading, setLoading] = useState(true);
@@ -122,27 +125,43 @@ export const TransactionList: React.FC<TransactionListProps> = ({
   };
 
   const getTransactionTypeColor = (type: string) => {
-    switch (type) {
-      case 'BUY': return 'text-green-600 bg-green-100';
-      case 'SELL': return 'text-red-600 bg-red-100';
-      case 'TRANSFER_IN': return 'text-blue-600 bg-blue-100';
-      case 'TRANSFER_OUT': return 'text-orange-600 bg-orange-100';
-      case 'STAKING': return 'text-purple-600 bg-purple-100';
-      case 'REWARD': return 'text-yellow-600 bg-yellow-100';
-      default: return 'text-gray-600 bg-gray-100';
+    if (isDarkMode) {
+      switch (type) {
+        case 'BUY': return 'text-green-400 bg-green-900/30';
+        case 'SELL': return 'text-red-400 bg-red-900/30';
+        case 'TRANSFER_IN': return 'text-blue-400 bg-blue-900/30';
+        case 'TRANSFER_OUT': return 'text-orange-400 bg-orange-900/30';
+        case 'STAKING': return 'text-purple-400 bg-purple-900/30';
+        case 'REWARD': return 'text-yellow-400 bg-yellow-900/30';
+        default: return 'text-gray-400 bg-gray-800';
+      }
+    } else {
+      switch (type) {
+        case 'BUY': return 'text-green-600 bg-green-100';
+        case 'SELL': return 'text-red-600 bg-red-100';
+        case 'TRANSFER_IN': return 'text-blue-600 bg-blue-100';
+        case 'TRANSFER_OUT': return 'text-orange-600 bg-orange-100';
+        case 'STAKING': return 'text-purple-600 bg-purple-100';
+        case 'REWARD': return 'text-yellow-600 bg-yellow-100';
+        default: return 'text-gray-600 bg-gray-100';
+      }
     }
   };
 
   if (loading) {
     return (
-      <Card>
-        <CardContent className="p-6">
-          <div className="flex items-center justify-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-            <span className="ml-2">Chargement des transactions...</span>
-          </div>
-        </CardContent>
-      </Card>
+      <div className={`rounded-xl p-6 ${
+        isDarkMode ? 'bg-gray-800' : 'bg-white border border-gray-200'
+      }`}>
+        <div className="flex items-center justify-center">
+          <div className={`animate-spin rounded-full h-8 w-8 border-b-2 ${
+            isDarkMode ? 'border-purple-600' : 'border-purple-600'
+          }`}></div>
+          <span className={`ml-2 ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+            {language === 'fr' ? 'Chargement des transactions...' : 'Loading transactions...'}
+          </span>
+        </div>
+      </div>
     );
   }
 
@@ -160,28 +179,42 @@ export const TransactionList: React.FC<TransactionListProps> = ({
   }, {} as Record<string, TransactionResponse[]>);
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Mes Transactions</CardTitle>
-      </CardHeader>
-      <CardContent>
-        {error && (
-          <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-md">
-            <p className="text-sm text-red-600">{error}</p>
-          </div>
-        )}
+    <div className={`rounded-xl p-6 ${
+      isDarkMode ? 'bg-gray-800' : 'bg-white border border-gray-200'
+    }`}>
+      <div className="mb-6">
+        <h2 className={`text-xl font-semibold ${
+          isDarkMode ? 'text-white' : 'text-gray-900'
+        }`}>
+          {language === 'fr' ? 'Mes Transactions' : 'My Transactions'}
+        </h2>
+      </div>
 
-        {transactions.length === 0 ? (
-          <div className="text-center py-8">
-            <p className="text-gray-500 mb-4">Aucune transaction trouvée</p>
-            <Button
-              onClick={onAddTransaction}
-              className="bg-blue-600 hover:bg-blue-700"
-            >
-              <PlusIcon className="h-4 w-4 mr-2" />
-              Créer votre première transaction
-            </Button>
-          </div>
+      {error && (
+        <div className={`mb-4 p-4 rounded-md ${
+          isDarkMode ? 'bg-red-900/30 border border-red-800' : 'bg-red-50 border border-red-200'
+        }`}>
+          <p className={`text-sm ${
+            isDarkMode ? 'text-red-400' : 'text-red-600'
+          }`}>{error}</p>
+        </div>
+      )}
+
+      {transactions.length === 0 ? (
+        <div className="text-center py-8">
+          <p className={`mb-4 ${
+            isDarkMode ? 'text-gray-400' : 'text-gray-500'
+          }`}>
+            {language === 'fr' ? 'Aucune transaction trouvée' : 'No transactions found'}
+          </p>
+          <Button
+            onClick={onAddTransaction}
+            className="bg-purple-600 hover:bg-purple-700 text-white"
+          >
+            <PlusIcon className="h-4 w-4 mr-2" />
+            {language === 'fr' ? 'Créer votre première transaction' : 'Create your first transaction'}
+          </Button>
+        </div>
         ) : (
           <>
             {/* Groupes par portfolio */}
@@ -189,50 +222,88 @@ export const TransactionList: React.FC<TransactionListProps> = ({
               {Object.entries(groupedByPortfolio).map(([portfolioName, txs]) => (
                 <div
                   key={portfolioName}
-                  className="border border-gray-200 rounded-lg p-4"
+                  className={`rounded-lg p-4 ${
+                    isDarkMode 
+                      ? 'bg-gray-700 border border-gray-600' 
+                      : 'bg-gray-50 border border-gray-200'
+                  }`}
                 >
                   <div className="mb-4 flex items-center justify-between">
-                    <h3 className="text-lg font-semibold text-gray-900">{portfolioName}</h3>
+                    <h3 className={`text-lg font-semibold ${
+                      isDarkMode ? 'text-white' : 'text-gray-900'
+                    }`}>{portfolioName}</h3>
                   </div>
 
                   <div className="space-y-4">
                     {txs.map((transaction) => (
-                      <div key={transaction.id} className="border border-gray-200 rounded-lg p-4 hover:bg-gray-50 transition-colors">
+                      <div key={transaction.id} className={`rounded-lg p-4 transition-colors ${
+                        isDarkMode 
+                          ? 'bg-gray-800 border border-gray-700 hover:bg-gray-750' 
+                          : 'bg-white border border-gray-200 hover:bg-gray-50'
+                      }`}>
                         <div className="flex items-center justify-between">
                           <div className="flex items-center space-x-3">
                             {getTransactionIcon(transaction.type)}
                             <div>
                               <div className="flex items-center space-x-2">
-                                <span className="font-medium text-gray-900">{transaction.symbol}</span>
-                                <span className="text-sm text-gray-500">{transaction.name}</span>
+                                <span className={`font-medium ${
+                                  isDarkMode ? 'text-white' : 'text-gray-900'
+                                }`}>{transaction.symbol}</span>
+                                <span className={`text-sm ${
+                                  isDarkMode ? 'text-gray-400' : 'text-gray-500'
+                                }`}>{transaction.name}</span>
                                 <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getTransactionTypeColor(transaction.type)}`}>
                                   {getTransactionTypeLabel(transaction.type)}
                                 </span>
                               </div>
-                              <div className="text-sm text-gray-500">
-                                {new Date(transaction.transactionDate).toLocaleDateString('fr-FR')}
+                              <div className={`text-sm ${
+                                isDarkMode ? 'text-gray-400' : 'text-gray-500'
+                              }`}>
+                                {new Date(transaction.transactionDate).toLocaleDateString(language === 'fr' ? 'fr-FR' : 'en-US')}
                               </div>
                             </div>
                           </div>
 
                           <div className="text-right">
-                            <div className="font-medium text-gray-900">{transaction.quantity} {transaction.symbol}</div>
-                            <div className="text-sm text-gray-500">${transaction.amountInvested.toLocaleString()}</div>
-                            <div className="text-xs text-gray-400">@ ${transaction.averagePrice.toLocaleString()}</div>
+                            <div className={`font-medium ${
+                              isDarkMode ? 'text-white' : 'text-gray-900'
+                            }`}>{transaction.quantity} {transaction.symbol}</div>
+                            <div className={`text-sm ${
+                              isDarkMode ? 'text-gray-400' : 'text-gray-500'
+                            }`}>${transaction.amountInvested.toLocaleString()}</div>
+                            <div className={`text-xs ${
+                              isDarkMode ? 'text-gray-500' : 'text-gray-400'
+                            }`}>@ ${transaction.averagePrice.toLocaleString()}</div>
                           </div>
 
                           <div className="flex items-center space-x-2">
-                            <Button variant="outline" size="sm" onClick={() => onEditTransaction?.(transaction)}>
+                            <Button 
+                              variant="outline" 
+                              size="sm" 
+                              onClick={() => onEditTransaction?.(transaction)}
+                              className={isDarkMode ? 'border-gray-600 text-gray-300 hover:bg-gray-700' : ''}
+                            >
                               <PencilIcon className="h-4 w-4" />
                             </Button>
-                            <Button variant="outline" size="sm" onClick={() => handleDeleteTransaction(transaction.id)} className="text-red-600 hover:text-red-700 hover:bg-red-50">
+                            <Button 
+                              variant="outline" 
+                              size="sm" 
+                              onClick={() => handleDeleteTransaction(transaction.id)} 
+                              className={`${
+                                isDarkMode 
+                                  ? 'border-red-900 text-red-400 hover:bg-red-900/30' 
+                                  : 'text-red-600 hover:text-red-700 hover:bg-red-50'
+                              }`}
+                            >
                               <TrashIcon className="h-4 w-4" />
                             </Button>
                           </div>
                         </div>
 
                         {transaction.notes && (
-                          <div className="mt-2 text-sm text-gray-600">{transaction.notes}</div>
+                          <div className={`mt-2 text-sm ${
+                            isDarkMode ? 'text-gray-400' : 'text-gray-600'
+                          }`}>{transaction.notes}</div>
                         )}
                       </div>
                     ))}
@@ -244,8 +315,13 @@ export const TransactionList: React.FC<TransactionListProps> = ({
             {/* Pagination */}
             {pagination.total > pagination.limit && (
               <div className="mt-6 flex items-center justify-between">
-                <div className="text-sm text-gray-500">
-                  Affichage de {((pagination.page - 1) * pagination.limit) + 1} à {Math.min(pagination.page * pagination.limit, pagination.total)} sur {pagination.total} transactions
+                <div className={`text-sm ${
+                  isDarkMode ? 'text-gray-400' : 'text-gray-500'
+                }`}>
+                  {language === 'fr' 
+                    ? `Affichage de ${((pagination.page - 1) * pagination.limit) + 1} à ${Math.min(pagination.page * pagination.limit, pagination.total)} sur ${pagination.total} transactions`
+                    : `Showing ${((pagination.page - 1) * pagination.limit) + 1} to ${Math.min(pagination.page * pagination.limit, pagination.total)} of ${pagination.total} transactions`
+                  }
                 </div>
                 <div className="flex space-x-2">
                   <Button
@@ -253,23 +329,24 @@ export const TransactionList: React.FC<TransactionListProps> = ({
                     size="sm"
                     onClick={() => fetchTransactions(pagination.page - 1)}
                     disabled={pagination.page === 1}
+                    className={isDarkMode ? 'border-gray-600 text-gray-300 hover:bg-gray-700' : ''}
                   >
-                    Précédent
+                    {language === 'fr' ? 'Précédent' : 'Previous'}
                   </Button>
                   <Button
                     variant="outline"
                     size="sm"
                     onClick={() => fetchTransactions(pagination.page + 1)}
                     disabled={pagination.page * pagination.limit >= pagination.total}
+                    className={isDarkMode ? 'border-gray-600 text-gray-300 hover:bg-gray-700' : ''}
                   >
-                    Suivant
+                    {language === 'fr' ? 'Suivant' : 'Next'}
                   </Button>
                 </div>
               </div>
             )}
           </>
         )}
-      </CardContent>
-    </Card>
+    </div>
   );
 };
