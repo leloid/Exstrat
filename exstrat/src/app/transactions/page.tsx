@@ -4,6 +4,7 @@ import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { TransactionForm } from '@/components/transactions/TransactionForm';
 import { TransactionList } from '@/components/transactions/TransactionList';
+import { ExchangeIntegration } from '@/components/transactions/ExchangeIntegration';
 import { TransactionResponse } from '@/types/transactions';
 import { XMarkIcon, PlusIcon as Plus } from '@heroicons/react/24/outline';
 import { usePortfolio } from '@/contexts/PortfolioContext';
@@ -165,6 +166,9 @@ export default function TransactionsPage() {
                 </div>
               </div>
             </div>
+
+            {/* Intégration des exchanges */}
+            <ExchangeIntegration isDarkMode={isDarkMode} language={language} />
 
             {/* Contenu principal */}
             <div className="space-y-8">

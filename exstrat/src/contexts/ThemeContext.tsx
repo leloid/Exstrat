@@ -12,8 +12,8 @@ interface ThemeContextType {
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 export const ThemeProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  // Charger depuis localStorage ou valeurs par défaut
-  const [isDarkMode, setIsDarkMode] = useState(true);
+  // Charger depuis localStorage ou valeur par défaut (mode clair par défaut)
+  const [isDarkMode, setIsDarkMode] = useState(false);
   const [language, setLanguageState] = useState<'fr' | 'en'>('fr');
 
   // Charger les préférences depuis localStorage au montage
