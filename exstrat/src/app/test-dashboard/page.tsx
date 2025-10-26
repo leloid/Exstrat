@@ -1,615 +1,425 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
+import ProtectedRoute from '@/components/auth/ProtectedRoute';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
+import { Button } from '@/components/ui/Button';
+import { Badge } from '@/components/ui/Badge';
 import { 
-  HomeIcon,
-  WalletIcon,
-  ShoppingBagIcon,
-  Cog6ToothIcon,
-  PowerIcon,
-  MagnifyingGlassIcon,
-  BellIcon,
-  ChartBarIcon,
-  ArrowUpIcon,
-  ArrowDownIcon,
+  ChartBarIcon, 
+  CurrencyDollarIcon, 
+  ArrowTrendingUpIcon,
+  ArrowTrendingDownIcon,
+  ShieldCheckIcon,
   PlusIcon,
-  UserCircleIcon,
-  ArrowRightOnRectangleIcon
+  EyeIcon,
+  Cog6ToothIcon,
+  ClockIcon,
+  FireIcon,
+  StarIcon,
+  BoltIcon
 } from '@heroicons/react/24/outline';
 
 // SVG personnalisés pour le dashboard
-const ExStratLogo = () => (
-  <svg className="w-8 h-8" viewBox="0 0 32 32" fill="none">
+const PortfolioChartSVG = () => (
+  <svg className="w-full h-32" viewBox="0 0 400 120" fill="none">
     <defs>
-      <linearGradient id="exstratGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-        <stop offset="0%" stopColor="#3B82F6"/>
-        <stop offset="100%" stopColor="#8B5CF6"/>
+      <linearGradient id="portfolioGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+        <stop offset="0%" stopColor="#3B82F6" stopOpacity="0.8"/>
+        <stop offset="100%" stopColor="#8B5CF6" stopOpacity="0.2"/>
       </linearGradient>
     </defs>
-    <rect x="4" y="4" width="24" height="24" rx="4" fill="url(#exstratGradient)"/>
-    <text x="16" y="20" textAnchor="middle" fill="white" fontSize="12" fontWeight="bold">E</text>
-  </svg>
-);
-
-const DashboardIcon = () => (
-  <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none">
-    <path d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z" fill="white"/>
-  </svg>
-);
-
-const PortfolioIcon = () => (
-  <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none">
-    <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" fill="white"/>
-  </svg>
-);
-
-const TransactionIcon = () => (
-  <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none">
-    <path d="M7 4V2C7 1.45 7.45 1 8 1H16C16.55 1 17 1.45 17 2V4H20C20.55 4 21 4.45 21 5S20.55 6 20 6H19V19C19 20.1 18.1 21 17 21H7C5.9 21 5 20.1 5 19V6H4C3.45 6 3 5.55 3 5S3.45 4 4 4H7ZM9 3V4H15V3H9ZM7 6V19H17V6H7Z" fill="white"/>
-  </svg>
-);
-
-const StrategyIcon = () => (
-  <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none">
-    <path d="M9 11H7V9H9V11ZM13 11H11V9H13V11ZM17 11H15V9H17V11ZM19 4H18V2H16V4H8V2H6V4H5C3.89 4 3.01 4.9 3.01 6L3 20C3 21.1 3.89 22 5 22H19C20.1 22 21 21.1 21 20V6C21 4.9 20.1 4 19 4ZM19 20H5V9H19V20Z" fill="white"/>
-  </svg>
-);
-
-const ConfigIcon = () => (
-  <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none">
-    <path d="M12 15.5A3.5 3.5 0 0 1 8.5 12A3.5 3.5 0 0 1 12 8.5a3.5 3.5 0 0 1 3.5 3.5a3.5 3.5 0 0 1-3.5 3.5m7.43-2.53c.04-.32.07-.64.07-.97c0-.33-.03-.66-.07-1l2.11-1.63c.19-.15.24-.42.12-.64l-2-3.46c-.12-.22-.39-.31-.61-.22l-2.49 1c-.52-.39-1.06-.73-1.69-.98l-.37-2.65A.506.506 0 0 0 14 2h-4c-.25 0-.46.18-.5.42l-.37 2.65c-.63.25-1.17.59-1.69.98l-2.49-1c-.22-.09-.49 0-.61.22l-2 3.46c-.13.22-.07.49.12.64L4.57 11c-.04.34-.07.67-.07 1c0 .33.03.65.07.97l-2.11 1.66c-.19.15-.25.42-.12.64l2 3.46c.12.22.39.3.61.22l2.49-1.01c.52.4 1.06.74 1.69.99l.37 2.65c.04.24.25.42.5.42h4c.25 0 .46-.18.5-.42l.37-2.65c.63-.26 1.17-.59 1.69-.99l2.49 1.01c.22.08.49 0 .61-.22l2-3.46c.12-.22.07-.49-.12-.64l-2.11-1.66Z" fill="white"/>
-  </svg>
-);
-
-const ETHPriceChart = ({ userPosition }: { userPosition: number }) => (
-  <svg className="w-full h-32" viewBox="0 0 300 120" fill="none">
-    <defs>
-      <linearGradient id="ethGradient" x1="0%" y1="0%" x2="0%" y2="100%">
-        <stop offset="0%" stopColor="#627EEA" stopOpacity="0.8"/>
-        <stop offset="100%" stopColor="#627EEA" stopOpacity="0.1"/>
-      </linearGradient>
-      <linearGradient id="tealGradient" x1="0%" y1="0%" x2="0%" y2="100%">
-        <stop offset="0%" stopColor="#14B8A6" stopOpacity="0.8"/>
-        <stop offset="100%" stopColor="#14B8A6" stopOpacity="0.1"/>
-      </linearGradient>
-    </defs>
-    
-    {/* Grille de fond */}
-    <rect x="0" y="0" width="300" height="120" fill="#1F2937"/>
-    
-    {/* Lignes de grille */}
-    <line x1="0" y1="24" x2="300" y2="24" stroke="#374151" strokeWidth="1"/>
-    <line x1="0" y1="48" x2="300" y2="48" stroke="#374151" strokeWidth="1"/>
-    <line x1="0" y1="72" x2="300" y2="72" stroke="#374151" strokeWidth="1"/>
-    <line x1="0" y1="96" x2="300" y2="96" stroke="#374151" strokeWidth="1"/>
-    
-    {/* Graphique ETH (ligne violette) */}
     <path
-      d="M20,100 L50,85 L80,70 L110,60 L140,45 L170,35 L200,25 L230,30 L260,20 L290,15"
-      stroke="#8B5CF6"
+      d="M20,100 L60,80 L100,60 L140,40 L180,50 L220,30 L260,45 L300,25 L340,35 L380,20"
+      stroke="url(#portfolioGradient)"
+      strokeWidth="3"
+      fill="none"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+    <circle cx="380" cy="20" r="4" fill="#3B82F6"/>
+    <text x="380" y="15" textAnchor="middle" className="text-xs fill-blue-600 font-semibold">€45.2K</text>
+  </svg>
+);
+
+const CryptoPieChartSVG = () => (
+  <svg className="w-32 h-32" viewBox="0 0 120 120" fill="none">
+    <defs>
+      <linearGradient id="btcGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" stopColor="#F7931A"/>
+        <stop offset="100%" stopColor="#FFB84D"/>
+      </linearGradient>
+      <linearGradient id="ethGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" stopColor="#627EEA"/>
+        <stop offset="100%" stopColor="#8FA4F3"/>
+      </linearGradient>
+      <linearGradient id="otherGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" stopColor="#10B981"/>
+        <stop offset="100%" stopColor="#34D399"/>
+      </linearGradient>
+    </defs>
+    <circle cx="60" cy="60" r="50" fill="#E5E7EB"/>
+    <path d="M60,10 A50,50 0 0,1 110,60 L60,60 Z" fill="url(#btcGradient)"/>
+    <path d="M110,60 A50,50 0 0,1 60,110 L60,60 Z" fill="url(#ethGradient)"/>
+    <path d="M60,110 A50,50 0 0,1 10,60 L60,60 Z" fill="url(#otherGradient)"/>
+    <circle cx="60" cy="60" r="20" fill="white"/>
+    <text x="60" y="65" textAnchor="middle" className="text-xs font-bold fill-gray-700">€45.2K</text>
+  </svg>
+);
+
+const PerformanceChartSVG = () => (
+  <svg className="w-full h-16" viewBox="0 0 300 64" fill="none">
+    <defs>
+      <linearGradient id="performanceGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+        <stop offset="0%" stopColor="#10B981" stopOpacity="0.3"/>
+        <stop offset="100%" stopColor="#10B981" stopOpacity="0.05"/>
+      </linearGradient>
+    </defs>
+    <path
+      d="M10,50 L50,40 L90,30 L130,20 L170,15 L210,10 L250,8 L290,5"
+      stroke="#10B981"
       strokeWidth="2"
       fill="none"
       strokeLinecap="round"
       strokeLinejoin="round"
     />
-    
-    {/* Zone remplie ETH */}
     <path
-      d="M20,100 L50,85 L80,70 L110,60 L140,45 L170,35 L200,25 L230,30 L260,20 L290,15 L290,120 L20,120 Z"
-      fill="url(#ethGradient)"
+      d="M10,50 L50,40 L90,30 L130,20 L170,15 L210,10 L250,8 L290,5 L290,64 L10,64 Z"
+      fill="url(#performanceGradient)"
     />
-    
-    {/* Graphique secondaire (ligne teal) */}
+  </svg>
+);
+
+const StrategyFlowSVG = () => (
+  <svg className="w-full h-24" viewBox="0 0 400 96" fill="none">
+    <defs>
+      <linearGradient id="strategyGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+        <stop offset="0%" stopColor="#8B5CF6"/>
+        <stop offset="50%" stopColor="#3B82F6"/>
+        <stop offset="100%" stopColor="#06B6D4"/>
+      </linearGradient>
+    </defs>
+    <rect x="20" y="40" width="80" height="16" rx="8" fill="#8B5CF6"/>
+    <text x="60" y="52" textAnchor="middle" className="text-xs font-semibold fill-white">Portfolio</text>
+    <path d="M100,48 L120,48" stroke="#D1D5DB" strokeWidth="2" markerEnd="url(#arrowhead)"/>
+    <rect x="130" y="40" width="80" height="16" rx="8" fill="#3B82F6"/>
+    <text x="170" y="52" textAnchor="middle" className="text-xs font-semibold fill-white">Stratégie</text>
+    <path d="M210,48 L230,48" stroke="#D1D5DB" strokeWidth="2" markerEnd="url(#arrowhead)"/>
+    <rect x="240" y="40" width="80" height="16" rx="8" fill="#06B6D4"/>
+    <text x="280" y="52" textAnchor="middle" className="text-xs font-semibold fill-white">Alertes</text>
+    <defs>
+      <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+        <polygon points="0 0, 10 3.5, 0 7" fill="#D1D5DB"/>
+      </marker>
+    </defs>
+  </svg>
+);
+
+const MarketTrendSVG = () => (
+  <svg className="w-full h-16" viewBox="0 0 300 64" fill="none">
+    <defs>
+      <linearGradient id="marketGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+        <stop offset="0%" stopColor="#F59E0B" stopOpacity="0.3"/>
+        <stop offset="100%" stopColor="#F59E0B" stopOpacity="0.05"/>
+      </linearGradient>
+    </defs>
     <path
-      d="M20,95 L50,80 L80,65 L110,55 L140,40 L170,30 L200,20 L230,25 L260,15 L290,10"
-      stroke="#14B8A6"
+      d="M10,50 L50,45 L90,35 L130,25 L170,30 L210,20 L250,15 L290,10"
+      stroke="#F59E0B"
       strokeWidth="2"
       fill="none"
       strokeLinecap="round"
       strokeLinejoin="round"
     />
-    
-    {/* Position utilisateur */}
-    <circle cx="200" cy="25" r="6" fill="#8B5CF6" stroke="#FFFFFF" strokeWidth="2"/>
-    <circle cx="200" cy="25" r="3" fill="#FFFFFF"/>
-    
-    {/* Ligne de position utilisateur */}
-    <line x1="200" y1="0" x2="200" y2="120" stroke="#8B5CF6" strokeWidth="1" strokeDasharray="4,4" opacity="0.6"/>
-    
-    {/* Labels Y */}
-    <text x="5" y="20" className="text-xs fill-gray-400">50k</text>
-    <text x="5" y="44" className="text-xs fill-gray-400">40k</text>
-    <text x="5" y="68" className="text-xs fill-gray-400">30k</text>
-    <text x="5" y="92" className="text-xs fill-gray-400">20k</text>
-    <text x="5" y="116" className="text-xs fill-gray-400">10k</text>
+    <path
+      d="M10,50 L50,45 L90,35 L130,25 L170,30 L210,20 L250,15 L290,10 L290,64 L10,64 Z"
+      fill="url(#marketGradient)"
+    />
   </svg>
 );
-
-const TokenCard = ({ symbol, name, price, change, icon, color }: {
-  symbol: string;
-  name: string;
-  price: string;
-  change: string;
-  icon: string;
-  color: string;
-}) => {
-  const isPositive = change.startsWith('+');
-  
-  return (
-    <div className="bg-gray-800 rounded-xl p-4 min-w-[200px] hover:bg-gray-750 transition-colors">
-      <div className="flex items-center gap-3 mb-3">
-        <div className={`w-8 h-8 rounded-full flex items-center justify-center ${color}`}>
-          <span className="text-white font-bold text-sm">{icon}</span>
-        </div>
-        <div>
-          <div className="text-white font-semibold">{symbol}</div>
-          <div className="text-gray-400 text-xs">{name}</div>
-        </div>
-      </div>
-      
-      <div className="mb-2">
-        <div className="text-white text-xl font-bold">{price}</div>
-        <div className={`text-sm flex items-center gap-1 ${isPositive ? 'text-green-400' : 'text-red-400'}`}>
-          {isPositive ? <ArrowUpIcon className="h-3 w-3" /> : <ArrowDownIcon className="h-3 w-3" />}
-          {change}
-        </div>
-      </div>
-      
-      {/* Mini graphique */}
-      <div className="h-8">
-        <svg className="w-full h-full" viewBox="0 0 100 32" fill="none">
-          <path
-            d="M0,20 L20,15 L40,10 L60,8 L80,12 L100,5"
-            stroke={isPositive ? "#10B981" : "#EF4444"}
-            strokeWidth="1.5"
-            fill="none"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-        </svg>
-      </div>
-    </div>
-  );
-};
 
 export default function TestDashboardPage() {
+  const { user } = useAuth();
   const router = useRouter();
-  const { user, signOut } = useAuth();
-  const [activeTab, setActiveTab] = useState('dashboard');
-  const [showUserMenu, setShowUserMenu] = useState(false);
-  const userMenuRef = useRef<HTMLDivElement>(null);
+  const [currentTime, setCurrentTime] = useState(new Date());
 
-  // Fermer le menu utilisateur quand on clique ailleurs
   useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (userMenuRef.current && !userMenuRef.current.contains(event.target as Node)) {
-        setShowUserMenu(false);
-      }
-    };
-
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
+    const timer = setInterval(() => {
+      setCurrentTime(new Date());
+    }, 1000);
+    return () => clearInterval(timer);
   }, []);
 
-  const navigation = [
-    { id: 'dashboard', name: 'Dashboard', href: '/dashboard', icon: DashboardIcon },
-    { id: 'portfolio', name: 'Portfolio', href: '/portfolio', icon: PortfolioIcon },
-    { id: 'transactions', name: 'Transactions', href: '/transactions', icon: TransactionIcon },
-    { id: 'strategies', name: 'Stratégies', href: '/strategies', icon: StrategyIcon },
-    { id: 'config', name: 'Configuration', href: '/config', icon: ConfigIcon },
+  const stats = [
+    {
+      name: 'Portfolio Total',
+      value: '€45,230',
+      change: '+12.5%',
+      changeType: 'positive',
+      icon: CurrencyDollarIcon,
+      trend: PortfolioChartSVG,
+      color: 'blue',
+    },
+    {
+      name: 'Stratégies Actives',
+      value: '8',
+      change: '+3 cette semaine',
+      changeType: 'positive',
+      icon: ChartBarIcon,
+      trend: StrategyFlowSVG,
+      color: 'purple',
+    },
+    {
+      name: 'Gains du Mois',
+      value: '€5,420',
+      change: '+24.5%',
+      changeType: 'positive',
+      icon: ArrowTrendingUpIcon,
+      trend: PerformanceChartSVG,
+      color: 'green',
+    },
+    {
+      name: 'Market Sentiment',
+      value: 'Bullish',
+      change: '+8.2%',
+      changeType: 'positive',
+      icon: FireIcon,
+      trend: MarketTrendSVG,
+      color: 'amber',
+    },
   ];
 
-  const handleSignOut = async () => {
-    try {
-      await signOut();
-    } catch (error) {
-      console.error('Erreur lors de la déconnexion:', error);
-    }
-  };
-
-  const handleQuickAction = (action: string) => {
-    switch (action) {
-      case 'transaction':
-        router.push('/transactions');
-        break;
-      case 'strategy':
-        router.push('/strategies');
-        break;
-      case 'portfolio':
-        router.push('/portfolio');
-        break;
-      case 'alert':
-        // TODO: Implémenter la création d'alerte
-        console.log('Créer une alerte prix');
-        break;
-    }
-  };
-
-  const tokens = [
-    { symbol: 'BTC', name: 'Bitcoin', price: '€44,230', change: '+6.2%', icon: '₿', color: 'bg-orange-500' },
-    { symbol: 'ETH', name: 'Ethereum', price: '€3,420', change: '-3.8%', icon: 'Ξ', color: 'bg-blue-500' },
-    { symbol: 'ADA', name: 'Cardano', price: '€0.52', change: '+4.2%', icon: '₳', color: 'bg-blue-600' },
-    { symbol: 'SOL', name: 'Solana', price: '€98.50', change: '+12.1%', icon: '◎', color: 'bg-purple-500' },
-    { symbol: 'DOT', name: 'Polkadot', price: '€7.20', change: '-2.1%', icon: '●', color: 'bg-pink-500' },
+  const topHoldings = [
+    { symbol: 'BTC', name: 'Bitcoin', value: '€18,420', change: '+5.2%', percentage: 40.8 },
+    { symbol: 'ETH', name: 'Ethereum', value: '€12,150', change: '+3.8%', percentage: 26.9 },
+    { symbol: 'ADA', name: 'Cardano', value: '€4,230', change: '+7.1%', percentage: 9.4 },
+    { symbol: 'SOL', name: 'Solana', value: '€3,890', change: '+12.3%', percentage: 8.6 },
+    { symbol: 'DOT', name: 'Polkadot', value: '€2,540', change: '-2.1%', percentage: 5.6 },
   ];
 
-  const marketTrends = [
-    { name: 'BTC Bitcoin', price: '€44,230', change: '+2,540', isPositive: true },
-    { name: 'ETH Ethereum', price: '€3,420', change: '-1,320', isPositive: false },
-    { name: 'ADA Cardano', price: '€0.52', change: '+2,140', isPositive: true },
-    { name: 'SOL Solana', price: '€98.50', change: '-1,903', isPositive: false },
-    { name: 'DOT Polkadot', price: '€7.20', change: '+1,976', isPositive: true },
+  const recentActivities = [
+    { action: 'Stratégie BTC activée', time: 'Il y a 2h', type: 'strategy', icon: BoltIcon },
+    { action: 'Achat ETH +0.5', time: 'Il y a 4h', type: 'buy', icon: PlusIcon },
+    { action: 'Alerte prix atteinte', time: 'Il y a 6h', type: 'alert', icon: StarIcon },
+    { action: 'Vente ADA -100', time: 'Hier', type: 'sell', icon: ArrowTrendingDownIcon },
+  ];
+
+  const quickActions = [
+    {
+      title: 'Nouvelle Transaction',
+      description: 'Ajouter un achat ou une vente',
+      icon: PlusIcon,
+      href: '/transactions',
+      color: 'bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800',
+    },
+    {
+      title: 'Portfolio',
+      description: 'Voir vos positions',
+      icon: EyeIcon,
+      href: '/portfolio',
+      color: 'bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800',
+    },
+    {
+      title: 'Stratégies',
+      description: 'Gérer les stratégies',
+      icon: ChartBarIcon,
+      href: '/strategies',
+      color: 'bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800',
+    },
+    {
+      title: 'Configuration',
+      description: 'Paramètres',
+      icon: Cog6ToothIcon,
+      href: '/config',
+      color: 'bg-gradient-to-r from-gray-600 to-gray-700 hover:from-gray-700 hover:to-gray-800',
+    },
   ];
 
   return (
-    <div className="min-h-screen bg-gray-900 flex">
-      {/* Sidebar */}
-      <div className="w-16 bg-gray-800 flex flex-col items-center py-6">
-        {/* Logo ExStrat */}
-        <div className="mb-8">
-          <ExStratLogo />
-        </div>
-        
-        {/* Navigation */}
-        <div className="flex flex-col gap-4">
-          {navigation.map((item) => {
-            const IconComponent = item.icon;
-            return (
-              <button
-                key={item.id}
-                onClick={() => {
-                  setActiveTab(item.id);
-                  router.push(item.href);
-                }}
-                className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors ${
-                  activeTab === item.id ? 'bg-purple-600' : 'hover:bg-gray-700'
-                }`}
-                title={item.name}
-              >
-                <IconComponent />
-              </button>
-            );
-          })}
-        </div>
-        
-        {/* Déconnexion */}
-        <div className="mt-auto">
-          <button 
-            onClick={handleSignOut}
-            className="w-10 h-10 rounded-full flex items-center justify-center hover:bg-gray-700 transition-colors"
-            title="Se déconnecter"
-          >
-            <PowerIcon className="h-5 w-5 text-white" />
-          </button>
-        </div>
-      </div>
-
-      {/* Main Content */}
-      <div className="flex-1 flex flex-col">
-        {/* Top Bar */}
-        <div className="bg-gray-800 px-6 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <h1 className="text-white text-lg font-semibold">
-              {navigation.find(item => item.id === activeTab)?.name || 'Dashboard'}
-            </h1>
-          </div>
-          
-          <div className="flex items-center gap-4">
-            <div className="relative">
-              <MagnifyingGlassIcon className="h-5 w-5 text-gray-400 absolute left-3 top-1/2 transform -translate-y-1/2" />
-              <input
-                type="text"
-                placeholder="Rechercher"
-                className="bg-gray-700 text-white placeholder-gray-400 px-10 py-2 rounded-lg w-64"
-              />
+    <ProtectedRoute>
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-blue-50">
+        <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          {/* En-tête avec horloge */}
+          <div className="mb-8 flex justify-between items-center">
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900 mb-2">
+                Vue d'ensemble
+              </h1>
+              <p className="text-gray-600">
+                Bonjour {user?.email?.split('@')[0]}, voici un aperçu de votre portfolio crypto
+              </p>
             </div>
-            
-            <button className="relative p-2 hover:bg-gray-700 rounded-lg transition-colors">
-              <BellIcon className="h-5 w-5 text-white" />
-              <div className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></div>
-            </button>
-            
-            {/* Menu utilisateur */}
-            <div className="relative" ref={userMenuRef}>
-              <button
-                onClick={() => setShowUserMenu(!showUserMenu)}
-                className="w-8 h-8 bg-purple-600 rounded-full flex items-center justify-center hover:bg-purple-700 transition-colors"
-              >
-                <span className="text-white text-sm font-semibold">
-                  {user?.email?.charAt(0).toUpperCase() || 'E'}
-                </span>
-              </button>
-              
-              {/* Dropdown menu */}
-              {showUserMenu && (
-                <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 z-50">
-                  <div className="py-2">
-                    <button className="flex items-center gap-3 w-full px-4 py-2 text-gray-700 hover:bg-gray-100 transition-colors">
-                      <UserCircleIcon className="h-5 w-5" />
-                      Mon profil
-                    </button>
-                    <button className="flex items-center gap-3 w-full px-4 py-2 text-gray-700 hover:bg-gray-100 transition-colors">
-                      <Cog6ToothIcon className="h-5 w-5" />
-                      Paramètres
-                    </button>
-                    <hr className="my-1" />
-                    <button 
-                      onClick={handleSignOut}
-                      className="flex items-center gap-3 w-full px-4 py-2 text-gray-700 hover:bg-gray-100 transition-colors"
-                    >
-                      <ArrowRightOnRectangleIcon className="h-5 w-5" />
-                      Se déconnecter
-                    </button>
+            <div className="text-right">
+              <div className="text-2xl font-bold text-gray-900">
+                {currentTime.toLocaleTimeString('fr-FR', { 
+                  hour: '2-digit', 
+                  minute: '2-digit',
+                  second: '2-digit'
+                })}
+              </div>
+              <div className="text-sm text-gray-500">
+                {currentTime.toLocaleDateString('fr-FR', { 
+                  weekday: 'long', 
+                  year: 'numeric', 
+                  month: 'long', 
+                  day: 'numeric' 
+                })}
+              </div>
+            </div>
+          </div>
+
+          {/* Statistiques principales avec graphiques */}
+          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4 mb-8">
+            {stats.map((stat) => (
+              <Card key={stat.name} className="hover:shadow-xl transition-all duration-300 border-0 shadow-lg">
+                <CardContent className="p-6">
+                  <div className="flex items-center justify-between mb-4">
+                    <div className={`p-3 rounded-xl bg-gradient-to-r ${
+                      stat.color === 'blue' ? 'from-blue-500 to-blue-600' :
+                      stat.color === 'purple' ? 'from-purple-500 to-purple-600' :
+                      stat.color === 'green' ? 'from-green-500 to-green-600' :
+                      'from-amber-500 to-amber-600'
+                    }`}>
+                      <stat.icon className="h-6 w-6 text-white" />
+                    </div>
+                    <Badge variant="secondary" className={`${
+                      stat.changeType === 'positive' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                    }`}>
+                      {stat.change}
+                    </Badge>
+                  </div>
+                  <div className="mb-4">
+                    <p className="text-sm font-medium text-gray-600 mb-1">
+                      {stat.name}
+                    </p>
+                    <p className="text-2xl font-bold text-gray-900">
+                      {stat.value}
+                    </p>
+                  </div>
+                  <div className="h-16">
+                    <stat.trend />
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
+            {/* Top Holdings avec graphique en camembert */}
+            <Card className="lg:col-span-2 hover:shadow-xl transition-all duration-300 border-0 shadow-lg">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <div className="p-2 bg-gradient-to-r from-blue-500 to-blue-600 rounded-lg">
+                    <CurrencyDollarIcon className="h-5 w-5 text-white" />
+                  </div>
+                  Top Holdings
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="flex items-center gap-8">
+                  <div className="flex-1">
+                    {topHoldings.map((holding, index) => (
+                      <div key={holding.symbol} className="flex items-center justify-between py-3 border-b border-gray-100 last:border-b-0">
+                        <div className="flex items-center gap-3">
+                          <div className={`w-3 h-3 rounded-full ${
+                            index === 0 ? 'bg-orange-500' :
+                            index === 1 ? 'bg-blue-500' :
+                            index === 2 ? 'bg-blue-600' :
+                            index === 3 ? 'bg-purple-500' :
+                            'bg-pink-500'
+                          }`}></div>
+                          <div>
+                            <div className="font-semibold text-gray-900">{holding.symbol}</div>
+                            <div className="text-sm text-gray-500">{holding.name}</div>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <div className="font-semibold text-gray-900">{holding.value}</div>
+                          <div className={`text-sm ${
+                            holding.change.startsWith('+') ? 'text-green-600' : 'text-red-600'
+                          }`}>
+                            {holding.change}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="flex-shrink-0">
+                    <CryptoPieChartSVG />
                   </div>
                 </div>
-              )}
-            </div>
-          </div>
-        </div>
+              </CardContent>
+            </Card>
 
-        {/* Content */}
-        <div className="flex-1 p-6">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-            {/* Hero Section */}
-            <div className="bg-gradient-to-br from-purple-600 to-pink-600 rounded-xl p-6 relative overflow-hidden">
-              <div className="relative z-10">
-                <h2 className="text-white text-2xl font-bold mb-2">Votre Portail vers la Blockchain</h2>
-                <div className="text-purple-200 text-sm mb-4">EXSTRAT 2.0</div>
-                <p className="text-white text-sm mb-4">
-                  ExStrat est une plateforme de stratégies crypto. Nous rendons le trading accessible.
-                </p>
-                <button className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors">
-                  En savoir plus.
-                </button>
-              </div>
-              
-              {/* Formes géométriques décoratives */}
-              <div className="absolute top-4 right-4 w-8 h-8 bg-black rounded-full opacity-20"></div>
-              <div className="absolute bottom-4 right-8 w-6 h-12 bg-blue-400 rounded-full opacity-20"></div>
-              <div className="absolute top-8 right-12 w-0 h-0 border-l-4 border-r-4 border-b-6 border-transparent border-b-purple-300 opacity-20"></div>
-            </div>
-
-            {/* ETH Price Chart */}
-            <div className="bg-gray-800 rounded-xl p-6">
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center gap-2">
-                  <div className="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center">
-                    <span className="text-white text-xs font-bold">Ξ</span>
+            {/* Activités récentes */}
+            <Card className="hover:shadow-xl transition-all duration-300 border-0 shadow-lg">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <div className="p-2 bg-gradient-to-r from-purple-500 to-purple-600 rounded-lg">
+                    <ClockIcon className="h-5 w-5 text-white" />
                   </div>
-                  <span className="text-white font-semibold">ETH/EUR</span>
-                  <ArrowDownIcon className="h-4 w-4 text-gray-400" />
+                  Activités Récentes
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {recentActivities.map((activity, index) => (
+                    <div key={index} className="flex items-center gap-3 p-3 rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors">
+                      <div className={`p-2 rounded-lg ${
+                        activity.type === 'strategy' ? 'bg-purple-100' :
+                        activity.type === 'buy' ? 'bg-green-100' :
+                        activity.type === 'sell' ? 'bg-red-100' :
+                        'bg-yellow-100'
+                      }`}>
+                        <activity.icon className={`h-4 w-4 ${
+                          activity.type === 'strategy' ? 'text-purple-600' :
+                          activity.type === 'buy' ? 'text-green-600' :
+                          activity.type === 'sell' ? 'text-red-600' :
+                          'text-yellow-600'
+                        }`} />
+                      </div>
+                      <div className="flex-1">
+                        <div className="text-sm font-medium text-gray-900">{activity.action}</div>
+                        <div className="text-xs text-gray-500">{activity.time}</div>
+                      </div>
+                    </div>
+                  ))}
                 </div>
-                <div className="flex gap-2">
-                  <button className="bg-purple-600 text-white px-3 py-1 rounded text-xs">1D</button>
-                  <button className="bg-gray-700 text-gray-300 px-3 py-1 rounded text-xs">1W</button>
-                  <button className="bg-gray-700 text-gray-300 px-3 py-1 rounded text-xs">1M</button>
-                </div>
-              </div>
-              
-              <div className="mb-4">
-                <ETHPriceChart userPosition={200} />
-              </div>
-              
-              <div className="text-white text-sm">
-                Position: <span className="text-purple-400 font-semibold">€3,420</span>
-              </div>
-            </div>
+              </CardContent>
+            </Card>
           </div>
 
-          {/* Token Overview */}
-          <div className="mb-6">
-            <h3 className="text-white text-lg font-semibold mb-4">Overview des Tokens</h3>
-            <div className="flex gap-4 overflow-x-auto pb-2">
-              {tokens.map((token, index) => (
-                <TokenCard key={index} {...token} />
+          {/* Actions rapides */}
+          <div className="mb-8">
+            <h2 className="text-2xl font-bold text-gray-900 mb-6">
+              Actions Rapides
+            </h2>
+            <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
+              {quickActions.map((action) => (
+                <Card 
+                  key={action.title} 
+                  className="group cursor-pointer hover:shadow-xl transition-all duration-300 border-0 shadow-lg hover:scale-105"
+                  onClick={() => router.push(action.href)}
+                >
+                  <CardContent className="p-6 text-center">
+                    <div className={`w-20 h-20 mx-auto mb-4 rounded-2xl ${action.color} flex items-center justify-center group-hover:scale-110 transition-transform duration-300 shadow-lg`}>
+                      <action.icon className="h-10 w-10 text-white" />
+                    </div>
+                    <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                      {action.title}
+                    </h3>
+                    <p className="text-sm text-gray-600">
+                      {action.description}
+                    </p>
+                  </CardContent>
+                </Card>
               ))}
-              <div className="flex items-center justify-center min-w-[200px] bg-gray-800 rounded-xl border-2 border-dashed border-gray-600 hover:border-gray-500 transition-colors">
-                <PlusIcon className="h-8 w-8 text-gray-400" />
-              </div>
             </div>
           </div>
-
-          {/* Bottom Row */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Actions Rapides */}
-            <div className="bg-gray-800 rounded-xl p-6">
-              <h3 className="text-white font-semibold mb-4">Actions Rapides</h3>
-              <div className="grid grid-cols-2 gap-4">
-                <button 
-                  onClick={() => handleQuickAction('transaction')}
-                  className="bg-blue-600 hover:bg-blue-700 text-white p-4 rounded-lg transition-colors flex flex-col items-center gap-2"
-                >
-                  <PlusIcon className="h-6 w-6" />
-                  <span className="text-sm font-medium">Nouvelle Transaction</span>
-                </button>
-                <button 
-                  onClick={() => handleQuickAction('strategy')}
-                  className="bg-purple-600 hover:bg-purple-700 text-white p-4 rounded-lg transition-colors flex flex-col items-center gap-2"
-                >
-                  <ChartBarIcon className="h-6 w-6" />
-                  <span className="text-sm font-medium">Créer Stratégie</span>
-                </button>
-                <button 
-                  onClick={() => handleQuickAction('portfolio')}
-                  className="bg-green-600 hover:bg-green-700 text-white p-4 rounded-lg transition-colors flex flex-col items-center gap-2"
-                >
-                  <WalletIcon className="h-6 w-6" />
-                  <span className="text-sm font-medium">Nouveau Portfolio</span>
-                </button>
-                <button 
-                  onClick={() => handleQuickAction('alert')}
-                  className="bg-orange-600 hover:bg-orange-700 text-white p-4 rounded-lg transition-colors flex flex-col items-center gap-2"
-                >
-                  <BellIcon className="h-6 w-6" />
-                  <span className="text-sm font-medium">Alerte Prix</span>
-                </button>
-              </div>
-            </div>
-
-            {/* Vue d'ensemble */}
-            <div className="bg-gray-800 rounded-xl p-6">
-              <h3 className="text-white font-semibold mb-4">Vue d'ensemble</h3>
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
-                    <span className="text-white text-sm">Portfolios actifs</span>
-                  </div>
-                  <span className="text-white font-semibold">3</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="w-3 h-3 bg-purple-500 rounded-full"></div>
-                    <span className="text-white text-sm">Stratégies en cours</span>
-                  </div>
-                  <span className="text-white font-semibold">8</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="w-3 h-3 bg-green-500 rounded-full"></div>
-                    <span className="text-white text-sm">Tokens détenus</span>
-                  </div>
-                  <span className="text-white font-semibold">12</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="w-3 h-3 bg-orange-500 rounded-full"></div>
-                    <span className="text-white text-sm">Alertes actives</span>
-                  </div>
-                  <span className="text-white font-semibold">5</span>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Second Bottom Row */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
-            {/* Top Holdings */}
-            <div className="bg-gray-800 rounded-xl p-6">
-              <div className="flex items-center gap-2 mb-4">
-                <div className="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center">
-                  <span className="text-white text-xs font-bold">€</span>
-                </div>
-                <h3 className="text-white font-semibold">Top Holdings</h3>
-              </div>
-              <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="w-3 h-3 bg-orange-500 rounded-full"></div>
-                    <span className="text-white text-sm">BTC Bitcoin</span>
-                  </div>
-                  <div className="text-right">
-                    <div className="text-white text-sm font-semibold">€18,420</div>
-                    <div className="text-green-400 text-xs flex items-center gap-1">
-                      <ArrowUpIcon className="h-3 w-3" />
-                      +5.2%
-                    </div>
-                  </div>
-                </div>
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
-                    <span className="text-white text-sm">ETH Ethereum</span>
-                  </div>
-                  <div className="text-right">
-                    <div className="text-white text-sm font-semibold">€12,150</div>
-                    <div className="text-green-400 text-xs flex items-center gap-1">
-                      <ArrowUpIcon className="h-3 w-3" />
-                      +3.8%
-                    </div>
-                  </div>
-                </div>
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="w-3 h-3 bg-blue-600 rounded-full"></div>
-                    <span className="text-white text-sm">ADA Cardano</span>
-                  </div>
-                  <div className="text-right">
-                    <div className="text-white text-sm font-semibold">€4,230</div>
-                    <div className="text-green-400 text-xs flex items-center gap-1">
-                      <ArrowUpIcon className="h-3 w-3" />
-                      +7.1%
-                    </div>
-                  </div>
-                </div>
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="w-3 h-3 bg-purple-500 rounded-full"></div>
-                    <span className="text-white text-sm">SOL Solana</span>
-                  </div>
-                  <div className="text-right">
-                    <div className="text-white text-sm font-semibold">€3,890</div>
-                    <div className="text-gray-400 text-xs">+0.0%</div>
-                  </div>
-                </div>
-              </div>
-              
-              {/* Mini pie chart */}
-              <div className="mt-4 flex justify-center">
-                <svg className="w-24 h-24" viewBox="0 0 100 100" fill="none">
-                  {/* Fond gris foncé */}
-                  <circle cx="50" cy="50" r="45" fill="#1F2937" stroke="#374151" strokeWidth="2"/>
-                  
-                  {/* Segments du donut */}
-                  <path d="M50 5 A45 45 0 0 1 95 50 L50 50 Z" fill="#F97316" />
-                  <path d="M95 50 A45 45 0 0 1 50 95 L50 50 Z" fill="#3B82F6" />
-                  <path d="M50 95 A45 45 0 0 1 5 50 L50 50 Z" fill="#10B981" />
-                  <path d="M5 50 A45 45 0 0 1 50 5 L50 50 Z" fill="#374151" />
-                  
-                  {/* Cercle central */}
-                  <circle cx="50" cy="50" r="25" fill="#1F2937" />
-                  
-                  {/* Texte central */}
-                  <text x="50" y="48" textAnchor="middle" fill="white" fontSize="10" fontWeight="bold">€45.2K</text>
-                </svg>
-              </div>
-            </div>
-
-            {/* Activités Récentes */}
-            <div className="bg-gray-800 rounded-xl p-6">
-              <div className="flex items-center gap-2 mb-4">
-                <div className="w-6 h-6 bg-purple-500 rounded-full flex items-center justify-center">
-                  <span className="text-white text-xs">🕐</span>
-                </div>
-                <h3 className="text-white font-semibold">Activités Récentes</h3>
-              </div>
-              <div className="space-y-3">
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 bg-purple-600 rounded-full flex items-center justify-center">
-                    <span className="text-white text-xs">⚡</span>
-                  </div>
-                  <div className="flex-1">
-                    <div className="text-white text-sm">Stratégie BTC activée</div>
-                    <div className="text-gray-400 text-xs">Il y a 2h</div>
-                  </div>
-                </div>
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 bg-green-600 rounded-full flex items-center justify-center">
-                    <span className="text-white text-xs">+</span>
-                  </div>
-                  <div className="flex-1">
-                    <div className="text-white text-sm">Achat ETH +0.5</div>
-                    <div className="text-gray-400 text-xs">Il y a 4h</div>
-                  </div>
-                </div>
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 bg-yellow-600 rounded-full flex items-center justify-center">
-                    <span className="text-white text-xs">⭐</span>
-                  </div>
-                  <div className="flex-1">
-                    <div className="text-white text-sm">Alerte prix atteinte</div>
-                    <div className="text-gray-400 text-xs">Il y a 6h</div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
+        </main>
       </div>
-    </div>
+    </ProtectedRoute>
   );
 }
