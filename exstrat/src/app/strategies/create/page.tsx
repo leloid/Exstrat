@@ -244,7 +244,7 @@ export default function CreateStrategyPage() {
             <p className="mt-2 text-gray-600">
               {isEditMode 
                 ? 'Modifiez les paramètres de votre stratégie existante'
-                : 'Définissez vos cibles de profit théoriques pour n'importe quel token'
+                : 'Définissez vos cibles de profit théoriques pour n\'importe quel token'
               }
             </p>
           </div>

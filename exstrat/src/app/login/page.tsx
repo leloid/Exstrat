@@ -94,7 +94,9 @@ export default function LoginPage() {
     
     try {
       await signIn(data);
-      router.push('/');
+      // Vérifier si c'est la première connexion (pas de portfolios)
+      // Pour l'instant, on redirige toujours vers l'onboarding
+      router.push('/onboarding');
     } catch (err: any) {
       setError(err.message);
     } finally {
@@ -111,7 +113,8 @@ export default function LoginPage() {
         email: data.email,
         password: data.password,
       });
-      router.push('/');
+      // Nouvel utilisateur, rediriger vers l'onboarding
+      router.push('/onboarding');
     } catch (err: any) {
       setError(err.message);
     } finally {
