@@ -10,6 +10,7 @@ import { usePortfolio } from '@/contexts/PortfolioContext';
 import ProtectedRoute from '@/components/auth/ProtectedRoute';
 import Sidebar from '@/components/layout/Sidebar';
 import TopBar from '@/components/layout/TopBar';
+import { useTheme } from '@/contexts/ThemeContext';
 import { Button } from '@/components/ui/Button';
 import { formatCurrency } from '@/lib/format';
 import * as portfoliosApi from '@/lib/portfolios-api';
@@ -24,9 +25,8 @@ export default function TransactionsPage() {
   const [globalInvested, setGlobalInvested] = useState(0);
   const [globalValue, setGlobalValue] = useState(0);
   
-  // Gestion du mode et de la langue
-  const [isDarkMode, setIsDarkMode] = useState(true);
-  const [language, setLanguage] = useState<'fr' | 'en'>('fr');
+  // Utilisation du contexte global pour le thème
+  const { isDarkMode, language } = useTheme();
 
   // Calcule les totaux globaux (tous portfolios)
   useEffect(() => {
@@ -101,13 +101,7 @@ export default function TransactionsPage() {
         <Sidebar activeTab={activeTab} onTabChange={setActiveTab} isDarkMode={isDarkMode} />
         
         <div className="flex-1 flex flex-col">
-          <TopBar 
-            currentPageName={language === 'fr' ? 'Transactions' : 'Transactions'}
-            isDarkMode={isDarkMode}
-            onToggleDarkMode={() => setIsDarkMode(!isDarkMode)}
-            language={language}
-            onLanguageChange={setLanguage}
-          />
+          <TopBar currentPageName={language === 'fr' ? 'Transactions' : 'Transactions'} />
 
           <div className={`flex-1 p-6 ${isDarkMode ? 'bg-gray-900' : 'bg-gray-50'}`}>
             {/* Header */}

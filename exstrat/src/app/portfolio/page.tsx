@@ -7,6 +7,7 @@ import * as portfoliosApi from '@/lib/portfolios-api';
 import ProtectedRoute from '@/components/auth/ProtectedRoute';
 import Sidebar from '@/components/layout/Sidebar';
 import TopBar from '@/components/layout/TopBar';
+import { useTheme } from '@/contexts/ThemeContext';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Label } from '@/components/ui/Label';
@@ -52,9 +53,8 @@ export default function PortfolioPage() {
     isDefault: false
   });
   
-  // Gestion du mode et de la langue
-  const [isDarkMode, setIsDarkMode] = useState(true);
-  const [language, setLanguage] = useState<'fr' | 'en'>('fr');
+  // Utilisation du contexte global pour le thème
+  const { isDarkMode, language } = useTheme();
 
   // Calculer les totaux pour le portfolio actuellement sélectionné
   const currentPortfolioValue = currentPortfolio ? holdings.reduce((sum, holding) => sum + (holding.currentValue || 0), 0) : 0;
@@ -153,13 +153,7 @@ export default function PortfolioPage() {
         <div className={`min-h-screen flex ${isDarkMode ? 'bg-gray-900' : 'bg-gray-50'}`}>
           <Sidebar activeTab={activeTab} onTabChange={setActiveTab} isDarkMode={isDarkMode} />
           <div className="flex-1 flex flex-col">
-            <TopBar 
-              currentPageName={language === 'fr' ? 'Portfolios' : 'Portfolios'}
-              isDarkMode={isDarkMode}
-              onToggleDarkMode={() => setIsDarkMode(!isDarkMode)}
-              language={language}
-              onLanguageChange={setLanguage}
-            />
+            <TopBar currentPageName={language === 'fr' ? 'Portfolios' : 'Portfolios'} />
             <div className={`flex-1 p-6 flex items-center justify-center ${isDarkMode ? 'bg-gray-900' : 'bg-gray-50'}`}>
               <div className="text-center">
                 <div className={`animate-spin rounded-full h-12 w-12 border-b-2 ${
@@ -182,13 +176,7 @@ export default function PortfolioPage() {
         <Sidebar activeTab={activeTab} onTabChange={setActiveTab} isDarkMode={isDarkMode} />
         
         <div className="flex-1 flex flex-col">
-          <TopBar 
-            currentPageName={language === 'fr' ? 'Portfolios' : 'Portfolios'}
-            isDarkMode={isDarkMode}
-            onToggleDarkMode={() => setIsDarkMode(!isDarkMode)}
-            language={language}
-            onLanguageChange={setLanguage}
-          />
+          <TopBar currentPageName={language === 'fr' ? 'Portfolios' : 'Portfolios'} />
 
           <div className={`flex-1 p-6 ${isDarkMode ? 'bg-gray-900' : 'bg-gray-50'}`}>
             {/* Header */}

@@ -5,6 +5,7 @@ import { usePortfolio } from '@/contexts/PortfolioContext';
 import ProtectedRoute from '@/components/auth/ProtectedRoute';
 import Sidebar from '@/components/layout/Sidebar';
 import TopBar from '@/components/layout/TopBar';
+import { useTheme } from '@/contexts/ThemeContext';
 import { Button } from '@/components/ui/Button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/Select';
 import { Badge } from '@/components/ui/Badge';
@@ -29,9 +30,8 @@ export default function ConfigPage() {
   const [loadingStrategies, setLoadingStrategies] = useState(true);
   const [loadingHoldings, setLoadingHoldings] = useState(true);
   
-  // Gestion du mode et de la langue
-  const [isDarkMode, setIsDarkMode] = useState(true);
-  const [language, setLanguage] = useState<'fr' | 'en'>('fr');
+  // Utilisation du contexte global pour le thème
+  const { isDarkMode, language } = useTheme();
 
   useEffect(() => {
     refreshPortfolios();
@@ -212,13 +212,7 @@ export default function ConfigPage() {
         <div className={`min-h-screen flex ${isDarkMode ? 'bg-gray-900' : 'bg-gray-50'}`}>
           <Sidebar activeTab={activeTab} onTabChange={setActiveTab} isDarkMode={isDarkMode} />
           <div className="flex-1 flex flex-col">
-            <TopBar 
-              currentPageName={language === 'fr' ? 'Configuration' : 'Configuration'}
-              isDarkMode={isDarkMode}
-              onToggleDarkMode={() => setIsDarkMode(!isDarkMode)}
-              language={language}
-              onLanguageChange={setLanguage}
-            />
+            <TopBar currentPageName={language === 'fr' ? 'Configuration' : 'Configuration'} />
             <div className={`flex-1 p-6 flex items-center justify-center ${isDarkMode ? 'bg-gray-900' : 'bg-gray-50'}`}>
               <div className="text-center">
                 <div className={`animate-spin rounded-full h-12 w-12 border-b-2 ${
@@ -241,13 +235,7 @@ export default function ConfigPage() {
         <Sidebar activeTab={activeTab} onTabChange={setActiveTab} isDarkMode={isDarkMode} />
         
         <div className="flex-1 flex flex-col">
-          <TopBar 
-            currentPageName={language === 'fr' ? 'Configuration' : 'Configuration'}
-            isDarkMode={isDarkMode}
-            onToggleDarkMode={() => setIsDarkMode(!isDarkMode)}
-            language={language}
-            onLanguageChange={setLanguage}
-          />
+          <TopBar currentPageName={language === 'fr' ? 'Configuration' : 'Configuration'} />
 
           <div className={`flex-1 p-6 ${isDarkMode ? 'bg-gray-900' : 'bg-gray-50'}`}>
             {/* Header */}

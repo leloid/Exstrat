@@ -6,6 +6,7 @@ import { usePortfolio } from '@/contexts/PortfolioContext';
 import ProtectedRoute from '@/components/auth/ProtectedRoute';
 import Sidebar from '@/components/layout/Sidebar';
 import TopBar from '@/components/layout/TopBar';
+import { useTheme } from '@/contexts/ThemeContext';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { 
@@ -25,9 +26,8 @@ export default function StrategiesPage() {
   const [strategies, setStrategies] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   
-  // Gestion du mode et de la langue
-  const [isDarkMode, setIsDarkMode] = useState(true);
-  const [language, setLanguage] = useState<'fr' | 'en'>('fr');
+  // Utilisation du contexte global pour le thème
+  const { isDarkMode, language } = useTheme();
 
   useEffect(() => {
     loadStrategies();
@@ -100,13 +100,7 @@ export default function StrategiesPage() {
         <div className={`min-h-screen flex ${isDarkMode ? 'bg-gray-900' : 'bg-gray-50'}`}>
           <Sidebar activeTab={activeTab} onTabChange={setActiveTab} isDarkMode={isDarkMode} />
           <div className="flex-1 flex flex-col">
-            <TopBar 
-              currentPageName={language === 'fr' ? 'Stratégies' : 'Strategies'}
-              isDarkMode={isDarkMode}
-              onToggleDarkMode={() => setIsDarkMode(!isDarkMode)}
-              language={language}
-              onLanguageChange={setLanguage}
-            />
+            <TopBar currentPageName={language === 'fr' ? 'Stratégies' : 'Strategies'} />
             <div className={`flex-1 p-6 flex items-center justify-center ${isDarkMode ? 'bg-gray-900' : 'bg-gray-50'}`}>
               <div className="text-center">
                 <div className={`animate-spin rounded-full h-12 w-12 border-b-2 ${
@@ -129,13 +123,7 @@ export default function StrategiesPage() {
         <Sidebar activeTab={activeTab} onTabChange={setActiveTab} isDarkMode={isDarkMode} />
         
         <div className="flex-1 flex flex-col">
-          <TopBar 
-            currentPageName={language === 'fr' ? 'Stratégies' : 'Strategies'}
-            isDarkMode={isDarkMode}
-            onToggleDarkMode={() => setIsDarkMode(!isDarkMode)}
-            language={language}
-            onLanguageChange={setLanguage}
-          />
+          <TopBar currentPageName={language === 'fr' ? 'Stratégies' : 'Strategies'} />
 
           <div className={`flex-1 p-6 ${isDarkMode ? 'bg-gray-900' : 'bg-gray-50'}`}>
             {/* Header */}

@@ -6,6 +6,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import ProtectedRoute from '@/components/auth/ProtectedRoute';
 import Sidebar from '@/components/layout/Sidebar';
 import TopBar from '@/components/layout/TopBar';
+import { useTheme } from '@/contexts/ThemeContext';
 import { 
   ChartBarIcon, 
   ArrowUpIcon,
@@ -133,9 +134,8 @@ const TokenCard = ({ symbol, name, price, change, icon, color, isDarkMode }: {
 export default function DashboardPage() {
   const router = useRouter();
   const { user } = useAuth();
+  const { isDarkMode, language } = useTheme();
   const [activeTab, setActiveTab] = useState('dashboard');
-  const [isDarkMode, setIsDarkMode] = useState(true);
-  const [language, setLanguage] = useState<'fr' | 'en'>('fr');
 
   const handleQuickAction = (action: string) => {
     switch (action) {
@@ -172,13 +172,7 @@ export default function DashboardPage() {
         {/* Main Content */}
         <div className="flex-1 flex flex-col">
           {/* Top Bar */}
-          <TopBar 
-            currentPageName={language === 'fr' ? 'Dashboard' : 'Dashboard'}
-            isDarkMode={isDarkMode}
-            onToggleDarkMode={() => setIsDarkMode(!isDarkMode)}
-            language={language}
-            onLanguageChange={setLanguage}
-          />
+          <TopBar currentPageName={language === 'fr' ? 'Dashboard' : 'Dashboard'} />
 
           {/* Content */}
           <div className={`flex-1 p-6 ${isDarkMode ? 'bg-gray-900' : 'bg-gray-50'}`}>

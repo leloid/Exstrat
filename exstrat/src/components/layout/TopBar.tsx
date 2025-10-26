@@ -2,6 +2,7 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
+import { useTheme } from '@/contexts/ThemeContext';
 import { 
   MagnifyingGlassIcon,
   BellIcon,
@@ -15,20 +16,11 @@ import {
 
 interface TopBarProps {
   currentPageName: string;
-  isDarkMode?: boolean;
-  onToggleDarkMode?: () => void;
-  language?: 'fr' | 'en';
-  onLanguageChange?: (lang: 'fr' | 'en') => void;
 }
 
-export default function TopBar({ 
-  currentPageName, 
-  isDarkMode = true, 
-  onToggleDarkMode, 
-  language = 'fr', 
-  onLanguageChange 
-}: TopBarProps) {
+export default function TopBar({ currentPageName }: TopBarProps) {
   const { user, signOut } = useAuth();
+  const { isDarkMode, language, toggleDarkMode, setLanguage } = useTheme();
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [showLanguageMenu, setShowLanguageMenu] = useState(false);
   const userMenuRef = useRef<HTMLDivElement>(null);
@@ -85,7 +77,7 @@ export default function TopBar({
         
         {/* Mode sombre/clair */}
         <button 
-          onClick={onToggleDarkMode}
+          onClick={toggleDarkMode}
           className={`p-2 rounded-lg transition-colors ${
             isDarkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-100'
           }`}
@@ -119,7 +111,7 @@ export default function TopBar({
               <div className="py-2">
                 <button 
                   onClick={() => {
-                    onLanguageChange?.('fr');
+                    setLanguage('fr');
                     setShowLanguageMenu(false);
                   }}
                   className={`w-full px-4 py-2 text-left text-sm hover:bg-gray-100 transition-colors ${
@@ -130,7 +122,7 @@ export default function TopBar({
                 </button>
                 <button 
                   onClick={() => {
-                    onLanguageChange?.('en');
+                    setLanguage('en');
                     setShowLanguageMenu(false);
                   }}
                   className={`w-full px-4 py-2 text-left text-sm hover:bg-gray-100 transition-colors ${
