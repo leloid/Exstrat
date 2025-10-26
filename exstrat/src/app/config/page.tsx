@@ -17,17 +17,26 @@ interface AppliedStrategy {
 }
 
 export default function ConfigPage() {
-  const { portfolios, holdings, isLoading, refreshPortfolios } = usePortfolio();
+  const { portfolios, isLoading, refreshPortfolios } = usePortfolio();
   
   const [theoreticalStrategies, setTheoreticalStrategies] = useState<any[]>([]);
+  const [allHoldings, setAllHoldings] = useState<any[]>([]);
   const [appliedStrategies, setAppliedStrategies] = useState<Record<string, AppliedStrategy>>({});
   const [simulations, setSimulations] = useState<Record<string, any>>({});
   const [loadingStrategies, setLoadingStrategies] = useState(true);
+  const [loadingHoldings, setLoadingHoldings] = useState(true);
 
   useEffect(() => {
     refreshPortfolios();
     loadTheoreticalStrategies();
   }, []);
+
+  // Charger tous les holdings de tous les portfolios
+  useEffect(() => {
+    if (portfolios.length > 0) {
+      loadAllHoldings();
+    }
+  }, [portfolios]);
 
   const loadTheoreticalStrategies = async () => {
     try {
@@ -42,15 +51,47 @@ export default function ConfigPage() {
     }
   };
 
+  const loadAllHoldings = async () => {
+    try {
+      setLoadingHoldings(true);
+      console.log('📥 Chargement de tous les holdings...');
+      
+      const allHoldingsData: any[] = [];
+      
+      // Charger les holdings de chaque portfolio
+      for (const portfolio of portfolios) {
+        try {
+          const holdings = await portfoliosApi.getPortfolioHoldings(portfolio.id);
+          // Ajouter l'information du portfolio à chaque holding
+          const holdingsWithPortfolio = holdings.map(holding => ({
+            ...holding,
+            portfolioName: portfolio.name,
+            portfolioId: portfolio.id,
+          }));
+          allHoldingsData.push(...holdingsWithPortfolio);
+        } catch (error) {
+          console.error(`❌ Erreur lors du chargement des holdings du portfolio ${portfolio.name}:`, error);
+        }
+      }
+      
+      console.log('📊 Tous les holdings chargés:', allHoldingsData);
+      setAllHoldings(allHoldingsData);
+    } catch (error) {
+      console.error('❌ Erreur lors du chargement des holdings:', error);
+    } finally {
+      setLoadingHoldings(false);
+    }
+  };
+
   // Grouper les holdings par portfolio
-  const holdingsByPortfolio = holdings.reduce((acc, holding) => {
+  const holdingsByPortfolio = allHoldings.reduce((acc, holding) => {
     const portfolioId = holding.portfolioId;
     if (!acc[portfolioId]) {
       acc[portfolioId] = [];
     }
     acc[portfolioId].push(holding);
     return acc;
-  }, {} as Record<string, typeof holdings>);
+  }, {} as Record<string, typeof allHoldings>);
 
   // Calculer la simulation pour un holding avec une stratégie
   const calculateSimulation = (holding: any, strategy: any) => {
@@ -126,7 +167,7 @@ export default function ConfigPage() {
       });
 
       // Calculer la simulation
-      const holding = holdings.find(h => h.id === holdingId);
+      const holding = allHoldings.find(h => h.id === holdingId);
       if (holding) {
         const simulation = calculateSimulation(holding, strategy);
         setSimulations({
@@ -144,7 +185,7 @@ export default function ConfigPage() {
 
   // Calculer les totaux globaux
   const globalStats = Object.entries(simulations).reduce((acc, [holdingId, sim]) => {
-    const holding = holdings.find(h => h.id === holdingId);
+    const holding = allHoldings.find(h => h.id === holdingId);
     if (holding) {
       acc.totalInvested += holding.investedAmount;
       acc.totalCurrentValue += sim.currentValue;
@@ -158,7 +199,7 @@ export default function ConfigPage() {
     ? (globalStats.totalProfit / globalStats.totalInvested) * 100 
     : 0;
 
-  if (isLoading || loadingStrategies) {
+  if (isLoading || loadingStrategies || loadingHoldings) {
     return (
       <div className="py-8">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -235,6 +276,7 @@ export default function ConfigPage() {
               <table className="w-full">
                 <thead>
                   <tr className="border-b">
+                    <th className="text-left py-3 px-4 font-medium text-gray-700">Portfolio</th>
                     <th className="text-left py-3 px-4 font-medium text-gray-700">Token</th>
                     <th className="text-right py-3 px-4 font-medium text-gray-700">Quantité</th>
                     <th className="text-right py-3 px-4 font-medium text-gray-700">Investi</th>
@@ -244,20 +286,27 @@ export default function ConfigPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {holdings.length === 0 ? (
+                  {allHoldings.length === 0 ? (
                     <tr>
-                      <td colSpan={6} className="text-center py-8 text-gray-500">
+                      <td colSpan={7} className="text-center py-8 text-gray-500">
                         Aucun holding disponible. Ajoutez des transactions d'abord.
                       </td>
                     </tr>
                   ) : (
-                    holdings.map((holding) => {
+                    allHoldings.map((holding) => {
                       const compatibleStrategies = getCompatibleStrategies(holding.token.symbol);
                       const appliedStrategy = appliedStrategies[holding.id];
                       const simulation = simulations[holding.id];
 
                       return (
                         <tr key={holding.id} className="border-b hover:bg-gray-50">
+                          <td className="py-4 px-4">
+                            <div className="flex items-center gap-2">
+                              <Badge variant="outline" className="text-xs">
+                                {holding.portfolioName}
+                              </Badge>
+                            </div>
+                          </td>
                           <td className="py-4 px-4">
                             <div className="flex items-center gap-2">
                               <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
@@ -347,7 +396,7 @@ export default function ConfigPage() {
                   </thead>
                   <tbody>
                     {Object.entries(simulations).map(([holdingId, simulation]) => {
-                      const holding = holdings.find(h => h.id === holdingId);
+                      const holding = allHoldings.find(h => h.id === holdingId);
                       if (!holding) return null;
 
                       return (
