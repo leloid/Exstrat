@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { useAuth } from '@/contexts/AuthContext';
+import { usePathname } from 'next/navigation';
 import AppBar from './AppBar';
 
 interface LayoutProps {
@@ -10,9 +11,14 @@ interface LayoutProps {
 
 const Layout: React.FC<LayoutProps> = ({ children }) => {
   const { user } = useAuth();
+  const pathname = usePathname();
 
-  // Si l'utilisateur n'est pas connecté, ne pas afficher la barre de navigation
-  if (!user) {
+  // Pages qui ne doivent pas avoir la barre de navigation
+  const noNavPages = ['/onboarding', '/landing', '/login'];
+  const shouldShowNav = user && !noNavPages.includes(pathname);
+
+  // Si l'utilisateur n'est pas connecté ou si c'est une page sans nav, ne pas afficher la barre de navigation
+  if (!shouldShowNav) {
     return <>{children}</>;
   }
 
