@@ -17,7 +17,7 @@ import {
   PencilIcon,
   TrashIcon
 } from '@heroicons/react/24/outline';
-import { createPortfolio } from '@/lib/portfolios-api';
+import { createPortfolio, updatePortfolio, deletePortfolio } from '@/lib/portfolios-api';
 import { transactionsApi } from '@/lib/transactions-api';
 import { strategiesApi } from '@/lib/strategies-api';
 import { CreatePortfolioDto } from '@/types/portfolio';
@@ -98,6 +98,7 @@ export default function OnboardingPage() {
   const [currentStep, setCurrentStep] = useState(0);
   const [searchTerm, setSearchTerm] = useState('');
   const [showTransactionModal, setShowTransactionModal] = useState(false);
+  const [showPortfolioModal, setShowPortfolioModal] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [createdData, setCreatedData] = useState({
@@ -107,6 +108,8 @@ export default function OnboardingPage() {
   });
   const [onboardingTransactions, setOnboardingTransactions] = useState<any[]>([]);
   const [editingTransaction, setEditingTransaction] = useState<any | null>(null);
+  const [onboardingPortfolios, setOnboardingPortfolios] = useState<any[]>([]);
+  const [editingPortfolio, setEditingPortfolio] = useState<any | null>(null);
   const { portfolios, currentPortfolio } = usePortfolio();
   
   // Form data
@@ -136,6 +139,21 @@ export default function OnboardingPage() {
   const [profitTargets, setProfitTargets] = useState<ProfitTarget[]>([]);
   
   const router = useRouter();
+
+  // Charger les portfolios existants au montage et quand on arrive sur le step portfolio
+  React.useEffect(() => {
+    if (currentStep === 0) {
+      const loadPortfolios = async () => {
+        try {
+          const portfolios = await portfoliosApi.getPortfolios();
+          setOnboardingPortfolios(portfolios || []);
+        } catch (err) {
+          console.error('Erreur lors du chargement des portfolios:', err);
+        }
+      };
+      loadPortfolios();
+    }
+  }, [currentStep]);
 
   // Charger les transactions existantes au montage et quand on arrive sur le step exchange
   React.useEffect(() => {
@@ -209,16 +227,73 @@ export default function OnboardingPage() {
         isDefault: portfolioData.isDefault,
       };
 
-      const createdPortfolio = await createPortfolio(portfolioDto);
-      setCreatedData(prev => ({ ...prev, portfolio: createdPortfolio }));
+      if (editingPortfolio) {
+        // Mettre à jour le portfolio existant
+        const updatedPortfolio = await updatePortfolio(editingPortfolio.id, portfolioDto);
+        setOnboardingPortfolios(prev => 
+          prev.map(p => p.id === editingPortfolio.id ? updatedPortfolio : p)
+        );
+        setCreatedData(prev => ({ ...prev, portfolio: updatedPortfolio }));
+      } else {
+        // Créer un nouveau portfolio
+        const createdPortfolio = await createPortfolio(portfolioDto);
+        setOnboardingPortfolios(prev => [...prev, createdPortfolio]);
+        setCreatedData(prev => ({ ...prev, portfolio: createdPortfolio }));
+      }
       
-      console.log('✅ Portfolio créé:', createdPortfolio);
-      setCurrentStep(1);
+      console.log('✅ Portfolio sauvegardé:', editingPortfolio ? 'mise à jour' : 'créé');
+      resetPortfolioForm();
+      setShowPortfolioModal(false);
     } catch (err: any) {
-      console.error('❌ Erreur création portfolio:', err);
-      setError(err.response?.data?.message || 'Erreur lors de la création du portfolio');
+      console.error('❌ Erreur sauvegarde portfolio:', err);
+      setError(err.response?.data?.message || 'Erreur lors de la sauvegarde du portfolio');
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleAddPortfolioClick = () => {
+    setEditingPortfolio(null);
+    setPortfolioData({
+      name: '',
+      description: '',
+      isDefault: false,
+    });
+    setError('');
+    setShowPortfolioModal(true);
+  };
+
+  const handleEditPortfolio = (portfolio: any) => {
+    setEditingPortfolio(portfolio);
+    setPortfolioData({
+      name: portfolio.name,
+      description: portfolio.description || '',
+      isDefault: portfolio.isDefault || false,
+    });
+    setError('');
+    setShowPortfolioModal(true);
+  };
+
+  const resetPortfolioForm = () => {
+    setPortfolioData({
+      name: '',
+      description: '',
+      isDefault: false,
+    });
+    setEditingPortfolio(null);
+    setError('');
+  };
+
+  const handleDeletePortfolio = async (portfolioId: string) => {
+    try {
+      await deletePortfolio(portfolioId);
+      setOnboardingPortfolios(prev => prev.filter(p => p.id !== portfolioId));
+      if (createdData.portfolio?.id === portfolioId) {
+        setCreatedData(prev => ({ ...prev, portfolio: null }));
+      }
+    } catch (err: any) {
+      setError('Erreur lors de la suppression du portfolio');
+      console.error('❌ Erreur suppression portfolio:', err);
     }
   };
 
@@ -517,72 +592,182 @@ export default function OnboardingPage() {
           <div className="space-y-6">
             <div className="text-center">
               <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                Nouveau Portfolio
+                Vos Portfolios
               </h3>
               <p className="text-gray-600">
-                Créez un nouveau portfolio pour organiser vos investissements
+                Créez et gérez vos portfolios pour organiser vos investissements
               </p>
             </div>
 
-            {/* Error Message */}
-            {error && (
-              <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
-                <p className="text-sm text-red-600">{error}</p>
+            {/* Success Message */}
+            {onboardingPortfolios.length > 0 && (
+              <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg">
+                <p className="text-sm text-green-600">
+                  ✅ {onboardingPortfolios.length} portfolio{onboardingPortfolios.length > 1 ? 's' : ''} créé{onboardingPortfolios.length > 1 ? 's' : ''} avec succès !
+                </p>
               </div>
             )}
 
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Nom du Portfolio *
-                </label>
-                <Input
-                  type="text"
-                  placeholder="Ex: Portfolio Principal"
-                  value={portfolioData.name}
-                  onChange={(e) => setPortfolioData(prev => ({ ...prev, name: e.target.value }))}
-                  className="h-12"
-                />
+            {/* Liste des Portfolios Créés */}
+            {onboardingPortfolios.length > 0 && (
+              <div className="mb-6">
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                  Portfolios créés ({onboardingPortfolios.length})
+                </h3>
+                <div className="space-y-3">
+                  {onboardingPortfolios.map((portfolio) => (
+                    <Card key={portfolio.id} className="border border-gray-200">
+                      <CardContent className="p-4">
+                        <div className="flex items-center justify-between">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2">
+                              <h4 className="font-semibold text-gray-900">{portfolio.name}</h4>
+                              {portfolio.isDefault && (
+                                <span className="px-2 py-1 text-xs bg-blue-100 text-blue-700 rounded">
+                                  Défaut
+                                </span>
+                              )}
+                            </div>
+                            {portfolio.description && (
+                              <p className="text-sm text-gray-600 mt-1">{portfolio.description}</p>
+                            )}
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Button
+                              variant="outline"
+                              onClick={() => handleEditPortfolio(portfolio)}
+                              className="p-2"
+                            >
+                              <PencilIcon className="h-4 w-4 text-gray-600" />
+                            </Button>
+                            <Button
+                              variant="outline"
+                              onClick={() => handleDeletePortfolio(portfolio.id)}
+                              className="p-2"
+                            >
+                              <TrashIcon className="h-4 w-4 text-red-600" />
+                            </Button>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
               </div>
+            )}
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Description (optionnel)
-                </label>
-                <textarea
-                  placeholder="Décrivez votre portfolio..."
-                  value={portfolioData.description}
-                  onChange={(e) => setPortfolioData(prev => ({ ...prev, description: e.target.value }))}
-                  className="w-full h-20 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none"
-                />
+            {/* Empty State */}
+            {onboardingPortfolios.length === 0 && (
+              <div className="text-center py-8">
+                <ShieldCheckIcon className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+                <p className="text-gray-600 mb-6">
+                  Créez votre premier portfolio pour commencer à organiser vos investissements
+                </p>
               </div>
+            )}
 
-              <div className="flex items-center">
-                <input 
-                  type="checkbox" 
-                  checked={portfolioData.isDefault}
-                  onChange={(e) => setPortfolioData(prev => ({ ...prev, isDefault: e.target.checked }))}
-                  className="mr-2" 
-                />
-                <span className="text-sm text-gray-700">Portfolio par défaut</span>
+            {/* Modal de Portfolio */}
+            {showPortfolioModal && (
+              <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+                <div className="bg-white rounded-lg max-w-lg w-full max-h-[90vh] overflow-y-auto">
+                  <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between">
+                    <h3 className="text-lg font-semibold text-gray-900">
+                      {editingPortfolio ? 'Modifier le portfolio' : 'Nouveau Portfolio'}
+                    </h3>
+                    <button
+                      onClick={() => {
+                        setShowPortfolioModal(false);
+                        resetPortfolioForm();
+                      }}
+                      className="text-gray-400 hover:text-gray-600"
+                    >
+                      <XMarkIcon className="h-5 w-5" />
+                    </button>
+                  </div>
+
+                  <div className="p-6 space-y-4">
+                    {/* Error Message */}
+                    {error && (
+                      <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
+                        <p className="text-sm text-red-600">{error}</p>
+                      </div>
+                    )}
+
+                    {/* Nom du Portfolio */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Nom du Portfolio *
+                      </label>
+                      <Input
+                        type="text"
+                        placeholder="Ex: Portfolio Principal"
+                        value={portfolioData.name}
+                        onChange={(e) => setPortfolioData(prev => ({ ...prev, name: e.target.value }))}
+                        className="h-12"
+                      />
+                    </div>
+
+                    {/* Description */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Description (optionnel)
+                      </label>
+                      <textarea
+                        placeholder="Décrivez votre portfolio..."
+                        value={portfolioData.description}
+                        onChange={(e) => setPortfolioData(prev => ({ ...prev, description: e.target.value }))}
+                        className="w-full h-20 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none"
+                      />
+                    </div>
+
+                    {/* Portfolio par défaut */}
+                    <div className="flex items-center">
+                      <input 
+                        type="checkbox" 
+                        checked={portfolioData.isDefault}
+                        onChange={(e) => setPortfolioData(prev => ({ ...prev, isDefault: e.target.checked }))}
+                        className="mr-2" 
+                      />
+                      <span className="text-sm text-gray-700">Portfolio par défaut</span>
+                    </div>
+
+                    {/* Boutons d'action */}
+                    <div className="flex justify-end space-x-3 pt-4 border-t border-gray-200">
+                      <Button
+                        variant="outline"
+                        onClick={() => {
+                          setShowPortfolioModal(false);
+                          resetPortfolioForm();
+                        }}
+                        className="px-6 py-2 border-gray-300 text-gray-700 hover:bg-gray-50"
+                      >
+                        Annuler
+                      </Button>
+                      <Button
+                        onClick={handleCreatePortfolio}
+                        disabled={isLoading || !portfolioData.name.trim()}
+                        className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white disabled:opacity-50"
+                      >
+                        {isLoading ? 'Sauvegarde...' : editingPortfolio ? '✓ Modifier' : '✓ Créer'}
+                      </Button>
+                    </div>
+                  </div>
+                </div>
               </div>
-            </div>
+            )}
 
-            {/* Action Buttons */}
-            <div className="flex justify-end space-x-3 pt-6">
-              <Button
-                variant="outline"
-                onClick={handleSkip}
-                className="px-6 py-2 border-gray-300 text-gray-700 hover:bg-gray-50"
+            {/* Footer */}
+            <div className="flex items-center justify-between pt-6 border-t border-gray-200">
+              <div className="flex items-center text-sm text-gray-500">
+                <ShieldCheckIcon className="w-4 h-4 mr-2 text-gray-400" />
+                <span>Organisez vos investissements en portfolios</span>
+              </div>
+              <Button 
+                onClick={handleAddPortfolioClick}
+                className="px-8 py-3 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-medium rounded-lg"
               >
-                Annuler
-              </Button>
-              <Button
-                onClick={handleCreatePortfolio}
-                disabled={isLoading}
-                className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white disabled:opacity-50"
-              >
-                {isLoading ? 'Création...' : '✓ Créer'}
+                <PlusIcon className="mr-2 h-4 w-4 inline" />
+                Add Portfolio
               </Button>
             </div>
           </div>
