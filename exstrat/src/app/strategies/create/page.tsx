@@ -130,7 +130,7 @@ export default function CreateStrategyPage() {
     setProfitTargets(newTargets);
   };
   
-  // Calculer les simulations
+  // Calculer les simulations et les informations de stratégie
   const calculateSimulations = () => {
     const qty = parseFloat(quantity);
     const avgPrice = parseFloat(averagePrice);
@@ -155,11 +155,23 @@ export default function CreateStrategyPage() {
       const profitRealized = tokensToSell * (targetPrice - avgPrice);
       remainingTokens = remainingTokens - tokensToSell;
       
+      // Valorisation des tokens restants au prix cible
+      const remainingTokensValuation = remainingTokens * targetPrice;
+      
+      // Valeur du bag restant au prix d'achat moyen
+      const remainingBagValue = remainingTokens * avgPrice;
+      
+      // Montant encaissé
+      const amountCollected = tokensToSell * targetPrice;
+      
       results.push({
         targetPrice,
         tokensToSell,
         profitRealized,
         remainingTokens,
+        remainingTokensValuation,
+        remainingBagValue,
+        amountCollected,
       });
     });
     
@@ -512,45 +524,62 @@ export default function CreateStrategyPage() {
                             isDarkMode ? 'text-white' : 'text-gray-900'
                           }`}>
                             <ChartBarIcon className="h-5 w-5 text-green-600" />
-                            {language === 'fr' ? 'Simulation' : 'Simulation'}
+                            {language === 'fr' ? 'Informations de la stratégie' : 'Strategy Information'}
                           </h2>
                         </div>
                         <div className="space-y-4">
-                          {simulations.map((sim, index) => (
-                            <div key={index} className={`border-b pb-3 last:border-b-0 ${
-                              isDarkMode ? 'border-gray-700' : 'border-gray-200'
-                            }`}>
-                              <h3 className={`text-sm font-semibold mb-2 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
-                                {language === 'fr' ? 'Cible' : 'Target'} #{index + 1}
-                              </h3>
-                              <div className="space-y-1 text-xs">
-                                <div className="flex justify-between">
-                                  <span className={isDarkMode ? 'text-gray-400' : 'text-gray-500'}>
-                                    {language === 'fr' ? 'Prix cible:' : 'Target Price:'}
-                                  </span>
-                                  <span className={`font-medium ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
-                                    {formatCurrency(sim.targetPrice)}
-                                  </span>
-                                </div>
-                                <div className="flex justify-between">
-                                  <span className={isDarkMode ? 'text-gray-400' : 'text-gray-500'}>
-                                    {language === 'fr' ? 'Tokens vendus:' : 'Tokens Sold:'}
-                                  </span>
-                                  <span className={`font-medium ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
-                                    {sim.tokensToSell.toFixed(4)}
-                                  </span>
-                                </div>
-                                <div className="flex justify-between">
-                                  <span className={isDarkMode ? 'text-gray-400' : 'text-gray-500'}>
-                                    {language === 'fr' ? 'Profit:' : 'Profit:'}
-                                  </span>
-                                  <span className={`font-medium ${sim.profitRealized >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                                    {formatCurrency(sim.profitRealized)}
-                                  </span>
-                                </div>
-                              </div>
-                            </div>
-                          ))}
+                          {profitTargets.map((target, index) => {
+                            const sim = simulations[index];
+                            if (!sim) return null;
+                            
+                            return (
+                              <Card key={index} className={`border ${
+                                isDarkMode ? 'bg-gray-700 border-gray-600' : 'bg-white border-gray-200'
+                              }`}>
+                                <CardContent className="p-4">
+                                  <div className="mb-2">
+                                    <h4 className={`font-semibold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+                                      {index + 1}
+                                    </h4>
+                                  </div>
+                                  <div className="space-y-2 text-sm">
+                                    <div className="flex justify-between">
+                                      <span className={isDarkMode ? 'text-gray-400' : 'text-gray-600'}>
+                                        {language === 'fr' ? 'Valorisation des tokens restants:' : 'Remaining tokens valuation:'}
+                                      </span>
+                                      <span className={`font-medium ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+                                        {formatCurrency(sim.remainingTokensValuation, '$', 2)}
+                                      </span>
+                                    </div>
+                                    <div className="flex justify-between">
+                                      <span className={isDarkMode ? 'text-gray-400' : 'text-gray-600'}>
+                                        {language === 'fr' ? 'Montant encaissé:' : 'Amount collected:'}
+                                      </span>
+                                      <span className={`font-medium ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+                                        {formatCurrency(sim.amountCollected, '$', 2)}
+                                      </span>
+                                    </div>
+                                    <div className="flex justify-between">
+                                      <span className={isDarkMode ? 'text-gray-400' : 'text-gray-600'}>
+                                        {language === 'fr' ? 'Valeur du bag restant:' : 'Remaining bag value:'}
+                                      </span>
+                                      <span className={`font-medium ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+                                        {formatCurrency(sim.remainingBagValue, '$', 2)}
+                                      </span>
+                                    </div>
+                                    <div className="flex justify-between">
+                                      <span className={isDarkMode ? 'text-gray-400' : 'text-gray-600'}>
+                                        {language === 'fr' ? 'Nombre de tokens restants:' : 'Number of remaining tokens:'}
+                                      </span>
+                                      <span className="font-medium text-orange-600">
+                                        {sim.remainingTokens.toFixed(6)}
+                                      </span>
+                                    </div>
+                                  </div>
+                                </CardContent>
+                              </Card>
+                            );
+                          })}
 
                           <div className={`pt-4 border-t space-y-2 ${
                             isDarkMode ? 'border-gray-700' : 'border-gray-200'

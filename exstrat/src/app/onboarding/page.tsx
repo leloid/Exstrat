@@ -199,6 +199,62 @@ export default function OnboardingPage() {
     setProfitTargets(newTargets);
   };
 
+  // Calculer les informations de stratégie pour chaque cible
+  const calculateStrategyInfo = () => {
+    const qty = parseFloat(strategyQuantity);
+    const avgPrice = parseFloat(strategyAveragePrice);
+    
+    if (isNaN(qty) || isNaN(avgPrice) || qty <= 0 || avgPrice <= 0) {
+      return [];
+    }
+    
+    let remainingTokens = qty;
+    const results: Array<{
+      tokensSold: number;
+      amountCollected: number;
+      remainingTokens: number;
+      remainingTokensValuation: number;
+      remainingBagValue: number;
+    }> = [];
+    
+    profitTargets.forEach((target) => {
+      // Calculer le prix cible
+      let targetPrice = 0;
+      if (target.targetType === 'percentage') {
+        targetPrice = avgPrice * (1 + target.targetValue / 100);
+      } else {
+        targetPrice = target.targetValue;
+      }
+      
+      // Calculer les tokens vendus pour cette cible (basé sur la quantité totale initiale)
+      const tokensSold = (qty * target.sellPercentage) / 100;
+      
+      // Montant encaissé = tokens vendus × prix cible
+      const amountCollected = tokensSold * targetPrice;
+      
+      // Retirer les tokens vendus
+      remainingTokens = remainingTokens - tokensSold;
+      
+      // Valorisation des tokens restants au prix cible
+      const remainingTokensValuation = remainingTokens * targetPrice;
+      
+      // Valeur du bag restant au prix d'achat moyen
+      const remainingBagValue = remainingTokens * avgPrice;
+      
+      results.push({
+        tokensSold,
+        amountCollected,
+        remainingTokens,
+        remainingTokensValuation,
+        remainingBagValue,
+      });
+    });
+    
+    return results;
+  };
+
+  const strategyInfo = calculateStrategyInfo();
+
   const currentStepData = steps[currentStep];
   const progress = ((currentStep + 1) / steps.length) * 100;
 
@@ -1182,60 +1238,119 @@ export default function OnboardingPage() {
                   />
                 </div>
 
-                {profitTargets.map((target, index) => (
-                  <div key={target.id} className="border p-4 rounded-lg space-y-3 bg-gray-50">
-                    <h3 className="text-md font-semibold">Cible #{index + 1}</h3>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <Label htmlFor={`targetType-${index}`}>Type</Label>
-                        <Select
-                          value={target.targetType}
-                          onValueChange={(value: string) => 
-                            handleTargetChange(index, 'targetType', value as 'percentage' | 'price')
-                          }
-                        >
-                          <SelectTrigger>
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="percentage">% de profit</SelectItem>
-                            <SelectItem value="price">Prix exact</SelectItem>
-                          </SelectContent>
-                        </Select>
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  {/* Colonne gauche : Configuration des cibles */}
+                  <div className="space-y-4">
+                    {profitTargets.map((target, index) => (
+                      <div key={target.id} className="border p-4 rounded-lg space-y-3 bg-gray-50">
+                        <h3 className="text-md font-semibold">Cible #{index + 1}</h3>
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <Label htmlFor={`targetType-${index}`}>Type</Label>
+                            <Select
+                              value={target.targetType}
+                              onValueChange={(value: string) => 
+                                handleTargetChange(index, 'targetType', value as 'percentage' | 'price')
+                              }
+                            >
+                              <SelectTrigger>
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="percentage">% de profit</SelectItem>
+                                <SelectItem value="price">Prix exact</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          <div>
+                            <Label htmlFor={`targetValue-${index}`}>
+                              {target.targetType === 'percentage' ? 'Pourcentage (%)' : 'Prix (USD)'}
+                            </Label>
+                            <Input
+                              id={`targetValue-${index}`}
+                              type="number"
+                              value={target.targetValue}
+                              onChange={(e) => 
+                                handleTargetChange(index, 'targetValue', parseFloat(e.target.value))
+                              }
+                              step="0.01"
+                            />
+                          </div>
+                        </div>
+                        <div>
+                          <Label htmlFor={`sellPercentage-${index}`}>
+                            Quantité à vendre: {target.sellPercentage.toFixed(1)}%
+                          </Label>
+                          <Slider
+                            id={`sellPercentage-${index}`}
+                            min={0}
+                            max={100}
+                            step={1}
+                            value={[target.sellPercentage]}
+                            onValueChange={(value) => 
+                              handleTargetChange(index, 'sellPercentage', value[0])
+                            }
+                            className="w-full"
+                          />
+                        </div>
                       </div>
-                      <div>
-                        <Label htmlFor={`targetValue-${index}`}>
-                          {target.targetType === 'percentage' ? 'Pourcentage (%)' : 'Prix (USD)'}
-                        </Label>
-                        <Input
-                          id={`targetValue-${index}`}
-                          type="number"
-                          value={target.targetValue}
-                          onChange={(e) => 
-                            handleTargetChange(index, 'targetValue', parseFloat(e.target.value))
-                          }
-                          step="0.01"
-                        />
-                      </div>
-                    </div>
-                    <div>
-                      <Label htmlFor={`sellPercentage-${index}`}>
-                        Quantité à vendre: {target.sellPercentage.toFixed(1)}%
-                      </Label>
-                      <Slider
-                        id={`sellPercentage-${index}`}
-                        min={0}
-                        max={100}
-                        step={1}
-                        value={[target.sellPercentage]}
-                        onValueChange={(value) => 
-                          handleTargetChange(index, 'sellPercentage', value[0])
-                        }
-                        className="w-full"
-                      />
-                    </div>
+                    ))}
                   </div>
-                ))}
+
+                  {/* Colonne droite : Informations calculées */}
+                  <div className="space-y-4">
+                    <h3 className="text-lg font-semibold text-gray-900 mb-4">Informations de la stratégie</h3>
+                    {profitTargets.map((target, index) => {
+                      const info = strategyInfo[index];
+                      const qty = parseFloat(strategyQuantity);
+                      const avgPrice = parseFloat(strategyAveragePrice);
+                      
+                      // Calculer le prix cible
+                      let targetPrice = 0;
+                      if (target.targetType === 'percentage') {
+                        targetPrice = avgPrice * (1 + target.targetValue / 100);
+                      } else {
+                        targetPrice = target.targetValue;
+                      }
+                      
+                      return (
+                        <Card key={`info-${target.id}`} className="border border-gray-200">
+                          <CardContent className="p-4">
+                            <div className="mb-2">
+                              <h4 className="font-semibold text-gray-900">Cible #{index + 1}</h4>
+                            </div>
+                            <div className="space-y-2 text-sm">
+                              <div className="flex justify-between">
+                                <span className="text-gray-600">Valorisation des tokens restants:</span>
+                                <span className="font-medium text-gray-900">
+                                  {info ? formatCurrency(info.remainingTokensValuation, '$', 2) : '$0.00'}
+                                </span>
+                              </div>
+                              <div className="flex justify-between">
+                                <span className="text-gray-600">Montant encaissé:</span>
+                                <span className="font-medium text-gray-900">
+                                  {info ? formatCurrency(info.amountCollected, '$', 2) : '$0.00'}
+                                </span>
+                              </div>
+                              <div className="flex justify-between">
+                                <span className="text-gray-600">Valeur du bag restant:</span>
+                                <span className="font-medium text-gray-900">
+                                  {info ? formatCurrency(info.remainingBagValue, '$', 2) : '$0.00'}
+                                </span>
+                              </div>
+                              <div className="flex justify-between">
+                                <span className="text-gray-600">Nombre de tokens restants:</span>
+                                <span className="font-medium text-orange-600">
+                                  {info ? info.remainingTokens.toFixed(6) : '0.000000'}
+                                </span>
+                              </div>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      );
+                    })}
+                  </div>
+                </div>
               </div>
             </div>
 
