@@ -44,11 +44,45 @@ export const Select: React.FC<SelectProps> = ({
   const [selectedValue, setSelectedValue] = React.useState(value || '');
   const selectRef = React.useRef<HTMLDivElement>(null);
 
+  // Fonction pour trouver le label (texte) correspondant à la valeur sélectionnée
+  const findLabelByValue = (valueToFind: string | undefined): string | null => {
+    if (!valueToFind) return null;
+    
+    let foundLabel: string | null = null;
+    
+    React.Children.forEach(children, (child) => {
+      if (React.isValidElement(child) && child.type === SelectContent) {
+        const childProps = child.props as SelectContentProps;
+        React.Children.forEach(childProps.children, (item) => {
+          if (React.isValidElement(item) && item.type === SelectItem) {
+            const itemProps = item.props as SelectItemProps;
+            if (itemProps.value === valueToFind) {
+              foundLabel = typeof itemProps.children === 'string' 
+                ? itemProps.children 
+                : React.Children.toArray(itemProps.children).join('');
+            }
+          }
+        });
+      }
+    });
+    
+    return foundLabel;
+  };
+
+  const selectedLabel = findLabelByValue(selectedValue);
+
   const handleSelect = (newValue: string) => {
     setSelectedValue(newValue);
     onValueChange?.(newValue);
     setIsOpen(false);
   };
+
+  // Synchroniser selectedValue avec value quand value change
+  React.useEffect(() => {
+    if (value !== undefined) {
+      setSelectedValue(value);
+    }
+  }, [value]);
 
   // Close dropdown when clicking outside
   React.useEffect(() => {
@@ -82,7 +116,7 @@ export const Select: React.FC<SelectProps> = ({
       >
         <div className="flex items-center justify-between">
           <span className={selectedValue ? 'text-gray-900' : 'text-gray-500'}>
-            {selectedValue || placeholder}
+            {selectedLabel || selectedValue || placeholder}
           </span>
           <ChevronDownIcon className="h-4 w-4 text-gray-400" />
         </div>
