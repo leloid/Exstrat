@@ -110,6 +110,7 @@ Créer un fichier `.env` dans `exstrat_backend/` :
 ```env
 DATABASE_URL="postgresql://user:pass@host:5432/exstrat"
 JWT_SECRET="change-me-secure-secret"
+COINMARKETCAP_API_KEY="votre_cle_api_coinmarketcap" # Requis pour la recherche de tokens
 ENCRYPTION_KEY="32-bytes-hex-ou-base64" # Optionnel
 PORT=3000
 ```
