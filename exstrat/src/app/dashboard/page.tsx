@@ -172,7 +172,7 @@ export default function DashboardPage() {
         {/* Main Content */}
         <div className="flex-1 flex flex-col">
           {/* Top Bar */}
-          <TopBar currentPageName={language === 'fr' ? 'Dashboard' : 'Dashboard'} />
+          <TopBar currentPageName={language === 'fr' ? 'Vue d\'ensemble' : 'Overview'} />
 
           {/* Content */}
           <div className={`flex-1 p-6 ${isDarkMode ? 'bg-gray-900' : 'bg-gray-50'}`}>

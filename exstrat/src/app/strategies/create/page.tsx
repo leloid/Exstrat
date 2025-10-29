@@ -257,12 +257,6 @@ export default function CreateStrategyPage() {
               <div className="mb-8">
                 <div className="flex items-center justify-between mb-4">
                   <div>
-                    <h1 className={`text-3xl font-bold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
-                      {isEditMode 
-                        ? (language === 'fr' ? 'Modifier la Stratégie' : 'Edit Strategy')
-                        : (language === 'fr' ? 'Créer une Stratégie' : 'Create Strategy')
-                      }
-                    </h1>
                     <p className={`mt-2 ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
                       {isEditMode 
                         ? (language === 'fr' ? 'Modifiez les paramètres de votre stratégie existante' : 'Modify your existing strategy settings')

@@ -130,9 +130,6 @@ export default function StrategiesPage() {
             <div className="mb-8">
               <div className="flex items-center justify-between">
                 <div>
-                  <h1 className={`text-3xl font-bold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
-                    {language === 'fr' ? 'Mes Stratégies' : 'My Strategies'}
-                  </h1>
                   <p className={`mt-2 ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
                     {language === 'fr' 
                       ? 'Gérez vos stratégies de prise de profit automatisées'

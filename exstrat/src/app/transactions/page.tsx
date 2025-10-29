@@ -109,9 +109,6 @@ export default function TransactionsPage() {
             <div className="mb-8">
               <div className="flex items-center justify-between">
                 <div>
-                  <h1 className={`text-3xl font-semibold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
-                    {language === 'fr' ? 'Transactions' : 'Transactions'}
-                  </h1>
                   <p className={`mt-1 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
                     {language === 'fr' 
                       ? 'Gérez vos transactions crypto de façon professionnelle'

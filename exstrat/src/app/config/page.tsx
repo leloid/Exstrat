@@ -240,9 +240,6 @@ export default function ConfigPage() {
           <div className={`flex-1 p-6 overflow-visible ${isDarkMode ? 'bg-gray-900' : 'bg-gray-50'}`}>
             {/* Header */}
             <div className="mb-8">
-              <h1 className={`text-3xl font-bold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
-                {language === 'fr' ? 'Configuration' : 'Configuration'}
-              </h1>
               <p className={`mt-2 ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
                 {language === 'fr' 
                   ? 'Pour chaque actif, sélectionnez une stratégie et les prises de profit à activer'
