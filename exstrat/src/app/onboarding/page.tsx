@@ -13,7 +13,9 @@ import {
   Cog6ToothIcon,
   ArrowRightIcon,
   ArrowLeftIcon,
-  XMarkIcon
+  XMarkIcon,
+  PencilIcon,
+  TrashIcon
 } from '@heroicons/react/24/outline';
 import { createPortfolio } from '@/lib/portfolios-api';
 import { transactionsApi } from '@/lib/transactions-api';
@@ -27,6 +29,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Label } from '@/components/ui/Label';
 import { Slider } from '@/components/ui/Slider';
 import * as portfoliosApi from '@/lib/portfolios-api';
+import { formatCurrency } from '@/lib/format';
 
 // Interface pour les cibles de profit
 interface ProfitTarget {
@@ -94,7 +97,7 @@ const exchanges = [
 export default function OnboardingPage() {
   const [currentStep, setCurrentStep] = useState(0);
   const [searchTerm, setSearchTerm] = useState('');
-  const [showTransactionForm, setShowTransactionForm] = useState(false);
+  const [showTransactionModal, setShowTransactionModal] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [createdData, setCreatedData] = useState({
@@ -102,6 +105,8 @@ export default function OnboardingPage() {
     transaction: null as any,
     strategy: null as any,
   });
+  const [onboardingTransactions, setOnboardingTransactions] = useState<any[]>([]);
+  const [editingTransaction, setEditingTransaction] = useState<any | null>(null);
   const { portfolios, currentPortfolio } = usePortfolio();
   
   // Form data
@@ -131,6 +136,21 @@ export default function OnboardingPage() {
   const [profitTargets, setProfitTargets] = useState<ProfitTarget[]>([]);
   
   const router = useRouter();
+
+  // Charger les transactions existantes au montage et quand on arrive sur le step exchange
+  React.useEffect(() => {
+    if (currentStep === 1) {
+      const loadTransactions = async () => {
+        try {
+          const response = await transactionsApi.getTransactions();
+          setOnboardingTransactions(response.transactions || []);
+        } catch (err) {
+          console.error('Erreur lors du chargement des transactions:', err);
+        }
+      };
+      loadTransactions();
+    }
+  }, [currentStep]);
 
   // Initialiser les cibles de profit quand le nombre change
   React.useEffect(() => {
@@ -203,7 +223,98 @@ export default function OnboardingPage() {
   };
 
   const handleAddTransactionClick = () => {
-    setShowTransactionForm(true);
+    setEditingTransaction(null);
+    setSelectedToken(null);
+    setTransactionData({
+      quantity: '',
+      amountInvested: '',
+      averagePrice: '',
+      type: 'BUY' as const,
+      transactionDate: new Date().toISOString().split('T')[0],
+      notes: '',
+      portfolioId: currentPortfolio?.id || '',
+    });
+    setError('');
+    setShowTransactionModal(true);
+  };
+
+  const handleEditTransaction = (transaction: any) => {
+    setEditingTransaction(transaction);
+    setSelectedToken({
+      id: transaction.cmcId,
+      name: transaction.name,
+      symbol: transaction.symbol,
+      slug: transaction.symbol.toLowerCase(),
+      num_market_pairs: 0,
+      date_added: '',
+      tags: [],
+      max_supply: 0,
+      circulating_supply: 0,
+      total_supply: 0,
+      is_active: 1,
+      infinite_supply: false,
+      platform: null,
+      cmc_rank: 0,
+      is_fiat: 0,
+      self_reported_circulating_supply: null,
+      self_reported_market_cap: null,
+      tvl_ratio: null,
+      last_updated: '',
+      quote: {
+        USD: {
+          price: null,
+          volume_24h: null,
+          volume_change_24h: null,
+          percent_change_1h: null,
+          percent_change_24h: null,
+          percent_change_7d: null,
+          percent_change_30d: null,
+          percent_change_60d: null,
+          percent_change_90d: null,
+          market_cap: null,
+          market_cap_dominance: null,
+          fully_diluted_market_cap: null,
+          tvl: null,
+          last_updated: '',
+        },
+      },
+    } as TokenSearchResult);
+    setTransactionData({
+      quantity: transaction.quantity.toString(),
+      amountInvested: transaction.amountInvested.toString(),
+      averagePrice: transaction.averagePrice.toString(),
+      type: transaction.type,
+      transactionDate: new Date(transaction.transactionDate).toISOString().split('T')[0],
+      notes: transaction.notes || '',
+      portfolioId: transaction.portfolioId || currentPortfolio?.id || '',
+    });
+    setError('');
+    setShowTransactionModal(true);
+  };
+
+  const handleDeleteTransaction = async (transactionId: string) => {
+    try {
+      await transactionsApi.deleteTransaction(transactionId);
+      setOnboardingTransactions(prev => prev.filter(t => t.id !== transactionId));
+    } catch (err: any) {
+      setError('Erreur lors de la suppression de la transaction');
+      console.error('❌ Erreur suppression transaction:', err);
+    }
+  };
+
+  const resetTransactionForm = () => {
+    setSelectedToken(null);
+    setTransactionData({
+      quantity: '',
+      amountInvested: '',
+      averagePrice: '',
+      type: 'BUY' as const,
+      transactionDate: new Date().toISOString().split('T')[0],
+      notes: '',
+      portfolioId: currentPortfolio?.id || '',
+    });
+    setEditingTransaction(null);
+    setError('');
   };
 
   const handleTokenSelect = (token: TokenSearchResult | null) => {
@@ -291,14 +402,25 @@ export default function OnboardingPage() {
         portfolioId: transactionData.portfolioId,
       };
       
-      const createdTransaction = await transactionsApi.createTransaction(transactionDto);
-      setCreatedData(prev => ({ ...prev, transaction: createdTransaction }));
+      if (editingTransaction) {
+        // Mettre à jour la transaction existante
+        const updatedTransaction = await transactionsApi.updateTransaction(editingTransaction.id, transactionDto);
+        setOnboardingTransactions(prev => 
+          prev.map(t => t.id === editingTransaction.id ? updatedTransaction : t)
+        );
+      } else {
+        // Créer une nouvelle transaction
+        const createdTransaction = await transactionsApi.createTransaction(transactionDto);
+        setOnboardingTransactions(prev => [...prev, createdTransaction]);
+        setCreatedData(prev => ({ ...prev, transaction: createdTransaction }));
+      }
       
-      console.log('✅ Transaction créée:', createdTransaction);
-      setCurrentStep(2);
+      console.log('✅ Transaction sauvegardée:', editingTransaction ? 'mise à jour' : 'créée');
+      resetTransactionForm();
+      setShowTransactionModal(false);
     } catch (err: any) {
       console.error('❌ Erreur création transaction:', err);
-      setError(err.response?.data?.message || 'Erreur lors de la création de la transaction');
+      setError(err.response?.data?.message || 'Erreur lors de la sauvegarde de la transaction');
     } finally {
       setIsLoading(false);
     }
@@ -516,176 +638,257 @@ export default function OnboardingPage() {
               ))}
             </div>
 
-            {/* Transaction Form - Affiché seulement si showTransactionForm est true */}
-            {showTransactionForm && (
-              <div className="mt-6 p-6 border border-gray-200 rounded-lg bg-gray-50">
-                <div className="text-center mb-4">
-                  <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                    Ajoutez votre première transaction
-                  </h3>
-                  <p className="text-gray-600">
-                    Créez une transaction pour commencer à suivre vos investissements
-                  </p>
+            {/* Liste des Transactions Créées */}
+            {onboardingTransactions.length > 0 && (
+              <div className="mt-6">
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                  Transactions ajoutées ({onboardingTransactions.length})
+                </h3>
+                <div className="space-y-3">
+                  {onboardingTransactions.map((transaction) => (
+                    <Card key={transaction.id} className="border border-gray-200">
+                      <CardContent className="p-4">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-4 flex-1">
+                            <div className="w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center">
+                              <span className="text-purple-600 font-bold text-sm">
+                                {transaction.symbol.charAt(0)}
+                              </span>
+                            </div>
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2">
+                                <h4 className="font-semibold text-gray-900">{transaction.symbol}</h4>
+                                <span className="text-sm text-gray-500">{transaction.name}</span>
+                              </div>
+                              <div className="flex items-center gap-4 mt-1 text-sm text-gray-600">
+                                <span>Quantité: {parseFloat(transaction.quantity.toString()).toLocaleString()}</span>
+                                <span>•</span>
+                                <span>Type: {transaction.type}</span>
+                                <span>•</span>
+                                <span>Prix: {formatCurrency(transaction.averagePrice)}</span>
+                                {transaction.transactionDate && (
+                                  <>
+                                    <span>•</span>
+                                    <span>
+                                      {new Date(transaction.transactionDate).toLocaleDateString('fr-FR')}
+                                    </span>
+                                  </>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Button
+                              variant="outline"
+                              onClick={() => handleEditTransaction(transaction)}
+                              className="p-2"
+                            >
+                              <PencilIcon className="h-4 w-4 text-gray-600" />
+                            </Button>
+                            <Button
+                              variant="outline"
+                              onClick={() => handleDeleteTransaction(transaction.id)}
+                              className="p-2"
+                            >
+                              <TrashIcon className="h-4 w-4 text-red-600" />
+                            </Button>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
                 </div>
+              </div>
+            )}
 
-                <div className="space-y-4">
-                  {/* Recherche de token */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Token *
-                    </label>
-                    <TokenSearch
-                      onTokenSelect={handleTokenSelect}
-                      selectedToken={selectedToken}
-                    />
-                  </div>
-
-                  {/* Sélection du portefeuille */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Portefeuille *
-                    </label>
-                    <Select
-                      value={transactionData.portfolioId}
-                      onValueChange={(value) => {
-                        setTransactionData(prev => ({ ...prev, portfolioId: value }));
+            {/* Modal de Transaction */}
+            {showTransactionModal && (
+              <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+                <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+                  <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between">
+                    <h3 className="text-lg font-semibold text-gray-900">
+                      {editingTransaction ? 'Modifier la transaction' : 'Ajouter une transaction'}
+                    </h3>
+                    <button
+                      onClick={() => {
+                        setShowTransactionModal(false);
+                        resetTransactionForm();
                       }}
+                      className="text-gray-400 hover:text-gray-600"
                     >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Sélectionner un portefeuille" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {portfolios.map((portfolio) => (
-                          <SelectItem key={portfolio.id} value={portfolio.id}>
-                            {portfolio.name} {portfolio.isDefault && '(Défaut)'}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    {portfolios.length === 0 && (
-                      <p className="text-sm text-gray-500 mt-1">
-                        Aucun portefeuille disponible. Créez-en un d'abord.
-                      </p>
+                      <XMarkIcon className="h-5 w-5" />
+                    </button>
+                  </div>
+
+                  <div className="p-6 space-y-4">
+                    {/* Error Message */}
+                    {error && (
+                      <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
+                        <p className="text-sm text-red-600">{error}</p>
+                      </div>
                     )}
-                  </div>
 
-                  {/* Type de transaction */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Type de transaction *
-                    </label>
-                    <select
-                      name="type"
-                      value={transactionData.type}
-                      onChange={handleInputChange}
-                      className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                    >
-                      <option value="BUY">Achat</option>
-                      <option value="SELL">Vente</option>
-                      <option value="TRANSFER_IN">Transfert entrant</option>
-                      <option value="TRANSFER_OUT">Transfert sortant</option>
-                      <option value="STAKING">Staking</option>
-                      <option value="REWARD">Récompense</option>
-                    </select>
-                  </div>
-
-                  {/* Quantité et Prix */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {/* Recherche de token */}
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Quantité *
+                        Token *
                       </label>
-                      <Input
-                        type="number"
-                        name="quantity"
-                        value={transactionData.quantity}
-                        onChange={handleQuantityChange}
-                        placeholder="0.00"
-                        step="0.00000001"
-                        required
+                      <TokenSearch
+                        onTokenSelect={handleTokenSelect}
+                        selectedToken={selectedToken}
                       />
                     </div>
+
+                    {/* Sélection du portefeuille */}
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Prix moyen (USD) *
+                        Portefeuille *
+                      </label>
+                      <Select
+                        value={transactionData.portfolioId}
+                        onValueChange={(value) => {
+                          setTransactionData(prev => ({ ...prev, portfolioId: value }));
+                        }}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Sélectionner un portefeuille" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {portfolios.map((portfolio) => (
+                            <SelectItem key={portfolio.id} value={portfolio.id}>
+                              {portfolio.name} {portfolio.isDefault && '(Défaut)'}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      {portfolios.length === 0 && (
+                        <p className="text-sm text-gray-500 mt-1">
+                          Aucun portefeuille disponible. Créez-en un d'abord.
+                        </p>
+                      )}
+                    </div>
+
+                    {/* Type de transaction */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Type de transaction *
+                      </label>
+                      <select
+                        name="type"
+                        value={transactionData.type}
+                        onChange={handleInputChange}
+                        className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                      >
+                        <option value="BUY">Achat</option>
+                        <option value="SELL">Vente</option>
+                        <option value="TRANSFER_IN">Transfert entrant</option>
+                        <option value="TRANSFER_OUT">Transfert sortant</option>
+                        <option value="STAKING">Staking</option>
+                        <option value="REWARD">Récompense</option>
+                      </select>
+                    </div>
+
+                    {/* Quantité et Prix */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Quantité *
+                        </label>
+                        <Input
+                          type="number"
+                          name="quantity"
+                          value={transactionData.quantity}
+                          onChange={handleQuantityChange}
+                          placeholder="0.00"
+                          step="0.00000001"
+                          required
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Prix moyen (USD) *
+                        </label>
+                        <Input
+                          type="number"
+                          name="averagePrice"
+                          value={transactionData.averagePrice}
+                          onChange={handleAveragePriceChange}
+                          placeholder="0.00"
+                          step="0.01"
+                          required
+                        />
+                      </div>
+                    </div>
+
+                    {/* Montant investi */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Montant investi (USD) *
                       </label>
                       <Input
                         type="number"
-                        name="averagePrice"
-                        value={transactionData.averagePrice}
-                        onChange={handleAveragePriceChange}
+                        name="amountInvested"
+                        value={transactionData.amountInvested}
+                        onChange={handleInputChange}
                         placeholder="0.00"
                         step="0.01"
                         required
                       />
+                      <p className="mt-1 text-sm text-gray-500">
+                        Calculé automatiquement: {transactionData.quantity && transactionData.averagePrice ? 
+                          (parseFloat(transactionData.quantity) * parseFloat(transactionData.averagePrice)).toFixed(2) : '0.00'} USD
+                      </p>
                     </div>
-                  </div>
 
-                  {/* Montant investi */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Montant investi (USD) *
-                    </label>
-                    <Input
-                      type="number"
-                      name="amountInvested"
-                      value={transactionData.amountInvested}
-                      onChange={handleInputChange}
-                      placeholder="0.00"
-                      step="0.01"
-                      required
-                    />
-                    <p className="mt-1 text-sm text-gray-500">
-                      Calculé automatiquement: {transactionData.quantity && transactionData.averagePrice ? 
-                        (parseFloat(transactionData.quantity) * parseFloat(transactionData.averagePrice)).toFixed(2) : '0.00'} USD
-                    </p>
-                  </div>
+                    {/* Date de transaction */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Date de transaction *
+                      </label>
+                      <Input
+                        type="date"
+                        name="transactionDate"
+                        value={transactionData.transactionDate}
+                        onChange={handleInputChange}
+                        required
+                      />
+                    </div>
 
-                  {/* Date de transaction */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Date de transaction *
-                    </label>
-                    <Input
-                      type="date"
-                      name="transactionDate"
-                      value={transactionData.transactionDate}
-                      onChange={handleInputChange}
-                      required
-                    />
-                  </div>
+                    {/* Notes */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Notes (optionnel)
+                      </label>
+                      <textarea
+                        name="notes"
+                        value={transactionData.notes}
+                        onChange={handleInputChange}
+                        rows={3}
+                        className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                        placeholder="Ajoutez des notes sur cette transaction..."
+                      />
+                    </div>
 
-                  {/* Notes */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Notes (optionnel)
-                    </label>
-                    <textarea
-                      name="notes"
-                      value={transactionData.notes}
-                      onChange={handleInputChange}
-                      rows={3}
-                      className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                      placeholder="Ajoutez des notes sur cette transaction..."
-                    />
-                  </div>
-
-                  {/* Boutons d'action pour le formulaire */}
-                  <div className="flex justify-end space-x-3 pt-4">
-                    <Button
-                      variant="outline"
-                      onClick={() => setShowTransactionForm(false)}
-                      className="px-6 py-2 border-gray-300 text-gray-700 hover:bg-gray-50"
-                    >
-                      Annuler
-                    </Button>
-                    <Button
-                      onClick={handleCreateTransaction}
-                      disabled={isLoading || !selectedToken}
-                      className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white disabled:opacity-50"
-                    >
-                      {isLoading ? 'Création...' : '✓ Créer la transaction'}
-                    </Button>
+                    {/* Boutons d'action */}
+                    <div className="flex justify-end space-x-3 pt-4 border-t border-gray-200">
+                      <Button
+                        variant="outline"
+                        onClick={() => {
+                          setShowTransactionModal(false);
+                          resetTransactionForm();
+                        }}
+                        className="px-6 py-2 border-gray-300 text-gray-700 hover:bg-gray-50"
+                      >
+                        Annuler
+                      </Button>
+                      <Button
+                        onClick={handleCreateTransaction}
+                        disabled={isLoading || !selectedToken}
+                        className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white disabled:opacity-50"
+                      >
+                        {isLoading ? 'Sauvegarde...' : editingTransaction ? '✓ Modifier' : '✓ Créer'}
+                      </Button>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -814,11 +1017,11 @@ export default function OnboardingPage() {
                         <Label htmlFor={`targetType-${index}`}>Type</Label>
                         <Select
                           value={target.targetType}
-                          onValueChange={(value: 'percentage' | 'price') => 
-                            handleTargetChange(index, 'targetType', value)
+                          onValueChange={(value: string) => 
+                            handleTargetChange(index, 'targetType', value as 'percentage' | 'price')
                           }
                         >
-                          <SelectTrigger id={`targetType-${index}`}>
+                          <SelectTrigger>
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
