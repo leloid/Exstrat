@@ -535,19 +535,61 @@ export default function OnboardingPage() {
           prev.map(t => t.id === editingTransaction.id ? updatedTransaction : t)
         );
       } else {
+        // Validation supplémentaire
+        const quantity = parseFloat(transactionData.quantity);
+        const amountInvested = parseFloat(transactionData.amountInvested);
+        const averagePrice = parseFloat(transactionData.averagePrice);
+        const cmcId = selectedToken.id;
+
+        if (isNaN(quantity) || quantity <= 0) {
+          setError('La quantité doit être un nombre positif');
+          setIsLoading(false);
+          return;
+        }
+        if (isNaN(amountInvested) || amountInvested <= 0) {
+          setError('Le montant investi doit être un nombre positif');
+          setIsLoading(false);
+          return;
+        }
+        if (isNaN(averagePrice) || averagePrice <= 0) {
+          setError('Le prix moyen doit être un nombre positif');
+          setIsLoading(false);
+          return;
+        }
+        if (!cmcId || cmcId <= 0) {
+          setError('L\'ID du token est invalide');
+          setIsLoading(false);
+          return;
+        }
+        if (!transactionData.portfolioId || transactionData.portfolioId.trim() === '') {
+          setError('Veuillez sélectionner un portefeuille');
+          setIsLoading(false);
+          return;
+        }
+
+        // Vérifier que le portfolio existe dans la liste
+        const portfolioExists = portfolios.find(p => p.id === transactionData.portfolioId);
+        if (!portfolioExists) {
+          setError('Le portefeuille sélectionné n\'existe plus. Veuillez en sélectionner un autre.');
+          setIsLoading(false);
+          return;
+        }
+
         // Créer une nouvelle transaction - tous les champs requis
         const transactionDto: CreateTransactionDto = {
           symbol: selectedToken.symbol,
           name: selectedToken.name,
-          cmcId: selectedToken.id,
-          quantity: parseFloat(transactionData.quantity),
-          amountInvested: parseFloat(transactionData.amountInvested),
-          averagePrice: parseFloat(transactionData.averagePrice),
+          cmcId: cmcId,
+          quantity: quantity,
+          amountInvested: amountInvested,
+          averagePrice: averagePrice,
           type: transactionData.type,
           transactionDate: new Date(transactionData.transactionDate).toISOString(),
           notes: transactionData.notes || undefined,
           portfolioId: transactionData.portfolioId,
         };
+        
+        console.log('📤 Données de transaction envoyées:', transactionDto);
         const createdTransaction = await transactionsApi.createTransaction(transactionDto);
         setOnboardingTransactions(prev => [...prev, createdTransaction]);
         setCreatedData(prev => ({ ...prev, transaction: createdTransaction }));
@@ -558,7 +600,23 @@ export default function OnboardingPage() {
       setShowTransactionModal(false);
     } catch (err: any) {
       console.error('❌ Erreur création transaction:', err);
-      setError(err.response?.data?.message || 'Erreur lors de la sauvegarde de la transaction');
+      console.error('❌ Détails de l\'erreur:', {
+        response: err.response?.data,
+        status: err.response?.status,
+        message: err.message,
+      });
+      
+      // Message d'erreur plus détaillé
+      let errorMessage = 'Erreur lors de la sauvegarde de la transaction';
+      if (err.response?.data?.message) {
+        errorMessage = err.response.data.message;
+      } else if (err.response?.data?.error) {
+        errorMessage = err.response.data.error;
+      } else if (err.message) {
+        errorMessage = err.message;
+      }
+      
+      setError(errorMessage);
     } finally {
       setIsLoading(false);
     }
@@ -1221,152 +1279,238 @@ export default function OnboardingPage() {
               {/* Configuration des cibles */}
               <div className="space-y-4">
                 <div>
-                  <Label htmlFor="numberOfTargets">Nombre de sorties (1-10)</Label>
-                  <Input
-                    id="numberOfTargets"
-                    type="number"
-                    min="1"
-                    max="10"
-                    value={numberOfTargets}
-                    onChange={(e) => {
-                      const val = parseInt(e.target.value);
-                      if (!isNaN(val) && val >= 1 && val <= 10) {
+                  <Label htmlFor="numberOfTargets">Nombre de sorties</Label>
+                  <Select
+                    value={numberOfTargets.toString()}
+                    onValueChange={(value) => {
+                      const val = parseInt(value);
+                      if (!isNaN(val) && val >= 1 && val <= 6) {
                         setNumberOfTargets(val);
                       }
                     }}
-                    className="w-24"
-                  />
+                  >
+                    <SelectTrigger className="w-40">
+                      <SelectValue placeholder="Sélectionner" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="1">1 sortie</SelectItem>
+                      <SelectItem value="2">2 sorties</SelectItem>
+                      <SelectItem value="3">3 sorties</SelectItem>
+                      <SelectItem value="4">4 sorties</SelectItem>
+                      <SelectItem value="5">5 sorties</SelectItem>
+                      <SelectItem value="6">6 sorties</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
 
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                  {/* Colonne gauche : Configuration des cibles */}
-                  <div className="space-y-4">
-                    {profitTargets.map((target, index) => (
-                      <div key={target.id} className="border p-4 rounded-lg space-y-3 bg-gray-50">
-                        <h3 className="text-md font-semibold">Cible #{index + 1}</h3>
-                        <div className="grid grid-cols-2 gap-4">
-                          <div>
-                            <Label htmlFor={`targetType-${index}`}>Type</Label>
-                            <Select
-                              value={target.targetType}
-                              onValueChange={(value: string) => 
-                                handleTargetChange(index, 'targetType', value as 'percentage' | 'price')
-                              }
-                            >
-                              <SelectTrigger>
-                                <SelectValue />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="percentage">% de profit</SelectItem>
-                                <SelectItem value="price">Prix exact</SelectItem>
-                              </SelectContent>
-                            </Select>
+                {/* Titre pour les deux colonnes */}
+                <div className="mb-6">
+                  <h3 className="text-lg font-semibold text-gray-900">Configuration des cibles de profit</h3>
+                  <p className="text-sm text-gray-600 mt-1">Définissez vos paramètres et visualisez les résultats en temps réel</p>
+                </div>
+
+                {/* En-têtes des colonnes */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-6">
+                  <div>
+                    <h4 className="text-base font-semibold text-gray-900">Paramètres</h4>
+                  </div>
+                  <div>
+                    <h4 className="text-base font-semibold text-gray-900">Informations calculées</h4>
+                  </div>
+                </div>
+
+                {/* Cartes alignées par paire : Cible #1 avec Cible #1, etc. */}
+                <div className="space-y-6">
+                  {profitTargets.map((target, index) => {
+                    const info = strategyInfo[index];
+                    const qty = parseFloat(strategyQuantity);
+                    const avgPrice = parseFloat(strategyAveragePrice);
+                    
+                    // Calculer le prix cible
+                    let targetPrice = 0;
+                    if (target.targetType === 'percentage') {
+                      targetPrice = avgPrice * (1 + target.targetValue / 100);
+                    } else {
+                      targetPrice = target.targetValue;
+                    }
+                    
+                    return (
+                      <div key={target.id} className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-stretch">
+                        {/* Carte de gauche : Paramètres */}
+                        <div className="border p-6 rounded-lg space-y-5 bg-gray-50 h-full flex flex-col">
+                          <h3 className="text-md font-semibold text-gray-900">Cible #{index + 1}</h3>
+                          <div className="grid grid-cols-2 gap-4">
+                            <div>
+                              <Label htmlFor={`targetType-${index}`}>Type</Label>
+                              <Select
+                                value={target.targetType}
+                                onValueChange={(value: string) => 
+                                  handleTargetChange(index, 'targetType', value as 'percentage' | 'price')
+                                }
+                              >
+                                <SelectTrigger>
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="percentage">% de profit</SelectItem>
+                                  <SelectItem value="price">Prix exact</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </div>
+                            <div>
+                              <Label htmlFor={`targetValue-${index}`}>
+                                {target.targetType === 'percentage' ? 'Pourcentage (%)' : 'Prix (USD)'}
+                              </Label>
+                              <Input
+                                id={`targetValue-${index}`}
+                                type="number"
+                                value={target.targetValue}
+                                onChange={(e) => 
+                                  handleTargetChange(index, 'targetValue', parseFloat(e.target.value))
+                                }
+                                step="0.01"
+                              />
+                            </div>
                           </div>
-                          <div>
-                            <Label htmlFor={`targetValue-${index}`}>
-                              {target.targetType === 'percentage' ? 'Pourcentage (%)' : 'Prix (USD)'}
+                          <div className="flex-grow flex flex-col justify-end">
+                            <Label htmlFor={`sellPercentage-${index}`}>
+                              Quantité à vendre: {target.sellPercentage.toFixed(1)}%
                             </Label>
-                            <Input
-                              id={`targetValue-${index}`}
-                              type="number"
-                              value={target.targetValue}
-                              onChange={(e) => 
-                                handleTargetChange(index, 'targetValue', parseFloat(e.target.value))
+                            <Slider
+                              id={`sellPercentage-${index}`}
+                              min={0}
+                              max={100}
+                              step={1}
+                              value={[target.sellPercentage]}
+                              onValueChange={(value) => 
+                                handleTargetChange(index, 'sellPercentage', value[0])
                               }
-                              step="0.01"
+                              className="w-full mt-2"
                             />
                           </div>
                         </div>
-                        <div>
-                          <Label htmlFor={`sellPercentage-${index}`}>
-                            Quantité à vendre: {target.sellPercentage.toFixed(1)}%
-                          </Label>
-                          <Slider
-                            id={`sellPercentage-${index}`}
-                            min={0}
-                            max={100}
-                            step={1}
-                            value={[target.sellPercentage]}
-                            onValueChange={(value) => 
-                              handleTargetChange(index, 'sellPercentage', value[0])
-                            }
-                            className="w-full"
-                          />
-                        </div>
-                      </div>
-                    ))}
-                  </div>
 
-                  {/* Colonne droite : Informations calculées */}
-                  <div className="space-y-4">
-                    <h3 className="text-lg font-semibold text-gray-900 mb-4">Informations de la stratégie</h3>
-                    {profitTargets.map((target, index) => {
-                      const info = strategyInfo[index];
-                      const qty = parseFloat(strategyQuantity);
-                      const avgPrice = parseFloat(strategyAveragePrice);
-                      
-                      // Calculer le prix cible
-                      let targetPrice = 0;
-                      if (target.targetType === 'percentage') {
-                        targetPrice = avgPrice * (1 + target.targetValue / 100);
-                      } else {
-                        targetPrice = target.targetValue;
-                      }
-                      
-                      return (
-                        <Card key={`info-${target.id}`} className="border border-gray-200">
-                          <CardContent className="p-4">
-                            <div className="mb-2">
+                        {/* Carte de droite : Informations calculées */}
+                        <Card className="border border-gray-200 h-full flex flex-col">
+                          <CardContent className="p-6 flex flex-col h-full">
+                            <div className="mb-3">
                               <h4 className="font-semibold text-gray-900">Cible #{index + 1}</h4>
                             </div>
-                            <div className="space-y-2 text-sm">
-                              <div className="flex justify-between">
+                            <div className="space-y-3 text-sm flex-grow flex flex-col justify-between">
+                              <div className="flex justify-between items-center py-1">
                                 <span className="text-gray-600">Valorisation des tokens restants:</span>
-                                <span className="font-medium text-gray-900">
+                                <span className="font-medium text-gray-900 text-right">
                                   {info ? formatCurrency(info.remainingTokensValuation, '$', 2) : '$0.00'}
                                 </span>
                               </div>
-                              <div className="flex justify-between">
+                              <div className="flex justify-between items-center py-1">
                                 <span className="text-gray-600">Montant encaissé:</span>
-                                <span className="font-medium text-gray-900">
+                                <span className="font-medium text-gray-900 text-right">
                                   {info ? formatCurrency(info.amountCollected, '$', 2) : '$0.00'}
                                 </span>
                               </div>
-                              <div className="flex justify-between">
+                              <div className="flex justify-between items-center py-1">
                                 <span className="text-gray-600">Valeur du bag restant:</span>
-                                <span className="font-medium text-gray-900">
+                                <span className="font-medium text-gray-900 text-right">
                                   {info ? formatCurrency(info.remainingBagValue, '$', 2) : '$0.00'}
                                 </span>
                               </div>
-                              <div className="flex justify-between">
-                                <span className="text-gray-600">Nombre de tokens restants:</span>
-                                <span className="font-medium text-orange-600">
+                              <div className="flex justify-between items-center py-1 border-t border-gray-200 pt-3 mt-2">
+                                <span className="text-gray-600 font-medium">Nombre de tokens restants:</span>
+                                <span className="font-bold text-orange-600 text-lg text-right">
                                   {info ? info.remainingTokens.toFixed(6) : '0.000000'}
                                 </span>
                               </div>
                             </div>
                           </CardContent>
                         </Card>
-                      );
-                    })}
-                  </div>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
             </div>
 
-            {/* Footer */}
-            <div className="flex items-center justify-between pt-6 border-t border-gray-200">
-              <div className="flex items-center text-sm text-gray-500">
-                <ChartBarIcon className="w-4 h-4 mr-2 text-gray-400" />
-                <span>Stratégie optimisée pour vos gains</span>
+            {/* Footer - Design amélioré avec plus d'espace */}
+            <div className="mt-8 pt-8 border-t-2 border-gray-200 bg-gradient-to-r from-gray-50 to-blue-50 rounded-xl p-6 -mx-4">
+              <div className="max-w-7xl mx-auto">
+                <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6">
+                  {/* Section informative à gauche */}
+                  <div className="flex-1 space-y-3">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 bg-blue-100 rounded-lg">
+                        <ChartBarIcon className="w-5 h-5 text-blue-600" />
+                      </div>
+                      <div>
+                        <h4 className="text-base font-semibold text-gray-900">
+                          Stratégie optimisée pour vos gains
+                        </h4>
+                        <p className="text-sm text-gray-600 mt-1">
+                          Vos cibles de profit sont calculées en temps réel pour maximiser vos rendements
+                        </p>
+                      </div>
+                    </div>
+                    
+                    {/* Statistiques rapides */}
+                    {strategyInfo.length > 0 && (
+                      <div className="grid grid-cols-3 gap-4 pt-3 border-t border-gray-200">
+                        <div>
+                          <p className="text-xs text-gray-500 mb-1">Profit total estimé</p>
+                          <p className="text-lg font-bold text-green-600">
+                            {formatCurrency(
+                              strategyInfo.reduce((sum, info) => sum + (info.amountCollected - (info.tokensSold * parseFloat(strategyAveragePrice || '0'))), 0),
+                              '$',
+                              2
+                            )}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-gray-500 mb-1">Tokens restants finaux</p>
+                          <p className="text-lg font-bold text-orange-600">
+                            {strategyInfo.length > 0 
+                              ? strategyInfo[strategyInfo.length - 1].remainingTokens.toFixed(4)
+                              : '0.0000'
+                            }
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-gray-500 mb-1">Valorisation finale</p>
+                          <p className="text-lg font-bold text-blue-600">
+                            {strategyInfo.length > 0
+                              ? formatCurrency(strategyInfo[strategyInfo.length - 1].remainingTokensValuation, '$', 2)
+                              : '$0.00'
+                            }
+                          </p>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                  
+                  {/* Section bouton à droite */}
+                  <div className="flex-shrink-0">
+                    <Button
+                      onClick={handleCreateStrategy}
+                      disabled={isLoading || !selectedStrategyToken || !strategyQuantity || !strategyAveragePrice || !strategyName}
+                      className="px-10 py-4 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed text-base min-w-[200px]"
+                    >
+                      {isLoading ? (
+                        <span className="flex items-center gap-2">
+                          <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                          </svg>
+                          Création...
+                        </span>
+                      ) : (
+                        <span className="flex items-center gap-2">
+                          <ChartBarIcon className="w-5 h-5" />
+                          Créer la stratégie
+                        </span>
+                      )}
+                    </Button>
+                  </div>
+                </div>
               </div>
-              <Button
-                onClick={handleCreateStrategy}
-                disabled={isLoading || !selectedStrategyToken || !strategyQuantity || !strategyAveragePrice || !strategyName}
-                className="px-8 py-3 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-medium rounded-lg disabled:opacity-50"
-              >
-                {isLoading ? 'Création...' : 'Créer la stratégie'}
-              </Button>
             </div>
           </div>
         );
@@ -1465,8 +1609,8 @@ export default function OnboardingPage() {
       </div>
 
       {/* Main Content */}
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="max-w-2xl mx-auto">
+      <div className={`${currentStep === 2 ? 'max-w-7xl' : 'max-w-4xl'} mx-auto px-4 sm:px-6 lg:px-8 py-8`}>
+        <div className={`${currentStep === 2 ? 'max-w-full' : 'max-w-2xl'} mx-auto`}>
           {/* Step Header */}
           <div className="text-center mb-8">
             <div className="flex items-center justify-center mb-4">
@@ -1490,7 +1634,7 @@ export default function OnboardingPage() {
 
           {/* Step Content */}
           <Card className="mb-8">
-            <CardContent className="p-8">
+            <CardContent className={`${currentStep === 2 ? 'p-10' : 'p-8'}`}>
               {renderStepContent()}
             </CardContent>
           </Card>
