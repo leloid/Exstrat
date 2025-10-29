@@ -389,27 +389,34 @@ export default function OnboardingPage() {
     setError('');
 
     try {
-      const transactionDto: CreateTransactionDto = {
-        symbol: selectedToken.symbol,
-        name: selectedToken.name,
-        cmcId: selectedToken.id,
-        quantity: parseFloat(transactionData.quantity),
-        amountInvested: parseFloat(transactionData.amountInvested),
-        averagePrice: parseFloat(transactionData.averagePrice),
-        type: transactionData.type,
-        transactionDate: new Date(transactionData.transactionDate).toISOString(),
-        notes: transactionData.notes || undefined,
-        portfolioId: transactionData.portfolioId,
-      };
-      
       if (editingTransaction) {
-        // Mettre à jour la transaction existante
-        const updatedTransaction = await transactionsApi.updateTransaction(editingTransaction.id, transactionDto);
+        // Mettre à jour la transaction existante - seulement les champs modifiables
+        const updateData = {
+          quantity: parseFloat(transactionData.quantity),
+          amountInvested: parseFloat(transactionData.amountInvested),
+          averagePrice: parseFloat(transactionData.averagePrice),
+          type: transactionData.type,
+          transactionDate: new Date(transactionData.transactionDate).toISOString(),
+          notes: transactionData.notes || undefined,
+        };
+        const updatedTransaction = await transactionsApi.updateTransaction(editingTransaction.id, updateData);
         setOnboardingTransactions(prev => 
           prev.map(t => t.id === editingTransaction.id ? updatedTransaction : t)
         );
       } else {
-        // Créer une nouvelle transaction
+        // Créer une nouvelle transaction - tous les champs requis
+        const transactionDto: CreateTransactionDto = {
+          symbol: selectedToken.symbol,
+          name: selectedToken.name,
+          cmcId: selectedToken.id,
+          quantity: parseFloat(transactionData.quantity),
+          amountInvested: parseFloat(transactionData.amountInvested),
+          averagePrice: parseFloat(transactionData.averagePrice),
+          type: transactionData.type,
+          transactionDate: new Date(transactionData.transactionDate).toISOString(),
+          notes: transactionData.notes || undefined,
+          portfolioId: transactionData.portfolioId,
+        };
         const createdTransaction = await transactionsApi.createTransaction(transactionDto);
         setOnboardingTransactions(prev => [...prev, createdTransaction]);
         setCreatedData(prev => ({ ...prev, transaction: createdTransaction }));
@@ -768,26 +775,6 @@ export default function OnboardingPage() {
                       )}
                     </div>
 
-                    {/* Type de transaction */}
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Type de transaction *
-                      </label>
-                      <select
-                        name="type"
-                        value={transactionData.type}
-                        onChange={handleInputChange}
-                        className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                      >
-                        <option value="BUY">Achat</option>
-                        <option value="SELL">Vente</option>
-                        <option value="TRANSFER_IN">Transfert entrant</option>
-                        <option value="TRANSFER_OUT">Transfert sortant</option>
-                        <option value="STAKING">Staking</option>
-                        <option value="REWARD">Récompense</option>
-                      </select>
-                    </div>
-
                     {/* Quantité et Prix */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
@@ -904,6 +891,7 @@ export default function OnboardingPage() {
                 onClick={handleAddTransactionClick}
                 className="px-8 py-3 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-medium rounded-lg"
               >
+                <PlusIcon className="mr-2 h-4 w-4 inline" />
                 Add Transaction
               </Button>
             </div>
@@ -1219,15 +1207,13 @@ export default function OnboardingPage() {
               <span>Précédent</span>
             </Button>
 
-            <div className="flex items-center space-x-4">
-              <Button
-                onClick={handleSkip}
-                variant="outline"
-                className="text-gray-600"
-              >
-                Quitter l'onboarding
-              </Button>
-            </div>
+            <Button
+              onClick={handleNext}
+              className="px-8 py-3 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-medium rounded-lg flex items-center space-x-2"
+            >
+              <span>{currentStep === steps.length - 1 ? 'Terminer' : 'Suivant'}</span>
+              <ArrowRightIcon className="w-4 h-4" />
+            </Button>
           </div>
 
           {/* Security Info */}

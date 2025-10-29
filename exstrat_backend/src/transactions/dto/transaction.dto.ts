@@ -59,13 +59,15 @@ export class CreateTransactionDto {
   @Min(0)
   averagePrice: number;
 
-  @ApiProperty({ 
+  @ApiPropertyOptional({ 
     enum: TransactionType,
-    description: 'Type de transaction',
-    example: TransactionType.BUY
+    description: 'Type de transaction (BUY par défaut)',
+    example: TransactionType.BUY,
+    default: TransactionType.BUY
   })
+  @IsOptional()
   @IsEnum(TransactionType)
-  type: TransactionType;
+  type?: TransactionType;
 
   @ApiPropertyOptional({ 
     description: 'Date de la transaction',

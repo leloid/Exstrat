@@ -17,7 +17,7 @@ export class TransactionsService {
         quantity: createTransactionDto.quantity,
         amountInvested: createTransactionDto.amountInvested,
         averagePrice: createTransactionDto.averagePrice,
-        type: createTransactionDto.type,
+        type: createTransactionDto.type || 'BUY', // BUY par défaut
         transactionDate: createTransactionDto.transactionDate ? new Date(createTransactionDto.transactionDate) : new Date(),
         notes: createTransactionDto.notes,
         exchangeId: createTransactionDto.exchangeId,

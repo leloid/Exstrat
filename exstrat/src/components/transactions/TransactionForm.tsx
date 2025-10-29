@@ -254,26 +254,6 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({ onSuccess, onC
             )}
           </div>
 
-          {/* Type de transaction */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Type de transaction *
-            </label>
-            <select
-              name="type"
-              value={formData.type}
-              onChange={handleInputChange}
-              className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-            >
-              <option value="BUY">Achat</option>
-              <option value="SELL">Vente</option>
-              <option value="TRANSFER_IN">Transfert entrant</option>
-              <option value="TRANSFER_OUT">Transfert sortant</option>
-              <option value="STAKING">Staking</option>
-              <option value="REWARD">Récompense</option>
-            </select>
-          </div>
-
           {/* Quantité et Prix */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
