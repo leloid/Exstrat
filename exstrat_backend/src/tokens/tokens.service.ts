@@ -36,10 +36,11 @@ export class TokensService {
   private readonly baseUrl = 'https://pro-api.coinmarketcap.com/v1';
 
   constructor(private configService: ConfigService) {
-    this.apiKey = this.configService.get<string>('COINMARKETCAP_API_KEY');
-    if (!this.apiKey) {
+    const apiKey = this.configService.get<string>('COINMARKETCAP_API_KEY');
+    if (!apiKey) {
       throw new Error('COINMARKETCAP_API_KEY is required in environment variables');
     }
+    this.apiKey = apiKey;
   }
 
   async searchTokens(query: string): Promise<TokenSearchResult[]> {
