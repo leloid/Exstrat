@@ -24,12 +24,13 @@ async function bootstrap() {
   // Liste des origines autorisées en production
   const productionOrigins = [
     process.env.FRONTEND_URL,
+    process.env.BACKEND_URL, // Pour Swagger et tests
     'https://exstrat.vercel.app',
     'https://exstrat.com',
     'https://www.exstrat.com',
     'http://localhost:3001', // Pour tester en local avec backend sur Railway
     'http://localhost:3000',
-  ].filter(Boolean);
+  ].filter(Boolean); // Retire les valeurs null/undefined
   
   app.enableCors({
     origin: (origin, callback) => {
@@ -52,7 +53,20 @@ async function bootstrap() {
       // - Log pour debug (en production sur Railway)
       console.log(`🚫 CORS bloqué pour l'origine: ${origin}`);
       console.log(`✅ Origines autorisées: ${productionOrigins.join(', ')}`);
-      console.log(`🌍 FRONTEND_URL: ${process.env.FRONTEND_URL}`);
+      console.log(`🌍 FRONTEND_URL: ${process.env.FRONTEND_URL || 'non défini'}`);
+      console.log(`🌍 BACKEND_URL: ${process.env.BACKEND_URL || 'non défini'}`);
+      
+      // En production, autoriser aussi les requêtes depuis le backend lui-même (pour Swagger)
+      // et les requêtes sans origin (Postman, curl, etc.)
+      if (process.env.NODE_ENV === 'production') {
+        // Autoriser les requêtes depuis le même domaine (Swagger)
+        const originHost = origin ? new URL(origin).hostname : null;
+        const backendHost = process.env.BACKEND_URL ? new URL(process.env.BACKEND_URL).hostname : null;
+        
+        if (originHost && backendHost && originHost === backendHost) {
+          return callback(null, true);
+        }
+      }
       
       callback(new Error(`Not allowed by CORS. Origin: ${origin}`));
     },
