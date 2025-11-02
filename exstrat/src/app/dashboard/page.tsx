@@ -13,7 +13,8 @@ import {
   ArrowDownIcon,
   PlusIcon,
   WalletIcon,
-  BellIcon
+  BellIcon,
+  AcademicCapIcon
 } from '@heroicons/react/24/outline';
 
 // SVG personnalisés pour le dashboard
@@ -152,6 +153,9 @@ export default function DashboardPage() {
         // TODO: Implémenter la création d'alerte
         console.log('Créer une alerte prix');
         break;
+      case 'onboarding':
+        router.push('/onboarding');
+        break;
     }
   };
 
@@ -176,6 +180,49 @@ export default function DashboardPage() {
 
           {/* Content */}
           <div className={`flex-1 p-6 ${isDarkMode ? 'bg-gray-900' : 'bg-gray-50'}`}>
+            {/* Actions Rapides - En haut de la page */}
+            <div className={`rounded-xl p-4 mb-6 ${
+              isDarkMode ? 'bg-gray-800' : 'bg-white border border-gray-200'
+            }`}>
+              <div className="flex items-center gap-3 overflow-x-auto pb-2">
+                <button 
+                  onClick={() => handleQuickAction('transaction')}
+                  className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-3 rounded-lg transition-colors flex items-center gap-2 flex-shrink-0"
+                >
+                  <PlusIcon className="h-5 w-5" />
+                  <span className="text-sm font-medium whitespace-nowrap">{language === 'fr' ? 'Nouvelle Transaction' : 'New Transaction'}</span>
+                </button>
+                <button 
+                  onClick={() => handleQuickAction('strategy')}
+                  className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-3 rounded-lg transition-colors flex items-center gap-2 flex-shrink-0"
+                >
+                  <ChartBarIcon className="h-5 w-5" />
+                  <span className="text-sm font-medium whitespace-nowrap">{language === 'fr' ? 'Créer Stratégie' : 'Create Strategy'}</span>
+                </button>
+                <button 
+                  onClick={() => handleQuickAction('portfolio')}
+                  className="bg-green-600 hover:bg-green-700 text-white px-4 py-3 rounded-lg transition-colors flex items-center gap-2 flex-shrink-0"
+                >
+                  <WalletIcon className="h-5 w-5" />
+                  <span className="text-sm font-medium whitespace-nowrap">{language === 'fr' ? 'Nouveau Portfolio' : 'New Portfolio'}</span>
+                </button>
+                <button 
+                  onClick={() => handleQuickAction('alert')}
+                  className="bg-orange-600 hover:bg-orange-700 text-white px-4 py-3 rounded-lg transition-colors flex items-center gap-2 flex-shrink-0"
+                >
+                  <BellIcon className="h-5 w-5" />
+                  <span className="text-sm font-medium whitespace-nowrap">{language === 'fr' ? 'Alerte Prix' : 'Price Alert'}</span>
+                </button>
+                <button 
+                  onClick={() => handleQuickAction('onboarding')}
+                  className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-3 rounded-lg transition-colors flex items-center gap-2 flex-shrink-0"
+                >
+                  <AcademicCapIcon className="h-5 w-5" />
+                  <span className="text-sm font-medium whitespace-nowrap">{language === 'fr' ? 'Onboarding' : 'Onboarding'}</span>
+                </button>
+              </div>
+            </div>
+
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
               {/* Hero Section */}
               <div className="bg-gradient-to-br from-purple-600 to-pink-600 rounded-xl p-6 relative overflow-hidden">
@@ -252,45 +299,6 @@ export default function DashboardPage() {
 
             {/* Bottom Row */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {/* Actions Rapides */}
-              <div className={`rounded-xl p-6 ${
-                isDarkMode ? 'bg-gray-800' : 'bg-white border border-gray-200'
-              }`}>
-                <h3 className={`font-semibold mb-4 ${
-                  isDarkMode ? 'text-white' : 'text-gray-900'
-                }`}>Actions Rapides</h3>
-                <div className="grid grid-cols-2 gap-4">
-                  <button 
-                    onClick={() => handleQuickAction('transaction')}
-                    className="bg-blue-600 hover:bg-blue-700 text-white p-4 rounded-lg transition-colors flex flex-col items-center gap-2"
-                  >
-                    <PlusIcon className="h-6 w-6" />
-                    <span className="text-sm font-medium">Nouvelle Transaction</span>
-                  </button>
-                  <button 
-                    onClick={() => handleQuickAction('strategy')}
-                    className="bg-purple-600 hover:bg-purple-700 text-white p-4 rounded-lg transition-colors flex flex-col items-center gap-2"
-                  >
-                    <ChartBarIcon className="h-6 w-6" />
-                    <span className="text-sm font-medium">Créer Stratégie</span>
-                  </button>
-                  <button 
-                    onClick={() => handleQuickAction('portfolio')}
-                    className="bg-green-600 hover:bg-green-700 text-white p-4 rounded-lg transition-colors flex flex-col items-center gap-2"
-                  >
-                    <WalletIcon className="h-6 w-6" />
-                    <span className="text-sm font-medium">Nouveau Portfolio</span>
-                  </button>
-                  <button 
-                    onClick={() => handleQuickAction('alert')}
-                    className="bg-orange-600 hover:bg-orange-700 text-white p-4 rounded-lg transition-colors flex flex-col items-center gap-2"
-                  >
-                    <BellIcon className="h-6 w-6" />
-                    <span className="text-sm font-medium">Alerte Prix</span>
-                  </button>
-            </div>
-          </div>
-
               {/* Vue d'ensemble */}
               <div className={`rounded-xl p-6 ${
                 isDarkMode ? 'bg-gray-800' : 'bg-white border border-gray-200'
@@ -331,7 +339,7 @@ export default function DashboardPage() {
                     <span className={`font-semibold ${
                       isDarkMode ? 'text-white' : 'text-gray-900'
                     }`}>12</span>
-                  </div>
+                          </div>
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
                       <div className="w-3 h-3 bg-orange-500 rounded-full"></div>
@@ -344,11 +352,54 @@ export default function DashboardPage() {
                     }`}>5</span>
                   </div>
                 </div>
+          </div>
+
+              {/* Activités Récentes */}
+              <div className={`rounded-xl p-6 ${
+                isDarkMode ? 'bg-gray-800' : 'bg-white border border-gray-200'
+              }`}>
+                <div className="flex items-center gap-2 mb-4">
+                  <div className="w-6 h-6 bg-purple-500 rounded-full flex items-center justify-center">
+                    <span className="text-white text-xs">🕐</span>
+                  </div>
+                  <h3 className={`font-semibold ${
+                    isDarkMode ? 'text-white' : 'text-gray-900'
+                  }`}>Activités Récentes</h3>
+                </div>
+                <div className="space-y-3">
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 bg-purple-600 rounded-full flex items-center justify-center">
+                      <span className="text-white text-xs">⚡</span>
+                    </div>
+                    <div className="flex-1">
+                      <div className={`text-sm ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>Stratégie BTC activée</div>
+                      <div className="text-gray-400 text-xs">Il y a 2h</div>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 bg-green-600 rounded-full flex items-center justify-center">
+                      <span className="text-white text-xs">+</span>
+                    </div>
+                    <div className="flex-1">
+                      <div className={`text-sm ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>Achat ETH +0.5</div>
+                      <div className="text-gray-400 text-xs">Il y a 4h</div>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 bg-yellow-600 rounded-full flex items-center justify-center">
+                      <span className="text-white text-xs">⭐</span>
+                    </div>
+                    <div className="flex-1">
+                      <div className={`text-sm ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>Alerte prix atteinte</div>
+                      <div className="text-gray-400 text-xs">Il y a 6h</div>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
 
             {/* Second Bottom Row */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
+            <div className="mt-6">
               {/* Top Holdings */}
               <div className={`rounded-xl p-6 ${
                 isDarkMode ? 'bg-gray-800' : 'bg-white border border-gray-200'
@@ -405,7 +456,7 @@ export default function DashboardPage() {
                     <div className="flex items-center gap-3">
                       <div className="w-3 h-3 bg-purple-500 rounded-full"></div>
                       <span className={`text-sm ${isDarkMode ? 'text-white' : 'text-gray-700'}`}>SOL Solana</span>
-                    </div>
+          </div>
                     <div className="text-right">
                       <div className={`text-sm font-semibold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>€3,890</div>
                       <div className="text-gray-400 text-xs">+0.0%</div>
@@ -431,49 +482,6 @@ export default function DashboardPage() {
                     {/* Texte central */}
                     <text x="50" y="48" textAnchor="middle" fill="white" fontSize="10" fontWeight="bold">€45.2K</text>
                   </svg>
-                </div>
-              </div>
-
-              {/* Activités Récentes */}
-              <div className={`rounded-xl p-6 ${
-                isDarkMode ? 'bg-gray-800' : 'bg-white border border-gray-200'
-              }`}>
-                <div className="flex items-center gap-2 mb-4">
-                  <div className="w-6 h-6 bg-purple-500 rounded-full flex items-center justify-center">
-                    <span className="text-white text-xs">🕐</span>
-                  </div>
-                  <h3 className={`font-semibold ${
-                    isDarkMode ? 'text-white' : 'text-gray-900'
-                  }`}>Activités Récentes</h3>
-                </div>
-                <div className="space-y-3">
-                  <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 bg-purple-600 rounded-full flex items-center justify-center">
-                      <span className="text-white text-xs">⚡</span>
-                    </div>
-                    <div className="flex-1">
-                      <div className={`text-sm ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>Stratégie BTC activée</div>
-                      <div className="text-gray-400 text-xs">Il y a 2h</div>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 bg-green-600 rounded-full flex items-center justify-center">
-                      <span className="text-white text-xs">+</span>
-                    </div>
-                    <div className="flex-1">
-                      <div className={`text-sm ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>Achat ETH +0.5</div>
-                      <div className="text-gray-400 text-xs">Il y a 4h</div>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 bg-yellow-600 rounded-full flex items-center justify-center">
-                      <span className="text-white text-xs">⭐</span>
-                    </div>
-                    <div className="flex-1">
-                      <div className={`text-sm ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>Alerte prix atteinte</div>
-                      <div className="text-gray-400 text-xs">Il y a 6h</div>
-                    </div>
-                  </div>
                 </div>
               </div>
             </div>
