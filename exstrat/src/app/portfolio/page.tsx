@@ -150,11 +150,11 @@ export default function PortfolioPage() {
   if (isLoading) {
     return (
       <ProtectedRoute>
-        <div className={`min-h-screen flex ${isDarkMode ? 'bg-gray-900' : 'bg-gray-50'}`}>
+        <div className={`min-h-screen flex overflow-x-hidden ${isDarkMode ? 'bg-gray-900' : 'bg-gray-50'}`}>
           <Sidebar activeTab={activeTab} onTabChange={setActiveTab} isDarkMode={isDarkMode} />
-          <div className="flex-1 flex flex-col">
+          <div className="flex-1 flex flex-col overflow-x-hidden w-full max-w-full">
             <TopBar currentPageName={language === 'fr' ? 'Portfolios' : 'Portfolios'} />
-            <div className={`flex-1 p-6 flex items-center justify-center ${isDarkMode ? 'bg-gray-900' : 'bg-gray-50'}`}>
+            <div className={`flex-1 p-3 md:p-6 flex items-center justify-center overflow-x-hidden max-w-full ${isDarkMode ? 'bg-gray-900' : 'bg-gray-50'}`}>
               <div className="text-center">
                 <div className={`animate-spin rounded-full h-12 w-12 border-b-2 ${
                   isDarkMode ? 'border-purple-600' : 'border-purple-600'
@@ -172,24 +172,24 @@ export default function PortfolioPage() {
 
   return (
     <ProtectedRoute>
-      <div className={`min-h-screen flex ${isDarkMode ? 'bg-gray-900' : 'bg-gray-50'}`}>
+      <div className={`min-h-screen flex overflow-x-hidden ${isDarkMode ? 'bg-gray-900' : 'bg-gray-50'}`}>
         <Sidebar activeTab={activeTab} onTabChange={setActiveTab} isDarkMode={isDarkMode} />
         
-        <div className="flex-1 flex flex-col">
+        <div className="flex-1 flex flex-col overflow-x-hidden w-full max-w-full">
           <TopBar currentPageName={language === 'fr' ? 'Portfolios' : 'Portfolios'} />
 
-          <div className={`flex-1 p-6 ${isDarkMode ? 'bg-gray-900' : 'bg-gray-50'}`}>
+          <div className={`flex-1 p-3 md:p-6 overflow-x-hidden max-w-full ${isDarkMode ? 'bg-gray-900' : 'bg-gray-50'}`}>
             {/* Header */}
-            <div className="mb-8">
-              <div className="flex items-center justify-between">
+            <div className="mb-4 md:mb-8">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-0">
                 <div>
-                  <p className={`mt-1 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                  <p className={`text-sm md:text-base mt-1 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
                     {totalPortfolios} {language === 'fr' ? 'portfolio' : 'portfolio'}{totalPortfolios > 1 ? 's' : ''} • {totalPositions} {language === 'fr' ? 'position' : 'position'}{totalPositions > 1 ? 's' : ''}
                   </p>
                 </div>
                 <Button 
                   onClick={() => setShowCreateForm(true)} 
-                  className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-2 rounded-lg font-medium flex items-center gap-2"
+                  className="bg-purple-600 hover:bg-purple-700 text-white px-4 md:px-6 py-2 rounded-lg text-sm md:text-base font-medium flex items-center gap-2 w-full sm:w-auto"
                 >
                   <Plus className="h-4 w-4" />
                   {language === 'fr' ? 'Nouveau Portfolio' : 'New Portfolio'}
@@ -198,47 +198,47 @@ export default function PortfolioPage() {
             </div>
 
             {/* Statistiques globales */}
-            <div className="mb-8">
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-                <div className={`rounded-xl p-6 ${
+            <div className="mb-4 md:mb-8 w-full max-w-full">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-6">
+                <div className={`rounded-xl p-4 md:p-6 w-full max-w-full ${
                   isDarkMode ? 'bg-gray-800' : 'bg-white border border-gray-200'
                 }`}>
-                  <div className={`text-sm mb-1 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                  <div className={`text-xs md:text-sm mb-1 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
                     {language === 'fr' ? 'Valeur totale' : 'Total Value'}
                   </div>
-                  <div className={`text-2xl font-semibold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+                  <div className={`text-lg md:text-2xl font-semibold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
                     {formatCurrency(globalValue)}
                   </div>
                 </div>
-                <div className={`rounded-xl p-6 ${
+                <div className={`rounded-xl p-4 md:p-6 w-full max-w-full ${
                   isDarkMode ? 'bg-gray-800' : 'bg-white border border-gray-200'
                 }`}>
-                  <div className={`text-sm mb-1 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                  <div className={`text-xs md:text-sm mb-1 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
                     {language === 'fr' ? 'Investi' : 'Invested'}
                   </div>
-                  <div className={`text-2xl font-semibold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+                  <div className={`text-lg md:text-2xl font-semibold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
                     {formatCurrency(globalInvested)}
                   </div>
                 </div>
-                <div className={`rounded-xl p-6 ${
+                <div className={`rounded-xl p-4 md:p-6 w-full max-w-full ${
                   isDarkMode ? 'bg-gray-800' : 'bg-white border border-gray-200'
                 }`}>
-                  <div className={`text-sm mb-1 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                  <div className={`text-xs md:text-sm mb-1 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
                     {language === 'fr' ? 'Performance' : 'Performance'}
                   </div>
-                  <div className={`text-2xl font-semibold ${
+                  <div className={`text-lg md:text-2xl font-semibold ${
                     globalProfitLoss >= 0 ? 'text-green-600' : 'text-red-500'
                   }`}>
                     {formatCurrency(globalProfitLoss)}
                   </div>
                 </div>
-                <div className={`rounded-xl p-6 ${
+                <div className={`rounded-xl p-4 md:p-6 w-full max-w-full ${
                   isDarkMode ? 'bg-gray-800' : 'bg-white border border-gray-200'
                 }`}>
-                  <div className={`text-sm mb-1 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                  <div className={`text-xs md:text-sm mb-1 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
                     {language === 'fr' ? 'Rendement' : 'Return'}
                   </div>
-                  <div className={`text-2xl font-semibold ${
+                  <div className={`text-lg md:text-2xl font-semibold ${
                     globalProfitLoss >= 0 ? 'text-green-600' : 'text-red-500'
                   }`}>
                     {formatPercentage(globalProfitLossPercentage)}
@@ -249,14 +249,14 @@ export default function PortfolioPage() {
 
             {/* Formulaire */}
             {(showCreateForm || editingPortfolio) && (
-              <div className={`mb-8 rounded-xl p-6 ${
+              <div className={`mb-4 md:mb-8 rounded-xl p-4 md:p-6 w-full max-w-full ${
                 isDarkMode ? 'bg-gray-800' : 'bg-white border border-gray-200'
               }`}>
-                <h3 className={`text-lg font-semibold mb-4 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+                <h3 className={`text-base md:text-lg font-semibold mb-3 md:mb-4 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
                   {editingPortfolio ? (language === 'fr' ? 'Modifier le Portfolio' : 'Edit Portfolio') : (language === 'fr' ? 'Nouveau Portfolio' : 'New Portfolio')}
                 </h3>
-                <form onSubmit={editingPortfolio ? handleUpdatePortfolio : handleCreatePortfolio} className="space-y-4">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <form onSubmit={editingPortfolio ? handleUpdatePortfolio : handleCreatePortfolio} className="space-y-3 md:space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4">
                     <div>
                       <Label htmlFor="name" className={`text-sm font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
                         {language === 'fr' ? 'Nom du Portfolio' : 'Portfolio Name'}
@@ -321,7 +321,7 @@ export default function PortfolioPage() {
             )}
 
             {/* Liste des portfolios */}
-            <div className="space-y-4">
+            <div className="space-y-3 md:space-y-4">
               {portfolios.map((portfolio) => {
                 const portfolioValue = portfolioValues[portfolio.id]?.value || 0;
                 const portfolioInvested = portfolioValues[portfolio.id]?.invested || 0;
@@ -330,44 +330,44 @@ export default function PortfolioPage() {
                 const portfolioHoldings = holdingsByPortfolio[portfolio.id] || [];
                 
                 return (
-                  <div key={portfolio.id} className={`rounded-xl p-6 ${
+                  <div key={portfolio.id} className={`rounded-xl p-4 md:p-6 w-full max-w-full ${
                     isDarkMode ? 'bg-gray-800' : 'bg-white border border-gray-200'
                   }`}>
-                    <div className="flex items-center justify-between mb-4">
-                      <div className="flex items-center gap-3">
-                        <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
+                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-0 mb-3 md:mb-4">
+                      <div className="flex items-center gap-2 md:gap-3 w-full sm:w-auto">
+                        <div className={`w-8 h-8 md:w-10 md:h-10 rounded-lg flex items-center justify-center flex-shrink-0 ${
                           isDarkMode ? 'bg-gray-700' : 'bg-purple-100'
                         }`}>
-                          <Wallet className={`h-5 w-5 ${
+                          <Wallet className={`h-4 w-4 md:h-5 md:w-5 ${
                             isDarkMode ? 'text-gray-300' : 'text-purple-600'
                           }`} />
                         </div>
-                        <div>
-                          <h3 className={`text-lg font-semibold flex items-center gap-2 ${
+                        <div className="flex-1 min-w-0">
+                          <h3 className={`text-base md:text-lg font-semibold flex flex-wrap items-center gap-2 ${
                             isDarkMode ? 'text-white' : 'text-gray-900'
                           }`}>
-                            {portfolio.name}
+                            <span className="truncate">{portfolio.name}</span>
                             {portfolio.isDefault && (
-                              <Badge className={`text-xs px-2 py-1 ${
+                              <Badge className={`text-xs px-2 py-1 flex-shrink-0 ${
                                 isDarkMode ? 'bg-purple-600 text-white' : 'bg-purple-100 text-purple-700'
                               }`}>
                                 {language === 'fr' ? 'Par défaut' : 'Default'}
                               </Badge>
                             )}
                           </h3>
-                          <p className={`text-sm ${
+                          <p className={`text-xs md:text-sm truncate ${
                             isDarkMode ? 'text-gray-400' : 'text-gray-500'
                           }`}>
                             {portfolio.description || (language === 'fr' ? 'Aucune description' : 'No description')}
                           </p>
                         </div>
                       </div>
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2 w-full sm:w-auto justify-end sm:justify-start">
                         <Button
                           variant="outline"
                           size="sm"
                           onClick={() => startEdit(portfolio)}
-                          className={`${isDarkMode ? 'text-gray-300 hover:text-white' : 'text-gray-600 hover:text-gray-900'}`}
+                          className={`flex-1 sm:flex-initial ${isDarkMode ? 'text-gray-300 hover:text-white' : 'text-gray-600 hover:text-gray-900'}`}
                         >
                           <Edit className="h-4 w-4" />
                         </Button>
@@ -375,46 +375,47 @@ export default function PortfolioPage() {
                           variant="outline"
                           size="sm"
                           onClick={() => handleDeletePortfolio(portfolio.id)}
-                          className="text-red-600 hover:text-red-700"
+                          className="flex-1 sm:flex-initial text-red-600 hover:text-red-700"
                         >
                           <Delete className="h-4 w-4" />
                         </Button>
                       </div>
                     </div>
                     
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 mb-3 md:mb-4">
                       <div>
-                        <div className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                        <div className={`text-xs md:text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
                           {language === 'fr' ? 'Positions' : 'Positions'}
                         </div>
-                        <div className={`text-lg font-semibold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+                        <div className={`text-base md:text-lg font-semibold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
                           {portfolio.holdingsCount || 0}
                         </div>
                       </div>
                       <div>
-                        <div className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                        <div className={`text-xs md:text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
                           {language === 'fr' ? 'Investi' : 'Invested'}
                         </div>
-                        <div className={`text-lg font-semibold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+                        <div className={`text-base md:text-lg font-semibold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
                           {formatCurrency(portfolioInvested)}
                         </div>
                       </div>
                       <div>
-                        <div className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                        <div className={`text-xs md:text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
                           {language === 'fr' ? 'Valeur' : 'Value'}
                         </div>
-                        <div className={`text-lg font-semibold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+                        <div className={`text-base md:text-lg font-semibold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
                           {formatCurrency(portfolioValue)}
                         </div>
                       </div>
                       <div>
-                        <div className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                        <div className={`text-xs md:text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
                           {language === 'fr' ? 'Performance' : 'Performance'}
                         </div>
-                        <div className={`text-lg font-semibold ${
+                        <div className={`text-sm md:text-lg font-semibold ${
                           portfolioProfitLoss >= 0 ? 'text-green-600' : 'text-red-600'
                         }`}>
-                          {formatCurrency(portfolioProfitLoss)} ({formatPercentage(portfolioProfitLossPercentage)})
+                          <div className="truncate">{formatCurrency(portfolioProfitLoss)}</div>
+                          <div className="text-xs md:text-sm">({formatPercentage(portfolioProfitLossPercentage)})</div>
                         </div>
                       </div>
                     </div>
@@ -435,21 +436,21 @@ export default function PortfolioPage() {
                     
                     {/* Tokens détenus */}
                     {portfolioHoldings.length > 0 && (
-                      <div>
-                        <h4 className={`text-sm font-medium mb-3 ${
+                      <div className="w-full max-w-full">
+                        <h4 className={`text-xs md:text-sm font-medium mb-2 md:mb-3 ${
                           isDarkMode ? 'text-gray-300' : 'text-gray-700'
                         }`}>
                           {language === 'fr' ? 'Tokens détenus' : 'Held Tokens'}
                         </h4>
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 md:gap-3">
                           {portfolioHoldings.slice(0, 6).map((holding) => {
                             const percentage = portfolioValue > 0 ? ((holding.currentValue || 0) / portfolioValue) * 100 : 0;
                             return (
-                              <div key={holding.id} className={`flex items-center justify-between p-3 rounded-lg ${
+                              <div key={holding.id} className={`flex items-center justify-between p-2 md:p-3 rounded-lg w-full max-w-full ${
                                 isDarkMode ? 'bg-gray-700' : 'bg-gray-50'
                               }`}>
-                                <div className="flex items-center gap-2">
-                                  <div className={`w-6 h-6 rounded-full flex items-center justify-center ${
+                                <div className="flex items-center gap-2 min-w-0 flex-1">
+                                  <div className={`w-5 h-5 md:w-6 md:h-6 rounded-full flex items-center justify-center flex-shrink-0 ${
                                     isDarkMode ? 'bg-gray-600' : 'bg-purple-200'
                                   }`}>
                                     <span className={`text-xs font-medium ${
@@ -458,8 +459,8 @@ export default function PortfolioPage() {
                                       {holding.token.symbol.charAt(0)}
                                     </span>
                                   </div>
-                                  <div>
-                                    <div className={`text-sm font-medium ${
+                                  <div className="min-w-0 flex-1">
+                                    <div className={`text-xs md:text-sm font-medium truncate ${
                                       isDarkMode ? 'text-white' : 'text-gray-900'
                                     }`}>
                                       {holding.token.symbol}
@@ -471,8 +472,8 @@ export default function PortfolioPage() {
                                     </div>
                                   </div>
                                 </div>
-                                <div className="text-right">
-                                  <div className={`text-sm font-medium ${
+                                <div className="text-right flex-shrink-0 ml-2">
+                                  <div className={`text-xs md:text-sm font-medium ${
                                     isDarkMode ? 'text-white' : 'text-gray-900'
                                   }`}>
                                     {formatCurrency(holding.currentValue || 0)}
@@ -491,20 +492,20 @@ export default function PortfolioPage() {
 
             {/* Message si pas de portfolios */}
             {portfolios.length === 0 && (
-              <div className="text-center py-16">
-                <div className={`w-16 h-16 rounded-full mx-auto mb-4 flex items-center justify-center ${
+              <div className="text-center py-8 md:py-16 w-full max-w-full">
+                <div className={`w-12 h-12 md:w-16 md:h-16 rounded-full mx-auto mb-3 md:mb-4 flex items-center justify-center ${
                   isDarkMode ? 'bg-gray-800' : 'bg-purple-100'
                 }`}>
-                  <Wallet className={`h-8 w-8 ${
+                  <Wallet className={`h-6 w-6 md:h-8 md:w-8 ${
                     isDarkMode ? 'text-gray-400' : 'text-purple-600'
                   }`} />
                 </div>
-                <h3 className={`text-lg font-semibold mb-2 ${
+                <h3 className={`text-base md:text-lg font-semibold mb-2 ${
                   isDarkMode ? 'text-white' : 'text-gray-900'
                 }`}>
                   {language === 'fr' ? 'Aucun portfolio' : 'No portfolios'}
                 </h3>
-                <p className={isDarkMode ? 'text-gray-400' : 'text-gray-500'}>
+                <p className={`text-sm md:text-base ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
                   {language === 'fr' 
                     ? 'Utilisez le bouton "Nouveau Portfolio" pour créer votre premier portfolio.'
                     : 'Use the "New Portfolio" button to create your first portfolio.'
