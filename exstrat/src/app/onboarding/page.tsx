@@ -297,6 +297,23 @@ export default function OnboardingPage() {
   const handleTargetChange = (index: number, field: keyof ProfitTarget, value: any) => {
     const newTargets = [...profitTargets];
     newTargets[index] = { ...newTargets[index], [field]: value };
+    
+    // Si on modifie le sellPercentage, vérifier que la somme ne dépasse pas 100%
+    if (field === 'sellPercentage') {
+      const totalPercentage = newTargets.reduce((sum, target) => sum + target.sellPercentage, 0);
+      if (totalPercentage > 100) {
+        // Ajuster la valeur pour ne pas dépasser 100% au total
+        const otherTargetsTotal = newTargets.reduce((sum, target, idx) => 
+          idx === index ? sum : sum + target.sellPercentage, 0
+        );
+        const maxValue = Math.max(0, 100 - otherTargetsTotal);
+        newTargets[index] = { ...newTargets[index], sellPercentage: Math.min(value, maxValue) };
+        setError(`La somme des quantités à vendre ne peut pas dépasser 100%. Maximum pour cette cible: ${maxValue.toFixed(1)}%`);
+      } else {
+        setError(''); // Réinitialiser l'erreur si tout est OK
+      }
+    }
+    
     setProfitTargets(newTargets);
   };
 
@@ -389,6 +406,13 @@ export default function OnboardingPage() {
           );
           return;
         }
+      }
+      
+      // Validation : la somme des quantités à vendre ne doit pas dépasser 100%
+      const totalSellPercentage = profitTargets.reduce((sum, target) => sum + target.sellPercentage, 0);
+      if (totalSellPercentage > 100) {
+        setError(`La somme des quantités à vendre (${totalSellPercentage.toFixed(1)}%) ne peut pas dépasser 100%`);
+        return;
       }
       
       setIsLoading(true);
@@ -1461,6 +1485,52 @@ export default function OnboardingPage() {
               </p>
             </div>
 
+            {/* Informations récapitulatives en haut */}
+            <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 mb-6">
+              <div className="grid grid-cols-2 md:grid-cols-5 gap-4 text-sm">
+                <div>
+                  <p className="text-gray-500 mb-1">Portfolio</p>
+                  <p className="font-semibold text-gray-900">
+                    {selectedStrategyPortfolioId === 'virtual' 
+                      ? 'Wallet Virtuelle' 
+                      : onboardingPortfolios.find(p => p.id === selectedStrategyPortfolioId)?.name || '-'}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-gray-500 mb-1">Token</p>
+                  <p className="font-semibold text-gray-900">
+                    {selectedStrategyToken?.symbol || '-'}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-gray-500 mb-1">Nombre de sorties</p>
+                  <p className="font-semibold text-gray-900">{numberOfTargets}</p>
+                </div>
+                <div>
+                  <p className="text-gray-500 mb-1">Tokens détenus</p>
+                  <p className="font-semibold text-gray-900">
+                    {strategyQuantity ? parseFloat(strategyQuantity).toLocaleString() : '-'}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-gray-500 mb-1">Prix moyen d'achat</p>
+                  <p className="font-semibold text-purple-600">
+                    {strategyAveragePrice ? `$${parseFloat(strategyAveragePrice).toLocaleString()}` : '-'}
+                  </p>
+                </div>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4 pt-4 border-t border-gray-200">
+                <div>
+                  <p className="text-gray-500 mb-1">Total investi</p>
+                  <p className="text-lg font-bold text-green-600">
+                    {strategyQuantity && strategyAveragePrice 
+                      ? formatCurrency(parseFloat(strategyQuantity) * parseFloat(strategyAveragePrice), '$', 2)
+                      : '$0.00'}
+                  </p>
+                </div>
+              </div>
+            </div>
+
             <div className="space-y-6">
               {/* Informations de base */}
               <div className="space-y-4">
@@ -1674,21 +1744,68 @@ export default function OnboardingPage() {
                               />
                             </div>
                           </div>
-                          <div className="flex-grow flex flex-col justify-end">
-                            <Label htmlFor={`sellPercentage-${index}`}>
-                              Quantité à vendre: {target.sellPercentage.toFixed(1)}%
-                            </Label>
-                            <Slider
-                              id={`sellPercentage-${index}`}
-                              min={0}
-                              max={100}
-                              step={1}
-                              value={[target.sellPercentage]}
-                              onValueChange={(value) => 
-                                handleTargetChange(index, 'sellPercentage', value[0])
-                              }
-                              className="w-full mt-2"
-                            />
+                            <div className="flex-grow flex flex-col justify-end">
+                            <div className="flex items-center justify-between mb-2">
+                              <Label htmlFor={`sellPercentage-${index}`}>
+                                Quantité à vendre (%)
+                              </Label>
+                              <span className="text-sm text-gray-500">
+                                Total: {profitTargets.reduce((sum, t) => sum + t.sellPercentage, 0).toFixed(1)}%
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-4 mt-2">
+                              <div className="flex-1">
+                                <Slider
+                                  id={`sellPercentage-${index}`}
+                                  min={0}
+                                  max={(() => {
+                                    // Calculer le maximum possible pour cette cible
+                                    const otherTargetsTotal = profitTargets.reduce((sum, t, idx) => 
+                                      idx === index ? sum : sum + t.sellPercentage, 0
+                                    );
+                                    return Math.min(100, 100 - otherTargetsTotal);
+                                  })()}
+                                  step={0.1}
+                                  value={[target.sellPercentage]}
+                                  onValueChange={(value) => 
+                                    handleTargetChange(index, 'sellPercentage', value[0])
+                                  }
+                                  className="w-full"
+                                />
+                              </div>
+                              <div className="w-24">
+                                <Input
+                                  type="number"
+                                  min={0}
+                                  max={(() => {
+                                    const otherTargetsTotal = profitTargets.reduce((sum, t, idx) => 
+                                      idx === index ? sum : sum + t.sellPercentage, 0
+                                    );
+                                    return 100 - otherTargetsTotal;
+                                  })()}
+                                  step={0.1}
+                                  value={target.sellPercentage.toFixed(1)}
+                                  onChange={(e) => {
+                                    const value = parseFloat(e.target.value);
+                                    if (!isNaN(value) && value >= 0) {
+                                      // Vérifier que la somme ne dépasse pas 100%
+                                      const otherTargetsTotal = profitTargets.reduce((sum, t, idx) => 
+                                        idx === index ? sum : sum + t.sellPercentage, 0
+                                      );
+                                      const maxValue = Math.max(0, 100 - otherTargetsTotal);
+                                      handleTargetChange(index, 'sellPercentage', Math.min(value, maxValue));
+                                    }
+                                  }}
+                                  placeholder="0.0"
+                                  className="text-sm"
+                                />
+                              </div>
+                            </div>
+                            {profitTargets.reduce((sum, t) => sum + t.sellPercentage, 0) > 100 && (
+                              <p className="mt-1 text-xs text-red-600">
+                                La somme dépasse 100% !
+                              </p>
+                            )}
                           </div>
                         </div>
 
@@ -1733,6 +1850,58 @@ export default function OnboardingPage() {
               </div>
             </div>
 
+            {/* Barre de résumé en bas */}
+            {strategyInfo.length > 0 && strategyQuantity && strategyAveragePrice && (
+              <div className="mt-8 bg-white border-2 border-gray-200 rounded-lg p-6">
+                <div className="grid grid-cols-2 md:grid-cols-5 gap-4 items-center">
+                  <div>
+                    <p className="text-xs text-gray-500 mb-1">Investi</p>
+                    <p className="text-lg font-bold text-green-600">
+                      {formatCurrency(parseFloat(strategyQuantity) * parseFloat(strategyAveragePrice), '$', 2)}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-gray-500 mb-1">Total encaissé</p>
+                    <p className="text-lg font-bold text-green-600">
+                      {formatCurrency(
+                        strategyInfo.reduce((sum, info) => sum + info.amountCollected, 0),
+                        '$',
+                        2
+                      )}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-gray-500 mb-1">Résultat net</p>
+                    <p className="text-lg font-bold text-green-600">
+                      {formatCurrency(
+                        strategyInfo.reduce((sum, info) => sum + info.amountCollected, 0) - 
+                        (parseFloat(strategyQuantity) * parseFloat(strategyAveragePrice)),
+                        '$',
+                        2
+                      )}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-gray-500 mb-1">Rendement net</p>
+                    <p className="text-lg font-bold text-green-600">
+                      {(((
+                        strategyInfo.reduce((sum, info) => sum + info.amountCollected, 0) - 
+                        (parseFloat(strategyQuantity) * parseFloat(strategyAveragePrice))
+                      ) / (parseFloat(strategyQuantity) * parseFloat(strategyAveragePrice))) * 100).toFixed(1)}%
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-gray-500 mb-1">Tokens restants</p>
+                    <p className="text-lg font-bold text-orange-600">
+                      {strategyInfo.length > 0 
+                        ? strategyInfo[strategyInfo.length - 1].remainingTokens.toFixed(6)
+                        : '0.000000'}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* Footer - Design amélioré avec plus d'espace */}
             <div className="mt-8 pt-8 border-t-2 border-gray-200 bg-gradient-to-r from-gray-50 to-blue-50 rounded-xl p-6 -mx-4">
               <div className="max-w-7xl mx-auto">
@@ -1752,40 +1921,6 @@ export default function OnboardingPage() {
                         </p>
                       </div>
                     </div>
-                    
-                    {/* Statistiques rapides */}
-                    {strategyInfo.length > 0 && (
-                      <div className="grid grid-cols-3 gap-4 pt-3 border-t border-gray-200">
-                        <div>
-                          <p className="text-xs text-gray-500 mb-1">Profit total estimé</p>
-                          <p className="text-lg font-bold text-green-600">
-                            {formatCurrency(
-                              strategyInfo.reduce((sum, info) => sum + (info.amountCollected - (info.tokensSold * parseFloat(strategyAveragePrice || '0'))), 0),
-                              '$',
-                              2
-                            )}
-                          </p>
-                        </div>
-                        <div>
-                          <p className="text-xs text-gray-500 mb-1">Tokens restants finaux</p>
-                          <p className="text-lg font-bold text-orange-600">
-                            {strategyInfo.length > 0 
-                              ? strategyInfo[strategyInfo.length - 1].remainingTokens.toFixed(4)
-                              : '0.0000'
-                            }
-                          </p>
-                        </div>
-                        <div>
-                          <p className="text-xs text-gray-500 mb-1">Valorisation finale</p>
-                          <p className="text-lg font-bold text-blue-600">
-                            {strategyInfo.length > 0
-                              ? formatCurrency(strategyInfo[strategyInfo.length - 1].remainingTokensValuation, '$', 2)
-                              : '$0.00'
-                            }
-                          </p>
-                        </div>
-                      </div>
-                    )}
                   </div>
                   
                   {/* Section bouton à droite */}

@@ -24,6 +24,7 @@ import { TokenSearch } from '@/components/transactions/TokenSearch';
 import { TokenSearchResult } from '@/types/transactions';
 import { usePortfolio } from '@/contexts/PortfolioContext';
 import { strategiesApi } from '@/lib/strategies-api';
+import { CreateStrategyStepDto, TargetType } from '@/types/strategies';
 
 interface ProfitTarget {
   id: string;
@@ -129,9 +130,40 @@ export default function CreateStrategyPage() {
         name: strategy.tokenName,
         symbol: strategy.tokenSymbol,
         slug: strategy.tokenSymbol.toLowerCase(),
+        num_market_pairs: 0,
+        date_added: '',
+        tags: [],
+        max_supply: 0,
+        circulating_supply: 0,
+        total_supply: 0,
+        is_active: 1,
+        infinite_supply: false,
+        platform: null,
         cmc_rank: 0,
-        quote: null,
-      });
+        is_fiat: 0,
+        self_reported_circulating_supply: null,
+        self_reported_market_cap: null,
+        tvl_ratio: null,
+        last_updated: '',
+        quote: {
+          USD: {
+            price: null,
+            volume_24h: null,
+            volume_change_24h: null,
+            percent_change_1h: null,
+            percent_change_24h: null,
+            percent_change_7d: null,
+            percent_change_30d: null,
+            percent_change_60d: null,
+            percent_change_90d: null,
+            market_cap: null,
+            market_cap_dominance: null,
+            fully_diluted_market_cap: null,
+            tvl: null,
+            last_updated: '',
+          },
+        },
+      } as TokenSearchResult);
       
       // Pré-remplir les cibles de profit
       const targets: ProfitTarget[] = strategy.profitTargets.map((target: any, index: number) => ({
@@ -177,6 +209,25 @@ export default function CreateStrategyPage() {
   const handleTargetChange = (index: number, field: keyof ProfitTarget, value: any) => {
     const newTargets = [...profitTargets];
     newTargets[index] = { ...newTargets[index], [field]: value };
+    
+    // Si on modifie le sellPercentage, vérifier que la somme ne dépasse pas 100%
+    if (field === 'sellPercentage') {
+      const totalPercentage = newTargets.reduce((sum, target) => sum + target.sellPercentage, 0);
+      if (totalPercentage > 100) {
+        // Ajuster la valeur pour ne pas dépasser 100% au total
+        const otherTargetsTotal = newTargets.reduce((sum, target, idx) => 
+          idx === index ? sum : sum + target.sellPercentage, 0
+        );
+        const maxValue = Math.max(0, 100 - otherTargetsTotal);
+        newTargets[index] = { ...newTargets[index], sellPercentage: Math.min(value, maxValue) };
+        setError(language === 'fr' 
+          ? `La somme des quantités à vendre ne peut pas dépasser 100%. Maximum pour cette cible: ${maxValue.toFixed(1)}%`
+          : `The sum of quantities to sell cannot exceed 100%. Maximum for this target: ${maxValue.toFixed(1)}%`);
+      } else {
+        setError(null); // Réinitialiser l'erreur si tout est OK
+      }
+    }
+    
     setProfitTargets(newTargets);
   };
   
@@ -266,6 +317,15 @@ export default function CreateStrategyPage() {
       }
     }
     
+    // Validation : la somme des quantités à vendre ne doit pas dépasser 100%
+    const totalSellPercentage = profitTargets.reduce((sum, target) => sum + target.sellPercentage, 0);
+    if (totalSellPercentage > 100) {
+      alert(language === 'fr' 
+        ? `La somme des quantités à vendre (${totalSellPercentage.toFixed(1)}%) ne peut pas dépasser 100%`
+        : `The sum of quantities to sell (${totalSellPercentage.toFixed(1)}%) cannot exceed 100%`);
+      return;
+    }
+    
     setLoading(true);
     setError(null);
     
@@ -275,26 +335,26 @@ export default function CreateStrategyPage() {
       
       if (isVirtualWallet) {
         // Stratégie théorique
-        const strategyData = {
-          name: strategyName,
+      const strategyData = {
+        name: strategyName,
           description: `${language === 'fr' ? 'Stratégie pour' : 'Strategy for'} ${selectedToken.symbol} - ${numberOfTargets} ${language === 'fr' ? 'cibles de profit' : 'profit targets'}`,
-          tokenSymbol: selectedToken.symbol,
-          tokenName: selectedToken.name,
-          quantity: parseFloat(quantity),
-          averagePrice: parseFloat(averagePrice),
-          profitTargets: profitTargets.map((target, index) => ({
-            order: index + 1,
-            targetType: target.targetType,
-            targetValue: target.targetValue,
-            sellPercentage: target.sellPercentage,
-          })),
-          status: 'active',
-        };
-        
+        tokenSymbol: selectedToken.symbol,
+        tokenName: selectedToken.name,
+        quantity: parseFloat(quantity),
+        averagePrice: parseFloat(averagePrice),
+        profitTargets: profitTargets.map((target, index) => ({
+          order: index + 1,
+          targetType: target.targetType,
+          targetValue: target.targetValue,
+          sellPercentage: target.sellPercentage,
+        })),
+        status: 'active',
+      };
+      
         console.log('📤 Données de la stratégie théorique:', strategyData);
-        
-        if (isEditMode && editingStrategyId) {
-          const updatedStrategy = await portfoliosApi.updateTheoreticalStrategy(editingStrategyId, strategyData);
+      
+      if (isEditMode && editingStrategyId) {
+        const updatedStrategy = await portfoliosApi.updateTheoreticalStrategy(editingStrategyId, strategyData);
           console.log('✅ Stratégie théorique modifiée:', updatedStrategy);
           alert(language === 'fr' ? 'Stratégie modifiée avec succès !' : 'Strategy updated successfully!');
         } else {
@@ -311,8 +371,8 @@ export default function CreateStrategyPage() {
           cmcId: selectedToken.id || 0,
           baseQuantity: parseFloat(quantity),
           referencePrice: parseFloat(averagePrice),
-          steps: profitTargets.map((target) => ({
-            targetType: target.targetType === 'percentage' ? 'percentage_of_average' : 'exact_price',
+          steps: profitTargets.map((target): CreateStrategyStepDto => ({
+            targetType: target.targetType === 'percentage' ? TargetType.PERCENTAGE_OF_AVERAGE : TargetType.EXACT_PRICE,
             targetValue: target.targetValue,
             sellPercentage: target.sellPercentage,
             notes: '',
@@ -353,32 +413,32 @@ export default function CreateStrategyPage() {
 
           <div className={`flex-1 p-6 ${isDarkMode ? 'bg-gray-900' : 'bg-gray-50'}`}>
             <div className="max-w-7xl mx-auto">
-              {/* Header */}
+        {/* Header */}
               <div className="mb-8">
                 <div className="flex items-center justify-between mb-4">
-                  <div>
+          <div>
                     <p className={`mt-2 ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-                      {isEditMode 
+              {isEditMode 
                         ? (language === 'fr' ? 'Modifiez les paramètres de votre stratégie existante' : 'Modify your existing strategy settings')
                         : (language === 'fr' ? 'Définissez vos cibles de profit théoriques pour n\'importe quel token' : 'Define your theoretical profit targets for any token')
-                      }
-                    </p>
-                  </div>
+              }
+            </p>
+          </div>
                   <Button 
                     variant="outline" 
                     onClick={() => router.push('/strategies')} 
                     className="flex items-center gap-2"
                   >
-                    <ArrowLeftIcon className="h-4 w-4" />
+            <ArrowLeftIcon className="h-4 w-4" />
                     {language === 'fr' ? 'Retour' : 'Back'}
-                  </Button>
+          </Button>
                 </div>
-              </div>
+        </div>
 
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                {/* Colonne gauche: Configuration */}
-                <div className="lg:col-span-2 space-y-6">
-                  {/* Informations de base */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {/* Colonne gauche: Configuration */}
+          <div className="lg:col-span-2 space-y-6">
+            {/* Informations de base */}
                   <div className={`rounded-xl p-6 ${isDarkMode ? 'bg-gray-800' : 'bg-white border border-gray-200'}`}>
                     <div className="mb-4">
                       <h2 className={`flex items-center gap-2 text-xl font-semibold ${
@@ -392,22 +452,22 @@ export default function CreateStrategyPage() {
                       </p>
                     </div>
                     <div className="space-y-4">
-                      <div>
+                <div>
                         <Label htmlFor="strategyName" className={isDarkMode ? 'text-gray-300' : 'text-gray-700'}>
                           {language === 'fr' ? 'Nom de la stratégie *' : 'Strategy Name *'}
                         </Label>
-                        <Input
-                          id="strategyName"
-                          type="text"
-                          value={strategyName}
-                          onChange={(e) => setStrategyName(e.target.value)}
+                  <Input
+                    id="strategyName"
+                    type="text"
+                    value={strategyName}
+                    onChange={(e) => setStrategyName(e.target.value)}
                           placeholder={language === 'fr' ? 'Ex: Stratégie BTC Conservative' : 'Ex: BTC Conservative Strategy'}
-                          required
+                    required
                           className={isDarkMode ? 'bg-gray-700 border-gray-600 text-white' : ''}
-                        />
-                      </div>
-                      
-                      <div>
+                  />
+                </div>
+                
+                <div>
                         <Label htmlFor="portfolio" className={isDarkMode ? 'text-gray-300' : 'text-gray-700'}>
                           {language === 'fr' ? 'Portfolio / Wallet *' : 'Portfolio / Wallet *'}
                         </Label>
@@ -455,14 +515,14 @@ export default function CreateStrategyPage() {
                         <Label htmlFor="token" className={isDarkMode ? 'text-gray-300' : 'text-gray-700'}>
                           {language === 'fr' ? 'Token *' : 'Token *'}
                         </Label>
-                        <TokenSearch
-                          onTokenSelect={handleTokenSelect}
-                          selectedToken={selectedToken}
-                        />
-                      </div>
-                      
-                      <div className="grid grid-cols-2 gap-4">
-                        <div>
+                  <TokenSearch
+                    onTokenSelect={handleTokenSelect}
+                    selectedToken={selectedToken}
+                  />
+                </div>
+                
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
                           <Label htmlFor="quantity" className={isDarkMode ? 'text-gray-300' : 'text-gray-700'}>
                             {language === 'fr' ? 'Quantité *' : 'Quantity *'}
                             {!isVirtualWallet && availableQuantity > 0 && (
@@ -471,10 +531,10 @@ export default function CreateStrategyPage() {
                               </span>
                             )}
                           </Label>
-                          <Input
-                            id="quantity"
-                            type="number"
-                            value={quantity}
+                    <Input
+                      id="quantity"
+                      type="number"
+                      value={quantity}
                             onChange={(e) => {
                               const value = e.target.value;
                               // Validation : si c'est un wallet réel, ne pas dépasser la quantité disponible
@@ -494,9 +554,9 @@ export default function CreateStrategyPage() {
                               setQuantity(value);
                             }}
                             placeholder={language === 'fr' ? 'Ex: 1.5' : 'Ex: 1.5'}
-                            step="0.00000001"
+                      step="0.00000001"
                             max={!isVirtualWallet && availableQuantity > 0 ? availableQuantity : undefined}
-                            required
+                      required
                             className={isDarkMode ? 'bg-gray-700 border-gray-600 text-white' : ''}
                           />
                           {!isVirtualWallet && parseFloat(quantity) > availableQuantity && (
@@ -507,19 +567,19 @@ export default function CreateStrategyPage() {
                               }
                             </p>
                           )}
-                        </div>
-                        <div>
+                  </div>
+                  <div>
                           <Label htmlFor="averagePrice" className={isDarkMode ? 'text-gray-300' : 'text-gray-700'}>
                             {language === 'fr' ? 'Prix moyen (USD) *' : 'Average Price (USD) *'}
                           </Label>
-                          <Input
-                            id="averagePrice"
-                            type="number"
-                            value={averagePrice}
-                            onChange={(e) => setAveragePrice(e.target.value)}
+                    <Input
+                      id="averagePrice"
+                      type="number"
+                      value={averagePrice}
+                      onChange={(e) => setAveragePrice(e.target.value)}
                             placeholder={language === 'fr' ? 'Ex: 45000' : 'Ex: 45000'}
-                            step="0.01"
-                            required
+                      step="0.01"
+                      required
                             className={isDarkMode ? 'bg-gray-700 border-gray-600 text-white' : ''}
                           />
                         </div>
@@ -527,13 +587,71 @@ export default function CreateStrategyPage() {
                     </div>
                   </div>
 
-                  {/* Configuration des cibles */}
+                  {/* Informations récapitulatives */}
+                  <div className={`rounded-xl p-6 mb-6 ${isDarkMode ? 'bg-gray-800 border border-gray-700' : 'bg-gray-50 border border-gray-200'}`}>
+                    <div className="grid grid-cols-2 md:grid-cols-5 gap-4 text-sm">
+                      <div>
+                        <p className={`mb-1 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                          {language === 'fr' ? 'Portfolio' : 'Portfolio'}
+                        </p>
+                        <p className={`font-semibold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+                          {isVirtualWallet 
+                            ? (language === 'fr' ? 'Wallet Virtuelle' : 'Virtual Wallet')
+                            : portfolios.find(p => p.id === selectedPortfolioId)?.name || '-'}
+                        </p>
+                      </div>
+                      <div>
+                        <p className={`mb-1 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                          {language === 'fr' ? 'Token' : 'Token'}
+                        </p>
+                        <p className={`font-semibold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+                          {selectedToken?.symbol || '-'}
+                        </p>
+                      </div>
+                      <div>
+                        <p className={`mb-1 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                          {language === 'fr' ? 'Nombre de sorties' : 'Number of exits'}
+                        </p>
+                        <p className={`font-semibold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>{numberOfTargets}</p>
+                      </div>
+                      <div>
+                        <p className={`mb-1 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                          {language === 'fr' ? 'Tokens détenus' : 'Tokens held'}
+                        </p>
+                        <p className={`font-semibold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+                          {quantity ? parseFloat(quantity).toLocaleString() : '-'}
+                        </p>
+                      </div>
+                      <div>
+                        <p className={`mb-1 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                          {language === 'fr' ? 'Prix moyen d\'achat' : 'Average purchase price'}
+                        </p>
+                        <p className={`font-semibold ${isDarkMode ? 'text-purple-400' : 'text-purple-600'}`}>
+                          {averagePrice ? `$${parseFloat(averagePrice).toLocaleString()}` : '-'}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4 pt-4 border-t border-gray-200">
+                      <div>
+                        <p className={`mb-1 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                          {language === 'fr' ? 'Total investi' : 'Total invested'}
+                        </p>
+                        <p className={`text-lg font-bold ${isDarkMode ? 'text-green-400' : 'text-green-600'}`}>
+                          {quantity && averagePrice 
+                            ? formatCurrency(parseFloat(quantity) * parseFloat(averagePrice), '$', 2)
+                            : '$0.00'}
+                        </p>
+                      </div>
+                  </div>
+                </div>
+
+            {/* Configuration des cibles */}
                   <div className={`rounded-xl p-6 ${isDarkMode ? 'bg-gray-800' : 'bg-white border border-gray-200'}`}>
                     <div className="mb-4">
                       <h2 className={`flex items-center gap-2 text-xl font-semibold ${
                         isDarkMode ? 'text-white' : 'text-gray-900'
                       }`}>
-                        <PencilIcon className="h-5 w-5 text-purple-600" />
+                  <PencilIcon className="h-5 w-5 text-purple-600" />
                         {language === 'fr' ? 'Cibles de Prise de Profit' : 'Profit Targets'}
                       </h2>
                       <p className={`text-sm mt-1 ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
@@ -541,27 +659,27 @@ export default function CreateStrategyPage() {
                       </p>
                     </div>
                     <div className="space-y-6">
-                      <div>
+                <div>
                         <Label htmlFor="numberOfTargets" className={isDarkMode ? 'text-gray-300' : 'text-gray-700'}>
                           {language === 'fr' ? 'Nombre de sorties (1-10)' : 'Number of exits (1-10)'}
                         </Label>
-                        <Input
-                          id="numberOfTargets"
-                          type="number"
-                          min="1"
-                          max="10"
-                          value={numberOfTargets}
-                          onChange={(e) => {
-                            const val = parseInt(e.target.value);
-                            if (!isNaN(val) && val >= 1 && val <= 10) {
-                              setNumberOfTargets(val);
-                            }
-                          }}
+                  <Input
+                    id="numberOfTargets"
+                    type="number"
+                    min="1"
+                    max="10"
+                    value={numberOfTargets}
+                    onChange={(e) => {
+                      const val = parseInt(e.target.value);
+                      if (!isNaN(val) && val >= 1 && val <= 10) {
+                        setNumberOfTargets(val);
+                      }
+                    }}
                           className={`w-24 ${isDarkMode ? 'bg-gray-700 border-gray-600 text-white' : ''}`}
-                        />
-                      </div>
+                  />
+                </div>
 
-                      {profitTargets.map((target, index) => (
+                {profitTargets.map((target, index) => (
                         <div key={target.id} className={`border p-4 rounded-lg space-y-3 ${
                           isDarkMode ? 'bg-gray-700 border-gray-600' : 'bg-gray-50'
                         }`}>
@@ -570,70 +688,179 @@ export default function CreateStrategyPage() {
                           }`}>
                             {language === 'fr' ? 'Cible' : 'Target'} #{index + 1}
                           </h3>
-                          <div className="grid grid-cols-2 gap-4">
-                            <div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
                               <Label htmlFor={`targetType-${index}`} className={isDarkMode ? 'text-gray-300' : 'text-gray-700'}>
                                 {language === 'fr' ? 'Type' : 'Type'}
                               </Label>
-                              <Select
-                                value={target.targetType}
-                                onValueChange={(value: 'percentage' | 'price') => 
-                                  handleTargetChange(index, 'targetType', value)
-                                }
-                              >
+                        <Select
+                          value={target.targetType}
+                                onValueChange={(value: string) => 
+                                  handleTargetChange(index, 'targetType', value as 'percentage' | 'price')
+                          }
+                        >
                                 <SelectTrigger className={isDarkMode ? 'bg-gray-700 border-gray-600' : ''}>
-                                  <SelectValue />
-                                </SelectTrigger>
-                                <SelectContent>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
                                   <SelectItem value="percentage">{language === 'fr' ? '% de profit' : '% profit'}</SelectItem>
                                   <SelectItem value="price">{language === 'fr' ? 'Prix exact' : 'Exact price'}</SelectItem>
-                                </SelectContent>
-                              </Select>
-                            </div>
-                            <div>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div>
                               <Label htmlFor={`targetValue-${index}`} className={isDarkMode ? 'text-gray-300' : 'text-gray-700'}>
                                 {target.targetType === 'percentage' 
                                   ? (language === 'fr' ? 'Pourcentage (%)' : 'Percentage (%)')
                                   : (language === 'fr' ? 'Prix (USD)' : 'Price (USD)')
                                 }
-                              </Label>
-                              <Input
-                                id={`targetValue-${index}`}
-                                type="number"
-                                value={target.targetValue}
-                                onChange={(e) => 
-                                  handleTargetChange(index, 'targetValue', parseFloat(e.target.value))
-                                }
-                                step="0.01"
+                        </Label>
+                        <Input
+                          id={`targetValue-${index}`}
+                          type="number"
+                          value={target.targetValue}
+                          onChange={(e) => 
+                            handleTargetChange(index, 'targetValue', parseFloat(e.target.value))
+                          }
+                          step="0.01"
                                 className={isDarkMode ? 'bg-gray-700 border-gray-600 text-white' : ''}
-                              />
+                        />
+                      </div>
+                    </div>
+                    <div>
+                            <div className="flex items-center justify-between mb-2">
+                              <Label htmlFor={`sellPercentage-${index}`} className={isDarkMode ? 'text-gray-300' : 'text-gray-700'}>
+                                {language === 'fr' ? 'Quantité à vendre' : 'Quantity to sell'} (%)
+                      </Label>
+                              <span className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                                {language === 'fr' ? 'Total' : 'Total'}: {profitTargets.reduce((sum, t) => sum + t.sellPercentage, 0).toFixed(1)}%
+                              </span>
                             </div>
-                          </div>
-                          <div>
-                            <Label htmlFor={`sellPercentage-${index}`} className={isDarkMode ? 'text-gray-300' : 'text-gray-700'}>
-                              {language === 'fr' ? 'Quantité à vendre' : 'Quantity to sell'}: {target.sellPercentage.toFixed(1)}%
-                            </Label>
-                            <Slider
-                              min={0}
-                              max={100}
-                              step={1}
-                              value={[target.sellPercentage]}
-                              onValueChange={(value) => 
-                                handleTargetChange(index, 'sellPercentage', value[0])
-                              }
-                              className="w-full"
-                            />
+                            <div className="flex items-center gap-4">
+                              <div className="flex-1">
+                      <Slider
+                        min={0}
+                                  max={(() => {
+                                    // Calculer le maximum possible pour cette cible
+                                    const otherTargetsTotal = profitTargets.reduce((sum, t, idx) => 
+                                      idx === index ? sum : sum + t.sellPercentage, 0
+                                    );
+                                    return Math.min(100, 100 - otherTargetsTotal);
+                                  })()}
+                                  step={0.1}
+                        value={[target.sellPercentage]}
+                        onValueChange={(value) => 
+                          handleTargetChange(index, 'sellPercentage', value[0])
+                        }
+                        className="w-full"
+                      />
+                              </div>
+                              <div className="w-24">
+                                <Input
+                                  id={`sellPercentage-${index}`}
+                                  type="number"
+                                  min={0}
+                                  max={(() => {
+                                    const otherTargetsTotal = profitTargets.reduce((sum, t, idx) => 
+                                      idx === index ? sum : sum + t.sellPercentage, 0
+                                    );
+                                    return 100 - otherTargetsTotal;
+                                  })()}
+                                  step={0.1}
+                                  value={target.sellPercentage.toFixed(1)}
+                                  onChange={(e) => {
+                                    const value = parseFloat(e.target.value);
+                                    if (!isNaN(value) && value >= 0) {
+                                      // Vérifier que la somme ne dépasse pas 100%
+                                      const otherTargetsTotal = profitTargets.reduce((sum, t, idx) => 
+                                        idx === index ? sum : sum + t.sellPercentage, 0
+                                      );
+                                      const maxValue = Math.max(0, 100 - otherTargetsTotal);
+                                      handleTargetChange(index, 'sellPercentage', Math.min(value, maxValue));
+                                    }
+                                  }}
+                                  className={`${isDarkMode ? 'bg-gray-700 border-gray-600 text-white' : ''}`}
+                                />
+                              </div>
+                            </div>
+                            {profitTargets.reduce((sum, t) => sum + t.sellPercentage, 0) > 100 && (
+                              <p className={`mt-1 text-xs ${isDarkMode ? 'text-red-400' : 'text-red-600'}`}>
+                                {language === 'fr' ? 'La somme dépasse 100% !' : 'The sum exceeds 100%!'}
+                              </p>
+                            )}
                           </div>
                         </div>
                       ))}
                     </div>
                   </div>
+
+                  {/* Barre de résumé en bas */}
+                  {simulations.length > 0 && quantity && averagePrice && (
+                    <div className={`mt-6 rounded-xl p-6 ${isDarkMode ? 'bg-gray-800 border border-gray-700' : 'bg-white border-2 border-gray-200'}`}>
+                      <div className="grid grid-cols-2 md:grid-cols-5 gap-4 items-center">
+                        <div>
+                          <p className={`text-xs mb-1 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                            {language === 'fr' ? 'Investi' : 'Invested'}
+                          </p>
+                          <p className={`text-lg font-bold ${isDarkMode ? 'text-green-400' : 'text-green-600'}`}>
+                            {formatCurrency(parseFloat(quantity) * parseFloat(averagePrice), '$', 2)}
+                          </p>
+                        </div>
+                        <div>
+                          <p className={`text-xs mb-1 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                            {language === 'fr' ? 'Total encaissé' : 'Total cashed in'}
+                          </p>
+                          <p className={`text-lg font-bold ${isDarkMode ? 'text-green-400' : 'text-green-600'}`}>
+                            {formatCurrency(
+                              simulations.reduce((sum, sim) => sum + sim.amountCollected, 0),
+                              '$',
+                              2
+                            )}
+                          </p>
+                        </div>
+                        <div>
+                          <p className={`text-xs mb-1 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                            {language === 'fr' ? 'Résultat net' : 'Net result'}
+                          </p>
+                          <p className={`text-lg font-bold ${isDarkMode ? 'text-green-400' : 'text-green-600'}`}>
+                            {formatCurrency(
+                              simulations.reduce((sum, sim) => sum + sim.amountCollected, 0) - 
+                              (parseFloat(quantity) * parseFloat(averagePrice)),
+                              '$',
+                              2
+                            )}
+                          </p>
+                        </div>
+                        <div>
+                          <p className={`text-xs mb-1 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                            {language === 'fr' ? 'Rendement net' : 'Net yield'}
+                          </p>
+                          <p className={`text-lg font-bold ${isDarkMode ? 'text-green-400' : 'text-green-600'}`}>
+                            {(((
+                              simulations.reduce((sum, sim) => sum + sim.amountCollected, 0) - 
+                              (parseFloat(quantity) * parseFloat(averagePrice))
+                            ) / (parseFloat(quantity) * parseFloat(averagePrice))) * 100).toFixed(1)}%
+                          </p>
+                        </div>
+                        <div>
+                          <p className={`text-xs mb-1 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                            {language === 'fr' ? 'Tokens restants' : 'Remaining tokens'}
+                          </p>
+                          <p className={`text-lg font-bold ${isDarkMode ? 'text-orange-400' : 'text-orange-600'}`}>
+                            {simulations.length > 0 
+                              ? simulations[simulations.length - 1].remainingTokens.toFixed(6)
+                              : '0.000000'}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 {/* Colonne droite: Résumé et Simulation */}
-                <div className="lg:col-span-1 space-y-6">
-                  {selectedToken && quantity && averagePrice && (
-                    <>
+          <div className="lg:col-span-1 space-y-6">
+            {selectedToken && quantity && averagePrice && (
+              <>
                       <div className={`rounded-xl p-6 ${isDarkMode ? 'bg-gray-800' : 'bg-white border border-gray-200'}`}>
                         <div className="mb-4">
                           <h2 className={`flex items-center gap-2 text-xl font-semibold ${
@@ -642,7 +869,7 @@ export default function CreateStrategyPage() {
                             <InformationCircleIcon className="h-5 w-5 text-purple-600" />
                             {language === 'fr' ? 'Données d\'investissement' : 'Investment Data'}
                           </h2>
-                        </div>
+                    </div>
                         <div className="space-y-2 text-sm">
                           <div className="flex justify-between">
                             <span className={isDarkMode ? 'text-gray-400' : 'text-gray-500'}>
@@ -750,55 +977,55 @@ export default function CreateStrategyPage() {
                             <h3 className={`font-semibold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
                               {language === 'fr' ? 'Résumé Global' : 'Global Summary'}
                             </h3>
-                            <div className="space-y-1 text-sm">
-                              <div className="flex justify-between">
+                      <div className="space-y-1 text-sm">
+                        <div className="flex justify-between">
                                 <span className={isDarkMode ? 'text-gray-400' : 'text-gray-500'}>
                                   {language === 'fr' ? 'Profit total:' : 'Total Profit:'}
                                 </span>
-                                <span className={`font-medium ${totalProfitRealized >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                                  {formatCurrency(totalProfitRealized)}
-                                </span>
-                              </div>
-                              <div className="flex justify-between">
+                          <span className={`font-medium ${totalProfitRealized >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                            {formatCurrency(totalProfitRealized)}
+                          </span>
+                        </div>
+                        <div className="flex justify-between">
                                 <span className={isDarkMode ? 'text-gray-400' : 'text-gray-500'}>
                                   {language === 'fr' ? 'Rendement:' : 'Return:'}
                                 </span>
-                                <span className={`font-medium ${totalReturnPercentage >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                                  {formatPercentage(totalReturnPercentage)}
-                                </span>
-                              </div>
-                              <div className="flex justify-between">
+                          <span className={`font-medium ${totalReturnPercentage >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                            {formatPercentage(totalReturnPercentage)}
+                          </span>
+                        </div>
+                        <div className="flex justify-between">
                                 <span className={isDarkMode ? 'text-gray-400' : 'text-gray-500'}>
                                   {language === 'fr' ? 'Tokens restants:' : 'Remaining Tokens:'}
                                 </span>
                                 <span className={`font-medium ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
-                                  {simulations.length > 0 
-                                    ? simulations[simulations.length - 1].remainingTokens.toFixed(4)
-                                    : '0'
-                                  }
-                                </span>
-                              </div>
-                            </div>
-                          </div>
+                            {simulations.length > 0 
+                              ? simulations[simulations.length - 1].remainingTokens.toFixed(4)
+                              : '0'
+                            }
+                          </span>
                         </div>
                       </div>
-                    </>
-                  )}
+                    </div>
+                        </div>
+                      </div>
+              </>
+            )}
 
-                  <Button
-                    onClick={handleSaveStrategy}
-                    disabled={loading || !selectedToken || !quantity || !averagePrice || !strategyName}
+            <Button
+              onClick={handleSaveStrategy}
+              disabled={loading || !selectedToken || !quantity || !averagePrice || !strategyName}
                     className="w-full bg-purple-600 hover:bg-purple-700 text-white"
-                  >
-                    {loading 
+            >
+              {loading 
                       ? (isEditMode ? (language === 'fr' ? 'Modification...' : 'Updating...') : (language === 'fr' ? 'Création...' : 'Creating...'))
                       : (isEditMode ? (language === 'fr' ? 'Modifier la stratégie' : 'Update Strategy') : (language === 'fr' ? 'Créer la stratégie' : 'Create Strategy'))
-                    }
-                  </Button>
-                </div>
-              </div>
-            </div>
+              }
+            </Button>
           </div>
+        </div>
+      </div>
+    </div>
         </div>
       </div>
     </ProtectedRoute>
