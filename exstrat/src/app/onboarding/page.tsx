@@ -1001,25 +1001,25 @@ export default function OnboardingPage() {
                     ).values()
                   ).map((portfolio) => (
                     <Card key={portfolio.id} className="border border-gray-200">
-                      <CardContent className="p-4">
-                        <div className="flex items-center justify-between">
-                          <div className="flex-1">
-                            <h4 className="font-semibold text-gray-900">{portfolio.name}</h4>
+                      <CardContent className="p-3 md:p-4">
+                        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                          <div className="flex-1 min-w-0">
+                            <h4 className="font-semibold text-sm md:text-base text-gray-900 truncate">{portfolio.name}</h4>
                           </div>
-                          <div className="flex items-center gap-2">
+                          <div className="flex items-center gap-2 flex-shrink-0">
                             <Button
                               variant="outline"
                               onClick={() => handleEditPortfolio(portfolio)}
                               className="p-2"
                             >
-                              <PencilIcon className="h-4 w-4 text-gray-600" />
+                              <PencilIcon className="h-3 w-3 md:h-4 md:w-4 text-gray-600" />
                             </Button>
                             <Button
                               variant="outline"
                               onClick={() => handleDeletePortfolio(portfolio.id)}
                               className="p-2"
                             >
-                              <TrashIcon className="h-4 w-4 text-red-600" />
+                              <TrashIcon className="h-3 w-3 md:h-4 md:w-4 text-red-600" />
                             </Button>
                           </div>
                         </div>
@@ -1031,7 +1031,7 @@ export default function OnboardingPage() {
             )}
 
             {/* Champ de saisie avec bouton Add a new wallet en bas */}
-            <div className="flex items-center gap-3 mt-6">
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 mt-4 md:mt-6">
               <Input
                 type="text"
                 placeholder="Nom du wallet"
@@ -1042,12 +1042,12 @@ export default function OnboardingPage() {
                     handleQuickCreatePortfolio();
                   }
                 }}
-                className="flex-1 h-12"
+                className="flex-1 h-10 md:h-12 text-sm md:text-base"
               />
               <Button
                 onClick={handleQuickCreatePortfolio}
                 disabled={isLoading || !newPortfolioName.trim()}
-                className="bg-gradient-to-r from-blue-600 to-purple-600 text-white hover:from-blue-700 hover:to-purple-700 h-12 px-6 whitespace-nowrap"
+                className="bg-gradient-to-r from-blue-600 to-purple-600 text-white hover:from-blue-700 hover:to-purple-700 h-10 md:h-12 px-4 md:px-6 whitespace-nowrap text-sm md:text-base"
               >
                 {isLoading ? '...' : 'Add a new wallet'}
               </Button>
@@ -1062,10 +1062,10 @@ export default function OnboardingPage() {
 
             {/* Modal de Portfolio (pour l'édition uniquement) */}
             {showPortfolioModal && editingPortfolio && (
-              <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+              <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-3 md:p-4">
                 <div className="bg-white rounded-lg max-w-lg w-full max-h-[90vh] overflow-y-auto">
-                  <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between">
-                    <h3 className="text-lg font-semibold text-gray-900">
+                  <div className="sticky top-0 bg-white border-b border-gray-200 px-4 md:px-6 py-3 md:py-4 flex items-center justify-between">
+                    <h3 className="text-base md:text-lg font-semibold text-gray-900">
                       Modifier le portfolio
                     </h3>
                     <button
@@ -1075,11 +1075,11 @@ export default function OnboardingPage() {
                       }}
                       className="text-gray-400 hover:text-gray-600"
                     >
-                      <XMarkIcon className="h-5 w-5" />
+                      <XMarkIcon className="h-4 w-4 md:h-5 md:w-5" />
                     </button>
                   </div>
 
-                  <div className="p-6 space-y-4">
+                  <div className="p-4 md:p-6 space-y-3 md:space-y-4">
                     {/* Error Message */}
                     {error && (
                       <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
@@ -1089,7 +1089,7 @@ export default function OnboardingPage() {
 
                     {/* Nom du Portfolio */}
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                      <label className="block text-xs md:text-sm font-medium text-gray-700 mb-1">
                         Nom du Portfolio *
                       </label>
                       <Input
@@ -1097,26 +1097,26 @@ export default function OnboardingPage() {
                         placeholder="Ex: Portfolio Principal"
                         value={portfolioData.name}
                         onChange={(e) => setPortfolioData(prev => ({ ...prev, name: e.target.value }))}
-                        className="h-12"
+                        className="h-10 md:h-12 text-sm md:text-base"
                       />
                     </div>
 
                     {/* Boutons d'action */}
-                    <div className="flex justify-end space-x-3 pt-4 border-t border-gray-200">
+                    <div className="flex flex-col sm:flex-row justify-end gap-2 sm:gap-3 pt-3 md:pt-4 border-t border-gray-200">
                       <Button
                         variant="outline"
                         onClick={() => {
                           setShowPortfolioModal(false);
                           resetPortfolioForm();
                         }}
-                        className="px-6 py-2 border-gray-300 text-gray-700 hover:bg-gray-50"
+                        className="w-full sm:w-auto px-4 md:px-6 py-2 border-gray-300 text-gray-700 hover:bg-gray-50 text-sm md:text-base"
                       >
                         Annuler
                       </Button>
                       <Button
                         onClick={handleCreatePortfolio}
                         disabled={isLoading || !portfolioData.name.trim()}
-                        className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white disabled:opacity-50"
+                        className="w-full sm:w-auto px-4 md:px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white disabled:opacity-50 text-sm md:text-base"
                       >
                         {isLoading ? 'Sauvegarde...' : editingPortfolio ? '✓ Modifier' : '✓ Créer'}
                       </Button>
@@ -1150,18 +1150,18 @@ export default function OnboardingPage() {
 
             {/* Search Bar */}
             <div className="relative">
-              <MagnifyingGlassIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+              <MagnifyingGlassIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 md:w-5 md:h-5 text-gray-400" />
               <Input
                 type="text"
                 placeholder="Recherchez votre exchange parmi +700 intégrations"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10 h-12"
+                className="pl-9 md:pl-10 h-10 md:h-12 text-sm md:text-base"
               />
             </div>
 
             {/* Exchange Grid */}
-            <div className="grid grid-cols-3 gap-4">
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 md:gap-4">
               {filteredExchanges.map((exchange) => (
                 <Card 
                   key={exchange.id} 
@@ -1171,11 +1171,11 @@ export default function OnboardingPage() {
                       : 'opacity-50 cursor-not-allowed'
                   }`}
                 >
-                  <CardContent className="p-4 text-center">
-                    <div className="flex items-center justify-center mb-3">
+                  <CardContent className="p-3 md:p-4 text-center">
+                    <div className="flex items-center justify-center mb-2 md:mb-3">
                       <exchange.icon />
                     </div>
-                    <h3 className="font-medium text-sm text-gray-900 mb-1">
+                    <h3 className="font-medium text-xs md:text-sm text-gray-900 mb-1">
                       {exchange.name}
                     </h3>
                     {!exchange.available && (
@@ -1188,8 +1188,8 @@ export default function OnboardingPage() {
 
             {/* Liste des Transactions Créées */}
             {onboardingTransactions.length > 0 && (
-              <div className="mt-6">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">
+              <div className="mt-4 md:mt-6">
+                <h3 className="text-base md:text-lg font-semibold text-gray-900 mb-3 md:mb-4">
                   Transactions ajoutées ({onboardingTransactions.length})
                 </h3>
                 <div className="space-y-3">
@@ -1201,50 +1201,50 @@ export default function OnboardingPage() {
                     ).values()
                   ).map((transaction) => (
                     <Card key={transaction.id} className="border border-gray-200">
-                      <CardContent className="p-4">
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-4 flex-1">
-                            <div className="w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center">
-                              <span className="text-purple-600 font-bold text-sm">
+                      <CardContent className="p-3 md:p-4">
+                        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                          <div className="flex items-center gap-3 md:gap-4 flex-1 min-w-0">
+                            <div className="w-8 h-8 md:w-10 md:h-10 rounded-full bg-purple-100 flex items-center justify-center flex-shrink-0">
+                              <span className="text-purple-600 font-bold text-xs md:text-sm">
                                 {transaction.symbol.charAt(0)}
                               </span>
                             </div>
-                            <div className="flex-1">
-                              <div className="flex items-center gap-2">
-                                <h4 className="font-semibold text-gray-900">{transaction.symbol}</h4>
-                                <span className="text-sm text-gray-500">{transaction.name}</span>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex flex-wrap items-center gap-2">
+                                <h4 className="font-semibold text-sm md:text-base text-gray-900 truncate">{transaction.symbol}</h4>
+                                <span className="text-xs md:text-sm text-gray-500 hidden sm:inline">{transaction.name}</span>
                               </div>
-                              <div className="flex items-center gap-4 mt-1 text-sm text-gray-600">
-                                <span>Quantité: {parseFloat(transaction.quantity.toString()).toLocaleString()}</span>
-                                <span>•</span>
-                                <span>Type: {transaction.type}</span>
-                                <span>•</span>
-                                <span>Prix: {formatCurrency(transaction.averagePrice)}</span>
+                              <div className="flex flex-wrap items-center gap-2 md:gap-4 mt-1 text-xs md:text-sm text-gray-600">
+                                <span>Qty: {parseFloat(transaction.quantity.toString()).toLocaleString()}</span>
+                                <span className="hidden sm:inline">•</span>
+                                <span>{transaction.type}</span>
+                                <span className="hidden sm:inline">•</span>
+                                <span>{formatCurrency(transaction.averagePrice)}</span>
                                 {transaction.transactionDate && (
                                   <>
-                                    <span>•</span>
-                                    <span>
-                                      {new Date(transaction.transactionDate).toLocaleDateString('fr-FR')}
+                                    <span className="hidden sm:inline">•</span>
+                                    <span className="text-xs">
+                                      {new Date(transaction.transactionDate).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' })}
                                     </span>
                                   </>
                                 )}
                               </div>
                             </div>
                           </div>
-                          <div className="flex items-center gap-2">
+                          <div className="flex items-center gap-2 flex-shrink-0">
                             <Button
                               variant="outline"
                               onClick={() => handleEditTransaction(transaction)}
                               className="p-2"
                             >
-                              <PencilIcon className="h-4 w-4 text-gray-600" />
+                              <PencilIcon className="h-3 w-3 md:h-4 md:w-4 text-gray-600" />
                             </Button>
                             <Button
                               variant="outline"
                               onClick={() => handleDeleteTransaction(transaction.id)}
                               className="p-2"
                             >
-                              <TrashIcon className="h-4 w-4 text-red-600" />
+                              <TrashIcon className="h-3 w-3 md:h-4 md:w-4 text-red-600" />
                             </Button>
                           </div>
                         </div>
@@ -1257,10 +1257,10 @@ export default function OnboardingPage() {
 
             {/* Modal de Transaction */}
             {showTransactionModal && (
-              <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+              <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-3 md:p-4">
                 <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-                  <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between">
-                    <h3 className="text-lg font-semibold text-gray-900">
+                  <div className="sticky top-0 bg-white border-b border-gray-200 px-4 md:px-6 py-3 md:py-4 flex items-center justify-between">
+                    <h3 className="text-base md:text-lg font-semibold text-gray-900">
                       {editingTransaction ? 'Modifier la transaction' : 'Ajouter une transaction'}
                     </h3>
                     <button
@@ -1270,11 +1270,11 @@ export default function OnboardingPage() {
                       }}
                       className="text-gray-400 hover:text-gray-600"
                     >
-                      <XMarkIcon className="h-5 w-5" />
+                      <XMarkIcon className="h-4 w-4 md:h-5 md:w-5" />
                     </button>
                   </div>
 
-                  <div className="p-6 space-y-4">
+                  <div className="p-4 md:p-6 space-y-3 md:space-y-4">
                     {/* Error Message */}
                     {error && (
                       <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
@@ -1337,9 +1337,9 @@ export default function OnboardingPage() {
                     </div>
 
                     {/* Quantité et Montant investi */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 md:gap-4">
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                        <label className="block text-xs md:text-sm font-medium text-gray-700 mb-2">
                           Quantité *
                         </label>
                         <Input
@@ -1350,10 +1350,11 @@ export default function OnboardingPage() {
                           placeholder="0.00"
                           step="0.00000001"
                           required
+                          className="text-sm md:text-base"
                         />
                       </div>
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                        <label className="block text-xs md:text-sm font-medium text-gray-700 mb-2">
                           Montant investi (USD) *
                         </label>
                         <Input
@@ -1364,13 +1365,14 @@ export default function OnboardingPage() {
                           placeholder="0.00"
                           step="0.01"
                           required
+                          className="text-sm md:text-base"
                         />
                       </div>
                     </div>
 
                     {/* Prix moyen (calculé automatiquement) */}
                     <div>
-                      <label className="block text-sm font-medium text-gray-500 mb-2">
+                      <label className="block text-xs md:text-sm font-medium text-gray-500 mb-2">
                         Prix moyen (USD) *
                       </label>
                       <Input
@@ -1381,10 +1383,10 @@ export default function OnboardingPage() {
                         disabled
                         placeholder="0.00"
                         step="0.00000001"
-                        className="bg-gray-100 cursor-not-allowed"
+                        className="bg-gray-100 cursor-not-allowed text-sm md:text-base"
                         required
                       />
-                      <p className="mt-1 text-sm text-gray-500">
+                      <p className="mt-1 text-xs md:text-sm text-gray-500">
                         Calculé automatiquement: {transactionData.quantity && transactionData.amountInvested ? 
                           (parseFloat(transactionData.amountInvested) / parseFloat(transactionData.quantity)).toFixed(8) : '0.00'} USD
                       </p>
@@ -1392,7 +1394,7 @@ export default function OnboardingPage() {
 
                     {/* Date de transaction */}
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                      <label className="block text-xs md:text-sm font-medium text-gray-700 mb-2">
                         Date de transaction *
                       </label>
                       <Input
@@ -1401,12 +1403,13 @@ export default function OnboardingPage() {
                         value={transactionData.transactionDate}
                         onChange={handleInputChange}
                         required
+                        className="text-sm md:text-base"
                       />
                     </div>
 
                     {/* Notes */}
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                      <label className="block text-xs md:text-sm font-medium text-gray-700 mb-2">
                         Notes (optionnel)
                       </label>
                       <textarea
@@ -1414,27 +1417,27 @@ export default function OnboardingPage() {
                         value={transactionData.notes}
                         onChange={handleInputChange}
                         rows={3}
-                        className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                        className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-xs md:text-sm"
                         placeholder="Ajoutez des notes sur cette transaction..."
                       />
                     </div>
 
                     {/* Boutons d'action */}
-                    <div className="flex justify-end space-x-3 pt-4 border-t border-gray-200">
+                    <div className="flex flex-col sm:flex-row justify-end gap-2 sm:gap-3 pt-3 md:pt-4 border-t border-gray-200">
                       <Button
                         variant="outline"
                         onClick={() => {
                           setShowTransactionModal(false);
                           resetTransactionForm();
                         }}
-                        className="px-6 py-2 border-gray-300 text-gray-700 hover:bg-gray-50"
+                        className="w-full sm:w-auto px-4 md:px-6 py-2 border-gray-300 text-gray-700 hover:bg-gray-50 text-sm md:text-base"
                       >
                         Annuler
                       </Button>
                       <Button
                         onClick={handleCreateTransaction}
                         disabled={isLoading || !selectedToken}
-                        className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white disabled:opacity-50"
+                        className="w-full sm:w-auto px-4 md:px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white disabled:opacity-50 text-sm md:text-base"
                       >
                         {isLoading ? 'Sauvegarde...' : editingTransaction ? '✓ Modifier' : '✓ Créer'}
                       </Button>
@@ -1445,14 +1448,15 @@ export default function OnboardingPage() {
             )}
 
             {/* Footer */}
-            <div className="flex items-center justify-between pt-6 border-t border-gray-200">
-              <div className="flex items-center text-sm text-gray-500">
-                <ShieldCheckIcon className="w-4 h-4 mr-2 text-gray-400" />
-                <span>Connexion rapide et sécurisée à vos transactions</span>
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 pt-4 md:pt-6 border-t border-gray-200">
+              <div className="flex items-center text-xs md:text-sm text-gray-500">
+                <ShieldCheckIcon className="w-3 h-3 md:w-4 md:h-4 mr-2 text-gray-400" />
+                <span className="hidden sm:inline">Connexion rapide et sécurisée à vos transactions</span>
+                <span className="sm:hidden">Sécurisé</span>
               </div>
               <Button 
                 onClick={handleAddTransactionClick}
-                className="px-8 py-3 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-medium rounded-lg"
+                className="w-full sm:w-auto px-6 md:px-8 py-2 md:py-3 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-medium rounded-lg text-sm md:text-base"
               >
                 <PlusIcon className="mr-2 h-4 w-4 inline" />
                 Add Transaction
@@ -1481,17 +1485,17 @@ export default function OnboardingPage() {
             )}
 
             <div className="text-center">
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">
+              <h3 className="text-base md:text-lg font-semibold text-gray-900 mb-2">
                 Créez votre première stratégie
               </h3>
-              <p className="text-gray-600">
+              <p className="text-xs md:text-sm text-gray-600">
                 Définissez des cibles de profit théoriques pour optimiser vos gains
               </p>
             </div>
 
             {/* Informations récapitulatives en haut */}
-            <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 mb-6">
-              <div className="grid grid-cols-2 md:grid-cols-5 gap-4 text-sm">
+            <div className="bg-gray-50 border border-gray-200 rounded-lg p-3 md:p-4 mb-4 md:mb-6">
+              <div className="grid grid-cols-2 md:grid-cols-5 gap-3 md:gap-4 text-xs md:text-sm">
                 <div>
                   <p className="text-gray-500 mb-1">Portfolio</p>
                   <p className="font-semibold text-gray-900">
@@ -1535,11 +1539,11 @@ export default function OnboardingPage() {
               </div>
             </div>
 
-            <div className="space-y-6">
+            <div className="space-y-4 md:space-y-6">
               {/* Informations de base */}
-              <div className="space-y-4">
+              <div className="space-y-3 md:space-y-4">
                 <div>
-                  <Label htmlFor="strategyName">Nom de la stratégie *</Label>
+                  <Label htmlFor="strategyName" className="text-xs md:text-sm">Nom de la stratégie *</Label>
                   <Input
                     id="strategyName"
                     type="text"
@@ -1547,11 +1551,12 @@ export default function OnboardingPage() {
                     onChange={(e) => setStrategyName(e.target.value)}
                     placeholder="Ex: Stratégie BTC Conservative"
                     required
+                    className="text-sm md:text-base"
                   />
                 </div>
                 
                 <div>
-                  <Label htmlFor="portfolio">Portfolio / Wallet *</Label>
+                  <Label htmlFor="portfolio" className="text-xs md:text-sm">Portfolio / Wallet *</Label>
                   <Select
                     value={selectedStrategyPortfolioId}
                     onValueChange={(value) => {
@@ -1562,7 +1567,7 @@ export default function OnboardingPage() {
                       }
                     }}
                   >
-                    <SelectTrigger>
+                    <SelectTrigger className="text-sm md:text-base">
                       <SelectValue placeholder="Sélectionner un wallet" />
                     </SelectTrigger>
                     <SelectContent>
@@ -1583,23 +1588,23 @@ export default function OnboardingPage() {
                     </SelectContent>
                   </Select>
                   {!isStrategyVirtualWallet && availableStrategyQuantity > 0 && selectedStrategyToken && (
-                    <p className="mt-1 text-sm text-gray-600">
+                    <p className="mt-1 text-xs md:text-sm text-gray-600">
                       Quantité disponible: {availableStrategyQuantity.toLocaleString()} {selectedStrategyToken.symbol}
                     </p>
                   )}
                 </div>
                 
                 <div>
-                  <Label htmlFor="token">Token *</Label>
+                  <Label htmlFor="token" className="text-xs md:text-sm">Token *</Label>
                   <TokenSearch
                     onTokenSelect={handleStrategyTokenSelect}
                     selectedToken={selectedStrategyToken}
                   />
                 </div>
                 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 md:gap-4">
                   <div>
-                    <Label htmlFor="quantity">
+                    <Label htmlFor="quantity" className="text-xs md:text-sm">
                       Quantité *
                       {!isStrategyVirtualWallet && availableStrategyQuantity > 0 && (
                         <span className="text-xs text-gray-500 ml-2">
@@ -1630,15 +1635,16 @@ export default function OnboardingPage() {
                       step="0.00000001"
                       max={!isStrategyVirtualWallet && availableStrategyQuantity > 0 ? availableStrategyQuantity : undefined}
                       required
+                      className="text-sm md:text-base"
                     />
                     {!isStrategyVirtualWallet && parseFloat(strategyQuantity) > availableStrategyQuantity && (
-                      <p className="mt-1 text-sm text-red-600">
+                      <p className="mt-1 text-xs md:text-sm text-red-600">
                         Quantité supérieure à celle disponible ({availableStrategyQuantity.toLocaleString()})
                       </p>
                     )}
                   </div>
                   <div>
-                    <Label htmlFor="averagePrice">Prix moyen (USD) *</Label>
+                    <Label htmlFor="averagePrice" className="text-xs md:text-sm">Prix moyen (USD) *</Label>
                     <Input
                       id="averagePrice"
                       type="number"
@@ -1647,15 +1653,16 @@ export default function OnboardingPage() {
                       placeholder="Ex: 45000"
                       step="0.01"
                       required
+                      className="text-sm md:text-base"
                     />
                   </div>
                 </div>
               </div>
 
               {/* Configuration des cibles */}
-              <div className="space-y-4">
+              <div className="space-y-3 md:space-y-4">
                 <div>
-                  <Label htmlFor="numberOfTargets">Nombre de sorties</Label>
+                  <Label htmlFor="numberOfTargets" className="text-xs md:text-sm">Nombre de sorties</Label>
                   <Select
                     value={numberOfTargets.toString()}
                     onValueChange={(value) => {
@@ -1665,7 +1672,7 @@ export default function OnboardingPage() {
                       }
                     }}
                   >
-                    <SelectTrigger className="w-40">
+                    <SelectTrigger className="w-full sm:w-40 text-sm md:text-base">
                       <SelectValue placeholder="Sélectionner" />
                     </SelectTrigger>
                     <SelectContent>
@@ -1680,23 +1687,23 @@ export default function OnboardingPage() {
                 </div>
 
                 {/* Titre pour les deux colonnes */}
-                <div className="mb-6">
-                  <h3 className="text-lg font-semibold text-gray-900">Configuration des cibles de profit</h3>
-                  <p className="text-sm text-gray-600 mt-1">Définissez vos paramètres et visualisez les résultats en temps réel</p>
+                <div className="mb-4 md:mb-6">
+                  <h3 className="text-base md:text-lg font-semibold text-gray-900">Configuration des cibles de profit</h3>
+                  <p className="text-xs md:text-sm text-gray-600 mt-1">Définissez vos paramètres et visualisez les résultats en temps réel</p>
                 </div>
 
                 {/* En-têtes des colonnes */}
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-6">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-8 mb-4 md:mb-6">
                   <div>
-                    <h4 className="text-base font-semibold text-gray-900">Paramètres</h4>
+                    <h4 className="text-sm md:text-base font-semibold text-gray-900">Paramètres</h4>
                   </div>
                   <div>
-                    <h4 className="text-base font-semibold text-gray-900">Informations calculées</h4>
+                    <h4 className="text-sm md:text-base font-semibold text-gray-900">Informations calculées</h4>
                   </div>
                 </div>
 
                 {/* Cartes alignées par paire : Cible #1 avec Cible #1, etc. */}
-                <div className="space-y-6">
+                <div className="space-y-4 md:space-y-6">
                   {profitTargets.map((target, index) => {
                     const info = strategyInfo[index];
                     const qty = parseFloat(strategyQuantity);
@@ -1711,20 +1718,20 @@ export default function OnboardingPage() {
                     }
                     
                     return (
-                      <div key={target.id} className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-stretch">
+                      <div key={target.id} className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-8 items-stretch">
                         {/* Carte de gauche : Paramètres */}
-                        <div className="border p-6 rounded-lg space-y-5 bg-gray-50 h-full flex flex-col">
-                          <h3 className="text-md font-semibold text-gray-900">Cible #{index + 1}</h3>
-                          <div className="grid grid-cols-2 gap-4">
+                        <div className="border p-4 md:p-6 rounded-lg space-y-4 md:space-y-5 bg-gray-50 h-full flex flex-col">
+                          <h3 className="text-sm md:text-base font-semibold text-gray-900">Cible #{index + 1}</h3>
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 md:gap-4">
                             <div>
-                              <Label htmlFor={`targetType-${index}`}>Type</Label>
+                              <Label htmlFor={`targetType-${index}`} className="text-xs md:text-sm">Type</Label>
                               <Select
                                 value={target.targetType}
                                 onValueChange={(value: string) => 
                                   handleTargetChange(index, 'targetType', value as 'percentage' | 'price')
                                 }
                               >
-                                <SelectTrigger>
+                                <SelectTrigger className="text-sm md:text-base">
                                   <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent>
@@ -1734,7 +1741,7 @@ export default function OnboardingPage() {
                               </Select>
                             </div>
                             <div>
-                              <Label htmlFor={`targetValue-${index}`}>
+                              <Label htmlFor={`targetValue-${index}`} className="text-xs md:text-sm">
                                 {target.targetType === 'percentage' ? 'Pourcentage (%)' : 'Prix (USD)'}
                               </Label>
                               <Input
@@ -1745,19 +1752,20 @@ export default function OnboardingPage() {
                                   handleTargetChange(index, 'targetValue', parseFloat(e.target.value))
                                 }
                                 step="0.01"
+                                className="text-sm md:text-base"
                               />
                             </div>
                           </div>
                             <div className="flex-grow flex flex-col justify-end">
                             <div className="flex items-center justify-between mb-2">
-                              <Label htmlFor={`sellPercentage-${index}`}>
+                              <Label htmlFor={`sellPercentage-${index}`} className="text-xs md:text-sm">
                                 Quantité à vendre (%)
                               </Label>
-                              <span className="text-sm text-gray-500">
+                              <span className="text-xs md:text-sm text-gray-500">
                                 Total: {profitTargets.reduce((sum, t) => sum + t.sellPercentage, 0).toFixed(1)}%
                               </span>
                             </div>
-                            <div className="flex items-center gap-4 mt-2">
+                            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:gap-4 mt-2">
                               <div className="flex-1">
                                 <Slider
                                   id={`sellPercentage-${index}`}
@@ -1777,7 +1785,7 @@ export default function OnboardingPage() {
                                   className="w-full"
                                 />
                               </div>
-                              <div className="w-24">
+                              <div className="w-full sm:w-24">
                                 <Input
                                   type="number"
                                   min={0}
@@ -1801,7 +1809,7 @@ export default function OnboardingPage() {
                                     }
                                   }}
                                   placeholder="0.0"
-                                  className="text-sm"
+                                  className="text-xs md:text-sm"
                                 />
                               </div>
                             </div>
@@ -1815,11 +1823,11 @@ export default function OnboardingPage() {
 
                         {/* Carte de droite : Informations calculées */}
                         <Card className="border border-gray-200 h-full flex flex-col">
-                          <CardContent className="p-6 flex flex-col h-full">
+                          <CardContent className="p-4 md:p-6 flex flex-col h-full">
                             <div className="mb-3">
-                              <h4 className="font-semibold text-gray-900">Cible #{index + 1}</h4>
+                              <h4 className="text-sm md:text-base font-semibold text-gray-900">Simulation #{index + 1}</h4>
                             </div>
-                            <div className="space-y-3 text-sm flex-grow flex flex-col justify-between">
+                            <div className="space-y-3 text-xs md:text-sm flex-grow flex flex-col justify-between">
                               <div className="flex justify-between items-center py-1">
                                 <span className="text-gray-600">Valorisation des tokens restants:</span>
                                 <span className="font-medium text-gray-900 text-right">
@@ -1856,17 +1864,17 @@ export default function OnboardingPage() {
 
             {/* Barre de résumé en bas */}
             {strategyInfo.length > 0 && strategyQuantity && strategyAveragePrice && (
-              <div className="mt-8 bg-white border-2 border-gray-200 rounded-lg p-6">
-                <div className="grid grid-cols-2 md:grid-cols-5 gap-4 items-center">
+              <div className="mt-4 md:mt-8 bg-white border-2 border-gray-200 rounded-lg p-4 md:p-6 w-full max-w-full">
+                <div className="grid grid-cols-2 md:grid-cols-5 gap-3 md:gap-4 items-center">
                   <div>
                     <p className="text-xs text-gray-500 mb-1">Investi</p>
-                    <p className="text-lg font-bold text-green-600">
+                    <p className="text-base md:text-lg font-bold text-green-600">
                       {formatCurrency(parseFloat(strategyQuantity) * parseFloat(strategyAveragePrice), '$', 2)}
                     </p>
                   </div>
                   <div>
                     <p className="text-xs text-gray-500 mb-1">Total encaissé</p>
-                    <p className="text-lg font-bold text-green-600">
+                    <p className="text-base md:text-lg font-bold text-green-600">
                       {formatCurrency(
                         strategyInfo.reduce((sum, info) => sum + info.amountCollected, 0),
                         '$',
@@ -1876,7 +1884,7 @@ export default function OnboardingPage() {
                   </div>
                   <div>
                     <p className="text-xs text-gray-500 mb-1">Résultat net</p>
-                    <p className="text-lg font-bold text-green-600">
+                    <p className="text-base md:text-lg font-bold text-green-600">
                       {formatCurrency(
                         strategyInfo.reduce((sum, info) => sum + info.amountCollected, 0) - 
                         (parseFloat(strategyQuantity) * parseFloat(strategyAveragePrice)),
@@ -1887,7 +1895,7 @@ export default function OnboardingPage() {
                   </div>
                   <div>
                     <p className="text-xs text-gray-500 mb-1">Rendement net</p>
-                    <p className="text-lg font-bold text-green-600">
+                    <p className="text-base md:text-lg font-bold text-green-600">
                       {(((
                         strategyInfo.reduce((sum, info) => sum + info.amountCollected, 0) - 
                         (parseFloat(strategyQuantity) * parseFloat(strategyAveragePrice))
@@ -1896,7 +1904,7 @@ export default function OnboardingPage() {
                   </div>
                   <div>
                     <p className="text-xs text-gray-500 mb-1">Tokens restants</p>
-                    <p className="text-lg font-bold text-orange-600">
+                    <p className="text-base md:text-lg font-bold text-orange-600">
                       {strategyInfo.length > 0 
                         ? strategyInfo[strategyInfo.length - 1].remainingTokens.toFixed(6)
                         : '0.000000'}
@@ -1907,20 +1915,20 @@ export default function OnboardingPage() {
             )}
 
             {/* Footer - Design amélioré avec plus d'espace */}
-            <div className="mt-8 pt-8 border-t-2 border-gray-200 bg-gradient-to-r from-gray-50 to-blue-50 rounded-xl p-6 -mx-4">
+            <div className="mt-4 md:mt-8 pt-4 md:pt-8 border-t-2 border-gray-200 bg-gradient-to-r from-gray-50 to-blue-50 rounded-xl p-4 md:p-6 -mx-4 md:-mx-0 w-full max-w-full overflow-x-hidden">
               <div className="max-w-7xl mx-auto">
-                <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6">
+                <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4 md:gap-6">
                   {/* Section informative à gauche */}
-                  <div className="flex-1 space-y-3">
-                    <div className="flex items-center gap-3">
-                      <div className="p-2 bg-blue-100 rounded-lg">
-                        <ChartBarIcon className="w-5 h-5 text-blue-600" />
+                  <div className="flex-1 space-y-2 md:space-y-3 w-full">
+                    <div className="flex items-start gap-2 md:gap-3">
+                      <div className="p-2 bg-blue-100 rounded-lg flex-shrink-0">
+                        <ChartBarIcon className="w-4 h-4 md:w-5 md:h-5 text-blue-600" />
                       </div>
                       <div>
-                        <h4 className="text-base font-semibold text-gray-900">
+                        <h4 className="text-sm md:text-base font-semibold text-gray-900">
                           Stratégie optimisée pour vos gains
                         </h4>
-                        <p className="text-sm text-gray-600 mt-1">
+                        <p className="text-xs md:text-sm text-gray-600 mt-1">
                           Vos cibles de profit sont calculées en temps réel pour maximiser vos rendements
                         </p>
                       </div>
@@ -1928,11 +1936,11 @@ export default function OnboardingPage() {
                   </div>
                   
                   {/* Section bouton à droite */}
-                  <div className="flex-shrink-0">
+                  <div className="flex-shrink-0 w-full lg:w-auto">
                     <Button
                       onClick={handleCreateStrategy}
                       disabled={isLoading || !selectedStrategyToken || !strategyQuantity || !strategyAveragePrice || !strategyName}
-                      className="px-10 py-4 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed text-base min-w-[200px]"
+                      className="w-full lg:w-auto px-6 md:px-10 py-3 md:py-4 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed text-sm md:text-base"
                     >
                       {isLoading ? (
                         <span className="flex items-center gap-2">
@@ -1958,40 +1966,40 @@ export default function OnboardingPage() {
 
       case 3: // Configuration
         return (
-          <div className="space-y-6">
+          <div className="space-y-4 md:space-y-6">
             {/* Error Message */}
             {error && (
-              <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
-                <p className="text-sm text-red-600">{error}</p>
+              <div className="mb-3 md:mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+                <p className="text-xs md:text-sm text-red-600">{error}</p>
               </div>
             )}
 
             {/* Success Messages */}
             {createdData.strategy && (
-              <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg">
-                <p className="text-sm text-green-600">
+              <div className="mb-3 md:mb-4 p-3 bg-green-50 border border-green-200 rounded-lg">
+                <p className="text-xs md:text-sm text-green-600">
                   ✅ Stratégie "{createdData.strategy.name}" créée avec succès !
                 </p>
               </div>
             )}
 
             <div className="text-center">
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">
+              <h3 className="text-base md:text-lg font-semibold text-gray-900 mb-2">
                 Configurez votre stratégie
               </h3>
-              <p className="text-gray-600">
+              <p className="text-xs md:text-sm text-gray-600">
                 Personnalisez les paramètres de votre stratégie
               </p>
             </div>
 
-            <div className="text-center py-8">
-              <Cog6ToothIcon className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-              <p className="text-gray-600 mb-6">
+            <div className="text-center py-6 md:py-8">
+              <Cog6ToothIcon className="w-12 h-12 md:w-16 md:h-16 text-gray-400 mx-auto mb-3 md:mb-4" />
+              <p className="text-xs md:text-sm text-gray-600 mb-4 md:mb-6 px-2">
                 Accédez à la page de configuration pour personnaliser vos paramètres
               </p>
               <Button
                 onClick={handleConfigureStrategy}
-                className="px-8 py-3 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-medium rounded-lg"
+                className="w-full sm:w-auto px-6 md:px-8 py-2 md:py-3 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-medium rounded-lg text-sm md:text-base"
               >
                 Configurer
               </Button>
@@ -2005,44 +2013,45 @@ export default function OnboardingPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-white to-blue-50">
+    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-white to-blue-50 overflow-x-hidden">
       {/* Progress Bar */}
       <div className="bg-white border-b border-gray-200">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+        <div className="max-w-4xl mx-auto px-3 md:px-4 sm:px-6 lg:px-8 py-3 md:py-4">
           <div className="flex items-center justify-between mb-2">
-            <div className="flex items-center space-x-3">
+            <div className="flex items-center space-x-2 md:space-x-3">
               <img 
                 src="/Full_logo.svg" 
                 alt="exStrat Logo" 
-                className="h-8 w-auto"
+                className="h-6 md:h-8 w-auto"
               />
             </div>
             <button
               onClick={handleSkip}
-              className="flex items-center space-x-2 text-gray-500 hover:text-gray-700"
+              className="flex items-center space-x-1 md:space-x-2 text-gray-500 hover:text-gray-700 text-xs md:text-sm"
             >
-              <XMarkIcon className="w-5 h-5" />
-              <span>Passer</span>
+              <XMarkIcon className="w-4 h-4 md:w-5 md:h-5" />
+              <span className="hidden sm:inline">Passer</span>
             </button>
           </div>
-          <div className="flex items-center justify-between mb-2">
+          <div className="flex items-center justify-between mb-2 overflow-x-auto">
             {steps.map((step, index) => (
-              <div key={step.id} className="flex items-center">
-                <div className={`flex items-center space-x-2 ${
+              <div key={step.id} className="flex items-center flex-shrink-0">
+                <div className={`flex items-center space-x-1 md:space-x-2 ${
                   index <= currentStep ? 'text-blue-600' : 'text-gray-400'
                 }`}>
-                  <step.icon className="w-5 h-5" />
-                  <span className="text-sm font-medium">{step.name}</span>
+                  <step.icon className="w-4 h-4 md:w-5 md:h-5" />
+                  <span className="text-xs md:text-sm font-medium hidden sm:inline">{step.name}</span>
+                  <span className="text-xs md:text-sm font-medium sm:hidden">{step.name.substring(0, 4)}</span>
                 </div>
                 {index < steps.length - 1 && (
-                  <ArrowRightIcon className="w-4 h-4 text-gray-300 mx-4" />
+                  <ArrowRightIcon className="w-3 h-3 md:w-4 md:h-4 text-gray-300 mx-2 md:mx-4" />
                 )}
               </div>
             ))}
           </div>
-          <div className="w-full bg-gray-200 rounded-full h-2">
+          <div className="w-full bg-gray-200 rounded-full h-1.5 md:h-2">
             <div 
-              className="bg-gradient-to-r from-blue-600 to-purple-600 h-2 rounded-full transition-all duration-300"
+              className="bg-gradient-to-r from-blue-600 to-purple-600 h-1.5 md:h-2 rounded-full transition-all duration-300"
               style={{ width: `${progress}%` }}
             ></div>
           </div>
@@ -2050,23 +2059,23 @@ export default function OnboardingPage() {
       </div>
 
       {/* Main Content */}
-      <div className={`${currentStep === 2 ? 'max-w-7xl' : 'max-w-4xl'} mx-auto px-4 sm:px-6 lg:px-8 py-8`}>
-        <div className={`${currentStep === 2 ? 'max-w-full' : 'max-w-2xl'} mx-auto`}>
+      <div className={`${currentStep === 2 ? 'max-w-7xl' : 'max-w-4xl'} mx-auto px-3 md:px-4 sm:px-6 lg:px-8 py-4 md:py-8 overflow-x-hidden`}>
+        <div className={`${currentStep === 2 ? 'max-w-full' : 'max-w-2xl'} mx-auto w-full`}>
           {/* Step Header */}
-          <div className="text-center mb-8">
-            <div className="flex items-center justify-center mb-4">
-              <div className="w-12 h-12 bg-gradient-to-r from-blue-600 to-purple-600 rounded-full flex items-center justify-center">
-                <currentStepData.icon className="w-6 h-6 text-white" />
+          <div className="text-center mb-4 md:mb-8">
+            <div className="flex flex-col sm:flex-row items-center justify-center mb-3 md:mb-4 gap-3 sm:gap-0">
+              <div className="w-10 h-10 md:w-12 md:h-12 bg-gradient-to-r from-blue-600 to-purple-600 rounded-full flex items-center justify-center flex-shrink-0">
+                <currentStepData.icon className="w-5 h-5 md:w-6 md:h-6 text-white" />
               </div>
-              <div className="ml-4 text-left">
-                <h1 className="text-2xl font-bold text-gray-900">
+              <div className="sm:ml-4 text-center sm:text-left">
+                <h1 className="text-xl md:text-2xl font-bold text-gray-900">
                   {currentStep === 0 && 'Nouveau Portfolio'}
                   {currentStep === 1 && 'Connectez votre exchange'}
                   {currentStep === 2 && 'Créez votre première stratégie'}
                   {currentStep === 3 && 'Configurez votre stratégie'}
                 </h1>
-                <div className="flex items-center text-sm text-gray-500">
-                  <ShieldCheckIcon className="w-4 h-4 mr-1" />
+                <div className="flex items-center justify-center sm:justify-start text-xs md:text-sm text-gray-500 mt-1">
+                  <ShieldCheckIcon className="w-3 h-3 md:w-4 md:h-4 mr-1" />
                   <span>1 min</span>
                 </div>
               </div>
@@ -2074,19 +2083,19 @@ export default function OnboardingPage() {
           </div>
 
           {/* Step Content */}
-          <Card className="mb-8">
-            <CardContent className={`${currentStep === 2 ? 'p-10' : 'p-8'}`}>
+          <Card className="mb-4 md:mb-8">
+            <CardContent className={`${currentStep === 2 ? 'p-4 md:p-6 lg:p-10' : 'p-4 md:p-6 lg:p-8'} w-full max-w-full overflow-x-hidden`}>
               {renderStepContent()}
             </CardContent>
           </Card>
 
           {/* Action Buttons */}
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-between gap-3 sm:gap-0">
             <Button
               onClick={handlePrevious}
               variant="outline"
               disabled={currentStep === 0}
-              className="flex items-center space-x-2"
+              className="flex items-center justify-center space-x-2 w-full sm:w-auto px-4 py-2 md:py-3 text-sm md:text-base"
             >
               <ArrowLeftIcon className="w-4 h-4" />
               <span>Précédent</span>
@@ -2095,7 +2104,7 @@ export default function OnboardingPage() {
             <Button
               onClick={handleNext}
               disabled={isLoading}
-              className="px-8 py-3 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-medium rounded-lg flex items-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full sm:w-auto px-6 md:px-8 py-2 md:py-3 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-medium rounded-lg flex items-center justify-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed text-sm md:text-base"
             >
               <span>{isLoading ? 'Création...' : (currentStep === steps.length - 1 ? 'Terminer' : 'Suivant')}</span>
               {!isLoading && <ArrowRightIcon className="w-4 h-4" />}
@@ -2103,9 +2112,9 @@ export default function OnboardingPage() {
           </div>
 
           {/* Security Info */}
-          <div className="mt-8 flex items-center justify-center text-sm text-gray-500">
-            <ShieldCheckIcon className="w-4 h-4 mr-2" />
-            <span>Connexion rapide et sécurisée à vos transactions</span>
+          <div className="mt-4 md:mt-8 flex items-center justify-center text-xs md:text-sm text-gray-500 px-2">
+            <ShieldCheckIcon className="w-3 h-3 md:w-4 md:h-4 mr-2" />
+            <span className="text-center">Connexion rapide et sécurisée à vos transactions</span>
           </div>
         </div>
       </div>
