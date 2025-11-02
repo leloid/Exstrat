@@ -706,13 +706,8 @@ export default function OnboardingPage() {
 
   const handleTokenSelect = (token: TokenSearchResult | null) => {
     setSelectedToken(token);
-    if (token) {
-      // Auto-remplir le prix moyen avec le prix actuel
-      setTransactionData(prev => ({
-        ...prev,
-        averagePrice: token.quote?.USD?.price?.toString() || '',
-      }));
-    }
+    // Ne plus auto-remplir le prix moyen car il sera calculé automatiquement
+    // Le prix moyen sera calculé à partir de quantité et montant investi
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
@@ -725,36 +720,30 @@ export default function OnboardingPage() {
 
   const handleQuantityChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
-    setTransactionData(prev => ({
-      ...prev,
-      quantity: value,
-    }));
-
-    // Auto-calculer le montant investi
-    const averagePrice = parseFloat(transactionData.averagePrice);
-    if (!isNaN(parseFloat(value)) && !isNaN(averagePrice)) {
-      setTransactionData(prev => ({
-        ...prev,
-        amountInvested: (parseFloat(value) * averagePrice).toString(),
-      }));
-    }
+    setTransactionData(prev => {
+      const newData = { ...prev, quantity: value };
+      // Calculer automatiquement le prix moyen à partir de la quantité et du montant investi
+      const qty = parseFloat(value);
+      const amount = parseFloat(newData.amountInvested);
+      if (!isNaN(qty) && !isNaN(amount) && qty > 0) {
+        newData.averagePrice = (amount / qty).toFixed(8);
+      }
+      return newData;
+    });
   };
 
-  const handleAveragePriceChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleAmountInvestedChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
-    setTransactionData(prev => ({
-      ...prev,
-      averagePrice: value,
-    }));
-
-    // Auto-calculer le montant investi
-    const quantity = parseFloat(transactionData.quantity);
-    if (!isNaN(quantity) && !isNaN(parseFloat(value))) {
-      setTransactionData(prev => ({
-        ...prev,
-        amountInvested: (quantity * parseFloat(value)).toString(),
-      }));
-    }
+    setTransactionData(prev => {
+      const newData = { ...prev, amountInvested: value };
+      // Calculer automatiquement le prix moyen à partir de la quantité et du montant investi
+      const qty = parseFloat(newData.quantity);
+      const amount = parseFloat(value);
+      if (!isNaN(qty) && !isNaN(amount) && qty > 0) {
+        newData.averagePrice = (amount / qty).toFixed(8);
+      }
+      return newData;
+    });
   };
 
   const handleCreateTransaction = async () => {
@@ -1319,7 +1308,7 @@ export default function OnboardingPage() {
                       )}
                     </div>
 
-                    {/* Quantité et Prix */}
+                    {/* Quantité et Montant investi */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -1337,13 +1326,13 @@ export default function OnboardingPage() {
                       </div>
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Prix moyen (USD) *
+                          Montant investi (USD) *
                         </label>
                         <Input
                           type="number"
-                          name="averagePrice"
-                          value={transactionData.averagePrice}
-                          onChange={handleAveragePriceChange}
+                          name="amountInvested"
+                          value={transactionData.amountInvested}
+                          onChange={handleAmountInvestedChange}
                           placeholder="0.00"
                           step="0.01"
                           required
@@ -1351,23 +1340,25 @@ export default function OnboardingPage() {
                       </div>
                     </div>
 
-                    {/* Montant investi */}
+                    {/* Prix moyen (calculé automatiquement) */}
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Montant investi (USD) *
+                      <label className="block text-sm font-medium text-gray-500 mb-2">
+                        Prix moyen (USD) *
                       </label>
                       <Input
                         type="number"
-                        name="amountInvested"
-                        value={transactionData.amountInvested}
-                        onChange={handleInputChange}
+                        name="averagePrice"
+                        value={transactionData.averagePrice}
+                        readOnly
+                        disabled
                         placeholder="0.00"
-                        step="0.01"
+                        step="0.00000001"
+                        className="bg-gray-100 cursor-not-allowed"
                         required
                       />
                       <p className="mt-1 text-sm text-gray-500">
-                        Calculé automatiquement: {transactionData.quantity && transactionData.averagePrice ? 
-                          (parseFloat(transactionData.quantity) * parseFloat(transactionData.averagePrice)).toFixed(2) : '0.00'} USD
+                        Calculé automatiquement: {transactionData.quantity && transactionData.amountInvested ? 
+                          (parseFloat(transactionData.amountInvested) / parseFloat(transactionData.quantity)).toFixed(8) : '0.00'} USD
                       </p>
                     </div>
 

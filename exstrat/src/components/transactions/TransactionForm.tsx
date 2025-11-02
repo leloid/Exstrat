@@ -83,56 +83,49 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({ onSuccess, onC
 
   const handleTokenSelect = (token: TokenSearchResult | null) => {
     setSelectedToken(token);
-    if (token) {
-      // Auto-remplir le prix moyen avec le prix actuel
-      setFormData(prev => ({
-        ...prev,
-        averagePrice: token.quote?.USD?.price?.toString() || '',
-      }));
-    }
+    // Ne plus auto-remplir le prix moyen car il sera calculé automatiquement
+    // Le prix moyen sera calculé à partir de quantité et montant investi
   };
 
-  const calculateAmountInvested = () => {
+  const calculateAveragePrice = () => {
     const quantity = parseFloat(formData.quantity);
-    const averagePrice = parseFloat(formData.averagePrice);
-    if (!isNaN(quantity) && !isNaN(averagePrice)) {
-      return (quantity * averagePrice).toString();
+    const amountInvested = parseFloat(formData.amountInvested);
+    if (!isNaN(quantity) && !isNaN(amountInvested) && quantity > 0) {
+      return (amountInvested / quantity).toFixed(8);
     }
     return '';
   };
 
   const handleQuantityChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
-    setFormData(prev => ({
-      ...prev,
-      quantity: value,
-    }));
-
-    // Auto-calculer le montant investi
-    const averagePrice = parseFloat(formData.averagePrice);
-    if (!isNaN(parseFloat(value)) && !isNaN(averagePrice)) {
-      setFormData(prev => ({
-        ...prev,
-        amountInvested: (parseFloat(value) * averagePrice).toString(),
-      }));
-    }
+    setFormData(prev => {
+      const newData = { ...prev, quantity: value };
+      // Calculer automatiquement le prix moyen à partir de la quantité et du montant investi
+      const qty = parseFloat(value);
+      const amount = parseFloat(newData.amountInvested);
+      if (!isNaN(qty) && !isNaN(amount) && qty > 0) {
+        newData.averagePrice = (amount / qty).toFixed(8);
+      } else {
+        newData.averagePrice = '';
+      }
+      return newData;
+    });
   };
 
-  const handleAveragePriceChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleAmountInvestedChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
-    setFormData(prev => ({
-      ...prev,
-      averagePrice: value,
-    }));
-
-    // Auto-calculer le montant investi
-    const quantity = parseFloat(formData.quantity);
-    if (!isNaN(quantity) && !isNaN(parseFloat(value))) {
-      setFormData(prev => ({
-        ...prev,
-        amountInvested: (quantity * parseFloat(value)).toString(),
-      }));
-    }
+    setFormData(prev => {
+      const newData = { ...prev, amountInvested: value };
+      // Calculer automatiquement le prix moyen à partir de la quantité et du montant investi
+      const qty = parseFloat(newData.quantity);
+      const amount = parseFloat(value);
+      if (!isNaN(qty) && !isNaN(amount) && qty > 0) {
+        newData.averagePrice = (amount / qty).toFixed(8);
+      } else {
+        newData.averagePrice = '';
+      }
+      return newData;
+    });
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -254,7 +247,7 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({ onSuccess, onC
             )}
           </div>
 
-          {/* Quantité et Prix */}
+          {/* Quantité et Montant investi */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -272,13 +265,13 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({ onSuccess, onC
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Prix moyen (USD) *
+                Montant investi (USD) *
               </label>
               <Input
                 type="number"
-                name="averagePrice"
-                value={formData.averagePrice}
-                onChange={handleAveragePriceChange}
+                name="amountInvested"
+                value={formData.amountInvested}
+                onChange={handleAmountInvestedChange}
                 placeholder="0.00"
                 step="0.01"
                 required
@@ -286,22 +279,24 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({ onSuccess, onC
             </div>
           </div>
 
-          {/* Montant investi */}
+          {/* Prix moyen (calculé automatiquement) */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Montant investi (USD) *
+            <label className="block text-sm font-medium text-gray-500 mb-2">
+              Prix moyen (USD) *
             </label>
             <Input
               type="number"
-              name="amountInvested"
-              value={formData.amountInvested}
-              onChange={handleInputChange}
+              name="averagePrice"
+              value={formData.averagePrice}
+              readOnly
+              disabled
               placeholder="0.00"
-              step="0.01"
+              step="0.00000001"
+              className="bg-gray-100 cursor-not-allowed"
               required
             />
             <p className="mt-1 text-sm text-gray-500">
-              Calculé automatiquement: {calculateAmountInvested() || '0.00'} USD
+              Calculé automatiquement: {calculateAveragePrice() || '0.00'} USD
             </p>
           </div>
 
