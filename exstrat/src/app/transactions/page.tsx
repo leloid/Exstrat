@@ -98,18 +98,18 @@ export default function TransactionsPage() {
 
   return (
     <ProtectedRoute>
-      <div className={`min-h-screen flex ${isDarkMode ? 'bg-gray-900' : 'bg-gray-50'}`}>
+      <div className={`min-h-screen flex overflow-x-hidden ${isDarkMode ? 'bg-gray-900' : 'bg-gray-50'}`}>
         <Sidebar activeTab={activeTab} onTabChange={setActiveTab} isDarkMode={isDarkMode} />
         
-        <div className="flex-1 flex flex-col">
+        <div className="flex-1 flex flex-col overflow-x-hidden w-full max-w-full">
           <TopBar currentPageName={language === 'fr' ? 'Transactions' : 'Transactions'} />
 
-          <div className={`flex-1 p-6 ${isDarkMode ? 'bg-gray-900' : 'bg-gray-50'}`}>
+          <div className={`flex-1 p-3 md:p-6 overflow-x-hidden max-w-full ${isDarkMode ? 'bg-gray-900' : 'bg-gray-50'}`}>
             {/* Header */}
-            <div className="mb-8">
-              <div className="flex items-center justify-between">
+            <div className="mb-4 md:mb-8">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-0">
                 <div>
-                  <p className={`mt-1 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                  <p className={`text-sm md:text-base mt-1 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
                     {language === 'fr' 
                       ? 'Gérez vos transactions crypto de façon professionnelle'
                       : 'Manage your crypto transactions professionally'
@@ -118,7 +118,7 @@ export default function TransactionsPage() {
                 </div>
                 <Button 
                   onClick={handleAddTransaction} 
-                  className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-2 rounded-lg font-medium flex items-center gap-2"
+                  className="bg-purple-600 hover:bg-purple-700 text-white px-4 md:px-6 py-2 rounded-lg text-sm md:text-base font-medium flex items-center gap-2 w-full sm:w-auto"
                 >
                   <Plus className="h-4 w-4" />
                   {language === 'fr' ? 'Nouvelle Transaction' : 'New Transaction'}
@@ -127,35 +127,35 @@ export default function TransactionsPage() {
             </div>
 
             {/* Statistiques globales */}
-            <div className="mb-8">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div className={`rounded-xl p-6 ${
+            <div className="mb-4 md:mb-8 w-full max-w-full">
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 md:gap-6">
+                <div className={`rounded-xl p-4 md:p-6 w-full max-w-full ${
                   isDarkMode ? 'bg-gray-800' : 'bg-white border border-gray-200'
                 }`}>
-                  <div className={`text-sm mb-1 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                  <div className={`text-xs md:text-sm mb-1 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
                     {language === 'fr' ? 'Total investi' : 'Total Invested'}
                   </div>
-                  <div className={`text-2xl font-semibold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+                  <div className={`text-lg md:text-2xl font-semibold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
                     {formatCurrency(globalInvested)}
                   </div>
                 </div>
-                <div className={`rounded-xl p-6 ${
+                <div className={`rounded-xl p-4 md:p-6 w-full max-w-full ${
                   isDarkMode ? 'bg-gray-800' : 'bg-white border border-gray-200'
                 }`}>
-                  <div className={`text-sm mb-1 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                  <div className={`text-xs md:text-sm mb-1 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
                     {language === 'fr' ? 'Valeur actuelle' : 'Current Value'}
                   </div>
-                  <div className={`text-2xl font-semibold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+                  <div className={`text-lg md:text-2xl font-semibold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
                     {formatCurrency(globalValue)}
                   </div>
                 </div>
-                <div className={`rounded-xl p-6 ${
+                <div className={`rounded-xl p-4 md:p-6 w-full max-w-full sm:col-span-2 md:col-span-1 ${
                   isDarkMode ? 'bg-gray-800' : 'bg-white border border-gray-200'
                 }`}>
-                  <div className={`text-sm mb-1 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                  <div className={`text-xs md:text-sm mb-1 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
                     {language === 'fr' ? 'Performance' : 'Performance'}
                   </div>
-                  <div className={`text-2xl font-semibold ${
+                  <div className={`text-lg md:text-2xl font-semibold ${
                     globalValue >= globalInvested ? 'text-green-600' : 'text-red-500'
                   }`}>
                     {formatCurrency(globalValue - globalInvested)}
@@ -168,17 +168,17 @@ export default function TransactionsPage() {
             <ExchangeIntegration isDarkMode={isDarkMode} language={language} />
 
             {/* Contenu principal */}
-            <div className="space-y-8">
+            <div className="space-y-4 md:space-y-8 w-full max-w-full">
               {/* Formulaire de transaction */}
               {showForm && (
-                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-                  <div className={`rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto ${
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-3 md:p-4 z-50 overflow-y-auto">
+                  <div className={`rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto my-4 ${
                     isDarkMode ? 'bg-gray-800' : 'bg-white'
                   }`}>
-                    <div className={`flex items-center justify-between p-6 border-b ${
+                    <div className={`flex items-center justify-between p-4 md:p-6 border-b ${
                       isDarkMode ? 'border-gray-700' : 'border-gray-200'
                     }`}>
-                      <h2 className={`text-lg font-semibold ${
+                      <h2 className={`text-base md:text-lg font-semibold ${
                         isDarkMode ? 'text-white' : 'text-gray-900'
                       }`}>
                         {editingTransaction 
@@ -195,7 +195,7 @@ export default function TransactionsPage() {
                         <XMarkIcon className="h-5 w-5" />
                       </button>
                     </div>
-                    <div className="p-6">
+                    <div className="p-4 md:p-6">
                       <TransactionForm
                         onSuccess={handleFormSuccess}
                         onCancel={handleFormCancel}
@@ -207,14 +207,16 @@ export default function TransactionsPage() {
               )}
 
               {/* Liste des transactions */}
-              <TransactionList
-                key={refreshKey}
-                onAddTransaction={handleAddTransaction}
-                onEditTransaction={handleEditTransaction}
-                onTransactionDeleted={handleTransactionDeleted}
-                isDarkMode={isDarkMode}
-                language={language}
-              />
+              <div className="w-full max-w-full">
+                <TransactionList
+                  key={refreshKey}
+                  onAddTransaction={handleAddTransaction}
+                  onEditTransaction={handleEditTransaction}
+                  onTransactionDeleted={handleTransactionDeleted}
+                  isDarkMode={isDarkMode}
+                  language={language}
+                />
+              </div>
             </div>
           </div>
         </div>

@@ -150,14 +150,14 @@ export const TransactionList: React.FC<TransactionListProps> = ({
 
   if (loading) {
     return (
-      <div className={`rounded-xl p-6 ${
+      <div className={`rounded-xl p-3 md:p-6 w-full max-w-full ${
         isDarkMode ? 'bg-gray-800' : 'bg-white border border-gray-200'
       }`}>
         <div className="flex items-center justify-center">
-          <div className={`animate-spin rounded-full h-8 w-8 border-b-2 ${
+          <div className={`animate-spin rounded-full h-6 w-6 md:h-8 md:w-8 border-b-2 ${
             isDarkMode ? 'border-purple-600' : 'border-purple-600'
           }`}></div>
-          <span className={`ml-2 ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+          <span className={`ml-2 text-sm md:text-base ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
             {language === 'fr' ? 'Chargement des transactions...' : 'Loading transactions...'}
           </span>
         </div>
@@ -179,11 +179,11 @@ export const TransactionList: React.FC<TransactionListProps> = ({
   }, {} as Record<string, TransactionResponse[]>);
 
   return (
-    <div className={`rounded-xl p-6 ${
+    <div className={`rounded-xl p-3 md:p-6 w-full max-w-full overflow-x-hidden ${
       isDarkMode ? 'bg-gray-800' : 'bg-white border border-gray-200'
     }`}>
-      <div className="mb-6">
-        <h2 className={`text-xl font-semibold ${
+      <div className="mb-4 md:mb-6">
+        <h2 className={`text-base md:text-xl font-semibold ${
           isDarkMode ? 'text-white' : 'text-gray-900'
         }`}>
           {language === 'fr' ? 'Mes Transactions' : 'My Transactions'}
@@ -201,15 +201,15 @@ export const TransactionList: React.FC<TransactionListProps> = ({
       )}
 
       {transactions.length === 0 ? (
-        <div className="text-center py-8">
-          <p className={`mb-4 ${
+        <div className="text-center py-6 md:py-8">
+          <p className={`mb-4 text-sm md:text-base ${
             isDarkMode ? 'text-gray-400' : 'text-gray-500'
           }`}>
             {language === 'fr' ? 'Aucune transaction trouvée' : 'No transactions found'}
           </p>
           <Button
             onClick={onAddTransaction}
-            className="bg-purple-600 hover:bg-purple-700 text-white"
+            className="bg-purple-600 hover:bg-purple-700 text-white px-4 md:px-6 py-2 text-sm md:text-base"
           >
             <PlusIcon className="h-4 w-4 mr-2" />
             {language === 'fr' ? 'Créer votre première transaction' : 'Create your first transaction'}
@@ -218,45 +218,48 @@ export const TransactionList: React.FC<TransactionListProps> = ({
         ) : (
           <>
             {/* Groupes par portfolio */}
-            <div className="space-y-8">
+            <div className="space-y-4 md:space-y-8">
               {Object.entries(groupedByPortfolio).map(([portfolioName, txs]) => (
                 <div
                   key={portfolioName}
-                  className={`rounded-lg p-4 ${
+                  className={`rounded-lg p-3 md:p-4 w-full max-w-full ${
                     isDarkMode 
                       ? 'bg-gray-700 border border-gray-600' 
                       : 'bg-gray-50 border border-gray-200'
                   }`}
                 >
-                  <div className="mb-4 flex items-center justify-between">
-                    <h3 className={`text-lg font-semibold ${
+                  <div className="mb-3 md:mb-4 flex items-center justify-between">
+                    <h3 className={`text-base md:text-lg font-semibold ${
                       isDarkMode ? 'text-white' : 'text-gray-900'
                     }`}>{portfolioName}</h3>
                   </div>
 
-                  <div className="space-y-4">
+                  <div className="space-y-3 md:space-y-4">
                     {txs.map((transaction) => (
-                      <div key={transaction.id} className={`rounded-lg p-4 transition-colors ${
+                      <div key={transaction.id} className={`rounded-lg p-3 md:p-4 transition-colors w-full max-w-full overflow-x-hidden ${
                         isDarkMode 
                           ? 'bg-gray-800 border border-gray-700 hover:bg-gray-750' 
                           : 'bg-white border border-gray-200 hover:bg-gray-50'
                       }`}>
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center space-x-3">
-                            {getTransactionIcon(transaction.type)}
-                            <div>
-                              <div className="flex items-center space-x-2">
-                                <span className={`font-medium ${
+                        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4">
+                          {/* Section gauche : Icône et infos de base */}
+                          <div className="flex items-center space-x-2 md:space-x-3 min-w-0 flex-1">
+                            <div className="flex-shrink-0">
+                              {getTransactionIcon(transaction.type)}
+                            </div>
+                            <div className="min-w-0 flex-1">
+                              <div className="flex flex-wrap items-center gap-2">
+                                <span className={`font-medium text-sm md:text-base ${
                                   isDarkMode ? 'text-white' : 'text-gray-900'
                                 }`}>{transaction.symbol}</span>
-                                <span className={`text-sm ${
+                                <span className={`text-xs md:text-sm hidden sm:inline ${
                                   isDarkMode ? 'text-gray-400' : 'text-gray-500'
                                 }`}>{transaction.name}</span>
-                                <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getTransactionTypeColor(transaction.type)}`}>
+                                <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium flex-shrink-0 ${getTransactionTypeColor(transaction.type)}`}>
                                   {getTransactionTypeLabel(transaction.type)}
                                 </span>
                               </div>
-                              <div className={`text-sm ${
+                              <div className={`text-xs md:text-sm mt-1 ${
                                 isDarkMode ? 'text-gray-400' : 'text-gray-500'
                               }`}>
                                 {new Date(transaction.transactionDate).toLocaleDateString(language === 'fr' ? 'fr-FR' : 'en-US')}
@@ -264,39 +267,44 @@ export const TransactionList: React.FC<TransactionListProps> = ({
                             </div>
                           </div>
 
-                          <div className="text-right">
-                            <div className={`font-medium ${
-                              isDarkMode ? 'text-white' : 'text-gray-900'
-                            }`}>{transaction.quantity} {transaction.symbol}</div>
-                            <div className={`text-sm ${
-                              isDarkMode ? 'text-gray-400' : 'text-gray-500'
-                            }`}>${transaction.amountInvested.toLocaleString()}</div>
-                            <div className={`text-xs ${
-                              isDarkMode ? 'text-gray-500' : 'text-gray-400'
-                            }`}>@ ${transaction.averagePrice.toLocaleString()}</div>
-                          </div>
+                          {/* Section droite : Montants et actions */}
+                          <div className="flex items-center gap-3 sm:gap-4 w-full sm:w-auto justify-between sm:justify-end">
+                            {/* Montants */}
+                            <div className="text-right sm:text-right flex-1 sm:flex-initial">
+                              <div className={`font-medium text-sm md:text-base ${
+                                isDarkMode ? 'text-white' : 'text-gray-900'
+                              }`}>{transaction.quantity} {transaction.symbol}</div>
+                              <div className={`text-xs md:text-sm ${
+                                isDarkMode ? 'text-gray-400' : 'text-gray-500'
+                              }`}>${transaction.amountInvested.toLocaleString()}</div>
+                              <div className={`text-xs ${
+                                isDarkMode ? 'text-gray-500' : 'text-gray-400'
+                              }`}>@ ${transaction.averagePrice.toLocaleString()}</div>
+                            </div>
 
-                          <div className="flex items-center space-x-2">
-                            <Button 
-                              variant="outline" 
-                              size="sm" 
-                              onClick={() => onEditTransaction?.(transaction)}
-                              className={isDarkMode ? 'border-gray-600 text-gray-300 hover:bg-gray-700' : ''}
-                            >
-                              <PencilIcon className="h-4 w-4" />
-                            </Button>
-                            <Button 
-                              variant="outline" 
-                              size="sm" 
-                              onClick={() => handleDeleteTransaction(transaction.id)} 
-                              className={`${
-                                isDarkMode 
-                                  ? 'border-red-900 text-red-400 hover:bg-red-900/30' 
-                                  : 'text-red-600 hover:text-red-700 hover:bg-red-50'
-                              }`}
-                            >
-                              <TrashIcon className="h-4 w-4" />
-                            </Button>
+                            {/* Actions */}
+                            <div className="flex items-center space-x-1.5 sm:space-x-2 flex-shrink-0">
+                              <Button 
+                                variant="outline" 
+                                size="sm" 
+                                onClick={() => onEditTransaction?.(transaction)}
+                                className={`p-2 ${isDarkMode ? 'border-gray-600 text-gray-300 hover:bg-gray-700' : ''}`}
+                              >
+                                <PencilIcon className="h-4 w-4" />
+                              </Button>
+                              <Button 
+                                variant="outline" 
+                                size="sm" 
+                                onClick={() => handleDeleteTransaction(transaction.id)} 
+                                className={`p-2 ${
+                                  isDarkMode 
+                                    ? 'border-red-900 text-red-400 hover:bg-red-900/30' 
+                                    : 'text-red-600 hover:text-red-700 hover:bg-red-50'
+                                }`}
+                              >
+                                <TrashIcon className="h-4 w-4" />
+                              </Button>
+                            </div>
                           </div>
                         </div>
 
@@ -314,8 +322,8 @@ export const TransactionList: React.FC<TransactionListProps> = ({
 
             {/* Pagination */}
             {pagination.total > pagination.limit && (
-              <div className="mt-6 flex items-center justify-between">
-                <div className={`text-sm ${
+              <div className="mt-4 md:mt-6 flex flex-col sm:flex-row items-center justify-between gap-3 sm:gap-0">
+                <div className={`text-xs md:text-sm text-center sm:text-left ${
                   isDarkMode ? 'text-gray-400' : 'text-gray-500'
                 }`}>
                   {language === 'fr' 
@@ -329,7 +337,7 @@ export const TransactionList: React.FC<TransactionListProps> = ({
                     size="sm"
                     onClick={() => fetchTransactions(pagination.page - 1)}
                     disabled={pagination.page === 1}
-                    className={isDarkMode ? 'border-gray-600 text-gray-300 hover:bg-gray-700' : ''}
+                    className={`text-xs md:text-sm px-3 md:px-4 ${isDarkMode ? 'border-gray-600 text-gray-300 hover:bg-gray-700' : ''}`}
                   >
                     {language === 'fr' ? 'Précédent' : 'Previous'}
                   </Button>
@@ -338,7 +346,7 @@ export const TransactionList: React.FC<TransactionListProps> = ({
                     size="sm"
                     onClick={() => fetchTransactions(pagination.page + 1)}
                     disabled={pagination.page * pagination.limit >= pagination.total}
-                    className={isDarkMode ? 'border-gray-600 text-gray-300 hover:bg-gray-700' : ''}
+                    className={`text-xs md:text-sm px-3 md:px-4 ${isDarkMode ? 'border-gray-600 text-gray-300 hover:bg-gray-700' : ''}`}
                   >
                     {language === 'fr' ? 'Suivant' : 'Next'}
                   </Button>
