@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/Button';
 import { Card, CardContent } from '@/components/ui/Card';
@@ -19,7 +19,7 @@ import {
 } from '@heroicons/react/24/outline';
 import { transactionsApi } from '@/lib/transactions-api';
 import { strategiesApi } from '@/lib/strategies-api';
-import { CreatePortfolioDto } from '@/types/portfolio';
+import { CreatePortfolioDto, UpdatePortfolioDto } from '@/types/portfolio';
 import { CreateTransactionDto, TokenSearchResult } from '@/types/transactions';
 import { CreateStrategyDto, TargetType } from '@/types/strategies';
 import { TokenSearch } from '@/components/transactions/TokenSearch';
@@ -109,6 +109,8 @@ export default function OnboardingPage() {
   const [editingTransaction, setEditingTransaction] = useState<any | null>(null);
   const [onboardingPortfolios, setOnboardingPortfolios] = useState<any[]>([]);
   const [editingPortfolio, setEditingPortfolio] = useState<any | null>(null);
+  const [newPortfolioName, setNewPortfolioName] = useState('');
+  const portfolioContext = usePortfolio();
   const { 
     portfolios, 
     currentPortfolio, 
@@ -116,7 +118,7 @@ export default function OnboardingPage() {
     updatePortfolio: updatePortfolioContext, 
     deletePortfolio: deletePortfolioContext, 
     refreshPortfolios 
-  } = usePortfolio();
+  } = portfolioContext;
   
   // Form data
   const [portfolioData, setPortfolioData] = useState({
@@ -146,32 +148,37 @@ export default function OnboardingPage() {
   
   const router = useRouter();
 
-  // Charger les portfolios existants au montage et quand on arrive sur le step portfolio
-  React.useEffect(() => {
-    if (currentStep === 0) {
-      const loadPortfolios = async () => {
-        try {
-          // Utiliser refreshPortfolios du contexte
-          await refreshPortfolios();
-        } catch (err) {
-          console.error('Erreur lors du chargement des portfolios:', err);
-        }
-      };
-      loadPortfolios();
-    }
-  }, [currentStep, refreshPortfolios]);
+  // Les portfolios sont déjà chargés par le PortfolioContext, pas besoin de les recharger ici
 
   // Synchroniser onboardingPortfolios avec portfolios du contexte
+  // Cette synchronisation préserve les portfolios temporaires (optimistic updates)
   React.useEffect(() => {
     if (!portfolios || !Array.isArray(portfolios)) {
       return;
     }
 
-    // Utiliser portfolios du contexte comme source de vérité
-    // Filtrer les portfolios valides et supprimer les doublons
+    // Filtrer les portfolios valides et supprimer les doublons depuis le contexte
     const validPortfolios = portfolios.filter(p => p && p.id && p.name);
-    const uniquePortfolios = Array.from(
+    const portfoliosFromContext = Array.from(
       new Map(validPortfolios.map(p => [p.id, p])).values()
+    );
+    
+    // Préserver les portfolios temporaires (ceux qui commencent par "temp-")
+    const tempPortfolios = onboardingPortfolios.filter(p => 
+      p && p.id && p.id.startsWith('temp-')
+    );
+    
+    // Fusionner : portfolios du contexte + portfolios temporaires
+    // Les portfolios du contexte remplacent ceux qui ont le même ID (sauf les temporaires)
+    const existingIds = new Set(tempPortfolios.map(p => p.id));
+    const finalPortfolios = [
+      ...tempPortfolios,
+      ...portfoliosFromContext.filter(p => !existingIds.has(p.id))
+    ];
+    
+    // Supprimer les doublons par ID (priorité aux portfolios du contexte pour les non-temporaires)
+    const uniquePortfolios = Array.from(
+      new Map(finalPortfolios.map(p => [p.id, p])).values()
     );
     
     // Convertir en string pour comparaison profonde
@@ -189,11 +196,16 @@ export default function OnboardingPage() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [portfolios]);
 
-  // Charger les transactions existantes au montage et quand on arrive sur le step exchange
+  // Charger les transactions uniquement quand on arrive sur le step exchange (une seule fois)
+  const prevStepRef = useRef(currentStep);
+  const transactionsLoadedRef = useRef(false);
+  
   React.useEffect(() => {
-    if (currentStep === 1) {
+    // Ne charger que si on change vraiment de step vers le step 1 et qu'on ne les a pas déjà chargées
+    if (currentStep === 1 && prevStepRef.current !== 1 && !transactionsLoadedRef.current) {
       const loadTransactions = async () => {
         try {
+          transactionsLoadedRef.current = true;
           const response = await transactionsApi.getTransactions();
           const transactions = response.transactions || [];
           // Supprimer les doublons dès le chargement
@@ -203,16 +215,19 @@ export default function OnboardingPage() {
           setOnboardingTransactions(uniqueTransactions);
         } catch (err) {
           console.error('Erreur lors du chargement des transactions:', err);
+          transactionsLoadedRef.current = false; // Permettre de réessayer
         }
       };
-      // Recharger aussi les portfolios pour avoir la liste à jour (portfolios créés dans le step précédent)
-      const refreshData = async () => {
-        await refreshPortfolios();
-        await loadTransactions();
-      };
-      refreshData();
+      loadTransactions();
     }
-  }, [currentStep, refreshPortfolios]);
+    
+    // Réinitialiser le flag si on quitte le step
+    if (currentStep !== 1) {
+      transactionsLoadedRef.current = false;
+    }
+    
+    prevStepRef.current = currentStep;
+  }, [currentStep]);
 
   // Initialiser les cibles de profit quand le nombre change
   React.useEffect(() => {
@@ -321,36 +336,97 @@ export default function OnboardingPage() {
     setError('');
 
     try {
-      const portfolioDto: CreatePortfolioDto = {
-        name: portfolioData.name,
-        description: portfolioData.description || undefined,
-        isDefault: portfolioData.isDefault,
+      // Pour l'édition, on ne met à jour que le nom (simplification)
+      const portfolioDto: UpdatePortfolioDto = {
+        name: portfolioData.name.trim(),
       };
 
       if (editingPortfolio) {
-        // Mettre à jour le portfolio existant
+        // Mettre à jour le portfolio existant (nom uniquement)
         const updatedPortfolio = await updatePortfolioContext(editingPortfolio.id, portfolioDto);
         // Le contexte est déjà mis à jour par updatePortfolioContext
         // Le useEffect synchronisera automatiquement onboardingPortfolios avec portfolios
         setCreatedData(prev => ({ ...prev, portfolio: updatedPortfolio }));
-      } else {
-        // Créer un nouveau portfolio via l'API directement pour obtenir le portfolio créé
-        const createdPortfolio = await portfoliosApi.createPortfolio(portfolioDto);
-        
-        // Mettre à jour le contexte manuellement pour éviter un double appel API
-        // et garantir que portfolios contient le portfolio créé
-        await refreshPortfolios();
-        
-        // Le useEffect synchronisera automatiquement onboardingPortfolios avec portfolios
-        setCreatedData(prev => ({ ...prev, portfolio: createdPortfolio }));
       }
       
-      console.log('✅ Portfolio sauvegardé:', editingPortfolio ? 'mise à jour' : 'créé');
+      console.log('✅ Portfolio mis à jour:', editingPortfolio?.name);
       resetPortfolioForm();
       setShowPortfolioModal(false);
     } catch (err: any) {
-      console.error('❌ Erreur sauvegarde portfolio:', err);
-      setError(err.response?.data?.message || 'Erreur lors de la sauvegarde du portfolio');
+      console.error('❌ Erreur mise à jour portfolio:', err);
+      setError(err.response?.data?.message || 'Erreur lors de la mise à jour du portfolio');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Fonction simplifiée pour créer un portfolio directement depuis le champ de saisie
+  const handleQuickCreatePortfolio = async () => {
+    if (!newPortfolioName.trim()) {
+      setError('Veuillez entrer un nom pour le portfolio');
+      return;
+    }
+
+    setIsLoading(true);
+    setError('');
+
+    // Optimistic update : créer un portfolio temporaire pour l'afficher immédiatement
+    const tempId = `temp-${Date.now()}`;
+    const tempPortfolio = {
+      id: tempId,
+      name: newPortfolioName.trim(),
+      description: null,
+      isDefault: false,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+
+    // Ajouter immédiatement à la liste locale (optimistic update)
+    setOnboardingPortfolios(prev => {
+      // Éviter les doublons si le portfolio existe déjà
+      if (prev.some(p => p.id === tempId || p.name === newPortfolioName.trim())) {
+        return prev;
+      }
+      return [...prev, tempPortfolio];
+    });
+
+    try {
+      // Créer le portfolio avec seulement le nom (pas de description, pas de isDefault)
+      const portfolioDto: CreatePortfolioDto = {
+        name: newPortfolioName.trim(),
+        isDefault: false,
+      };
+
+      // Créer le portfolio via l'API directement
+      const createdPortfolio = await portfoliosApi.createPortfolio(portfolioDto);
+      
+      // Remplacer le portfolio temporaire par le vrai portfolio de l'API
+      setOnboardingPortfolios(prev => {
+        const filtered = prev.filter(p => p.id !== tempId);
+        // Vérifier qu'il n'existe pas déjà
+        if (!filtered.some(p => p.id === createdPortfolio.id)) {
+          return [...filtered, createdPortfolio];
+        }
+        return filtered;
+      });
+      
+      // Forcer une mise à jour du contexte pour que le Select voie immédiatement le nouveau portfolio
+      // On utilise refreshPortfolios qui va recharger depuis l'API (mais c'est rapide car on vient de créer)
+      // En production, on pourrait optimiser en ajoutant directement au contexte sans recharger
+      await refreshPortfolios();
+      
+      // Réinitialiser le champ de saisie
+      setNewPortfolioName('');
+      setCreatedData(prev => ({ ...prev, portfolio: createdPortfolio }));
+      
+      console.log('✅ Portfolio créé:', createdPortfolio.name);
+    } catch (err: any) {
+      console.error('❌ Erreur création portfolio:', err);
+      
+      // Rollback : retirer le portfolio temporaire en cas d'erreur
+      setOnboardingPortfolios(prev => prev.filter(p => p.id !== tempId));
+      
+      setError(err.response?.data?.message || 'Erreur lors de la création du portfolio');
     } finally {
       setIsLoading(false);
     }
@@ -766,30 +842,9 @@ export default function OnboardingPage() {
       case 0: // Portfolio
         return (
           <div className="space-y-6">
-            <div className="text-center">
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                Vos Portfolios
-              </h3>
-              <p className="text-gray-600">
-                Créez et gérez vos portfolios pour organiser vos investissements
-              </p>
-            </div>
-
-            {/* Success Message */}
-            {onboardingPortfolios.length > 0 && (
-              <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg">
-                <p className="text-sm text-green-600">
-                  ✅ {onboardingPortfolios.length} portfolio{onboardingPortfolios.length > 1 ? 's' : ''} créé{onboardingPortfolios.length > 1 ? 's' : ''} avec succès !
-                </p>
-              </div>
-            )}
-
-            {/* Liste des Portfolios Créés */}
+            {/* Liste des Portfolios Créés en haut */}
             {onboardingPortfolios.length > 0 && (
               <div className="mb-6">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                  Portfolios créés ({onboardingPortfolios.length})
-                </h3>
                 <div className="space-y-3">
                   {Array.from(
                     new Map(
@@ -802,17 +857,7 @@ export default function OnboardingPage() {
                       <CardContent className="p-4">
                         <div className="flex items-center justify-between">
                           <div className="flex-1">
-                            <div className="flex items-center gap-2">
-                              <h4 className="font-semibold text-gray-900">{portfolio.name}</h4>
-                              {portfolio.isDefault && (
-                                <span className="px-2 py-1 text-xs bg-blue-100 text-blue-700 rounded">
-                                  Défaut
-                                </span>
-                              )}
-                            </div>
-                            {portfolio.description && (
-                              <p className="text-sm text-gray-600 mt-1">{portfolio.description}</p>
-                            )}
+                            <h4 className="font-semibold text-gray-900">{portfolio.name}</h4>
                           </div>
                           <div className="flex items-center gap-2">
                             <Button
@@ -838,23 +883,43 @@ export default function OnboardingPage() {
               </div>
             )}
 
-            {/* Empty State */}
-            {onboardingPortfolios.length === 0 && (
-              <div className="text-center py-8">
-                <ShieldCheckIcon className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-                <p className="text-gray-600 mb-6">
-                  Créez votre premier portfolio pour commencer à organiser vos investissements
-                </p>
+            {/* Champ de saisie avec bouton Add a new wallet en bas */}
+            <div className="flex items-center gap-3 mt-6">
+              <Input
+                type="text"
+                placeholder="Nom du wallet"
+                value={newPortfolioName}
+                onChange={(e) => setNewPortfolioName(e.target.value)}
+                onKeyPress={(e) => {
+                  if (e.key === 'Enter') {
+                    handleQuickCreatePortfolio();
+                  }
+                }}
+                className="flex-1 h-12"
+              />
+              <Button
+                onClick={handleQuickCreatePortfolio}
+                disabled={isLoading || !newPortfolioName.trim()}
+                className="bg-gradient-to-r from-blue-600 to-purple-600 text-white hover:from-blue-700 hover:to-purple-700 h-12 px-6 whitespace-nowrap"
+              >
+                {isLoading ? '...' : 'Add a new wallet'}
+              </Button>
+            </div>
+
+            {/* Message d'erreur */}
+            {error && (
+              <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+                <p className="text-sm text-red-600">{error}</p>
               </div>
             )}
 
-            {/* Modal de Portfolio */}
-            {showPortfolioModal && (
+            {/* Modal de Portfolio (pour l'édition uniquement) */}
+            {showPortfolioModal && editingPortfolio && (
               <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
                 <div className="bg-white rounded-lg max-w-lg w-full max-h-[90vh] overflow-y-auto">
                   <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between">
                     <h3 className="text-lg font-semibold text-gray-900">
-                      {editingPortfolio ? 'Modifier le portfolio' : 'Nouveau Portfolio'}
+                      Modifier le portfolio
                     </h3>
                     <button
                       onClick={() => {
@@ -889,30 +954,6 @@ export default function OnboardingPage() {
                       />
                     </div>
 
-                    {/* Description */}
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Description (optionnel)
-                      </label>
-                      <textarea
-                        placeholder="Décrivez votre portfolio..."
-                        value={portfolioData.description}
-                        onChange={(e) => setPortfolioData(prev => ({ ...prev, description: e.target.value }))}
-                        className="w-full h-20 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none"
-                      />
-                    </div>
-
-                    {/* Portfolio par défaut */}
-                    <div className="flex items-center">
-                      <input 
-                        type="checkbox" 
-                        checked={portfolioData.isDefault}
-                        onChange={(e) => setPortfolioData(prev => ({ ...prev, isDefault: e.target.checked }))}
-                        className="mr-2" 
-                      />
-                      <span className="text-sm text-gray-700">Portfolio par défaut</span>
-                    </div>
-
                     {/* Boutons d'action */}
                     <div className="flex justify-end space-x-3 pt-4 border-t border-gray-200">
                       <Button
@@ -938,20 +979,6 @@ export default function OnboardingPage() {
               </div>
             )}
 
-            {/* Footer */}
-            <div className="flex items-center justify-between pt-6 border-t border-gray-200">
-              <div className="flex items-center text-sm text-gray-500">
-                <ShieldCheckIcon className="w-4 h-4 mr-2 text-gray-400" />
-                <span>Organisez vos investissements en portfolios</span>
-              </div>
-              <Button 
-                onClick={handleAddPortfolioClick}
-                className="px-8 py-3 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-medium rounded-lg"
-              >
-                <PlusIcon className="mr-2 h-4 w-4 inline" />
-                Add Portfolio
-              </Button>
-            </div>
           </div>
         );
 
@@ -1125,7 +1152,7 @@ export default function OnboardingPage() {
                         Portefeuille *
                       </label>
                       <Select
-                        value={transactionData.portfolioId}
+                        value={transactionData.portfolioId || ''}
                         onValueChange={(value) => {
                           setTransactionData(prev => ({ ...prev, portfolioId: value }));
                         }}
@@ -1134,14 +1161,28 @@ export default function OnboardingPage() {
                           <SelectValue placeholder="Sélectionner un portefeuille" />
                         </SelectTrigger>
                         <SelectContent>
-                          {portfolios.filter(portfolio => portfolio && portfolio.id && portfolio.name).map((portfolio) => (
-                            <SelectItem key={portfolio.id} value={portfolio.id}>
-                              {portfolio.name} {portfolio.isDefault && '(Défaut)'}
-                            </SelectItem>
-                          ))}
+                          {(() => {
+                            // Fusionner portfolios du contexte et onboardingPortfolios pour avoir la liste la plus à jour
+                            // Les portfolios temporaires sont aussi inclus (optimistic update)
+                            const allPortfolios = [
+                              ...onboardingPortfolios.filter(p => p && p.id && p.name),
+                              ...portfolios.filter(p => p && p.id && p.name)
+                            ];
+                            
+                            // Supprimer les doublons (priorité aux portfolios du contexte pour les IDs réels)
+                            const uniquePortfolios = Array.from(
+                              new Map(allPortfolios.map(p => [p.id, p])).values()
+                            );
+                            
+                            return uniquePortfolios.map((portfolio) => (
+                              <SelectItem key={portfolio.id} value={portfolio.id}>
+                                {portfolio.name} {portfolio.isDefault && '(Défaut)'}
+                              </SelectItem>
+                            ));
+                          })()}
                         </SelectContent>
                       </Select>
-                      {portfolios.length === 0 && (
+                      {onboardingPortfolios.length === 0 && portfolios.length === 0 && (
                         <p className="text-sm text-gray-500 mt-1">
                           Aucun portefeuille disponible. Créez-en un d'abord.
                         </p>

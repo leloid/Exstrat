@@ -165,9 +165,9 @@ export const PortfolioProvider: React.FC<PortfolioProviderProps> = ({ children }
     }
   };
 
-  const refreshPortfolios = async () => {
+  const refreshPortfolios = React.useCallback(async () => {
     await loadPortfolios();
-  };
+  }, []);
 
   const refreshHoldings = async (portfolioId: string) => {
     await loadHoldings(portfolioId);
