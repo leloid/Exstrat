@@ -14,6 +14,12 @@ En production, vous avez besoin d'une base PostgreSQL accessible depuis internet
 3. Copiez la variable `DATABASE_URL` depuis l'onglet Variables
    (Format: `postgresql://user:password@host:port/database`)
    
+   💡 **Astuce :** Si vous avez des erreurs de connexion, ajoutez ces paramètres :
+   ```
+   ?connection_limit=20&pool_timeout=20&connect_timeout=10&sslmode=require
+   ```
+   Voir [`docs/DATABASE-CONNECTION-ISSUES.md`](docs/DATABASE-CONNECTION-ISSUES.md) pour plus de détails.
+   
 💡 **Besoin d'explications ?** Voir [`docs/DATABASE-EXPLAINED.md`](docs/DATABASE-EXPLAINED.md)
 ### 2️⃣ Backend (Railway)
 

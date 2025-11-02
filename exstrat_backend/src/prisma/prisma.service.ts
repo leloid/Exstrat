@@ -1,20 +1,65 @@
-import { Injectable, OnModuleInit, OnModuleDestroy } from '@nestjs/common';
+import { Injectable, OnModuleInit, OnModuleDestroy, Logger } from '@nestjs/common';
 import { PrismaClient } from '@prisma/client';
 import { withAccelerate } from '@prisma/extension-accelerate';
 
 @Injectable()
 export class PrismaService extends PrismaClient implements OnModuleInit, OnModuleDestroy {
+  private readonly logger = new Logger(PrismaService.name);
+
   constructor() {
-    super();
-    this.$extends(withAccelerate());
+    super({
+      log: [
+        { emit: 'event', level: 'query' },
+        { emit: 'event', level: 'error' },
+        { emit: 'event', level: 'info' },
+        { emit: 'event', level: 'warn' },
+      ],
+      errorFormat: 'colorless',
+      // Configuration du pool de connexions pour éviter les "Connection reset by peer"
+      datasources: {
+        db: {
+          url: process.env.DATABASE_URL,
+        },
+      },
+    });
+
+    // Logger les erreurs Prisma
+    this.$on('error' as never, (e: any) => {
+      this.logger.error('Prisma error:', e);
+    });
+
+    this.$on('warn' as never, (e: any) => {
+      this.logger.warn('Prisma warning:', e);
+    });
+    
+    // Extension Accelerate (optionnel, peut être désactivé si problèmes)
+    try {
+      this.$extends(withAccelerate());
+    } catch (error) {
+      this.logger.warn('Prisma Accelerate extension failed, continuing without it:', error);
+    }
   }
 
   async onModuleInit() {
-    await this.$connect();
+    try {
+      await this.$connect();
+      this.logger.log('✅ Connected to database successfully');
+      
+      // Test de connexion avec retry
+      await this.checkConnection();
+    } catch (error) {
+      this.logger.error('❌ Failed to connect to database:', error);
+      throw error;
+    }
   }
 
   async onModuleDestroy() {
-    await this.$disconnect();
+    try {
+      await this.$disconnect();
+      this.logger.log('✅ Disconnected from database');
+    } catch (error) {
+      this.logger.error('❌ Error disconnecting from database:', error);
+    }
   }
 
   async checkConnection(): Promise<{ status: string; message: string; timestamp: Date }> {

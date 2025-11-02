@@ -855,9 +855,9 @@ export default function CreateStrategyPage() {
                       </div>
                     </div>
                   )}
-                </div>
+          </div>
 
-                {/* Colonne droite: Résumé et Simulation */}
+          {/* Colonne droite: Résumé et Simulation */}
           <div className="lg:col-span-1 space-y-6">
             {selectedToken && quantity && averagePrice && (
               <>
