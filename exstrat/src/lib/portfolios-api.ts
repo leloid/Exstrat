@@ -15,6 +15,11 @@ import {
   UpdateUserStrategyDto,
   TokenStrategyConfigDto,
 } from '@/types/portfolio';
+import {
+  CreateTheoreticalStrategyDto,
+  UpdateTheoreticalStrategyDto,
+  TheoreticalStrategyResponse,
+} from '@/types/strategies';
 
 // ===== PORTFOLIOS =====
 
@@ -131,23 +136,23 @@ export const simulateStrategy = async (strategyId: string): Promise<SimulationRe
 
 // ===== STRATÉGIES THÉORIQUES =====
 
-export const createTheoreticalStrategy = async (data: any): Promise<any> => {
-  const response = await api.post('/portfolios/theoretical-strategies', data);
+export const createTheoreticalStrategy = async (data: CreateTheoreticalStrategyDto): Promise<TheoreticalStrategyResponse> => {
+  const response = await api.post<TheoreticalStrategyResponse>('/portfolios/theoretical-strategies', data);
   return response.data;
 };
 
-export const getTheoreticalStrategies = async (): Promise<any[]> => {
-  const response = await api.get('/portfolios/theoretical-strategies');
+export const getTheoreticalStrategies = async (): Promise<TheoreticalStrategyResponse[]> => {
+  const response = await api.get<TheoreticalStrategyResponse[]>('/portfolios/theoretical-strategies');
   return response.data;
 };
 
-export const getTheoreticalStrategyById = async (id: string): Promise<any> => {
-  const response = await api.get(`/portfolios/theoretical-strategies/${id}`);
+export const getTheoreticalStrategyById = async (id: string): Promise<TheoreticalStrategyResponse> => {
+  const response = await api.get<TheoreticalStrategyResponse>(`/portfolios/theoretical-strategies/${id}`);
   return response.data;
 };
 
-export const updateTheoreticalStrategy = async (id: string, data: any): Promise<any> => {
-  const response = await api.put(`/portfolios/theoretical-strategies/${id}`, data);
+export const updateTheoreticalStrategy = async (id: string, data: UpdateTheoreticalStrategyDto): Promise<TheoreticalStrategyResponse> => {
+  const response = await api.put<TheoreticalStrategyResponse>(`/portfolios/theoretical-strategies/${id}`, data);
   return response.data;
 };
 

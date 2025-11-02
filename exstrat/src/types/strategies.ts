@@ -133,3 +133,52 @@ export interface StrategyStepDisplayData extends StrategyStepResponse {
   daysUntilTarget?: number;
   profitIfTriggered?: number;
 }
+
+// ===== STRATÉGIES THÉORIQUES =====
+
+export interface ProfitTarget {
+  order: number;
+  targetType: 'percentage' | 'price';
+  targetValue: number;
+  sellPercentage: number;
+}
+
+export interface CreateTheoreticalStrategyDto {
+  name: string;
+  description?: string;
+  tokenSymbol: string;
+  tokenName: string;
+  quantity: number;
+  averagePrice: number;
+  profitTargets: ProfitTarget[];
+  status?: 'draft' | 'active' | 'paused' | 'completed';
+}
+
+export interface UpdateTheoreticalStrategyDto {
+  name?: string;
+  description?: string;
+  quantity?: number;
+  averagePrice?: number;
+  profitTargets?: ProfitTarget[];
+  status?: 'draft' | 'active' | 'paused' | 'completed';
+}
+
+export interface TheoreticalStrategyResponse {
+  id: string;
+  userId: string;
+  name: string;
+  description?: string;
+  tokenSymbol: string;
+  tokenName: string;
+  quantity: number;
+  averagePrice: number;
+  profitTargets: ProfitTarget[];
+  status: 'draft' | 'active' | 'paused' | 'completed';
+  createdAt: Date;
+  updatedAt: Date;
+  // Champs calculés
+  totalInvested?: number;
+  expectedProfit?: number;
+  returnPercentage?: number;
+  numberOfTargets?: number;
+}
