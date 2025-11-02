@@ -52,7 +52,7 @@ export default function TopBar({ currentPageName }: TopBarProps) {
   }, []);
 
   return (
-    <div className={`pl-14 md:pl-6 pr-3 md:pr-6 py-4 flex items-center justify-between ${
+    <div className={`pl-14 md:pl-6 pr-3 md:pr-6 py-4 flex items-center justify-between overflow-x-hidden max-w-full ${
       isDarkMode ? 'bg-gray-800' : 'bg-white border-b border-gray-200'
     }`}>
       <div className="flex items-center gap-2 md:gap-4">

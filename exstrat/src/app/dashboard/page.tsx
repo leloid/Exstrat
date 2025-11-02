@@ -94,7 +94,7 @@ const TokenCard = ({ symbol, name, price, change, icon, color, isDarkMode }: {
   const isPositive = change.startsWith('+');
   
   return (
-    <div className={`rounded-xl p-3 md:p-4 min-w-[150px] md:min-w-[200px] transition-colors ${
+    <div className={`rounded-xl p-3 md:p-4 w-[140px] md:min-w-[200px] flex-shrink-0 transition-colors ${
       isDarkMode ? 'bg-gray-800 hover:bg-gray-750' : 'bg-white hover:bg-gray-50 border border-gray-200'
     }`}>
       <div className="flex items-center gap-2 md:gap-3 mb-2 md:mb-3">
@@ -174,17 +174,17 @@ export default function DashboardPage() {
         <Sidebar activeTab={activeTab} onTabChange={setActiveTab} isDarkMode={isDarkMode} />
 
         {/* Main Content */}
-        <div className="flex-1 flex flex-col md:ml-0 overflow-x-hidden w-0 min-w-0">
+        <div className="flex-1 flex flex-col md:ml-0 overflow-x-hidden w-full max-w-full">
           {/* Top Bar */}
           <TopBar currentPageName={language === 'fr' ? 'Vue d\'ensemble' : 'Overview'} />
 
           {/* Content */}
-          <div className={`flex-1 p-3 md:p-6 overflow-x-hidden ${isDarkMode ? 'bg-gray-900' : 'bg-gray-50'}`}>
+          <div className={`flex-1 p-3 md:p-6 overflow-x-hidden max-w-full ${isDarkMode ? 'bg-gray-900' : 'bg-gray-50'}`}>
             {/* Actions Rapides - En haut de la page */}
-            <div className={`rounded-xl p-3 md:p-4 mb-4 md:mb-6 ${
+            <div className={`rounded-xl p-3 md:p-4 mb-4 md:mb-6 max-w-full ${
               isDarkMode ? 'bg-gray-800' : 'bg-white border border-gray-200'
             }`}>
-              <div className="grid grid-cols-2 md:flex md:items-center gap-2 md:gap-3 pb-2">
+              <div className="grid grid-cols-2 md:flex md:items-center gap-2 md:gap-3 w-full">
                 <button 
                   onClick={() => handleQuickAction('transaction')}
                   className="bg-blue-600 hover:bg-blue-700 text-white px-3 md:px-4 py-2 md:py-3 rounded-lg transition-colors flex flex-col md:flex-row items-center justify-center gap-1 md:gap-2"
@@ -223,9 +223,9 @@ export default function DashboardPage() {
               </div>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6 mb-4 md:mb-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6 mb-4 md:mb-6 w-full max-w-full">
               {/* Hero Section */}
-              <div className="bg-gradient-to-br from-purple-600 to-pink-600 rounded-xl p-4 md:p-6 relative overflow-hidden">
+              <div className="bg-gradient-to-br from-purple-600 to-pink-600 rounded-xl p-4 md:p-6 relative overflow-hidden w-full max-w-full">
                 <div className="relative z-10">
                   <h2 className="text-white text-xl md:text-2xl font-bold mb-2">
                     {language === 'fr' ? 'Préparez votre Bull Run' : 'Prepare Your Bull Run'}
@@ -249,7 +249,7 @@ export default function DashboardPage() {
               </div>
 
               {/* ETH Price Chart */}
-              <div className={`rounded-xl p-4 md:p-6 ${isDarkMode ? 'bg-gray-800' : 'bg-white border border-gray-200'}`}>
+              <div className={`rounded-xl p-4 md:p-6 w-full max-w-full ${isDarkMode ? 'bg-gray-800' : 'bg-white border border-gray-200'}`}>
                 <div className="flex items-center justify-between mb-3 md:mb-4">
                   <div className="flex items-center gap-2">
                     <div className="w-5 h-5 md:w-6 md:h-6 bg-blue-500 rounded-full flex items-center justify-center">
@@ -276,15 +276,15 @@ export default function DashboardPage() {
             </div>
 
             {/* Token Overview */}
-            <div className="mb-4 md:mb-6 overflow-x-auto">
+            <div className="mb-4 md:mb-6 w-full max-w-full">
               <h3 className={`text-base md:text-lg font-semibold mb-3 md:mb-4 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
                 {language === 'fr' ? 'Overview des Tokens' : 'Token Overview'}
               </h3>
-              <div className="flex gap-3 md:gap-4 pb-2">
+              <div className="flex gap-3 md:gap-4 pb-2 overflow-x-auto">
                 {tokens.map((token, index) => (
                   <TokenCard key={index} {...token} isDarkMode={isDarkMode} />
                 ))}
-                <div className={`flex items-center justify-center min-w-[150px] md:min-w-[200px] rounded-xl border-2 border-dashed transition-colors ${
+                <div className={`flex items-center justify-center w-[140px] md:min-w-[200px] flex-shrink-0 rounded-xl border-2 border-dashed transition-colors ${
                   isDarkMode 
                     ? 'bg-gray-800 border-gray-600 hover:border-gray-500' 
                     : 'bg-white border-gray-300 hover:border-gray-400'
@@ -298,9 +298,9 @@ export default function DashboardPage() {
           </div>
 
             {/* Bottom Row */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6 w-full max-w-full">
               {/* Vue d'ensemble */}
-              <div className={`rounded-xl p-4 md:p-6 ${
+              <div className={`rounded-xl p-4 md:p-6 w-full max-w-full ${
                 isDarkMode ? 'bg-gray-800' : 'bg-white border border-gray-200'
               }`}>
                 <h3 className={`font-semibold mb-3 md:mb-4 text-sm md:text-base ${
@@ -355,7 +355,7 @@ export default function DashboardPage() {
           </div>
 
               {/* Activités Récentes */}
-              <div className={`rounded-xl p-4 md:p-6 ${
+              <div className={`rounded-xl p-4 md:p-6 w-full max-w-full ${
                 isDarkMode ? 'bg-gray-800' : 'bg-white border border-gray-200'
               }`}>
                 <div className="flex items-center gap-2 mb-3 md:mb-4">
@@ -399,9 +399,9 @@ export default function DashboardPage() {
             </div>
 
             {/* Second Bottom Row */}
-            <div className="mt-4 md:mt-6">
+            <div className="mt-4 md:mt-6 w-full max-w-full">
               {/* Top Holdings */}
-              <div className={`rounded-xl p-4 md:p-6 ${
+              <div className={`rounded-xl p-4 md:p-6 w-full max-w-full ${
                 isDarkMode ? 'bg-gray-800' : 'bg-white border border-gray-200'
               }`}>
                 <div className="flex items-center gap-2 mb-3 md:mb-4">
