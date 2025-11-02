@@ -402,10 +402,10 @@ export default function CreateStrategyPage() {
   
   return (
     <ProtectedRoute>
-      <div className={`min-h-screen flex ${isDarkMode ? 'bg-gray-900' : 'bg-gray-50'}`}>
+      <div className={`min-h-screen flex overflow-x-hidden ${isDarkMode ? 'bg-gray-900' : 'bg-gray-50'}`}>
         <Sidebar activeTab={activeTab} onTabChange={setActiveTab} isDarkMode={isDarkMode} />
         
-        <div className="flex-1 flex flex-col">
+        <div className="flex-1 flex flex-col overflow-x-hidden w-full max-w-full">
           <TopBar 
             currentPageName={isEditMode 
               ? (language === 'fr' ? 'Modifier la Stratégie' : 'Edit Strategy') 
@@ -413,13 +413,13 @@ export default function CreateStrategyPage() {
             } 
           />
 
-          <div className={`flex-1 p-6 ${isDarkMode ? 'bg-gray-900' : 'bg-gray-50'}`}>
-            <div className="max-w-7xl mx-auto">
+          <div className={`flex-1 p-3 md:p-6 overflow-x-hidden max-w-full ${isDarkMode ? 'bg-gray-900' : 'bg-gray-50'}`}>
+            <div className="max-w-7xl mx-auto w-full">
         {/* Header */}
-              <div className="mb-8">
-                <div className="flex items-center justify-between mb-4">
+              <div className="mb-4 md:mb-8">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-0 mb-3 md:mb-4">
           <div>
-                    <p className={`mt-2 ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                    <p className={`text-sm md:text-base mt-2 ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
               {isEditMode 
                         ? (language === 'fr' ? 'Modifiez les paramètres de votre stratégie existante' : 'Modify your existing strategy settings')
                         : (language === 'fr' ? 'Définissez vos cibles de profit théoriques pour n\'importe quel token' : 'Define your theoretical profit targets for any token')
@@ -429,7 +429,7 @@ export default function CreateStrategyPage() {
                   <Button 
                     variant="outline" 
                     onClick={() => router.push('/strategies')} 
-                    className="flex items-center gap-2"
+                    className="flex items-center gap-2 px-3 md:px-4 py-2 text-sm md:text-base w-full sm:w-auto"
                   >
             <ArrowLeftIcon className="h-4 w-4" />
                     {language === 'fr' ? 'Retour' : 'Back'}
@@ -437,23 +437,23 @@ export default function CreateStrategyPage() {
                 </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-8 w-full max-w-full">
           {/* Colonne gauche: Configuration */}
-          <div className="lg:col-span-2 space-y-6">
+          <div className="lg:col-span-2 space-y-4 md:space-y-6 w-full max-w-full">
             {/* Informations de base */}
-                  <div className={`rounded-xl p-6 ${isDarkMode ? 'bg-gray-800' : 'bg-white border border-gray-200'}`}>
-                    <div className="mb-4">
-                      <h2 className={`flex items-center gap-2 text-xl font-semibold ${
+                  <div className={`rounded-xl p-4 md:p-6 w-full max-w-full ${isDarkMode ? 'bg-gray-800' : 'bg-white border border-gray-200'}`}>
+                    <div className="mb-3 md:mb-4">
+                      <h2 className={`flex items-center gap-2 text-base md:text-xl font-semibold ${
                         isDarkMode ? 'text-white' : 'text-gray-900'
                       }`}>
-                        <ChartBarIcon className="h-5 w-5 text-purple-600" />
+                        <ChartBarIcon className="h-4 w-4 md:h-5 md:w-5 text-purple-600" />
                         {language === 'fr' ? 'Informations de la Stratégie' : 'Strategy Information'}
                       </h2>
-                      <p className={`text-sm mt-1 ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                      <p className={`text-xs md:text-sm mt-1 ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
                         {language === 'fr' ? 'Définissez le nom et le token cible' : 'Define the name and target token'}
                       </p>
                     </div>
-                    <div className="space-y-4">
+                    <div className="space-y-3 md:space-y-4">
                 <div>
                         <Label htmlFor="strategyName" className={isDarkMode ? 'text-gray-300' : 'text-gray-700'}>
                           {language === 'fr' ? 'Nom de la stratégie *' : 'Strategy Name *'}
@@ -523,9 +523,9 @@ export default function CreateStrategyPage() {
                   />
                 </div>
                 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 md:gap-4">
                   <div>
-                          <Label htmlFor="quantity" className={isDarkMode ? 'text-gray-300' : 'text-gray-700'}>
+                          <Label htmlFor="quantity" className={`text-xs md:text-sm ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
                             {language === 'fr' ? 'Quantité *' : 'Quantity *'}
                             {!isVirtualWallet && availableQuantity > 0 && (
                               <span className="text-xs text-gray-500 ml-2">
@@ -590,8 +590,8 @@ export default function CreateStrategyPage() {
                   </div>
 
                   {/* Informations récapitulatives */}
-                  <div className={`rounded-xl p-6 mb-6 ${isDarkMode ? 'bg-gray-800 border border-gray-700' : 'bg-gray-50 border border-gray-200'}`}>
-                    <div className="grid grid-cols-2 md:grid-cols-5 gap-4 text-sm">
+                  <div className={`rounded-xl p-4 md:p-6 mb-4 md:mb-6 w-full max-w-full ${isDarkMode ? 'bg-gray-800 border border-gray-700' : 'bg-gray-50 border border-gray-200'}`}>
+                    <div className="grid grid-cols-2 md:grid-cols-5 gap-3 md:gap-4 text-xs md:text-sm">
                       <div>
                         <p className={`mb-1 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
                           {language === 'fr' ? 'Portfolio' : 'Portfolio'}
@@ -648,19 +648,19 @@ export default function CreateStrategyPage() {
                 </div>
 
             {/* Configuration des cibles */}
-                  <div className={`rounded-xl p-6 ${isDarkMode ? 'bg-gray-800' : 'bg-white border border-gray-200'}`}>
-                    <div className="mb-4">
-                      <h2 className={`flex items-center gap-2 text-xl font-semibold ${
+                  <div className={`rounded-xl p-4 md:p-6 w-full max-w-full ${isDarkMode ? 'bg-gray-800' : 'bg-white border border-gray-200'}`}>
+                    <div className="mb-3 md:mb-4">
+                      <h2 className={`flex items-center gap-2 text-base md:text-xl font-semibold ${
                         isDarkMode ? 'text-white' : 'text-gray-900'
                       }`}>
-                  <PencilIcon className="h-5 w-5 text-purple-600" />
+                  <PencilIcon className="h-4 w-4 md:h-5 md:w-5 text-purple-600" />
                         {language === 'fr' ? 'Cibles de Prise de Profit' : 'Profit Targets'}
                       </h2>
-                      <p className={`text-sm mt-1 ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                      <p className={`text-xs md:text-sm mt-1 ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
                         {language === 'fr' ? 'Définissez vos points de sortie' : 'Define your exit points'}
                       </p>
                     </div>
-                    <div className="space-y-6">
+                    <div className="space-y-4 md:space-y-6">
                 <div>
                         <Label htmlFor="numberOfTargets" className={isDarkMode ? 'text-gray-300' : 'text-gray-700'}>
                           {language === 'fr' ? 'Nombre de sorties (1-10)' : 'Number of exits (1-10)'}
@@ -682,15 +682,15 @@ export default function CreateStrategyPage() {
                 </div>
 
                 {profitTargets.map((target, index) => (
-                        <div key={target.id} className={`border p-4 rounded-lg space-y-3 ${
+                        <div key={target.id} className={`border p-3 md:p-4 rounded-lg space-y-3 w-full max-w-full ${
                           isDarkMode ? 'bg-gray-700 border-gray-600' : 'bg-gray-50'
                         }`}>
-                          <h3 className={`text-md font-semibold ${
+                          <h3 className={`text-sm md:text-base font-semibold ${
                             isDarkMode ? 'text-white' : 'text-gray-900'
                           }`}>
                             {language === 'fr' ? 'Cible' : 'Target'} #{index + 1}
                           </h3>
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 md:gap-4">
                       <div>
                               <Label htmlFor={`targetType-${index}`} className={isDarkMode ? 'text-gray-300' : 'text-gray-700'}>
                                 {language === 'fr' ? 'Type' : 'Type'}
@@ -738,7 +738,7 @@ export default function CreateStrategyPage() {
                                 {language === 'fr' ? 'Total' : 'Total'}: {profitTargets.reduce((sum, t) => sum + t.sellPercentage, 0).toFixed(1)}%
                               </span>
                             </div>
-                            <div className="flex items-center gap-4">
+                            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:gap-4">
                               <div className="flex-1">
                       <Slider
                         min={0}
@@ -757,7 +757,7 @@ export default function CreateStrategyPage() {
                         className="w-full"
                       />
                               </div>
-                              <div className="w-24">
+                              <div className="w-full sm:w-24">
                                 <Input
                                   id={`sellPercentage-${index}`}
                                   type="number"
@@ -798,13 +798,13 @@ export default function CreateStrategyPage() {
 
                   {/* Barre de résumé en bas */}
                   {simulations.length > 0 && quantity && averagePrice && (
-                    <div className={`mt-6 rounded-xl p-6 ${isDarkMode ? 'bg-gray-800 border border-gray-700' : 'bg-white border-2 border-gray-200'}`}>
-                      <div className="grid grid-cols-2 md:grid-cols-5 gap-4 items-center">
+                    <div className={`mt-4 md:mt-6 rounded-xl p-4 md:p-6 w-full max-w-full ${isDarkMode ? 'bg-gray-800 border border-gray-700' : 'bg-white border-2 border-gray-200'}`}>
+                      <div className="grid grid-cols-2 md:grid-cols-5 gap-3 md:gap-4 items-center">
                         <div>
                           <p className={`text-xs mb-1 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
                             {language === 'fr' ? 'Investi' : 'Invested'}
                           </p>
-                          <p className={`text-lg font-bold ${isDarkMode ? 'text-green-400' : 'text-green-600'}`}>
+                          <p className={`text-base md:text-lg font-bold ${isDarkMode ? 'text-green-400' : 'text-green-600'}`}>
                             {formatCurrency(parseFloat(quantity) * parseFloat(averagePrice), '$', 2)}
                           </p>
                         </div>
@@ -812,7 +812,7 @@ export default function CreateStrategyPage() {
                           <p className={`text-xs mb-1 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
                             {language === 'fr' ? 'Total encaissé' : 'Total cashed in'}
                           </p>
-                          <p className={`text-lg font-bold ${isDarkMode ? 'text-green-400' : 'text-green-600'}`}>
+                          <p className={`text-base md:text-lg font-bold ${isDarkMode ? 'text-green-400' : 'text-green-600'}`}>
                             {formatCurrency(
                               simulations.reduce((sum, sim) => sum + sim.amountCollected, 0),
                               '$',
@@ -824,7 +824,7 @@ export default function CreateStrategyPage() {
                           <p className={`text-xs mb-1 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
                             {language === 'fr' ? 'Résultat net' : 'Net result'}
                           </p>
-                          <p className={`text-lg font-bold ${isDarkMode ? 'text-green-400' : 'text-green-600'}`}>
+                          <p className={`text-base md:text-lg font-bold ${isDarkMode ? 'text-green-400' : 'text-green-600'}`}>
                             {formatCurrency(
                               simulations.reduce((sum, sim) => sum + sim.amountCollected, 0) - 
                               (parseFloat(quantity) * parseFloat(averagePrice)),
@@ -837,7 +837,7 @@ export default function CreateStrategyPage() {
                           <p className={`text-xs mb-1 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
                             {language === 'fr' ? 'Rendement net' : 'Net yield'}
                           </p>
-                          <p className={`text-lg font-bold ${isDarkMode ? 'text-green-400' : 'text-green-600'}`}>
+                          <p className={`text-base md:text-lg font-bold ${isDarkMode ? 'text-green-400' : 'text-green-600'}`}>
                             {(((
                               simulations.reduce((sum, sim) => sum + sim.amountCollected, 0) - 
                               (parseFloat(quantity) * parseFloat(averagePrice))
@@ -848,7 +848,7 @@ export default function CreateStrategyPage() {
                           <p className={`text-xs mb-1 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
                             {language === 'fr' ? 'Tokens restants' : 'Remaining tokens'}
                           </p>
-                          <p className={`text-lg font-bold ${isDarkMode ? 'text-orange-400' : 'text-orange-600'}`}>
+                          <p className={`text-base md:text-lg font-bold ${isDarkMode ? 'text-orange-400' : 'text-orange-600'}`}>
                             {simulations.length > 0 
                               ? simulations[simulations.length - 1].remainingTokens.toFixed(6)
                               : '0.000000'}
@@ -860,19 +860,19 @@ export default function CreateStrategyPage() {
           </div>
 
           {/* Colonne droite: Résumé et Simulation */}
-          <div className="lg:col-span-1 space-y-6">
+          <div className="lg:col-span-1 space-y-4 md:space-y-6 w-full max-w-full">
             {selectedToken && quantity && averagePrice && (
               <>
-                      <div className={`rounded-xl p-6 ${isDarkMode ? 'bg-gray-800' : 'bg-white border border-gray-200'}`}>
-                        <div className="mb-4">
-                          <h2 className={`flex items-center gap-2 text-xl font-semibold ${
+                      <div className={`rounded-xl p-4 md:p-6 w-full max-w-full ${isDarkMode ? 'bg-gray-800' : 'bg-white border border-gray-200'}`}>
+                        <div className="mb-3 md:mb-4">
+                          <h2 className={`flex items-center gap-2 text-base md:text-xl font-semibold ${
                             isDarkMode ? 'text-white' : 'text-gray-900'
                           }`}>
-                            <InformationCircleIcon className="h-5 w-5 text-purple-600" />
+                            <InformationCircleIcon className="h-4 w-4 md:h-5 md:w-5 text-purple-600" />
                             {language === 'fr' ? 'Données d\'investissement' : 'Investment Data'}
                           </h2>
                     </div>
-                        <div className="space-y-2 text-sm">
+                        <div className="space-y-2 text-xs md:text-sm">
                           <div className="flex justify-between">
                             <span className={isDarkMode ? 'text-gray-400' : 'text-gray-500'}>
                               {language === 'fr' ? 'Token:' : 'Token:'}
@@ -910,31 +910,31 @@ export default function CreateStrategyPage() {
                         </div>
                       </div>
 
-                      <div className={`rounded-xl p-6 ${isDarkMode ? 'bg-gray-800' : 'bg-white border border-gray-200'}`}>
-                        <div className="mb-4">
-                          <h2 className={`flex items-center gap-2 text-xl font-semibold ${
+                      <div className={`rounded-xl p-4 md:p-6 w-full max-w-full ${isDarkMode ? 'bg-gray-800' : 'bg-white border border-gray-200'}`}>
+                        <div className="mb-3 md:mb-4">
+                          <h2 className={`flex items-center gap-2 text-base md:text-xl font-semibold ${
                             isDarkMode ? 'text-white' : 'text-gray-900'
                           }`}>
-                            <ChartBarIcon className="h-5 w-5 text-green-600" />
+                            <ChartBarIcon className="h-4 w-4 md:h-5 md:w-5 text-green-600" />
                             {language === 'fr' ? 'Informations de la stratégie' : 'Strategy Information'}
                           </h2>
                         </div>
-                        <div className="space-y-4">
+                        <div className="space-y-3 md:space-y-4">
                           {profitTargets.map((target, index) => {
                             const sim = simulations[index];
                             if (!sim) return null;
                             
                             return (
-                              <Card key={index} className={`border ${
+                              <Card key={index} className={`border w-full max-w-full ${
                                 isDarkMode ? 'bg-gray-700 border-gray-600' : 'bg-white border-gray-200'
                               }`}>
-                                <CardContent className="p-4">
+                                <CardContent className="p-3 md:p-4">
                                   <div className="mb-2">
-                                    <h4 className={`font-semibold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
-                                      {index + 1}
+                                    <h4 className={`text-sm md:text-base font-semibold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+                                      {language === 'fr' ? 'Simulation' : 'Simulation'} #{index + 1}
                                     </h4>
                                   </div>
-                                  <div className="space-y-2 text-sm">
+                                  <div className="space-y-2 text-xs md:text-sm">
                                     <div className="flex justify-between">
                                       <span className={isDarkMode ? 'text-gray-400' : 'text-gray-600'}>
                                         {language === 'fr' ? 'Valorisation des tokens restants:' : 'Remaining tokens valuation:'}
@@ -973,13 +973,13 @@ export default function CreateStrategyPage() {
                             );
                           })}
 
-                          <div className={`pt-4 border-t space-y-2 ${
+                          <div className={`pt-3 md:pt-4 border-t space-y-2 ${
                             isDarkMode ? 'border-gray-700' : 'border-gray-200'
                           }`}>
-                            <h3 className={`font-semibold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+                            <h3 className={`text-sm md:text-base font-semibold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
                               {language === 'fr' ? 'Résumé Global' : 'Global Summary'}
                             </h3>
-                      <div className="space-y-1 text-sm">
+                      <div className="space-y-1 text-xs md:text-sm">
                         <div className="flex justify-between">
                                 <span className={isDarkMode ? 'text-gray-400' : 'text-gray-500'}>
                                   {language === 'fr' ? 'Profit total:' : 'Total Profit:'}
@@ -1017,7 +1017,7 @@ export default function CreateStrategyPage() {
             <Button
               onClick={handleSaveStrategy}
               disabled={loading || !selectedToken || !quantity || !averagePrice || !strategyName}
-                    className="w-full bg-purple-600 hover:bg-purple-700 text-white"
+                    className="w-full bg-purple-600 hover:bg-purple-700 text-white px-4 md:px-6 py-2 md:py-3 text-sm md:text-base"
             >
               {loading 
                       ? (isEditMode ? (language === 'fr' ? 'Modification...' : 'Updating...') : (language === 'fr' ? 'Création...' : 'Creating...'))

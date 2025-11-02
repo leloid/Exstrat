@@ -145,11 +145,11 @@ export default function StrategiesPage() {
   if (isLoading) {
     return (
       <ProtectedRoute>
-        <div className={`min-h-screen flex ${isDarkMode ? 'bg-gray-900' : 'bg-gray-50'}`}>
+        <div className={`min-h-screen flex overflow-x-hidden ${isDarkMode ? 'bg-gray-900' : 'bg-gray-50'}`}>
           <Sidebar activeTab={activeTab} onTabChange={setActiveTab} isDarkMode={isDarkMode} />
-          <div className="flex-1 flex flex-col">
+          <div className="flex-1 flex flex-col overflow-x-hidden w-full max-w-full">
             <TopBar currentPageName={language === 'fr' ? 'Stratégies' : 'Strategies'} />
-            <div className={`flex-1 p-6 flex items-center justify-center ${isDarkMode ? 'bg-gray-900' : 'bg-gray-50'}`}>
+            <div className={`flex-1 p-3 md:p-6 flex items-center justify-center overflow-x-hidden max-w-full ${isDarkMode ? 'bg-gray-900' : 'bg-gray-50'}`}>
               <div className="text-center">
                 <div className={`animate-spin rounded-full h-12 w-12 border-b-2 ${
                   isDarkMode ? 'border-purple-600' : 'border-purple-600'
@@ -167,18 +167,18 @@ export default function StrategiesPage() {
 
   return (
     <ProtectedRoute>
-      <div className={`min-h-screen flex ${isDarkMode ? 'bg-gray-900' : 'bg-gray-50'}`}>
+      <div className={`min-h-screen flex overflow-x-hidden ${isDarkMode ? 'bg-gray-900' : 'bg-gray-50'}`}>
         <Sidebar activeTab={activeTab} onTabChange={setActiveTab} isDarkMode={isDarkMode} />
         
-        <div className="flex-1 flex flex-col">
+        <div className="flex-1 flex flex-col overflow-x-hidden w-full max-w-full">
           <TopBar currentPageName={language === 'fr' ? 'Stratégies' : 'Strategies'} />
 
-          <div className={`flex-1 p-6 ${isDarkMode ? 'bg-gray-900' : 'bg-gray-50'}`}>
+          <div className={`flex-1 p-3 md:p-6 overflow-x-hidden max-w-full ${isDarkMode ? 'bg-gray-900' : 'bg-gray-50'}`}>
             {/* Header */}
-            <div className="mb-8">
-              <div className="flex items-center justify-between">
+            <div className="mb-4 md:mb-8">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-0">
                 <div>
-                  <p className={`mt-2 ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                  <p className={`text-sm md:text-base mt-2 ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
                     {language === 'fr' 
                       ? 'Gérez vos stratégies de prise de profit automatisées'
                       : 'Manage your automated profit-taking strategies'
@@ -187,21 +187,21 @@ export default function StrategiesPage() {
                 </div>
                 <Button 
                   onClick={handleCreateStrategy} 
-                  className="bg-purple-600 hover:bg-purple-700 text-white flex items-center gap-2"
+                  className="bg-purple-600 hover:bg-purple-700 text-white flex items-center gap-2 px-4 md:px-6 py-2 text-sm md:text-base w-full sm:w-auto"
                 >
-                  <PlusIcon className="h-5 w-5" />
+                  <PlusIcon className="h-4 w-4 md:h-5 md:w-5" />
                   {language === 'fr' ? 'Nouvelle Stratégie' : 'New Strategy'}
                 </Button>
               </div>
             </div>
 
             {/* Tabs pour séparer Réelles et Théoriques */}
-            <div className={`mb-6 flex gap-2 p-1 rounded-lg ${
+            <div className={`mb-4 md:mb-6 flex gap-2 p-1 rounded-lg ${
               isDarkMode ? 'bg-gray-800' : 'bg-gray-100'
             }`}>
               <button
                 onClick={() => setViewType('real')}
-                className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-lg font-medium transition-all ${
+                className={`flex-1 flex items-center justify-center gap-1 md:gap-2 px-2 md:px-4 py-2 md:py-3 rounded-lg text-sm md:text-base font-medium transition-all ${
                   viewType === 'real'
                     ? isDarkMode
                       ? 'bg-purple-600 text-white'
@@ -211,9 +211,10 @@ export default function StrategiesPage() {
                       : 'text-gray-600 hover:text-gray-900'
                 }`}
               >
-                <WalletIcon className="h-5 w-5" />
-                {language === 'fr' ? 'Portfolios Réels' : 'Real Portfolios'}
-                <Badge className={`ml-2 ${
+                <WalletIcon className="h-4 w-4 md:h-5 md:w-5" />
+                <span className="hidden sm:inline">{language === 'fr' ? 'Portfolios Réels' : 'Real Portfolios'}</span>
+                <span className="sm:hidden">{language === 'fr' ? 'Réels' : 'Real'}</span>
+                <Badge className={`ml-1 md:ml-2 text-xs ${
                   isDarkMode ? 'bg-gray-700 text-gray-300' : 'bg-gray-200 text-gray-700'
                 }`}>
                   {realStrategies.length}
@@ -221,7 +222,7 @@ export default function StrategiesPage() {
               </button>
               <button
                 onClick={() => setViewType('theoretical')}
-                className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-lg font-medium transition-all ${
+                className={`flex-1 flex items-center justify-center gap-1 md:gap-2 px-2 md:px-4 py-2 md:py-3 rounded-lg text-sm md:text-base font-medium transition-all ${
                   viewType === 'theoretical'
                     ? isDarkMode
                       ? 'bg-purple-600 text-white'
@@ -231,9 +232,10 @@ export default function StrategiesPage() {
                       : 'text-gray-600 hover:text-gray-900'
                 }`}
               >
-                <BeakerIcon className="h-5 w-5" />
-                {language === 'fr' ? 'Portfolio Virtuel' : 'Virtual Portfolio'}
-                <Badge className={`ml-2 ${
+                <BeakerIcon className="h-4 w-4 md:h-5 md:w-5" />
+                <span className="hidden sm:inline">{language === 'fr' ? 'Portfolio Virtuel' : 'Virtual Portfolio'}</span>
+                <span className="sm:hidden">{language === 'fr' ? 'Virtuel' : 'Virtual'}</span>
+                <Badge className={`ml-1 md:ml-2 text-xs ${
                   isDarkMode ? 'bg-gray-700 text-gray-300' : 'bg-gray-200 text-gray-700'
                 }`}>
                   {theoreticalStrategies.length}
@@ -243,13 +245,13 @@ export default function StrategiesPage() {
 
             {/* Liste des stratégies */}
             {currentStrategies.length === 0 ? (
-              <div className={`rounded-xl p-12 text-center ${
+              <div className={`rounded-xl p-6 md:p-12 text-center w-full max-w-full ${
                 isDarkMode ? 'bg-gray-800' : 'bg-white border border-gray-200'
               }`}>
-                <ChartBarIcon className={`h-12 w-12 mx-auto mb-4 ${
+                <ChartBarIcon className={`h-10 w-10 md:h-12 md:w-12 mx-auto mb-3 md:mb-4 ${
                   isDarkMode ? 'text-gray-400' : 'text-gray-400'
                 }`} />
-                <h3 className={`text-lg font-medium mb-2 ${
+                <h3 className={`text-base md:text-lg font-medium mb-2 ${
                   isDarkMode ? 'text-white' : 'text-gray-900'
                 }`}>
                   {language === 'fr' 
@@ -261,7 +263,7 @@ export default function StrategiesPage() {
                       : 'No theoretical strategies'
                   }
                 </h3>
-                <p className={`mb-6 ${
+                <p className={`text-sm md:text-base mb-4 md:mb-6 ${
                   isDarkMode ? 'text-gray-400' : 'text-gray-500'
                 }`}>
                   {language === 'fr' 
@@ -275,49 +277,49 @@ export default function StrategiesPage() {
                 </p>
                 <Button 
                   onClick={handleCreateStrategy} 
-                  className="bg-purple-600 hover:bg-purple-700 text-white"
+                  className="bg-purple-600 hover:bg-purple-700 text-white px-4 md:px-6 py-2 text-sm md:text-base"
                 >
-                  <PlusIcon className="h-5 w-5 mr-2" />
+                  <PlusIcon className="h-4 w-4 md:h-5 md:w-5 mr-2" />
                   {language === 'fr' ? 'Créer ma première stratégie' : 'Create my first strategy'}
                 </Button>
               </div>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6 w-full max-w-full">
                 {currentStrategies.map((strategy) => (
                   <div 
                     key={strategy.id} 
-                    className={`rounded-xl p-6 transition-shadow hover:shadow-lg ${
+                    className={`rounded-xl p-4 md:p-6 transition-shadow hover:shadow-lg w-full max-w-full ${
                       isDarkMode ? 'bg-gray-800' : 'bg-white border border-gray-200'
                     } ${strategy.type === 'theoretical' ? 'ring-2 ring-purple-500/20' : ''}`}
                   >
                     {/* Header */}
-                    <div className="mb-4">
-                      <div className="flex items-start justify-between mb-2">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-1">
-                            <h3 className={`text-lg font-semibold ${
+                    <div className="mb-3 md:mb-4">
+                      <div className="flex flex-col sm:flex-row items-start sm:items-start justify-between mb-2 gap-2">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex flex-wrap items-center gap-2 mb-1">
+                            <h3 className={`text-base md:text-lg font-semibold truncate ${
                               isDarkMode ? 'text-white' : 'text-gray-900'
                             }`}>
                               {strategy.name}
                             </h3>
                             {strategy.type === 'theoretical' && (
-                              <Badge className="bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400 text-xs">
+                              <Badge className="bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400 text-xs flex-shrink-0">
                                 {language === 'fr' ? 'Virtuel' : 'Virtual'}
                               </Badge>
                             )}
                           </div>
-                          <p className={`mt-1 text-sm ${
+                          <p className={`mt-1 text-xs md:text-sm truncate ${
                             isDarkMode ? 'text-gray-400' : 'text-gray-500'
                           }`}>
                             {strategy.portfolioName} • {strategy.tokenSymbol}
                           </p>
                         </div>
                         <Badge 
-                          className={
+                          className={`flex-shrink-0 ${
                             strategy.status === 'active' 
                               ? (isDarkMode ? 'bg-green-900/30 text-green-400' : 'bg-green-100 text-green-800')
                               : (isDarkMode ? 'bg-gray-700 text-gray-400' : 'bg-gray-100 text-gray-800')
-                          }
+                          }`}
                         >
                           {strategy.status === 'active' 
                             ? (language === 'fr' ? 'Active' : 'Active')
@@ -328,8 +330,8 @@ export default function StrategiesPage() {
                     </div>
 
                     {/* Statistiques */}
-                    <div className="space-y-3 mb-6">
-                      <div className="flex items-center justify-between text-sm">
+                    <div className="space-y-2 md:space-y-3 mb-4 md:mb-6">
+                      <div className="flex items-center justify-between text-xs md:text-sm">
                         <span className={isDarkMode ? 'text-gray-400' : 'text-gray-500'}>
                           {language === 'fr' ? 'Token' : 'Token'}
                         </span>
@@ -339,7 +341,7 @@ export default function StrategiesPage() {
                           {strategy.tokenSymbol}
                         </span>
                       </div>
-                      <div className="flex items-center justify-between text-sm">
+                      <div className="flex items-center justify-between text-xs md:text-sm">
                         <span className={isDarkMode ? 'text-gray-400' : 'text-gray-500'}>
                           {language === 'fr' ? 'Nombre de sorties' : 'Exit Targets'}
                         </span>
@@ -352,51 +354,51 @@ export default function StrategiesPage() {
                       {/* Afficher les champs selon le type de stratégie */}
                       {strategy.type === 'theoretical' ? (
                         <>
-                          <div className="flex items-center justify-between text-sm">
+                          <div className="flex items-center justify-between text-xs md:text-sm">
                             <span className={isDarkMode ? 'text-gray-400' : 'text-gray-500'}>
                               {language === 'fr' ? 'Investi' : 'Invested'}
                             </span>
-                            <span className={`font-medium ${
+                            <span className={`font-medium text-xs md:text-sm ${
                               isDarkMode ? 'text-white' : 'text-gray-900'
                             }`}>
                               {formatCurrency(strategy.totalInvested || 0)}
                             </span>
                           </div>
-                          <div className="flex items-center justify-between text-sm">
+                          <div className="flex items-center justify-between text-xs md:text-sm">
                             <span className={isDarkMode ? 'text-gray-400' : 'text-gray-500'}>
                               {language === 'fr' ? 'Profit attendu' : 'Expected Profit'}
                             </span>
-                            <span className="font-medium text-green-600">
+                            <span className="font-medium text-xs md:text-sm text-green-600">
                               {formatCurrency(strategy.expectedProfit || 0)}
                             </span>
                           </div>
-                          <div className="flex items-center justify-between text-sm">
+                          <div className="flex items-center justify-between text-xs md:text-sm">
                             <span className={isDarkMode ? 'text-gray-400' : 'text-gray-500'}>
                               {language === 'fr' ? 'Rendement' : 'Return'}
                             </span>
-                            <span className="font-medium text-green-600 flex items-center gap-1">
-                              <ArrowTrendingUpIcon className="h-4 w-4" />
+                            <span className="font-medium text-xs md:text-sm text-green-600 flex items-center gap-1">
+                              <ArrowTrendingUpIcon className="h-3 w-3 md:h-4 md:w-4" />
                               {formatPercentage(strategy.returnPercentage || 0)}
                             </span>
                           </div>
                         </>
                       ) : (
                         <>
-                          <div className="flex items-center justify-between text-sm">
+                          <div className="flex items-center justify-between text-xs md:text-sm">
                             <span className={isDarkMode ? 'text-gray-400' : 'text-gray-500'}>
                               {language === 'fr' ? 'Quantité' : 'Quantity'}
                             </span>
-                            <span className={`font-medium ${
+                            <span className={`font-medium text-xs md:text-sm ${
                               isDarkMode ? 'text-white' : 'text-gray-900'
                             }`}>
                               {strategy.baseQuantity?.toLocaleString() || 0} {strategy.tokenSymbol}
                             </span>
                           </div>
-                          <div className="flex items-center justify-between text-sm">
+                          <div className="flex items-center justify-between text-xs md:text-sm">
                             <span className={isDarkMode ? 'text-gray-400' : 'text-gray-500'}>
                               {language === 'fr' ? 'Prix de référence' : 'Reference Price'}
                             </span>
-                            <span className={`font-medium ${
+                            <span className={`font-medium text-xs md:text-sm ${
                               isDarkMode ? 'text-white' : 'text-gray-900'
                             }`}>
                               {formatCurrency(strategy.referencePrice || 0)}
@@ -407,29 +409,29 @@ export default function StrategiesPage() {
                     </div>
 
                     {/* Actions */}
-                    <div className="flex gap-2 pt-4 border-t border-gray-700">
+                    <div className="flex gap-2 pt-3 md:pt-4 border-t border-gray-700">
                       <Button
                         variant="outline"
                         size="sm"
-                        className={`flex-1 ${
+                        className={`flex-1 text-xs md:text-sm px-2 md:px-4 ${
                           isDarkMode ? 'border-gray-600 text-gray-300 hover:bg-gray-700' : ''
                         }`}
                         onClick={() => handleEditStrategy(strategy.id, strategy.type)}
                       >
-                        <PencilIcon className="h-4 w-4 mr-1" />
-                        {language === 'fr' ? 'Modifier' : 'Edit'}
+                        <PencilIcon className="h-3 w-3 md:h-4 md:w-4 mr-1" />
+                        <span className="hidden sm:inline">{language === 'fr' ? 'Modifier' : 'Edit'}</span>
                       </Button>
                       <Button
                         variant="outline"
                         size="sm"
-                        className={`${
+                        className={`p-2 md:p-0 ${
                           isDarkMode 
                             ? 'border-red-900 text-red-400 hover:bg-red-900/30' 
                             : 'text-red-600 hover:text-red-700 hover:bg-red-50'
                         }`}
                         onClick={() => handleDeleteStrategy(strategy.id, strategy.type)}
                       >
-                        <TrashIcon className="h-4 w-4" />
+                        <TrashIcon className="h-3 w-3 md:h-4 md:w-4" />
                       </Button>
                     </div>
                   </div>
