@@ -44,7 +44,7 @@ export interface ProfitTakingTemplate {
   id: string;
   name: string;
   description?: string;
-  rules: any;
+  rules: Record<string, unknown>;
   isDefault: boolean;
   isActive: boolean;
   createdAt: Date;
@@ -70,7 +70,7 @@ export interface TokenStrategyConfiguration {
   holdingId: string;
   strategyTemplateId?: string;
   profitTakingTemplateId?: string;
-  customProfitTakingRules?: any;
+  customProfitTakingRules?: Record<string, unknown>;
   isActive: boolean;
   createdAt: Date;
   updatedAt: Date;
@@ -93,7 +93,7 @@ export interface TokenStrategyConfiguration {
   profitTakingTemplate?: {
     id: string;
     name: string;
-    rules: any;
+    rules: Record<string, unknown>;
   };
 }
 
@@ -159,7 +159,7 @@ export interface TokenStrategyConfigDto {
   holdingId: string;
   strategyTemplateId?: string;
   profitTakingTemplateId?: string;
-  customProfitTakingRules?: any;
+  customProfitTakingRules?: Record<string, unknown>;
 }
 
 // Types pour le contexte

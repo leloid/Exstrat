@@ -11,12 +11,12 @@ export interface TokenSearchResult {
   total_supply: number;
   is_active: number;
   infinite_supply: boolean;
-  platform: any;
+  platform: unknown;
   cmc_rank: number;
   is_fiat: number;
-  self_reported_circulating_supply: any;
-  self_reported_market_cap: any;
-  tvl_ratio: any;
+  self_reported_circulating_supply: number | null;
+  self_reported_market_cap: number | null;
+  tvl_ratio: number | null;
   last_updated: string;
   quote: {
     USD: {
@@ -32,7 +32,7 @@ export interface TokenSearchResult {
       market_cap: number | null;
       market_cap_dominance: number | null;
       fully_diluted_market_cap: number | null;
-      tvl: any;
+      tvl: number | null;
       last_updated: string;
     };
   };

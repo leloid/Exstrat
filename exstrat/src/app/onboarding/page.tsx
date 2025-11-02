@@ -20,7 +20,7 @@ import {
 import { transactionsApi } from '@/lib/transactions-api';
 import { strategiesApi } from '@/lib/strategies-api';
 import { CreatePortfolioDto, UpdatePortfolioDto } from '@/types/portfolio';
-import { CreateTransactionDto, TokenSearchResult } from '@/types/transactions';
+import { CreateTransactionDto, TokenSearchResult, TransactionResponse } from '@/types/transactions';
 import { CreateStrategyDto, TargetType } from '@/types/strategies';
 import { TokenSearch } from '@/components/transactions/TokenSearch';
 import { usePortfolio } from '@/contexts/PortfolioContext';
@@ -506,9 +506,10 @@ export default function OnboardingPage() {
       console.log('✅ Portfolio mis à jour:', editingPortfolio?.name);
       resetPortfolioForm();
       setShowPortfolioModal(false);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('❌ Erreur mise à jour portfolio:', err);
-      setError(err.response?.data?.message || 'Erreur lors de la mise à jour du portfolio');
+      const error = err as { response?: { data?: { message?: string } } };
+      setError(error.response?.data?.message || 'Erreur lors de la mise à jour du portfolio');
     } finally {
       setIsLoading(false);
     }
@@ -574,13 +575,14 @@ export default function OnboardingPage() {
       setCreatedData(prev => ({ ...prev, portfolio: createdPortfolio }));
       
       console.log('✅ Portfolio créé:', createdPortfolio.name);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('❌ Erreur création portfolio:', err);
+      const error = err as { response?: { data?: { message?: string } } };
       
       // Rollback : retirer le portfolio temporaire en cas d'erreur
       setOnboardingPortfolios(prev => prev.filter(p => p.id !== tempId));
       
-      setError(err.response?.data?.message || 'Erreur lors de la création du portfolio');
+      setError(error.response?.data?.message || 'Erreur lors de la création du portfolio');
     } finally {
       setIsLoading(false);
     }
@@ -627,7 +629,7 @@ export default function OnboardingPage() {
       }
       // Recharger les portfolios du contexte pour s'assurer qu'ils sont à jour
       await refreshPortfolios();
-    } catch (err: any) {
+    } catch (err: unknown) {
       setError('Erreur lors de la suppression du portfolio');
       console.error('❌ Erreur suppression portfolio:', err);
     }
@@ -649,7 +651,7 @@ export default function OnboardingPage() {
     setShowTransactionModal(true);
   };
 
-  const handleEditTransaction = (transaction: any) => {
+  const handleEditTransaction = (transaction: TransactionResponse) => {
     setEditingTransaction(transaction);
     setSelectedToken({
       id: transaction.cmcId,
@@ -694,7 +696,7 @@ export default function OnboardingPage() {
       quantity: transaction.quantity.toString(),
       amountInvested: transaction.amountInvested.toString(),
       averagePrice: transaction.averagePrice.toString(),
-      type: transaction.type,
+      type: (transaction.type || 'BUY') as 'BUY',
       transactionDate: new Date(transaction.transactionDate).toISOString().split('T')[0],
       notes: transaction.notes || '',
       portfolioId: transaction.portfolioId || currentPortfolio?.id || '',
@@ -707,7 +709,7 @@ export default function OnboardingPage() {
     try {
       await transactionsApi.deleteTransaction(transactionId);
       setOnboardingTransactions(prev => prev.filter(t => t.id !== transactionId));
-    } catch (err: any) {
+    } catch (err: unknown) {
       setError('Erreur lors de la suppression de la transaction');
       console.error('❌ Erreur suppression transaction:', err);
     }
@@ -879,22 +881,23 @@ export default function OnboardingPage() {
       console.log('✅ Transaction sauvegardée:', editingTransaction ? 'mise à jour' : 'créée');
       resetTransactionForm();
       setShowTransactionModal(false);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('❌ Erreur création transaction:', err);
+      const error = err as { response?: { data?: { message?: string; error?: string }; status?: number }; message?: string };
       console.error('❌ Détails de l\'erreur:', {
-        response: err.response?.data,
-        status: err.response?.status,
-        message: err.message,
+        response: error.response?.data,
+        status: error.response?.status,
+        message: error.message,
       });
       
       // Message d'erreur plus détaillé
       let errorMessage = 'Erreur lors de la sauvegarde de la transaction';
-      if (err.response?.data?.message) {
-        errorMessage = err.response.data.message;
-      } else if (err.response?.data?.error) {
-        errorMessage = err.response.data.error;
-      } else if (err.message) {
-        errorMessage = err.message;
+      if (error.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      } else if (error.response?.data?.error) {
+        errorMessage = error.response.data.error;
+      } else if (error.message) {
+        errorMessage = error.message;
       }
       
       setError(errorMessage);
@@ -952,9 +955,10 @@ export default function OnboardingPage() {
       
       console.log('✅ Stratégie créée:', createdStrategy);
       setCurrentStep(3);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('❌ Erreur création stratégie:', err);
-      setError(err.response?.data?.message || 'Erreur lors de la création de la stratégie');
+      const error = err as { response?: { data?: { message?: string } } };
+      setError(error.response?.data?.message || 'Erreur lors de la création de la stratégie');
     } finally {
       setIsLoading(false);
     }
