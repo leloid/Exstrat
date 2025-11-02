@@ -21,31 +21,40 @@ async function bootstrap() {
   // Configuration CORS
   const isProduction = process.env.NODE_ENV === 'production';
   
+  // Liste des origines autorisées en production
+  const productionOrigins = [
+    process.env.FRONTEND_URL,
+    'https://exstrat.vercel.app',
+    'https://exstrat.com',
+    'https://www.exstrat.com',
+    'http://localhost:3001', // Pour tester en local avec backend sur Railway
+    'http://localhost:3000',
+  ].filter(Boolean);
+  
   app.enableCors({
     origin: (origin, callback) => {
-      // En développement : autoriser toutes les origines localhost
+      // En développement : autoriser toutes les origines
       if (!isProduction) {
-        // Autoriser toutes les requêtes en développement
         return callback(null, true);
       }
       
-      // En production : vérifier les origines autorisées
-      const allowedOrigins = [
-        process.env.FRONTEND_URL,
-        'https://exstrat.com',
-        'https://www.exstrat.com'
-      ].filter(Boolean);
-      
-      // Autoriser les requêtes sans origin (ex: Postman, mobile apps) en production
+      // En production : 
+      // - Autoriser les requêtes sans origin (ex: Postman, curl, mobile apps)
       if (!origin) {
         return callback(null, true);
       }
       
-      if (allowedOrigins.includes(origin)) {
-        callback(null, true);
-      } else {
-        callback(new Error('Not allowed by CORS'));
+      // - Autoriser si l'origine est dans la liste autorisée
+      if (productionOrigins.includes(origin)) {
+        return callback(null, true);
       }
+      
+      // - Log pour debug (en production sur Railway)
+      console.log(`🚫 CORS bloqué pour l'origine: ${origin}`);
+      console.log(`✅ Origines autorisées: ${productionOrigins.join(', ')}`);
+      console.log(`🌍 FRONTEND_URL: ${process.env.FRONTEND_URL}`);
+      
+      callback(new Error(`Not allowed by CORS. Origin: ${origin}`));
     },
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],

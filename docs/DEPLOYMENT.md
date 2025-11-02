@@ -20,6 +20,10 @@ Ce guide vous explique comment déployer le backend et le frontend ExStrat en pr
 
 ## 🗄️ Étape 1 : Déployer la Base de Données PostgreSQL
 
+> **💡 Note importante :** Prisma n'est **pas une base de données** ! C'est un ORM qui gère PostgreSQL.  
+> En production, vous devez héberger PostgreSQL quelque part (Railway, Supabase, etc.) car votre base locale n'est pas accessible depuis internet.  
+> Pour plus de détails, consultez [`docs/DATABASE-EXPLAINED.md`](DATABASE-EXPLAINED.md).
+
 ### Option A : Railway PostgreSQL (Recommandé)
 
 1. **Créer un compte Railway**
@@ -29,11 +33,13 @@ Ce guide vous explique comment déployer le backend et le frontend ExStrat en pr
 2. **Créer un nouveau projet**
    - Cliquez sur "New Project"
    - Sélectionnez "Provision PostgreSQL"
+   - ⚠️ Cette base sera **différente** de votre base de données locale
 
 3. **Récupérer l'URL de connexion**
    - Cliquez sur la base de données PostgreSQL
    - Onglet "Variables"
    - Copiez la variable `DATABASE_URL` (format: `postgresql://user:password@host:port/dbname`)
+   - Cette URL sera utilisée par Prisma pour se connecter à PostgreSQL en production
 
 ### Option B : Supabase (Alternative gratuite)
 
