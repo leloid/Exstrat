@@ -14,54 +14,88 @@ import {
   PencilIcon,
   TrashIcon,
   ChartBarIcon,
-  ArrowTrendingUpIcon
+  ArrowTrendingUpIcon,
+  WalletIcon,
+  BeakerIcon
 } from '@heroicons/react/24/outline';
 import { formatCurrency, formatPercentage } from '@/lib/format';
 import * as portfoliosApi from '@/lib/portfolios-api';
+import { strategiesApi } from '@/lib/strategies-api';
 
 export default function StrategiesPage() {
   const router = useRouter();
   const { portfolios, refreshPortfolios } = usePortfolio();
   const [activeTab, setActiveTab] = useState('strategies');
-  const [strategies, setStrategies] = useState<any[]>([]);
+  const [viewType, setViewType] = useState<'real' | 'theoretical'>('real'); // Nouveau : type de vue
+  const [realStrategies, setRealStrategies] = useState<any[]>([]); // Stratégies réelles
+  const [theoreticalStrategies, setTheoreticalStrategies] = useState<any[]>([]); // Stratégies théoriques
   const [isLoading, setIsLoading] = useState(true);
   
   // Utilisation du contexte global pour le thème
   const { isDarkMode, language } = useTheme();
 
   useEffect(() => {
-    loadStrategies();
+    loadAllStrategies();
     refreshPortfolios();
   }, []);
 
-  const loadStrategies = async () => {
+  const loadAllStrategies = async () => {
     try {
       setIsLoading(true);
-      console.log('📥 Chargement des stratégies théoriques...');
       
-      // Charger les stratégies théoriques depuis l'API
-      const data = await portfoliosApi.getTheoreticalStrategies();
-      console.log('✅ Stratégies chargées:', data);
+      // Charger les stratégies réelles (liées aux portfolios)
+      try {
+        console.log('📥 Chargement des stratégies réelles...');
+        const realData = await strategiesApi.getStrategies({});
+        console.log('✅ Stratégies réelles chargées:', realData);
+        
+        const transformedReal = realData.strategies.map((strategy) => ({
+          id: strategy.id,
+          name: strategy.name,
+          type: 'real' as const,
+          portfolioName: 'Portfolio Réel', // À améliorer avec le nom réel du portfolio
+          tokenSymbol: strategy.symbol,
+          tokenName: strategy.tokenName,
+          baseQuantity: strategy.baseQuantity,
+          referencePrice: strategy.referencePrice,
+          numberOfTargets: strategy.steps?.length || 0,
+          status: strategy.status,
+          createdAt: strategy.createdAt,
+          steps: strategy.steps,
+        }));
+        
+        setRealStrategies(transformedReal);
+      } catch (error) {
+        console.error('❌ Erreur lors du chargement des stratégies réelles:', error);
+        setRealStrategies([]);
+      }
       
-      // Les stratégies théoriques contiennent déjà toutes les données calculées
-      const transformedStrategies = data.map((strategy) => ({
-        id: strategy.id,
-        name: strategy.name,
-        portfolioName: 'Théorique', // Les stratégies théoriques ne sont pas liées à un portfolio
-        tokenSymbol: strategy.tokenSymbol,
-        tokenName: strategy.tokenName,
-        numberOfTargets: strategy.numberOfTargets,
-        totalInvested: strategy.totalInvested,
-        expectedProfit: strategy.expectedProfit,
-        returnPercentage: strategy.returnPercentage,
-        status: strategy.status,
-        createdAt: strategy.createdAt,
-      }));
-      
-      setStrategies(transformedStrategies);
-    } catch (error) {
-      console.error('❌ Erreur lors du chargement des stratégies:', error);
-      setStrategies([]);
+      // Charger les stratégies théoriques (portfolio virtuel)
+      try {
+        console.log('📥 Chargement des stratégies théoriques...');
+        const theoreticalData = await portfoliosApi.getTheoreticalStrategies();
+        console.log('✅ Stratégies théoriques chargées:', theoreticalData);
+        
+        const transformedTheoretical = theoreticalData.map((strategy) => ({
+          id: strategy.id,
+          name: strategy.name,
+          type: 'theoretical' as const,
+          portfolioName: 'Portfolio Virtuel', // Portfolio virtuel
+          tokenSymbol: strategy.tokenSymbol,
+          tokenName: strategy.tokenName,
+          numberOfTargets: strategy.numberOfTargets,
+          totalInvested: strategy.totalInvested,
+          expectedProfit: strategy.expectedProfit,
+          returnPercentage: strategy.returnPercentage,
+          status: strategy.status,
+          createdAt: strategy.createdAt,
+        }));
+        
+        setTheoreticalStrategies(transformedTheoretical);
+      } catch (error) {
+        console.error('❌ Erreur lors du chargement des stratégies théoriques:', error);
+        setTheoreticalStrategies([]);
+      }
     } finally {
       setIsLoading(false);
     }
@@ -71,28 +105,42 @@ export default function StrategiesPage() {
     router.push('/strategies/create');
   };
 
-  const handleEditStrategy = (strategyId: string) => {
-    router.push(`/strategies/create?id=${strategyId}`);
+  const handleEditStrategy = (strategyId: string, type: 'real' | 'theoretical') => {
+    if (type === 'theoretical') {
+      router.push(`/strategies/create?id=${strategyId}`);
+    } else {
+      // Pour les stratégies réelles, on pourrait avoir une page d'édition différente
+      router.push(`/strategies/${strategyId}/edit`);
+    }
   };
 
-  const handleDeleteStrategy = async (strategyId: string) => {
+  const handleDeleteStrategy = async (strategyId: string, type: 'real' | 'theoretical') => {
     const confirmText = language === 'fr' ? 'Êtes-vous sûr de vouloir supprimer cette stratégie ?' : 'Are you sure you want to delete this strategy?';
     if (!confirm(confirmText)) {
       return;
     }
     
     try {
-      console.log(`🗑️ Suppression de la stratégie ${strategyId}...`);
-      await portfoliosApi.deleteTheoreticalStrategy(strategyId);
+      console.log(`🗑️ Suppression de la stratégie ${strategyId} (type: ${type})...`);
+      
+      if (type === 'theoretical') {
+        await portfoliosApi.deleteTheoreticalStrategy(strategyId);
+      } else {
+        await strategiesApi.deleteStrategy(strategyId);
+      }
+      
       console.log(`✅ Stratégie supprimée avec succès`);
       
       // Recharger la liste des stratégies
-      await loadStrategies();
+      await loadAllStrategies();
     } catch (error: any) {
       console.error('❌ Erreur lors de la suppression:', error);
       alert(`Erreur lors de la suppression de la stratégie: ${error.response?.data?.message || error.message}`);
     }
   };
+
+  // Obtenir les stratégies selon le type de vue
+  const currentStrategies = viewType === 'real' ? realStrategies : theoreticalStrategies;
 
   if (isLoading) {
     return (
@@ -147,8 +195,54 @@ export default function StrategiesPage() {
               </div>
             </div>
 
+            {/* Tabs pour séparer Réelles et Théoriques */}
+            <div className={`mb-6 flex gap-2 p-1 rounded-lg ${
+              isDarkMode ? 'bg-gray-800' : 'bg-gray-100'
+            }`}>
+              <button
+                onClick={() => setViewType('real')}
+                className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-lg font-medium transition-all ${
+                  viewType === 'real'
+                    ? isDarkMode
+                      ? 'bg-purple-600 text-white'
+                      : 'bg-white text-purple-600 shadow'
+                    : isDarkMode
+                      ? 'text-gray-400 hover:text-gray-300'
+                      : 'text-gray-600 hover:text-gray-900'
+                }`}
+              >
+                <WalletIcon className="h-5 w-5" />
+                {language === 'fr' ? 'Portfolios Réels' : 'Real Portfolios'}
+                <Badge className={`ml-2 ${
+                  isDarkMode ? 'bg-gray-700 text-gray-300' : 'bg-gray-200 text-gray-700'
+                }`}>
+                  {realStrategies.length}
+                </Badge>
+              </button>
+              <button
+                onClick={() => setViewType('theoretical')}
+                className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-lg font-medium transition-all ${
+                  viewType === 'theoretical'
+                    ? isDarkMode
+                      ? 'bg-purple-600 text-white'
+                      : 'bg-white text-purple-600 shadow'
+                    : isDarkMode
+                      ? 'text-gray-400 hover:text-gray-300'
+                      : 'text-gray-600 hover:text-gray-900'
+                }`}
+              >
+                <BeakerIcon className="h-5 w-5" />
+                {language === 'fr' ? 'Portfolio Virtuel' : 'Virtual Portfolio'}
+                <Badge className={`ml-2 ${
+                  isDarkMode ? 'bg-gray-700 text-gray-300' : 'bg-gray-200 text-gray-700'
+                }`}>
+                  {theoreticalStrategies.length}
+                </Badge>
+              </button>
+            </div>
+
             {/* Liste des stratégies */}
-            {strategies.length === 0 ? (
+            {currentStrategies.length === 0 ? (
               <div className={`rounded-xl p-12 text-center ${
                 isDarkMode ? 'bg-gray-800' : 'bg-white border border-gray-200'
               }`}>
@@ -158,14 +252,25 @@ export default function StrategiesPage() {
                 <h3 className={`text-lg font-medium mb-2 ${
                   isDarkMode ? 'text-white' : 'text-gray-900'
                 }`}>
-                  {language === 'fr' ? 'Aucune stratégie' : 'No strategies'}
+                  {language === 'fr' 
+                    ? viewType === 'real' 
+                      ? 'Aucune stratégie réelle' 
+                      : 'Aucune stratégie théorique'
+                    : viewType === 'real'
+                      ? 'No real strategies'
+                      : 'No theoretical strategies'
+                  }
                 </h3>
                 <p className={`mb-6 ${
                   isDarkMode ? 'text-gray-400' : 'text-gray-500'
                 }`}>
                   {language === 'fr' 
-                    ? 'Créez votre première stratégie de prise de profit pour commencer à automatiser vos gains.'
-                    : 'Create your first profit-taking strategy to start automating your gains.'
+                    ? viewType === 'real'
+                      ? 'Créez une stratégie liée à vos portfolios réels pour automatiser vos gains.'
+                      : 'Créez une stratégie dans votre portfolio virtuel pour simuler et planifier vos stratégies.'
+                    : viewType === 'real'
+                      ? 'Create a strategy linked to your real portfolios to automate your gains.'
+                      : 'Create a strategy in your virtual portfolio to simulate and plan your strategies.'
                   }
                 </p>
                 <Button 
@@ -178,22 +283,29 @@ export default function StrategiesPage() {
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {strategies.map((strategy) => (
+                {currentStrategies.map((strategy) => (
                   <div 
                     key={strategy.id} 
                     className={`rounded-xl p-6 transition-shadow hover:shadow-lg ${
                       isDarkMode ? 'bg-gray-800' : 'bg-white border border-gray-200'
-                    }`}
+                    } ${strategy.type === 'theoretical' ? 'ring-2 ring-purple-500/20' : ''}`}
                   >
                     {/* Header */}
                     <div className="mb-4">
                       <div className="flex items-start justify-between mb-2">
                         <div className="flex-1">
-                          <h3 className={`text-lg font-semibold ${
-                            isDarkMode ? 'text-white' : 'text-gray-900'
-                          }`}>
-                            {strategy.name}
-                          </h3>
+                          <div className="flex items-center gap-2 mb-1">
+                            <h3 className={`text-lg font-semibold ${
+                              isDarkMode ? 'text-white' : 'text-gray-900'
+                            }`}>
+                              {strategy.name}
+                            </h3>
+                            {strategy.type === 'theoretical' && (
+                              <Badge className="bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400 text-xs">
+                                {language === 'fr' ? 'Virtuel' : 'Virtual'}
+                              </Badge>
+                            )}
+                          </div>
                           <p className={`mt-1 text-sm ${
                             isDarkMode ? 'text-gray-400' : 'text-gray-500'
                           }`}>
@@ -237,33 +349,61 @@ export default function StrategiesPage() {
                           {strategy.numberOfTargets}
                         </span>
                       </div>
-                      <div className="flex items-center justify-between text-sm">
-                        <span className={isDarkMode ? 'text-gray-400' : 'text-gray-500'}>
-                          {language === 'fr' ? 'Investi' : 'Invested'}
-                        </span>
-                        <span className={`font-medium ${
-                          isDarkMode ? 'text-white' : 'text-gray-900'
-                        }`}>
-                          {formatCurrency(strategy.totalInvested)}
-                        </span>
-                      </div>
-                      <div className="flex items-center justify-between text-sm">
-                        <span className={isDarkMode ? 'text-gray-400' : 'text-gray-500'}>
-                          {language === 'fr' ? 'Profit attendu' : 'Expected Profit'}
-                        </span>
-                        <span className="font-medium text-green-600">
-                          {formatCurrency(strategy.expectedProfit)}
-                        </span>
-                      </div>
-                      <div className="flex items-center justify-between text-sm">
-                        <span className={isDarkMode ? 'text-gray-400' : 'text-gray-500'}>
-                          {language === 'fr' ? 'Rendement' : 'Return'}
-                        </span>
-                        <span className="font-medium text-green-600 flex items-center gap-1">
-                          <ArrowTrendingUpIcon className="h-4 w-4" />
-                          {formatPercentage(strategy.returnPercentage)}
-                        </span>
-                      </div>
+                      {/* Afficher les champs selon le type de stratégie */}
+                      {strategy.type === 'theoretical' ? (
+                        <>
+                          <div className="flex items-center justify-between text-sm">
+                            <span className={isDarkMode ? 'text-gray-400' : 'text-gray-500'}>
+                              {language === 'fr' ? 'Investi' : 'Invested'}
+                            </span>
+                            <span className={`font-medium ${
+                              isDarkMode ? 'text-white' : 'text-gray-900'
+                            }`}>
+                              {formatCurrency(strategy.totalInvested || 0)}
+                            </span>
+                          </div>
+                          <div className="flex items-center justify-between text-sm">
+                            <span className={isDarkMode ? 'text-gray-400' : 'text-gray-500'}>
+                              {language === 'fr' ? 'Profit attendu' : 'Expected Profit'}
+                            </span>
+                            <span className="font-medium text-green-600">
+                              {formatCurrency(strategy.expectedProfit || 0)}
+                            </span>
+                          </div>
+                          <div className="flex items-center justify-between text-sm">
+                            <span className={isDarkMode ? 'text-gray-400' : 'text-gray-500'}>
+                              {language === 'fr' ? 'Rendement' : 'Return'}
+                            </span>
+                            <span className="font-medium text-green-600 flex items-center gap-1">
+                              <ArrowTrendingUpIcon className="h-4 w-4" />
+                              {formatPercentage(strategy.returnPercentage || 0)}
+                            </span>
+                          </div>
+                        </>
+                      ) : (
+                        <>
+                          <div className="flex items-center justify-between text-sm">
+                            <span className={isDarkMode ? 'text-gray-400' : 'text-gray-500'}>
+                              {language === 'fr' ? 'Quantité' : 'Quantity'}
+                            </span>
+                            <span className={`font-medium ${
+                              isDarkMode ? 'text-white' : 'text-gray-900'
+                            }`}>
+                              {strategy.baseQuantity?.toLocaleString() || 0} {strategy.tokenSymbol}
+                            </span>
+                          </div>
+                          <div className="flex items-center justify-between text-sm">
+                            <span className={isDarkMode ? 'text-gray-400' : 'text-gray-500'}>
+                              {language === 'fr' ? 'Prix de référence' : 'Reference Price'}
+                            </span>
+                            <span className={`font-medium ${
+                              isDarkMode ? 'text-white' : 'text-gray-900'
+                            }`}>
+                              {formatCurrency(strategy.referencePrice || 0)}
+                            </span>
+                          </div>
+                        </>
+                      )}
                     </div>
 
                     {/* Actions */}
@@ -274,7 +414,7 @@ export default function StrategiesPage() {
                         className={`flex-1 ${
                           isDarkMode ? 'border-gray-600 text-gray-300 hover:bg-gray-700' : ''
                         }`}
-                        onClick={() => handleEditStrategy(strategy.id)}
+                        onClick={() => handleEditStrategy(strategy.id, strategy.type)}
                       >
                         <PencilIcon className="h-4 w-4 mr-1" />
                         {language === 'fr' ? 'Modifier' : 'Edit'}
@@ -287,7 +427,7 @@ export default function StrategiesPage() {
                             ? 'border-red-900 text-red-400 hover:bg-red-900/30' 
                             : 'text-red-600 hover:text-red-700 hover:bg-red-50'
                         }`}
-                        onClick={() => handleDeleteStrategy(strategy.id)}
+                        onClick={() => handleDeleteStrategy(strategy.id, strategy.type)}
                       >
                         <TrashIcon className="h-4 w-4" />
                       </Button>

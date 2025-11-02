@@ -22,6 +22,8 @@ import { formatCurrency, formatPercentage } from '@/lib/format';
 import * as portfoliosApi from '@/lib/portfolios-api';
 import { TokenSearch } from '@/components/transactions/TokenSearch';
 import { TokenSearchResult } from '@/types/transactions';
+import { usePortfolio } from '@/contexts/PortfolioContext';
+import { strategiesApi } from '@/lib/strategies-api';
 
 interface ProfitTarget {
   id: string;
@@ -33,11 +35,14 @@ interface ProfitTarget {
 export default function CreateStrategyPage() {
   const router = useRouter();
   const { isDarkMode, language } = useTheme();
+  const { portfolios, refreshPortfolios } = usePortfolio();
   const [activeTab, setActiveTab] = useState('strategies');
   
   // État du formulaire
   const [strategyName, setStrategyName] = useState<string>('');
   const [selectedToken, setSelectedToken] = useState<TokenSearchResult | null>(null);
+  const [selectedPortfolioId, setSelectedPortfolioId] = useState<string>('virtual'); // 'virtual' ou un ID de portfolio
+  const [availableQuantity, setAvailableQuantity] = useState<number>(0); // Quantité disponible dans le portfolio
   const [quantity, setQuantity] = useState<string>('');
   const [averagePrice, setAveragePrice] = useState<string>('');
   const [numberOfTargets, setNumberOfTargets] = useState<number>(3);
@@ -48,6 +53,51 @@ export default function CreateStrategyPage() {
   const [error, setError] = useState<string | null>(null);
   const [isEditMode, setIsEditMode] = useState(false);
   const [editingStrategyId, setEditingStrategyId] = useState<string | null>(null);
+  
+  const isVirtualWallet = selectedPortfolioId === 'virtual';
+  
+  // Charger la quantité disponible quand le portfolio ou le token change
+  useEffect(() => {
+    const loadAvailableQuantity = async () => {
+      if (isVirtualWallet || !selectedToken || !selectedPortfolioId || selectedPortfolioId === 'virtual') {
+        setAvailableQuantity(0);
+        return;
+      }
+      
+      try {
+        const holdings = await portfoliosApi.getPortfolioHoldings(selectedPortfolioId);
+        const holding = holdings.find(h => 
+          h.token.symbol.toUpperCase() === selectedToken.symbol.toUpperCase()
+        );
+        
+        if (holding) {
+          setAvailableQuantity(holding.quantity);
+          // Si la quantité actuelle dépasse ce qui est disponible, la réduire
+          const currentQty = parseFloat(quantity);
+          if (!isNaN(currentQty) && currentQty > holding.quantity) {
+            setQuantity(holding.quantity.toString());
+          }
+        } else {
+          setAvailableQuantity(0);
+          // Si aucun holding n'existe pour ce token, réinitialiser la quantité
+          if (quantity && parseFloat(quantity) > 0) {
+            setQuantity('');
+          }
+        }
+      } catch (error) {
+        console.error('Erreur lors du chargement de la quantité disponible:', error);
+        setAvailableQuantity(0);
+      }
+    };
+    
+    loadAvailableQuantity();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedPortfolioId, selectedToken?.symbol]);
+  
+  // Charger les portfolios au montage
+  useEffect(() => {
+    refreshPortfolios();
+  }, [refreshPortfolios]);
   
   // Charger la stratégie à modifier si un ID est fourni
   useEffect(() => {
@@ -203,39 +253,77 @@ export default function CreateStrategyPage() {
       return;
     }
     
+    // Validation de la quantité selon le type de wallet
+    if (!isVirtualWallet && selectedPortfolioId) {
+      const qty = parseFloat(quantity);
+      if (qty > availableQuantity) {
+        alert(
+          language === 'fr' 
+            ? `La quantité (${qty}) ne peut pas dépasser ce que vous possédez dans ce wallet (${availableQuantity})`
+            : `Quantity (${qty}) cannot exceed what you own in this wallet (${availableQuantity})`
+        );
+        return;
+      }
+    }
+    
     setLoading(true);
     setError(null);
     
     try {
       console.log('💾 Création de la stratégie...');
+      console.log('Type de wallet:', isVirtualWallet ? 'Virtuel' : 'Réel');
       
-      // Préparer les données de la stratégie
-      const strategyData = {
-        name: strategyName,
-        description: `${language === 'fr' ? 'Stratégie pour' : 'Strategy for'} ${selectedToken.symbol} - ${numberOfTargets} ${language === 'fr' ? 'cibles de profit' : 'profit targets'}`,
-        tokenSymbol: selectedToken.symbol,
-        tokenName: selectedToken.name,
-        quantity: parseFloat(quantity),
-        averagePrice: parseFloat(averagePrice),
-        profitTargets: profitTargets.map((target, index) => ({
-          order: index + 1,
-          targetType: target.targetType,
-          targetValue: target.targetValue,
-          sellPercentage: target.sellPercentage,
-        })),
-        status: 'active',
-      };
-      
-      console.log('📤 Données de la stratégie:', strategyData);
-      
-      // Appel à l'API (création ou modification)
-      if (isEditMode && editingStrategyId) {
-        const updatedStrategy = await portfoliosApi.updateTheoreticalStrategy(editingStrategyId, strategyData);
-        console.log('✅ Stratégie modifiée:', updatedStrategy);
-        alert(language === 'fr' ? 'Stratégie modifiée avec succès !' : 'Strategy updated successfully!');
+      if (isVirtualWallet) {
+        // Stratégie théorique
+        const strategyData = {
+          name: strategyName,
+          description: `${language === 'fr' ? 'Stratégie pour' : 'Strategy for'} ${selectedToken.symbol} - ${numberOfTargets} ${language === 'fr' ? 'cibles de profit' : 'profit targets'}`,
+          tokenSymbol: selectedToken.symbol,
+          tokenName: selectedToken.name,
+          quantity: parseFloat(quantity),
+          averagePrice: parseFloat(averagePrice),
+          profitTargets: profitTargets.map((target, index) => ({
+            order: index + 1,
+            targetType: target.targetType,
+            targetValue: target.targetValue,
+            sellPercentage: target.sellPercentage,
+          })),
+          status: 'active',
+        };
+        
+        console.log('📤 Données de la stratégie théorique:', strategyData);
+        
+        if (isEditMode && editingStrategyId) {
+          const updatedStrategy = await portfoliosApi.updateTheoreticalStrategy(editingStrategyId, strategyData);
+          console.log('✅ Stratégie théorique modifiée:', updatedStrategy);
+          alert(language === 'fr' ? 'Stratégie modifiée avec succès !' : 'Strategy updated successfully!');
+        } else {
+          const createdStrategy = await portfoliosApi.createTheoreticalStrategy(strategyData);
+          console.log('✅ Stratégie théorique créée:', createdStrategy);
+          alert(language === 'fr' ? 'Stratégie créée avec succès !' : 'Strategy created successfully!');
+        }
       } else {
-        const createdStrategy = await portfoliosApi.createTheoreticalStrategy(strategyData);
-        console.log('✅ Stratégie créée:', createdStrategy);
+        // Stratégie réelle - utiliser l'API /strategies
+        const strategyData = {
+          name: strategyName,
+          symbol: selectedToken.symbol,
+          tokenName: selectedToken.name,
+          cmcId: selectedToken.id || 0,
+          baseQuantity: parseFloat(quantity),
+          referencePrice: parseFloat(averagePrice),
+          steps: profitTargets.map((target) => ({
+            targetType: target.targetType === 'percentage' ? 'percentage_of_average' : 'exact_price',
+            targetValue: target.targetValue,
+            sellPercentage: target.sellPercentage,
+            notes: '',
+          })),
+          notes: `${language === 'fr' ? 'Stratégie pour' : 'Strategy for'} ${selectedToken.symbol} - ${numberOfTargets} ${language === 'fr' ? 'cibles de profit' : 'profit targets'}`,
+        };
+        
+        console.log('📤 Données de la stratégie réelle:', strategyData);
+        
+        const createdStrategy = await strategiesApi.createStrategy(strategyData);
+        console.log('✅ Stratégie réelle créée:', createdStrategy);
         alert(language === 'fr' ? 'Stratégie créée avec succès !' : 'Strategy created successfully!');
       }
       
@@ -320,6 +408,50 @@ export default function CreateStrategyPage() {
                       </div>
                       
                       <div>
+                        <Label htmlFor="portfolio" className={isDarkMode ? 'text-gray-300' : 'text-gray-700'}>
+                          {language === 'fr' ? 'Portfolio / Wallet *' : 'Portfolio / Wallet *'}
+                        </Label>
+                        <Select
+                          value={selectedPortfolioId}
+                          onValueChange={(value) => {
+                            setSelectedPortfolioId(value);
+                            // Réinitialiser la quantité quand on change de portfolio
+                            if (value !== 'virtual') {
+                              setQuantity('');
+                            }
+                          }}
+                        >
+                          <SelectTrigger className={isDarkMode ? 'bg-gray-700 border-gray-600 text-white' : ''}>
+                            <SelectValue placeholder={language === 'fr' ? 'Sélectionner un wallet' : 'Select a wallet'} />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {/* Portfolios réels */}
+                            {portfolios.filter(p => p && p.id && p.name).map((portfolio) => (
+                              <SelectItem key={portfolio.id} value={portfolio.id}>
+                                {portfolio.name}
+                              </SelectItem>
+                            ))}
+                            {/* Séparateur visuel */}
+                            <div className="px-3 py-2 text-xs font-semibold text-gray-500 border-t border-gray-200">
+                              {language === 'fr' ? 'Simulation' : 'Simulation'}
+                            </div>
+                            {/* Wallet virtuelle */}
+                            <SelectItem value="virtual">
+                              {language === 'fr' ? 'Wallet Virtuelle' : 'Virtual Wallet'}
+                            </SelectItem>
+                          </SelectContent>
+                        </Select>
+                        {!isVirtualWallet && availableQuantity > 0 && selectedToken && (
+                          <p className={`mt-1 text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                            {language === 'fr' 
+                              ? `Quantité disponible: ${availableQuantity.toLocaleString()} ${selectedToken.symbol}`
+                              : `Available quantity: ${availableQuantity.toLocaleString()} ${selectedToken.symbol}`
+                            }
+                          </p>
+                        )}
+                      </div>
+                      
+                      <div>
                         <Label htmlFor="token" className={isDarkMode ? 'text-gray-300' : 'text-gray-700'}>
                           {language === 'fr' ? 'Token *' : 'Token *'}
                         </Label>
@@ -333,17 +465,48 @@ export default function CreateStrategyPage() {
                         <div>
                           <Label htmlFor="quantity" className={isDarkMode ? 'text-gray-300' : 'text-gray-700'}>
                             {language === 'fr' ? 'Quantité *' : 'Quantity *'}
+                            {!isVirtualWallet && availableQuantity > 0 && (
+                              <span className="text-xs text-gray-500 ml-2">
+                                (max: {availableQuantity.toLocaleString()})
+                              </span>
+                            )}
                           </Label>
                           <Input
                             id="quantity"
                             type="number"
                             value={quantity}
-                            onChange={(e) => setQuantity(e.target.value)}
+                            onChange={(e) => {
+                              const value = e.target.value;
+                              // Validation : si c'est un wallet réel, ne pas dépasser la quantité disponible
+                              if (!isVirtualWallet && availableQuantity > 0 && value) {
+                                const numValue = parseFloat(value);
+                                if (numValue > availableQuantity) {
+                                  // Ne pas mettre à jour si ça dépasse, mais afficher un message
+                                  setError(
+                                    language === 'fr'
+                                      ? `La quantité ne peut pas dépasser ${availableQuantity.toLocaleString()} ${selectedToken?.symbol || ''}`
+                                      : `Quantity cannot exceed ${availableQuantity.toLocaleString()} ${selectedToken?.symbol || ''}`
+                                  );
+                                  return;
+                                }
+                                setError(null);
+                              }
+                              setQuantity(value);
+                            }}
                             placeholder={language === 'fr' ? 'Ex: 1.5' : 'Ex: 1.5'}
                             step="0.00000001"
+                            max={!isVirtualWallet && availableQuantity > 0 ? availableQuantity : undefined}
                             required
                             className={isDarkMode ? 'bg-gray-700 border-gray-600 text-white' : ''}
                           />
+                          {!isVirtualWallet && parseFloat(quantity) > availableQuantity && (
+                            <p className="mt-1 text-sm text-red-600">
+                              {language === 'fr'
+                                ? `Quantité supérieure à celle disponible (${availableQuantity.toLocaleString()})`
+                                : `Quantity exceeds available (${availableQuantity.toLocaleString()})`
+                              }
+                            </p>
+                          )}
                         </div>
                         <div>
                           <Label htmlFor="averagePrice" className={isDarkMode ? 'text-gray-300' : 'text-gray-700'}>
