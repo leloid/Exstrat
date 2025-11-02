@@ -52,17 +52,17 @@ export default function TopBar({ currentPageName }: TopBarProps) {
   }, []);
 
   return (
-    <div className={`px-6 py-4 flex items-center justify-between ${
+    <div className={`pl-14 md:pl-6 pr-3 md:pr-6 py-4 flex items-center justify-between ${
       isDarkMode ? 'bg-gray-800' : 'bg-white border-b border-gray-200'
     }`}>
-      <div className="flex items-center gap-4">
-        <h1 className={`text-lg font-semibold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+      <div className="flex items-center gap-2 md:gap-4">
+        <h1 className={`text-base md:text-lg font-semibold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
           {currentPageName}
         </h1>
       </div>
       
-      <div className="flex items-center gap-4">
-        <div className="relative">
+      <div className="flex items-center gap-2 md:gap-4">
+        <div className="relative hidden md:block">
           <MagnifyingGlassIcon className="h-5 w-5 text-gray-400 absolute left-3 top-1/2 transform -translate-y-1/2" />
           <input
             type="text"
@@ -74,6 +74,11 @@ export default function TopBar({ currentPageName }: TopBarProps) {
             }`}
           />
         </div>
+        
+        {/* Bouton recherche mobile */}
+        <button className={`md:hidden p-2 rounded-lg ${isDarkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-100'}`}>
+          <MagnifyingGlassIcon className={`h-5 w-5 ${isDarkMode ? 'text-white' : 'text-gray-700'}`} />
+        </button>
         
         {/* Mode sombre/clair */}
         <button 

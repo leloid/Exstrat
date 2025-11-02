@@ -12,7 +12,9 @@ import {
   WalletIcon,
   BanknotesIcon,
   SparklesIcon,
-  AdjustmentsHorizontalIcon
+  AdjustmentsHorizontalIcon,
+  Bars3Icon,
+  XMarkIcon
 } from '@heroicons/react/24/outline';
 
 // SVG personnalisés pour le dashboard
@@ -49,6 +51,7 @@ export default function Sidebar({ activeTab, onTabChange, isDarkMode = true }: S
   const router = useRouter();
   const { user, signOut } = useAuth();
   const [showUserMenu, setShowUserMenu] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const userMenuRef = useRef<HTMLDivElement>(null);
 
   const navigation = [
@@ -82,52 +85,133 @@ export default function Sidebar({ activeTab, onTabChange, isDarkMode = true }: S
   }, []);
 
   return (
-    <div className={`w-16 flex flex-col items-center py-6 ${isDarkMode ? 'bg-gray-800' : 'bg-white border-r border-gray-200'}`}>
-      {/* Logo ExStrat */}
-      <div className="mb-8">
-        <Image 
-          src={isDarkMode ? "/logo_dark.svg" : "/logo_light.svg"}
-          alt="ExStrat Logo"
-          width={32}
-          height={32}
-          className="w-8 h-8"
+    <>
+      {/* Sidebar Desktop */}
+      <div className={`hidden md:flex w-16 flex-col items-center py-6 ${isDarkMode ? 'bg-gray-800' : 'bg-white border-r border-gray-200'}`}>
+        {/* Logo ExStrat */}
+        <div className="mb-8">
+          <Image 
+            src={isDarkMode ? "/logo_dark.svg" : "/logo_light.svg"}
+            alt="ExStrat Logo"
+            width={32}
+            height={32}
+            className="w-8 h-8"
+          />
+        </div>
+        
+        {/* Navigation */}
+        <div className="flex flex-col gap-4">
+          {navigation.map((item) => {
+            const IconComponent = item.icon;
+            return (
+              <button
+                key={item.id}
+                onClick={() => {
+                  onTabChange(item.id);
+                  router.push(item.href);
+                }}
+                className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors ${
+                  activeTab === item.id ? 'bg-purple-600' : (isDarkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-100')
+                }`}
+                title={item.name}
+              >
+                <IconComponent isDark={isDarkMode} />
+              </button>
+            );
+          })}
+        </div>
+        
+        {/* Déconnexion */}
+        <div className="mt-auto">
+          <button 
+            onClick={handleSignOut}
+            className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors ${
+              isDarkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-100'
+            }`}
+            title="Se déconnecter"
+          >
+            <PowerIcon className={`h-5 w-5 ${isDarkMode ? 'text-white' : 'text-gray-700'}`} />
+          </button>
+        </div>
+      </div>
+
+      {/* Overlay pour mobile */}
+      {isMobileMenuOpen && (
+        <div
+          className="fixed inset-0 bg-black bg-opacity-50 z-40 md:hidden"
+          onClick={() => setIsMobileMenuOpen(false)}
         />
-      </div>
-      
-      {/* Navigation */}
-      <div className="flex flex-col gap-4">
-        {navigation.map((item) => {
-          const IconComponent = item.icon;
-          return (
+      )}
+
+      {/* Sidebar Mobile */}
+      <div className={`fixed left-0 top-0 h-full w-64 ${isDarkMode ? 'bg-gray-800' : 'bg-white'} z-50 transform transition-transform duration-300 ease-in-out md:hidden ${
+        isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'
+      }`}>
+        <div className="flex flex-col h-full py-6">
+          {/* Header avec logo et bouton fermer */}
+          <div className="flex items-center justify-between px-4 mb-8">
+            <Image 
+              src={isDarkMode ? "/logo_dark.svg" : "/logo_light.svg"}
+              alt="ExStrat Logo"
+              width={32}
+              height={32}
+              className="w-8 h-8"
+            />
             <button
-              key={item.id}
-              onClick={() => {
-                onTabChange(item.id);
-                router.push(item.href);
-              }}
-              className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors ${
-                activeTab === item.id ? 'bg-purple-600' : (isDarkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-100')
-              }`}
-              title={item.name}
+              onClick={() => setIsMobileMenuOpen(false)}
+              className={`p-2 rounded-lg ${isDarkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-100'}`}
             >
-              <IconComponent isDark={isDarkMode} />
+              <XMarkIcon className={`h-6 w-6 ${isDarkMode ? 'text-white' : 'text-gray-700'}`} />
             </button>
-          );
-        })}
+          </div>
+
+          {/* Navigation */}
+          <div className="flex flex-col gap-2 px-4">
+            {navigation.map((item) => {
+              const IconComponent = item.icon;
+              return (
+                <button
+                  key={item.id}
+                  onClick={() => {
+                    onTabChange(item.id);
+                    router.push(item.href);
+                    setIsMobileMenuOpen(false);
+                  }}
+                  className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
+                    activeTab === item.id 
+                      ? 'bg-purple-600 text-white' 
+                      : (isDarkMode ? 'text-gray-300 hover:bg-gray-700' : 'text-gray-700 hover:bg-gray-100')
+                  }`}
+                >
+                  <IconComponent isDark={isDarkMode} />
+                  <span className="font-medium">{item.name}</span>
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Déconnexion */}
+          <div className="mt-auto px-4">
+            <button 
+              onClick={handleSignOut}
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
+                isDarkMode ? 'text-gray-300 hover:bg-gray-700' : 'text-gray-700 hover:bg-gray-100'
+              }`}
+            >
+              <PowerIcon className={`h-5 w-5`} />
+              <span className="font-medium">Se déconnecter</span>
+            </button>
+          </div>
+        </div>
       </div>
-      
-      {/* Déconnexion */}
-      <div className="mt-auto">
-        <button 
-          onClick={handleSignOut}
-          className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors ${
-            isDarkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-100'
-          }`}
-          title="Se déconnecter"
-        >
-          <PowerIcon className={`h-5 w-5 ${isDarkMode ? 'text-white' : 'text-gray-700'}`} />
-        </button>
-      </div>
-    </div>
+
+      {/* Bouton hamburger pour mobile */}
+      <button
+        onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+        className={`md:hidden fixed top-4 left-4 z-50 p-2 rounded-lg ${isDarkMode ? 'bg-gray-800 text-white hover:bg-gray-700' : 'bg-white text-gray-700 hover:bg-gray-100 border border-gray-200'}`}
+      >
+        <Bars3Icon className="h-6 w-6" />
+      </button>
+    </>
   );
 }

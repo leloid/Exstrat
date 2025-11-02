@@ -94,29 +94,29 @@ const TokenCard = ({ symbol, name, price, change, icon, color, isDarkMode }: {
   const isPositive = change.startsWith('+');
   
   return (
-    <div className={`rounded-xl p-4 min-w-[200px] transition-colors ${
+    <div className={`rounded-xl p-3 md:p-4 min-w-[150px] md:min-w-[200px] transition-colors ${
       isDarkMode ? 'bg-gray-800 hover:bg-gray-750' : 'bg-white hover:bg-gray-50 border border-gray-200'
     }`}>
-      <div className="flex items-center gap-3 mb-3">
-        <div className={`w-8 h-8 rounded-full flex items-center justify-center ${color}`}>
-          <span className="text-white font-bold text-sm">{icon}</span>
+      <div className="flex items-center gap-2 md:gap-3 mb-2 md:mb-3">
+        <div className={`w-6 h-6 md:w-8 md:h-8 rounded-full flex items-center justify-center ${color}`}>
+          <span className="text-white font-bold text-xs md:text-sm">{icon}</span>
         </div>
         <div>
-          <div className={`font-semibold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>{symbol}</div>
-          <div className="text-gray-400 text-xs">{name}</div>
+          <div className={`font-semibold text-sm md:text-base ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>{symbol}</div>
+          <div className="text-gray-400 text-xs hidden md:block">{name}</div>
         </div>
       </div>
       
       <div className="mb-2">
-        <div className={`text-xl font-bold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>{price}</div>
-        <div className={`text-sm flex items-center gap-1 ${isPositive ? 'text-green-400' : 'text-red-400'}`}>
+        <div className={`text-base md:text-xl font-bold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>{price}</div>
+        <div className={`text-xs md:text-sm flex items-center gap-1 ${isPositive ? 'text-green-400' : 'text-red-400'}`}>
           {isPositive ? <ArrowUpIcon className="h-3 w-3" /> : <ArrowDownIcon className="h-3 w-3" />}
           {change}
         </div>
       </div>
       
       {/* Mini graphique */}
-      <div className="h-8">
+      <div className="h-6 md:h-8">
         <svg className="w-full h-full" viewBox="0 0 100 32" fill="none">
           <path
             d="M0,20 L20,15 L40,10 L60,8 L80,12 L100,5"
@@ -169,75 +169,75 @@ export default function DashboardPage() {
 
   return (
     <ProtectedRoute>
-      <div className={`min-h-screen flex ${isDarkMode ? 'bg-gray-900' : 'bg-gray-50'}`}>
+      <div className={`min-h-screen flex overflow-x-hidden ${isDarkMode ? 'bg-gray-900' : 'bg-gray-50'}`}>
         {/* Sidebar */}
         <Sidebar activeTab={activeTab} onTabChange={setActiveTab} isDarkMode={isDarkMode} />
 
         {/* Main Content */}
-        <div className="flex-1 flex flex-col">
+        <div className="flex-1 flex flex-col md:ml-0 overflow-x-hidden w-0 min-w-0">
           {/* Top Bar */}
           <TopBar currentPageName={language === 'fr' ? 'Vue d\'ensemble' : 'Overview'} />
 
           {/* Content */}
-          <div className={`flex-1 p-6 ${isDarkMode ? 'bg-gray-900' : 'bg-gray-50'}`}>
+          <div className={`flex-1 p-3 md:p-6 overflow-x-hidden ${isDarkMode ? 'bg-gray-900' : 'bg-gray-50'}`}>
             {/* Actions Rapides - En haut de la page */}
-            <div className={`rounded-xl p-4 mb-6 ${
+            <div className={`rounded-xl p-3 md:p-4 mb-4 md:mb-6 ${
               isDarkMode ? 'bg-gray-800' : 'bg-white border border-gray-200'
             }`}>
-              <div className="flex items-center gap-3 overflow-x-auto pb-2">
+              <div className="grid grid-cols-2 md:flex md:items-center gap-2 md:gap-3 pb-2">
                 <button 
                   onClick={() => handleQuickAction('transaction')}
-                  className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-3 rounded-lg transition-colors flex items-center gap-2 flex-shrink-0"
+                  className="bg-blue-600 hover:bg-blue-700 text-white px-3 md:px-4 py-2 md:py-3 rounded-lg transition-colors flex flex-col md:flex-row items-center justify-center gap-1 md:gap-2"
                 >
-                  <PlusIcon className="h-5 w-5" />
-                  <span className="text-sm font-medium whitespace-nowrap">{language === 'fr' ? 'Nouvelle Transaction' : 'New Transaction'}</span>
+                  <PlusIcon className="h-4 w-4 md:h-5 md:w-5" />
+                  <span className="text-xs md:text-sm font-medium text-center">{language === 'fr' ? 'Transaction' : 'Transaction'}</span>
                 </button>
                 <button 
                   onClick={() => handleQuickAction('strategy')}
-                  className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-3 rounded-lg transition-colors flex items-center gap-2 flex-shrink-0"
+                  className="bg-purple-600 hover:bg-purple-700 text-white px-3 md:px-4 py-2 md:py-3 rounded-lg transition-colors flex flex-col md:flex-row items-center justify-center gap-1 md:gap-2"
                 >
-                  <ChartBarIcon className="h-5 w-5" />
-                  <span className="text-sm font-medium whitespace-nowrap">{language === 'fr' ? 'Créer Stratégie' : 'Create Strategy'}</span>
+                  <ChartBarIcon className="h-4 w-4 md:h-5 md:w-5" />
+                  <span className="text-xs md:text-sm font-medium text-center">{language === 'fr' ? 'Stratégie' : 'Strategy'}</span>
                 </button>
                 <button 
                   onClick={() => handleQuickAction('portfolio')}
-                  className="bg-green-600 hover:bg-green-700 text-white px-4 py-3 rounded-lg transition-colors flex items-center gap-2 flex-shrink-0"
+                  className="bg-green-600 hover:bg-green-700 text-white px-3 md:px-4 py-2 md:py-3 rounded-lg transition-colors flex flex-col md:flex-row items-center justify-center gap-1 md:gap-2"
                 >
-                  <WalletIcon className="h-5 w-5" />
-                  <span className="text-sm font-medium whitespace-nowrap">{language === 'fr' ? 'Nouveau Portfolio' : 'New Portfolio'}</span>
+                  <WalletIcon className="h-4 w-4 md:h-5 md:w-5" />
+                  <span className="text-xs md:text-sm font-medium text-center">{language === 'fr' ? 'Portfolio' : 'Portfolio'}</span>
                 </button>
                 <button 
                   onClick={() => handleQuickAction('alert')}
-                  className="bg-orange-600 hover:bg-orange-700 text-white px-4 py-3 rounded-lg transition-colors flex items-center gap-2 flex-shrink-0"
+                  className="bg-orange-600 hover:bg-orange-700 text-white px-3 md:px-4 py-2 md:py-3 rounded-lg transition-colors flex flex-col md:flex-row items-center justify-center gap-1 md:gap-2"
                 >
-                  <BellIcon className="h-5 w-5" />
-                  <span className="text-sm font-medium whitespace-nowrap">{language === 'fr' ? 'Alerte Prix' : 'Price Alert'}</span>
+                  <BellIcon className="h-4 w-4 md:h-5 md:w-5" />
+                  <span className="text-xs md:text-sm font-medium text-center">{language === 'fr' ? 'Alerte' : 'Alert'}</span>
                 </button>
                 <button 
                   onClick={() => handleQuickAction('onboarding')}
-                  className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-3 rounded-lg transition-colors flex items-center gap-2 flex-shrink-0"
+                  className="bg-indigo-600 hover:bg-indigo-700 text-white px-3 md:px-4 py-2 md:py-3 rounded-lg transition-colors flex flex-col md:flex-row items-center justify-center gap-1 md:gap-2 col-span-2 md:col-span-1"
                 >
-                  <AcademicCapIcon className="h-5 w-5" />
-                  <span className="text-sm font-medium whitespace-nowrap">{language === 'fr' ? 'Onboarding' : 'Onboarding'}</span>
+                  <AcademicCapIcon className="h-4 w-4 md:h-5 md:w-5" />
+                  <span className="text-xs md:text-sm font-medium text-center">{language === 'fr' ? 'Onboarding' : 'Onboarding'}</span>
                 </button>
               </div>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6 mb-4 md:mb-6">
               {/* Hero Section */}
-              <div className="bg-gradient-to-br from-purple-600 to-pink-600 rounded-xl p-6 relative overflow-hidden">
+              <div className="bg-gradient-to-br from-purple-600 to-pink-600 rounded-xl p-4 md:p-6 relative overflow-hidden">
                 <div className="relative z-10">
-                  <h2 className="text-white text-2xl font-bold mb-2">
+                  <h2 className="text-white text-xl md:text-2xl font-bold mb-2">
                     {language === 'fr' ? 'Préparez votre Bull Run' : 'Prepare Your Bull Run'}
                   </h2>
-                  <div className="text-purple-200 text-sm mb-4">EXSTRAT 2.0</div>
-                  <p className="text-white text-sm mb-4">
+                  <div className="text-purple-200 text-xs md:text-sm mb-3 md:mb-4">EXSTRAT 2.0</div>
+                  <p className="text-white text-xs md:text-sm mb-3 md:mb-4">
                     {language === 'fr' 
                       ? 'ExStrat est votre plateforme de stratégies crypto. Optimisez vos gains pour le prochain cycle haussier.'
                       : 'ExStrat is your crypto strategy platform. Optimize your gains for the next bull cycle.'
                     }
                   </p>
-                  <button className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors">
+                  <button className="bg-blue-600 text-white px-3 md:px-4 py-1.5 md:py-2 rounded-lg text-xs md:text-sm font-medium hover:bg-blue-700 transition-colors">
                     {language === 'fr' ? 'Commencer maintenant' : 'Start Now'}
                   </button>
           </div>
@@ -249,48 +249,48 @@ export default function DashboardPage() {
               </div>
 
               {/* ETH Price Chart */}
-              <div className={`rounded-xl p-6 ${isDarkMode ? 'bg-gray-800' : 'bg-white border border-gray-200'}`}>
-                <div className="flex items-center justify-between mb-4">
+              <div className={`rounded-xl p-4 md:p-6 ${isDarkMode ? 'bg-gray-800' : 'bg-white border border-gray-200'}`}>
+                <div className="flex items-center justify-between mb-3 md:mb-4">
                   <div className="flex items-center gap-2">
-                    <div className="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center">
+                    <div className="w-5 h-5 md:w-6 md:h-6 bg-blue-500 rounded-full flex items-center justify-center">
                       <span className="text-white text-xs font-bold">Ξ</span>
                     </div>
-                    <span className={`font-semibold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>ETH/EUR</span>
-                    <ArrowDownIcon className="h-4 w-4 text-gray-400" />
+                    <span className={`font-semibold text-sm md:text-base ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>ETH/EUR</span>
+                    <ArrowDownIcon className="h-3 w-3 md:h-4 md:w-4 text-gray-400" />
                           </div>
-                  <div className="flex gap-2">
-                    <button className="bg-purple-600 text-white px-3 py-1 rounded text-xs">1D</button>
-                    <button className={`px-3 py-1 rounded text-xs ${isDarkMode ? 'bg-gray-700 text-gray-300' : 'bg-gray-200 text-gray-700'}`}>1W</button>
-                    <button className={`px-3 py-1 rounded text-xs ${isDarkMode ? 'bg-gray-700 text-gray-300' : 'bg-gray-200 text-gray-700'}`}>1M</button>
+                  <div className="flex gap-1 md:gap-2">
+                    <button className="bg-purple-600 text-white px-2 md:px-3 py-1 rounded text-xs">1D</button>
+                    <button className={`px-2 md:px-3 py-1 rounded text-xs ${isDarkMode ? 'bg-gray-700 text-gray-300' : 'bg-gray-200 text-gray-700'}`}>1W</button>
+                    <button className={`px-2 md:px-3 py-1 rounded text-xs ${isDarkMode ? 'bg-gray-700 text-gray-300' : 'bg-gray-200 text-gray-700'}`}>1M</button>
                   </div>
                 </div>
                 
-                <div className="mb-4">
+                <div className="mb-3 md:mb-4">
                   <ETHPriceChart userPosition={200} />
                 </div>
                 
-                <div className={`text-sm ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+                <div className={`text-xs md:text-sm ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
                   Position: <span className="text-purple-600 font-semibold">€3,420</span>
                 </div>
               </div>
             </div>
 
             {/* Token Overview */}
-            <div className="mb-6">
-              <h3 className={`text-lg font-semibold mb-4 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+            <div className="mb-4 md:mb-6 overflow-x-auto">
+              <h3 className={`text-base md:text-lg font-semibold mb-3 md:mb-4 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
                 {language === 'fr' ? 'Overview des Tokens' : 'Token Overview'}
               </h3>
-              <div className="flex gap-4 overflow-x-auto pb-2">
+              <div className="flex gap-3 md:gap-4 pb-2">
                 {tokens.map((token, index) => (
                   <TokenCard key={index} {...token} isDarkMode={isDarkMode} />
                 ))}
-                <div className={`flex items-center justify-center min-w-[200px] rounded-xl border-2 border-dashed transition-colors ${
+                <div className={`flex items-center justify-center min-w-[150px] md:min-w-[200px] rounded-xl border-2 border-dashed transition-colors ${
                   isDarkMode 
                     ? 'bg-gray-800 border-gray-600 hover:border-gray-500' 
                     : 'bg-white border-gray-300 hover:border-gray-400'
                 }`}>
-                  <PlusIcon className="h-8 w-8 text-gray-400" />
-                  <span className="text-gray-400 text-sm ml-2">
+                  <PlusIcon className="h-6 w-6 md:h-8 md:w-8 text-gray-400" />
+                  <span className="text-gray-400 text-xs md:text-sm ml-2">
                     {language === 'fr' ? '+ Ajouter' : '+ Add'}
                   </span>
                 </div>
@@ -298,12 +298,12 @@ export default function DashboardPage() {
           </div>
 
             {/* Bottom Row */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6">
               {/* Vue d'ensemble */}
-              <div className={`rounded-xl p-6 ${
+              <div className={`rounded-xl p-4 md:p-6 ${
                 isDarkMode ? 'bg-gray-800' : 'bg-white border border-gray-200'
               }`}>
-                <h3 className={`font-semibold mb-4 ${
+                <h3 className={`font-semibold mb-3 md:mb-4 text-sm md:text-base ${
                   isDarkMode ? 'text-white' : 'text-gray-900'
                 }`}>Vue d'ensemble</h3>
                 <div className="space-y-4">
@@ -355,14 +355,14 @@ export default function DashboardPage() {
           </div>
 
               {/* Activités Récentes */}
-              <div className={`rounded-xl p-6 ${
+              <div className={`rounded-xl p-4 md:p-6 ${
                 isDarkMode ? 'bg-gray-800' : 'bg-white border border-gray-200'
               }`}>
-                <div className="flex items-center gap-2 mb-4">
-                  <div className="w-6 h-6 bg-purple-500 rounded-full flex items-center justify-center">
+                <div className="flex items-center gap-2 mb-3 md:mb-4">
+                  <div className="w-5 h-5 md:w-6 md:h-6 bg-purple-500 rounded-full flex items-center justify-center">
                     <span className="text-white text-xs">🕐</span>
                   </div>
-                  <h3 className={`font-semibold ${
+                  <h3 className={`font-semibold text-sm md:text-base ${
                     isDarkMode ? 'text-white' : 'text-gray-900'
                   }`}>Activités Récentes</h3>
                 </div>
@@ -399,16 +399,16 @@ export default function DashboardPage() {
             </div>
 
             {/* Second Bottom Row */}
-            <div className="mt-6">
+            <div className="mt-4 md:mt-6">
               {/* Top Holdings */}
-              <div className={`rounded-xl p-6 ${
+              <div className={`rounded-xl p-4 md:p-6 ${
                 isDarkMode ? 'bg-gray-800' : 'bg-white border border-gray-200'
               }`}>
-                <div className="flex items-center gap-2 mb-4">
-                  <div className="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center">
+                <div className="flex items-center gap-2 mb-3 md:mb-4">
+                  <div className="w-5 h-5 md:w-6 md:h-6 bg-blue-500 rounded-full flex items-center justify-center">
                     <span className="text-white text-xs font-bold">€</span>
                   </div>
-                  <h3 className={`font-semibold ${
+                  <h3 className={`font-semibold text-sm md:text-base ${
                     isDarkMode ? 'text-white' : 'text-gray-900'
                   }`}>Top Holdings</h3>
                 </div>
@@ -482,9 +482,9 @@ export default function DashboardPage() {
                     {/* Texte central */}
                     <text x="50" y="48" textAnchor="middle" fill="white" fontSize="10" fontWeight="bold">€45.2K</text>
                   </svg>
+                    </div>
+                  </div>
                 </div>
-              </div>
-            </div>
           </div>
         </div>
       </div>
