@@ -64,7 +64,13 @@ api.interceptors.response.use(
       throw new Error('Le serveur backend n\'est pas accessible. Veuillez vérifier que le serveur est démarré.');
     }
     
-    if (error.response?.status === 401 && !originalRequest._retry) {
+    // Ne pas essayer de rafraîchir le token pour les endpoints d'authentification (login/signup)
+    // car une erreur 401 sur ces endpoints signifie simplement que les identifiants sont incorrects
+    const isAuthEndpoint = originalRequest.url?.includes('/auth/signin') || 
+                          originalRequest.url?.includes('/auth/signup') ||
+                          originalRequest.url?.includes('/auth/login');
+    
+    if (error.response?.status === 401 && !originalRequest._retry && !isAuthEndpoint) {
       if (isRefreshing) {
         // Si on est déjà en train de rafraîchir, ajouter à la queue
         return new Promise((resolve, reject) => {

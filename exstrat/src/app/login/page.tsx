@@ -97,8 +97,20 @@ export default function LoginPage() {
       // Vérifier si c'est la première connexion (pas de portfolios)
       // Pour l'instant, on redirige toujours vers l'onboarding
       router.push('/onboarding');
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err: unknown) {
+      // Gérer les erreurs de manière plus robuste
+      const error = err as Error | { message?: string };
+      const errorMessage = error instanceof Error 
+        ? error.message 
+        : error.message || 'Une erreur est survenue lors de la connexion';
+      
+      setError(errorMessage);
+      
+      // Nettoyer l'état en cas d'erreur pour éviter d'avoir à recharger
+      signInForm.reset({
+        email: data.email, // Garder l'email pour que l'utilisateur n'ait pas à le retaper
+        password: '', // Réinitialiser le mot de passe
+      });
     } finally {
       setIsLoading(false);
     }
@@ -115,8 +127,21 @@ export default function LoginPage() {
       });
       // Nouvel utilisateur, rediriger vers l'onboarding
       router.push('/onboarding');
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err: unknown) {
+      // Gérer les erreurs de manière plus robuste
+      const error = err as Error | { message?: string };
+      const errorMessage = error instanceof Error 
+        ? error.message 
+        : error.message || 'Une erreur est survenue lors de l\'inscription';
+      
+      setError(errorMessage);
+      
+      // Nettoyer l'état en cas d'erreur pour éviter d'avoir à recharger
+      signUpForm.reset({
+        email: data.email, // Garder l'email pour que l'utilisateur n'ait pas à le retaper
+        password: '', // Réinitialiser les mots de passe
+        confirmPassword: '',
+      });
     } finally {
       setIsLoading(false);
     }

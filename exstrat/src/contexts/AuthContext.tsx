@@ -82,8 +82,24 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       setUser(userData);
       localStorage.setItem('accessToken', accessToken);
       localStorage.setItem('user', JSON.stringify(userData));
-    } catch (error: any) {
-      throw new Error(error.response?.data?.message || 'Erreur de connexion');
+    } catch (error: unknown) {
+      // Extraire le message d'erreur de manière plus robuste
+      const axiosError = error as { response?: { data?: { message?: string }; status?: number }; message?: string };
+      
+      // Messages d'erreur spécifiques selon le code de statut
+      if (axiosError.response?.status === 401) {
+        throw new Error('Email ou mot de passe incorrect');
+      } else if (axiosError.response?.status === 404) {
+        throw new Error('Utilisateur non trouvé');
+      } else if (axiosError.response?.status === 400) {
+        throw new Error(axiosError.response.data?.message || 'Données invalides');
+      } else if (axiosError.response?.status === 500) {
+        throw new Error('Erreur serveur. Veuillez réessayer plus tard.');
+      } else if (axiosError.message) {
+        throw new Error(axiosError.message);
+      } else {
+        throw new Error(axiosError.response?.data?.message || 'Erreur de connexion. Veuillez réessayer.');
+      }
     }
   };
 
@@ -95,8 +111,22 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       setUser(userData);
       localStorage.setItem('accessToken', accessToken);
       localStorage.setItem('user', JSON.stringify(userData));
-    } catch (error: any) {
-      throw new Error(error.response?.data?.message || 'Erreur d\'inscription');
+    } catch (error: unknown) {
+      // Extraire le message d'erreur de manière plus robuste
+      const axiosError = error as { response?: { data?: { message?: string }; status?: number }; message?: string };
+      
+      // Messages d'erreur spécifiques selon le code de statut
+      if (axiosError.response?.status === 409) {
+        throw new Error('Un compte existe déjà avec cet email');
+      } else if (axiosError.response?.status === 400) {
+        throw new Error(axiosError.response.data?.message || 'Données invalides');
+      } else if (axiosError.response?.status === 500) {
+        throw new Error('Erreur serveur. Veuillez réessayer plus tard.');
+      } else if (axiosError.message) {
+        throw new Error(axiosError.message);
+      } else {
+        throw new Error(axiosError.response?.data?.message || 'Erreur d\'inscription. Veuillez réessayer.');
+      }
     }
   };
 
