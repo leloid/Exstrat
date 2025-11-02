@@ -7,7 +7,7 @@
 1. Allez sur https://railway.app et connectez-vous
 2. **Nouveau Projet** > **Provision PostgreSQL**
 3. Copiez la variable `DATABASE_URL` depuis l'onglet Variables
-postgresql://postgres:KpEZXHttswSOIJkSHSbSwwyLxwccdYxq@mainline.proxy.rlwy.net:15720/railway
+   (Format: `postgresql://user:password@host:port/database`)
 ### 2️⃣ Backend (Railway)
 
 1. Dans Railway, **Nouveau Service** > **GitHub Repo**

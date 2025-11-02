@@ -19,25 +19,29 @@ async function bootstrap() {
   );
 
   // Configuration CORS
-  const allowedOrigins = process.env.NODE_ENV === 'production'
-    ? [
-        process.env.FRONTEND_URL || 'https://exstrat.vercel.app',
-        'https://exstrat.com',
-        'https://www.exstrat.com'
-      ].filter(Boolean) // Retire les valeurs undefined/null
-    : [
-        'http://localhost:3000', 
-        'http://localhost:3001',
-        'http://127.0.0.1:3000',
-        'http://127.0.0.1:3001'
-      ];
-
+  const isProduction = process.env.NODE_ENV === 'production';
+  
   app.enableCors({
     origin: (origin, callback) => {
-      // Autoriser les requêtes sans origin (ex: Postman, mobile apps)
-      if (!origin) return callback(null, true);
+      // En développement : autoriser toutes les origines localhost
+      if (!isProduction) {
+        // Autoriser toutes les requêtes en développement
+        return callback(null, true);
+      }
       
-      if (allowedOrigins.includes(origin) || process.env.NODE_ENV !== 'production') {
+      // En production : vérifier les origines autorisées
+      const allowedOrigins = [
+        process.env.FRONTEND_URL,
+        'https://exstrat.com',
+        'https://www.exstrat.com'
+      ].filter(Boolean);
+      
+      // Autoriser les requêtes sans origin (ex: Postman, mobile apps) en production
+      if (!origin) {
+        return callback(null, true);
+      }
+      
+      if (allowedOrigins.includes(origin)) {
         callback(null, true);
       } else {
         callback(new Error('Not allowed by CORS'));
