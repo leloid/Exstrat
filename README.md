@@ -108,6 +108,8 @@ npm run dev
 
 Pour plus de détails, consultez la [documentation complète](./docs/).
 
+- **[Guide de déploiement](./docs/DEPLOYMENT.md)** - Déployer en production (Railway + Vercel)
+- **[Guide de déploiement rapide](./DEPLOYMENT-QUICKSTART.md)** - Déploiement en 3 étapes
 - **[Guide de développement](./docs/DEVELOPMENT.md)** - Setup, structure, DB
 - **[Documentation API](./docs/API.md)** - Tous les endpoints disponibles
 - **[Workflows](./docs/WORKFLOWS.md)** - Workflows utilisateur et techniques

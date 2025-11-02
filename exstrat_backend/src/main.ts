@@ -18,16 +18,31 @@ async function bootstrap() {
     }),
   );
 
-  // Configuration CORS pour le développement
+  // Configuration CORS
+  const allowedOrigins = process.env.NODE_ENV === 'production'
+    ? [
+        process.env.FRONTEND_URL || 'https://exstrat.vercel.app',
+        'https://exstrat.com',
+        'https://www.exstrat.com'
+      ].filter(Boolean) // Retire les valeurs undefined/null
+    : [
+        'http://localhost:3000', 
+        'http://localhost:3001',
+        'http://127.0.0.1:3000',
+        'http://127.0.0.1:3001'
+      ];
+
   app.enableCors({
-    origin: process.env.NODE_ENV === 'production' 
-      ? ['https://exstrat.com', 'https://www.exstrat.com']
-      : [
-          'http://localhost:3000', 
-          'http://localhost:3001',
-          'http://127.0.0.1:3000',
-          'http://127.0.0.1:3001'
-        ],
+    origin: (origin, callback) => {
+      // Autoriser les requêtes sans origin (ex: Postman, mobile apps)
+      if (!origin) return callback(null, true);
+      
+      if (allowedOrigins.includes(origin) || process.env.NODE_ENV !== 'production') {
+        callback(null, true);
+      } else {
+        callback(new Error('Not allowed by CORS'));
+      }
+    },
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
     allowedHeaders: [
@@ -83,6 +98,9 @@ async function bootstrap() {
     customCss: '.swagger-ui .topbar { display: none }',
   });
 
-  await app.listen(3000);
+  const port = process.env.PORT || 3000;
+  await app.listen(port);
+  console.log(`🚀 Application is running on: http://localhost:${port}`);
+  console.log(`📚 Swagger documentation: http://localhost:${port}/api`);
 }
 bootstrap();
