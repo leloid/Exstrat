@@ -24,7 +24,7 @@ import { TokenSearch } from '@/components/transactions/TokenSearch';
 import { TokenSearchResult } from '@/types/transactions';
 import { usePortfolio } from '@/contexts/PortfolioContext';
 import { strategiesApi } from '@/lib/strategies-api';
-import { CreateStrategyStepDto, TargetType } from '@/types/strategies';
+import { CreateStrategyStepDto, TargetType, CreateTheoreticalStrategyDto, UpdateTheoreticalStrategyDto } from '@/types/strategies';
 
 interface ProfitTarget {
   id: string;
@@ -122,7 +122,7 @@ export default function CreateStrategyPage() {
       setStrategyName(strategy.name);
       setQuantity(strategy.quantity.toString());
       setAveragePrice(strategy.averagePrice.toString());
-      setNumberOfTargets(strategy.numberOfTargets);
+      setNumberOfTargets(strategy.numberOfTargets || strategy.profitTargets.length || 1);
       
       // Pré-remplir le token
       setSelectedToken({
@@ -166,7 +166,7 @@ export default function CreateStrategyPage() {
       } as TokenSearchResult);
       
       // Pré-remplir les cibles de profit
-      const targets: ProfitTarget[] = strategy.profitTargets.map((target: any, index: number) => ({
+      const targets: ProfitTarget[] = strategy.profitTargets.map((target, index: number) => ({
         id: `target-${index}`,
         targetType: target.targetType,
         targetValue: target.targetValue,
@@ -335,9 +335,9 @@ export default function CreateStrategyPage() {
       
       if (isVirtualWallet) {
         // Stratégie théorique
-      const strategyData = {
+      const strategyDataBase = {
         name: strategyName,
-          description: `${language === 'fr' ? 'Stratégie pour' : 'Strategy for'} ${selectedToken.symbol} - ${numberOfTargets} ${language === 'fr' ? 'cibles de profit' : 'profit targets'}`,
+        description: `${language === 'fr' ? 'Stratégie pour' : 'Strategy for'} ${selectedToken.symbol} - ${numberOfTargets} ${language === 'fr' ? 'cibles de profit' : 'profit targets'}`,
         tokenSymbol: selectedToken.symbol,
         tokenName: selectedToken.name,
         quantity: parseFloat(quantity),
@@ -348,20 +348,22 @@ export default function CreateStrategyPage() {
           targetValue: target.targetValue,
           sellPercentage: target.sellPercentage,
         })),
-        status: 'active',
+        status: 'active' as const,
       };
       
-        console.log('📤 Données de la stratégie théorique:', strategyData);
+      console.log('📤 Données de la stratégie théorique:', strategyDataBase);
       
       if (isEditMode && editingStrategyId) {
-        const updatedStrategy = await portfoliosApi.updateTheoreticalStrategy(editingStrategyId, strategyData);
-          console.log('✅ Stratégie théorique modifiée:', updatedStrategy);
-          alert(language === 'fr' ? 'Stratégie modifiée avec succès !' : 'Strategy updated successfully!');
-        } else {
-          const createdStrategy = await portfoliosApi.createTheoreticalStrategy(strategyData);
-          console.log('✅ Stratégie théorique créée:', createdStrategy);
-          alert(language === 'fr' ? 'Stratégie créée avec succès !' : 'Strategy created successfully!');
-        }
+        const updateData: UpdateTheoreticalStrategyDto = strategyDataBase;
+        const updatedStrategy = await portfoliosApi.updateTheoreticalStrategy(editingStrategyId, updateData);
+        console.log('✅ Stratégie théorique modifiée:', updatedStrategy);
+        alert(language === 'fr' ? 'Stratégie modifiée avec succès !' : 'Strategy updated successfully!');
+      } else {
+        const createData: CreateTheoreticalStrategyDto = strategyDataBase;
+        const createdStrategy = await portfoliosApi.createTheoreticalStrategy(createData);
+        console.log('✅ Stratégie théorique créée:', createdStrategy);
+        alert(language === 'fr' ? 'Stratégie créée avec succès !' : 'Strategy created successfully!');
+      }
       } else {
         // Stratégie réelle - utiliser l'API /strategies
         const strategyData = {
