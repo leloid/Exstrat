@@ -59,6 +59,11 @@ api.interceptors.response.use(
       throw new Error('Impossible de se connecter au serveur. Vérifiez que le backend est démarré.');
     }
     
+    if (error.response?.status === 502 || error.response?.status === 503 || error.response?.status === 504) {
+      console.error('Gateway error - Backend might be down or unreachable');
+      throw new Error('Le serveur backend n\'est pas accessible. Veuillez vérifier que le serveur est démarré.');
+    }
+    
     if (error.response?.status === 401 && !originalRequest._retry) {
       if (isRefreshing) {
         // Si on est déjà en train de rafraîchir, ajouter à la queue

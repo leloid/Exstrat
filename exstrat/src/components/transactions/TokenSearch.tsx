@@ -32,8 +32,21 @@ export const TokenSearch: React.FC<TokenSearchProps> = ({ onTokenSelect, selecte
       const results = await transactionsApi.searchTokens(searchQuery.trim());
       setTokens(results);
       setShowResults(true);
+      setError(null);
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Erreur lors de la recherche de tokens');
+      console.error('Erreur recherche tokens:', err);
+      // Gérer les différentes erreurs
+      let errorMessage = 'Erreur lors de la recherche de tokens';
+      if (err.response?.status === 502 || err.response?.status === 503 || err.response?.status === 504) {
+        errorMessage = 'Le serveur backend n\'est pas accessible. Veuillez vérifier que le serveur est démarré.';
+      } else if (err.response?.status === 500) {
+        errorMessage = 'Erreur interne du serveur. Veuillez réessayer plus tard.';
+      } else if (err.message) {
+        errorMessage = err.message;
+      } else if (err.response?.data?.message) {
+        errorMessage = err.response.data.message;
+      }
+      setError(errorMessage);
       setTokens([]);
       setShowResults(false);
     } finally {

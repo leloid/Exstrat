@@ -1,6 +1,7 @@
 'use client';
 
 import React, { createContext, useContext, useEffect, useState } from 'react';
+import { usePathname } from 'next/navigation';
 import { Portfolio, Holding, PortfolioContextType, CreatePortfolioDto, UpdatePortfolioDto } from '@/types/portfolio';
 import * as portfoliosApi from '@/lib/portfolios-api';
 import { useAuth } from './AuthContext';
@@ -21,6 +22,7 @@ interface PortfolioProviderProps {
 
 export const PortfolioProvider: React.FC<PortfolioProviderProps> = ({ children }) => {
   const { isAuthenticated } = useAuth();
+  const pathname = usePathname();
   const [portfolios, setPortfolios] = useState<Portfolio[]>([]);
   const [currentPortfolio, setCurrentPortfolio] = useState<Portfolio | null>(null);
   const [holdings, setHoldings] = useState<Holding[]>([]);
@@ -43,12 +45,18 @@ export const PortfolioProvider: React.FC<PortfolioProviderProps> = ({ children }
 
   // Charger les holdings quand le portfolio courant change
   useEffect(() => {
+    // Ne pas charger les holdings si on est sur la page onboarding
+    if (pathname === '/onboarding') {
+      setHoldings([]);
+      return;
+    }
+    
     if (currentPortfolio) {
       loadHoldings(currentPortfolio.id);
     } else {
       setHoldings([]);
     }
-  }, [currentPortfolio]);
+  }, [currentPortfolio, pathname]);
 
   const loadPortfolios = async () => {
     try {
@@ -91,8 +99,15 @@ export const PortfolioProvider: React.FC<PortfolioProviderProps> = ({ children }
       const data = await portfoliosApi.getPortfolioHoldings(portfolioId);
       setHoldings(data);
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Erreur lors du chargement des avoirs');
+      // Ignorer les erreurs 404 silencieusement (portfolio peut ne pas avoir de holdings)
+      if (err.response?.status === 404) {
+        console.log('Aucun holding trouvé pour ce portfolio');
+        setHoldings([]);
+        return;
+      }
+      // Pour les autres erreurs, les logger mais ne pas bloquer l'interface
       console.error('Erreur lors du chargement des avoirs:', err);
+      setHoldings([]);
     }
   };
 

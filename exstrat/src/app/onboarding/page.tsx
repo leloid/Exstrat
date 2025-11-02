@@ -17,7 +17,6 @@ import {
   PencilIcon,
   TrashIcon
 } from '@heroicons/react/24/outline';
-import { createPortfolio, updatePortfolio, deletePortfolio } from '@/lib/portfolios-api';
 import { transactionsApi } from '@/lib/transactions-api';
 import { strategiesApi } from '@/lib/strategies-api';
 import { CreatePortfolioDto } from '@/types/portfolio';
@@ -110,7 +109,14 @@ export default function OnboardingPage() {
   const [editingTransaction, setEditingTransaction] = useState<any | null>(null);
   const [onboardingPortfolios, setOnboardingPortfolios] = useState<any[]>([]);
   const [editingPortfolio, setEditingPortfolio] = useState<any | null>(null);
-  const { portfolios, currentPortfolio } = usePortfolio();
+  const { 
+    portfolios, 
+    currentPortfolio, 
+    createPortfolio: createPortfolioContext, 
+    updatePortfolio: updatePortfolioContext, 
+    deletePortfolio: deletePortfolioContext, 
+    refreshPortfolios 
+  } = usePortfolio();
   
   // Form data
   const [portfolioData, setPortfolioData] = useState({
@@ -145,15 +151,43 @@ export default function OnboardingPage() {
     if (currentStep === 0) {
       const loadPortfolios = async () => {
         try {
-          const portfolios = await portfoliosApi.getPortfolios();
-          setOnboardingPortfolios(portfolios || []);
+          // Utiliser refreshPortfolios du contexte
+          await refreshPortfolios();
         } catch (err) {
           console.error('Erreur lors du chargement des portfolios:', err);
         }
       };
       loadPortfolios();
     }
-  }, [currentStep]);
+  }, [currentStep, refreshPortfolios]);
+
+  // Synchroniser onboardingPortfolios avec portfolios du contexte
+  React.useEffect(() => {
+    if (!portfolios || !Array.isArray(portfolios)) {
+      return;
+    }
+
+    // Utiliser portfolios du contexte comme source de vérité
+    // Filtrer les portfolios valides et supprimer les doublons
+    const validPortfolios = portfolios.filter(p => p && p.id && p.name);
+    const uniquePortfolios = Array.from(
+      new Map(validPortfolios.map(p => [p.id, p])).values()
+    );
+    
+    // Convertir en string pour comparaison profonde
+    const currentIds = (onboardingPortfolios || [])
+      .filter(p => p && p.id)
+      .map(p => p.id)
+      .sort()
+      .join(',');
+    const newIds = uniquePortfolios.map(p => p.id).sort().join(',');
+    
+    // Ne mettre à jour que si les IDs ont vraiment changé
+    if (currentIds !== newIds) {
+      setOnboardingPortfolios(uniquePortfolios);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [portfolios]);
 
   // Charger les transactions existantes au montage et quand on arrive sur le step exchange
   React.useEffect(() => {
@@ -161,14 +195,24 @@ export default function OnboardingPage() {
       const loadTransactions = async () => {
         try {
           const response = await transactionsApi.getTransactions();
-          setOnboardingTransactions(response.transactions || []);
+          const transactions = response.transactions || [];
+          // Supprimer les doublons dès le chargement
+          const uniqueTransactions = Array.from(
+            new Map(transactions.map(t => [t.id, t])).values()
+          );
+          setOnboardingTransactions(uniqueTransactions);
         } catch (err) {
           console.error('Erreur lors du chargement des transactions:', err);
         }
       };
-      loadTransactions();
+      // Recharger aussi les portfolios pour avoir la liste à jour (portfolios créés dans le step précédent)
+      const refreshData = async () => {
+        await refreshPortfolios();
+        await loadTransactions();
+      };
+      refreshData();
     }
-  }, [currentStep]);
+  }, [currentStep, refreshPortfolios]);
 
   // Initialiser les cibles de profit quand le nombre change
   React.useEffect(() => {
@@ -285,15 +329,19 @@ export default function OnboardingPage() {
 
       if (editingPortfolio) {
         // Mettre à jour le portfolio existant
-        const updatedPortfolio = await updatePortfolio(editingPortfolio.id, portfolioDto);
-        setOnboardingPortfolios(prev => 
-          prev.map(p => p.id === editingPortfolio.id ? updatedPortfolio : p)
-        );
+        const updatedPortfolio = await updatePortfolioContext(editingPortfolio.id, portfolioDto);
+        // Le contexte est déjà mis à jour par updatePortfolioContext
+        // Le useEffect synchronisera automatiquement onboardingPortfolios avec portfolios
         setCreatedData(prev => ({ ...prev, portfolio: updatedPortfolio }));
       } else {
-        // Créer un nouveau portfolio
-        const createdPortfolio = await createPortfolio(portfolioDto);
-        setOnboardingPortfolios(prev => [...prev, createdPortfolio]);
+        // Créer un nouveau portfolio via l'API directement pour obtenir le portfolio créé
+        const createdPortfolio = await portfoliosApi.createPortfolio(portfolioDto);
+        
+        // Mettre à jour le contexte manuellement pour éviter un double appel API
+        // et garantir que portfolios contient le portfolio créé
+        await refreshPortfolios();
+        
+        // Le useEffect synchronisera automatiquement onboardingPortfolios avec portfolios
         setCreatedData(prev => ({ ...prev, portfolio: createdPortfolio }));
       }
       
@@ -342,11 +390,13 @@ export default function OnboardingPage() {
 
   const handleDeletePortfolio = async (portfolioId: string) => {
     try {
-      await deletePortfolio(portfolioId);
-      setOnboardingPortfolios(prev => prev.filter(p => p.id !== portfolioId));
+      await deletePortfolioContext(portfolioId);
+      // Le useEffect synchronisera automatiquement onboardingPortfolios avec portfolios
       if (createdData.portfolio?.id === portfolioId) {
         setCreatedData(prev => ({ ...prev, portfolio: null }));
       }
+      // Recharger les portfolios du contexte pour s'assurer qu'ils sont à jour
+      await refreshPortfolios();
     } catch (err: any) {
       setError('Erreur lors de la suppression du portfolio');
       console.error('❌ Erreur suppression portfolio:', err);
@@ -531,9 +581,11 @@ export default function OnboardingPage() {
           notes: transactionData.notes || undefined,
         };
         const updatedTransaction = await transactionsApi.updateTransaction(editingTransaction.id, updateData);
-        setOnboardingTransactions(prev => 
-          prev.map(t => t.id === editingTransaction.id ? updatedTransaction : t)
-        );
+        setOnboardingTransactions(prev => {
+          // Supprimer les doublons avant la mise à jour
+          const unique = Array.from(new Map(prev.map(t => [t.id, t])).values());
+          return unique.map(t => t.id === editingTransaction.id ? updatedTransaction : t);
+        });
       } else {
         // Validation supplémentaire
         const quantity = parseFloat(transactionData.quantity);
@@ -591,7 +643,17 @@ export default function OnboardingPage() {
         
         console.log('📤 Données de transaction envoyées:', transactionDto);
         const createdTransaction = await transactionsApi.createTransaction(transactionDto);
-        setOnboardingTransactions(prev => [...prev, createdTransaction]);
+        setOnboardingTransactions(prev => {
+          // Vérifier si la transaction existe déjà pour éviter les doublons
+          const exists = prev.some(t => t && t.id === createdTransaction.id);
+          if (exists) {
+            // Si elle existe, la mettre à jour
+            return prev.map(t => t && t.id === createdTransaction.id ? createdTransaction : t);
+          }
+          // Supprimer les doublons existants avant d'ajouter
+          const unique = Array.from(new Map(prev.map(t => [t.id, t])).values());
+          return [...unique, createdTransaction];
+        });
         setCreatedData(prev => ({ ...prev, transaction: createdTransaction }));
       }
       
@@ -729,7 +791,13 @@ export default function OnboardingPage() {
                   Portfolios créés ({onboardingPortfolios.length})
                 </h3>
                 <div className="space-y-3">
-                  {onboardingPortfolios.map((portfolio) => (
+                  {Array.from(
+                    new Map(
+                      onboardingPortfolios
+                        .filter(portfolio => portfolio && portfolio.id && portfolio.name)
+                        .map(portfolio => [portfolio.id, portfolio])
+                    ).values()
+                  ).map((portfolio) => (
                     <Card key={portfolio.id} className="border border-gray-200">
                       <CardContent className="p-4">
                         <div className="flex items-center justify-between">
@@ -951,7 +1019,13 @@ export default function OnboardingPage() {
                   Transactions ajoutées ({onboardingTransactions.length})
                 </h3>
                 <div className="space-y-3">
-                  {onboardingTransactions.map((transaction) => (
+                  {Array.from(
+                    new Map(
+                      onboardingTransactions
+                        .filter(transaction => transaction && transaction.id)
+                        .map(transaction => [transaction.id, transaction])
+                    ).values()
+                  ).map((transaction) => (
                     <Card key={transaction.id} className="border border-gray-200">
                       <CardContent className="p-4">
                         <div className="flex items-center justify-between">
@@ -1060,7 +1134,7 @@ export default function OnboardingPage() {
                           <SelectValue placeholder="Sélectionner un portefeuille" />
                         </SelectTrigger>
                         <SelectContent>
-                          {portfolios.map((portfolio) => (
+                          {portfolios.filter(portfolio => portfolio && portfolio.id && portfolio.name).map((portfolio) => (
                             <SelectItem key={portfolio.id} value={portfolio.id}>
                               {portfolio.name} {portfolio.isDefault && '(Défaut)'}
                             </SelectItem>
