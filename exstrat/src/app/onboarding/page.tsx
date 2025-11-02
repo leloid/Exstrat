@@ -141,10 +141,14 @@ export default function OnboardingPage() {
   // États pour la stratégie théorique
   const [strategyName, setStrategyName] = useState<string>('');
   const [selectedStrategyToken, setSelectedStrategyToken] = useState<TokenSearchResult | null>(null);
+  const [selectedStrategyPortfolioId, setSelectedStrategyPortfolioId] = useState<string>('virtual'); // 'virtual' ou un ID de portfolio
+  const [availableStrategyQuantity, setAvailableStrategyQuantity] = useState<number>(0); // Quantité disponible dans le portfolio
   const [strategyQuantity, setStrategyQuantity] = useState<string>('');
   const [strategyAveragePrice, setStrategyAveragePrice] = useState<string>('');
   const [numberOfTargets, setNumberOfTargets] = useState<number>(3);
   const [profitTargets, setProfitTargets] = useState<ProfitTarget[]>([]);
+  
+  const isStrategyVirtualWallet = selectedStrategyPortfolioId === 'virtual';
   
   const router = useRouter();
 
@@ -243,6 +247,44 @@ export default function OnboardingPage() {
     setProfitTargets(newTargets);
   }, [numberOfTargets]);
 
+  // Charger la quantité disponible pour la stratégie quand le portfolio ou le token change
+  React.useEffect(() => {
+    const loadAvailableStrategyQuantity = async () => {
+      if (isStrategyVirtualWallet || !selectedStrategyToken || !selectedStrategyPortfolioId || selectedStrategyPortfolioId === 'virtual') {
+        setAvailableStrategyQuantity(0);
+        return;
+      }
+      
+      try {
+        const holdings = await portfoliosApi.getPortfolioHoldings(selectedStrategyPortfolioId);
+        const holding = holdings.find(h => 
+          h.token.symbol.toUpperCase() === selectedStrategyToken.symbol.toUpperCase()
+        );
+        
+        if (holding) {
+          setAvailableStrategyQuantity(holding.quantity);
+          // Si la quantité actuelle dépasse ce qui est disponible, la réduire
+          const currentQty = parseFloat(strategyQuantity);
+          if (!isNaN(currentQty) && currentQty > holding.quantity) {
+            setStrategyQuantity(holding.quantity.toString());
+          }
+        } else {
+          setAvailableStrategyQuantity(0);
+          // Si aucun holding n'existe pour ce token, réinitialiser la quantité
+          if (strategyQuantity && parseFloat(strategyQuantity) > 0) {
+            setStrategyQuantity('');
+          }
+        }
+      } catch (error) {
+        console.error('Erreur lors du chargement de la quantité disponible pour la stratégie:', error);
+        setAvailableStrategyQuantity(0);
+      }
+    };
+    
+    loadAvailableStrategyQuantity();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedStrategyPortfolioId, selectedStrategyToken?.symbol]);
+  
   // Auto-remplir le prix moyen avec le prix actuel du token
   const handleStrategyTokenSelect = (token: TokenSearchResult | null) => {
     setSelectedStrategyToken(token);
@@ -317,7 +359,95 @@ export default function OnboardingPage() {
   const currentStepData = steps[currentStep];
   const progress = ((currentStep + 1) / steps.length) * 100;
 
-  const handleNext = () => {
+  const handleNext = async () => {
+    // Si on est sur l'étape stratégie (step 2), créer la stratégie avant de continuer
+    if (currentStep === 2) {
+      // Validation
+      if (!strategyName.trim()) {
+        setError('Le nom de la stratégie est requis');
+        return;
+      }
+      if (!selectedStrategyToken) {
+        setError('Veuillez sélectionner un token');
+        return;
+      }
+      if (!strategyQuantity || parseFloat(strategyQuantity) <= 0) {
+        setError('Veuillez entrer une quantité valide');
+        return;
+      }
+      if (!strategyAveragePrice || parseFloat(strategyAveragePrice) <= 0) {
+        setError('Veuillez entrer un prix moyen valide');
+        return;
+      }
+      
+      // Validation de la quantité selon le type de wallet
+      if (!isStrategyVirtualWallet && selectedStrategyPortfolioId) {
+        const qty = parseFloat(strategyQuantity);
+        if (qty > availableStrategyQuantity) {
+          setError(
+            `La quantité (${qty}) ne peut pas dépasser ce que vous possédez dans ce wallet (${availableStrategyQuantity})`
+          );
+          return;
+        }
+      }
+      
+      setIsLoading(true);
+      setError('');
+      
+      try {
+        if (isStrategyVirtualWallet) {
+          // Stratégie théorique
+          const strategyData = {
+            name: strategyName,
+            description: `Stratégie pour ${selectedStrategyToken.symbol} - ${numberOfTargets} cibles de profit`,
+            tokenSymbol: selectedStrategyToken.symbol,
+            tokenName: selectedStrategyToken.name,
+            quantity: parseFloat(strategyQuantity),
+            averagePrice: parseFloat(strategyAveragePrice),
+            profitTargets: profitTargets.map((target, index) => ({
+              order: index + 1,
+              targetType: target.targetType,
+              targetValue: target.targetValue,
+              sellPercentage: target.sellPercentage,
+            })),
+            status: 'active',
+          };
+          
+          const createdStrategy = await portfoliosApi.createTheoreticalStrategy(strategyData);
+          console.log('✅ Stratégie théorique créée:', createdStrategy);
+          setCreatedData(prev => ({ ...prev, strategy: createdStrategy }));
+        } else {
+          // Stratégie réelle
+          const strategyData: CreateStrategyDto = {
+            name: strategyName,
+            symbol: selectedStrategyToken.symbol,
+            tokenName: selectedStrategyToken.name,
+            cmcId: selectedStrategyToken.id || 0,
+            baseQuantity: parseFloat(strategyQuantity),
+            referencePrice: parseFloat(strategyAveragePrice),
+            steps: profitTargets.map((target) => ({
+              targetType: (target.targetType === 'percentage' ? 'percentage_of_average' : 'exact_price') as TargetType,
+              targetValue: target.targetValue,
+              sellPercentage: target.sellPercentage,
+              notes: '',
+            })),
+            notes: `Stratégie pour ${selectedStrategyToken.symbol} - ${numberOfTargets} cibles de profit`,
+          };
+          
+          const createdStrategy = await strategiesApi.createStrategy(strategyData);
+          console.log('✅ Stratégie réelle créée:', createdStrategy);
+          setCreatedData(prev => ({ ...prev, strategy: createdStrategy }));
+        }
+      } catch (error: any) {
+        console.error('❌ Erreur création stratégie:', error);
+        setError(error.response?.data?.message || error.message || 'Erreur lors de la création de la stratégie');
+        setIsLoading(false);
+        return;
+      }
+      
+      setIsLoading(false);
+    }
+    
     if (currentStep < steps.length - 1) {
       setCurrentStep(currentStep + 1);
     } else {
@@ -1356,6 +1486,45 @@ export default function OnboardingPage() {
                 </div>
                 
                 <div>
+                  <Label htmlFor="portfolio">Portfolio / Wallet *</Label>
+                  <Select
+                    value={selectedStrategyPortfolioId}
+                    onValueChange={(value) => {
+                      setSelectedStrategyPortfolioId(value);
+                      // Réinitialiser la quantité quand on change de portfolio
+                      if (value !== 'virtual') {
+                        setStrategyQuantity('');
+                      }
+                    }}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Sélectionner un wallet" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {/* Portfolios réels */}
+                      {onboardingPortfolios.filter(p => p && p.id && p.name).map((portfolio) => (
+                        <SelectItem key={portfolio.id} value={portfolio.id}>
+                          {portfolio.name}
+                        </SelectItem>
+                      ))}
+                      {/* Séparateur visuel */}
+                      <div className="px-3 py-2 text-xs font-semibold text-gray-500 border-t border-gray-200">
+                        Simulation
+                      </div>
+                      {/* Wallet virtuelle */}
+                      <SelectItem value="virtual">
+                        Wallet Virtuelle
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                  {!isStrategyVirtualWallet && availableStrategyQuantity > 0 && selectedStrategyToken && (
+                    <p className="mt-1 text-sm text-gray-600">
+                      Quantité disponible: {availableStrategyQuantity.toLocaleString()} {selectedStrategyToken.symbol}
+                    </p>
+                  )}
+                </div>
+                
+                <div>
                   <Label htmlFor="token">Token *</Label>
                   <TokenSearch
                     onTokenSelect={handleStrategyTokenSelect}
@@ -1365,16 +1534,43 @@ export default function OnboardingPage() {
                 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <Label htmlFor="quantity">Quantité *</Label>
+                    <Label htmlFor="quantity">
+                      Quantité *
+                      {!isStrategyVirtualWallet && availableStrategyQuantity > 0 && (
+                        <span className="text-xs text-gray-500 ml-2">
+                          (max: {availableStrategyQuantity.toLocaleString()})
+                        </span>
+                      )}
+                    </Label>
                     <Input
                       id="quantity"
                       type="number"
                       value={strategyQuantity}
-                      onChange={(e) => setStrategyQuantity(e.target.value)}
+                      onChange={(e) => {
+                        const value = e.target.value;
+                        // Validation : si c'est un wallet réel, ne pas dépasser la quantité disponible
+                        if (!isStrategyVirtualWallet && availableStrategyQuantity > 0 && value) {
+                          const numValue = parseFloat(value);
+                          if (numValue > availableStrategyQuantity) {
+                            setError(
+                              `La quantité ne peut pas dépasser ${availableStrategyQuantity.toLocaleString()} ${selectedStrategyToken?.symbol || ''}`
+                            );
+                            return;
+                          }
+                          setError('');
+                        }
+                        setStrategyQuantity(value);
+                      }}
                       placeholder="Ex: 1.5"
                       step="0.00000001"
+                      max={!isStrategyVirtualWallet && availableStrategyQuantity > 0 ? availableStrategyQuantity : undefined}
                       required
                     />
+                    {!isStrategyVirtualWallet && parseFloat(strategyQuantity) > availableStrategyQuantity && (
+                      <p className="mt-1 text-sm text-red-600">
+                        Quantité supérieure à celle disponible ({availableStrategyQuantity.toLocaleString()})
+                      </p>
+                    )}
                   </div>
                   <div>
                     <Label htmlFor="averagePrice">Prix moyen (USD) *</Label>
@@ -1768,10 +1964,11 @@ export default function OnboardingPage() {
 
             <Button
               onClick={handleNext}
-              className="px-8 py-3 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-medium rounded-lg flex items-center space-x-2"
+              disabled={isLoading}
+              className="px-8 py-3 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-medium rounded-lg flex items-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              <span>{currentStep === steps.length - 1 ? 'Terminer' : 'Suivant'}</span>
-              <ArrowRightIcon className="w-4 h-4" />
+              <span>{isLoading ? 'Création...' : (currentStep === steps.length - 1 ? 'Terminer' : 'Suivant')}</span>
+              {!isLoading && <ArrowRightIcon className="w-4 h-4" />}
             </Button>
           </div>
 
