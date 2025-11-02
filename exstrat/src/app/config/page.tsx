@@ -296,11 +296,11 @@ export default function ConfigPage() {
   if (isLoading) {
     return (
       <ProtectedRoute>
-        <div className={`min-h-screen flex ${isDarkMode ? 'bg-gray-900' : 'bg-gray-50'}`}>
+        <div className={`min-h-screen flex overflow-x-hidden ${isDarkMode ? 'bg-gray-900' : 'bg-gray-50'}`}>
           <Sidebar activeTab={activeTab} onTabChange={setActiveTab} isDarkMode={isDarkMode} />
-          <div className="flex-1 flex flex-col">
+          <div className="flex-1 flex flex-col overflow-x-hidden w-full max-w-full">
             <TopBar currentPageName={language === 'fr' ? 'Configuration' : 'Configuration'} />
-            <div className={`flex-1 p-6 flex items-center justify-center ${isDarkMode ? 'bg-gray-900' : 'bg-gray-50'}`}>
+            <div className={`flex-1 p-3 md:p-6 flex items-center justify-center overflow-x-hidden max-w-full ${isDarkMode ? 'bg-gray-900' : 'bg-gray-50'}`}>
               <div className="text-center">
                 <div className={`animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto`}></div>
                 <p className={`mt-4 ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
@@ -316,33 +316,33 @@ export default function ConfigPage() {
 
   return (
     <ProtectedRoute>
-      <div className={`min-h-screen flex ${isDarkMode ? 'bg-gray-900' : 'bg-gray-50'}`}>
+      <div className={`min-h-screen flex overflow-x-hidden ${isDarkMode ? 'bg-gray-900' : 'bg-gray-50'}`}>
         <Sidebar activeTab={activeTab} onTabChange={setActiveTab} isDarkMode={isDarkMode} />
         
-        <div className="flex-1 flex flex-col">
+        <div className="flex-1 flex flex-col overflow-x-hidden w-full max-w-full">
           <TopBar currentPageName={language === 'fr' ? 'Configuration' : 'Configuration'} />
 
-          <div className={`flex-1 p-6 ${isDarkMode ? 'bg-gray-900' : 'bg-gray-50'}`}>
+          <div className={`flex-1 p-3 md:p-6 overflow-x-hidden max-w-full ${isDarkMode ? 'bg-gray-900' : 'bg-gray-50'}`}>
             {viewMode === 'config' ? (
               <>
                 {/* Header avec sélection du wallet */}
-                <div className={`rounded-xl p-6 mb-6 ${isDarkMode ? 'bg-gray-800' : 'bg-white border border-gray-200'}`}>
-                  <h1 className={`text-2xl font-bold mb-2 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+                <div className={`rounded-xl p-4 md:p-6 mb-4 md:mb-6 w-full max-w-full ${isDarkMode ? 'bg-gray-800' : 'bg-white border border-gray-200'}`}>
+                  <h1 className={`text-xl md:text-2xl font-bold mb-2 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
                     {language === 'fr' ? 'Paramètres' : 'Parameters'}
                   </h1>
-                  <p className={`text-sm mb-6 ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                  <p className={`text-xs md:text-sm mb-4 md:mb-6 ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
                     {language === 'fr' 
                       ? 'Configurez les paramètres de base pour votre stratégie de portfolio'
                       : 'Configure the basic parameters for your portfolio strategy'}
                   </p>
 
-                  <div className="space-y-4">
+                  <div className="space-y-3 md:space-y-4">
                     <div>
-                      <Label className={isDarkMode ? 'text-gray-300' : 'text-gray-700'}>
+                      <Label className={`text-xs md:text-sm ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
                         {language === 'fr' ? 'Portefeuille à simuler' : 'Portfolio to simulate'} *
                       </Label>
                       <Select value={selectedPortfolioId} onValueChange={setSelectedPortfolioId}>
-                        <SelectTrigger className="mt-2">
+                        <SelectTrigger className="mt-2 w-full">
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
@@ -359,7 +359,7 @@ export default function ConfigPage() {
                     </div>
 
                     <div>
-                      <Label className={isDarkMode ? 'text-gray-300' : 'text-gray-700'}>
+                      <Label className={`text-xs md:text-sm ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
                         {language === 'fr' ? 'Nom de la stratégie' : 'Strategy name'} *
                       </Label>
                       <Input
@@ -367,171 +367,316 @@ export default function ConfigPage() {
                         placeholder={language === 'fr' ? 'Ex : Bullrun 2025 Q3' : 'Ex: Bullrun 2025 Q3'}
                         value={strategyName}
                         onChange={(e) => setStrategyName(e.target.value)}
-                        className={`mt-2 ${isDarkMode ? 'bg-gray-700 border-gray-600 text-white' : ''}`}
+                        className={`mt-2 text-sm md:text-base ${isDarkMode ? 'bg-gray-700 border-gray-600 text-white' : ''}`}
                       />
                     </div>
                   </div>
                 </div>
 
                 {/* Tableau des holdings */}
-                <div className={`rounded-xl p-6 mb-6 ${isDarkMode ? 'bg-gray-800' : 'bg-white border border-gray-200'}`}>
-                  <h2 className={`text-xl font-semibold mb-4 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+                <div className={`rounded-xl p-4 md:p-6 mb-4 md:mb-6 w-full max-w-full ${isDarkMode ? 'bg-gray-800' : 'bg-white border border-gray-200'}`}>
+                  <h2 className={`text-base md:text-xl font-semibold mb-3 md:mb-4 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
                     {language === 'fr' ? 'Configuration' : 'Configuration'}
                   </h2>
-                  <p className={`text-sm mb-6 ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                  <p className={`text-xs md:text-sm mb-4 md:mb-6 ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
                     {language === 'fr' 
                       ? 'Pour chaque actif, sélectionnez une stratégie et les prises de profit à activer'
                       : 'For each asset, select a strategy and profit-taking to activate'}
                   </p>
 
                   {holdings.length === 0 ? (
-                    <div className={`text-center py-12 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                    <div className={`text-center py-8 md:py-12 text-sm md:text-base ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
                       {language === 'fr' 
                         ? 'Aucun holding disponible. Ajoutez des transactions d\'abord.'
                         : 'No holdings available. Add transactions first.'}
                     </div>
                   ) : (
-                    <div className="overflow-x-auto">
-                      <table className="w-full">
-                        <thead>
-                          <tr className={`border-b ${isDarkMode ? 'border-gray-700' : 'border-gray-200'}`}>
-                            <th className={`text-left py-3 px-4 font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-                              Token
-                            </th>
-                            <th className={`text-right py-3 px-4 font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-                              {language === 'fr' ? 'Quantité' : 'Quantity'}
-                            </th>
-                            <th className={`text-right py-3 px-4 font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-                              {language === 'fr' ? 'Investi' : 'Invested'}
-                            </th>
-                            <th className={`text-right py-3 px-4 font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-                              {language === 'fr' ? 'Prix moyen' : 'Avg Price'}
-                            </th>
-                            <th className={`text-left py-3 px-4 font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-                              {language === 'fr' ? 'Stratégie' : 'Strategy'}
-                            </th>
-                            <th className={`text-left py-3 px-4 font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-                              {language === 'fr' ? 'Prises de profit' : 'Profit-taking'}
-                            </th>
-                            <th className={`text-right py-3 px-4 font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-                              {language === 'fr' ? 'Valeur projetée' : 'Projected Value'}
-                            </th>
-                            <th className={`text-right py-3 px-4 font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-                              {language === 'fr' ? 'Rendement' : 'Return'}
-                            </th>
-                            <th className={`text-right py-3 px-4 font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-                              {language === 'fr' ? 'Tokens restants' : 'Remaining Tokens'}
-                            </th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {holdings.map(holding => {
-                            const compatibleStrategies = getCompatibleStrategies(holding.token.symbol);
-                            const selectedStrategyId = appliedStrategies[holding.id] || 'none';
-                            const selectedStrategy = theoreticalStrategies.find(s => s.id === selectedStrategyId);
+                    <>
+                      {/* Version Mobile: Cartes */}
+                      <div className="md:hidden space-y-4">
+                        {holdings.map(holding => {
+                          const compatibleStrategies = getCompatibleStrategies(holding.token.symbol);
+                          const selectedStrategyId = appliedStrategies[holding.id] || 'none';
+                          const selectedStrategy = theoreticalStrategies.find(s => s.id === selectedStrategyId);
+                          
+                          // Calcul rapide pour affichage
+                          let projectedValue = holding.investedAmount;
+                          let returnPercentage = -100;
+                          let remainingTokens = holding.quantity;
+
+                          if (selectedStrategy && selectedStrategyId !== 'none') {
+                            const quantity = holding.quantity;
+                            const averagePrice = holding.averagePrice;
+                            const currentPrice = holding.currentPrice || averagePrice;
                             
-                            // Calcul rapide pour affichage
-                            let projectedValue = holding.investedAmount;
-                            let returnPercentage = -100;
-                            let remainingTokens = holding.quantity;
+                            let remaining = quantity;
+                            let totalProfit = 0;
 
-                            if (selectedStrategy && selectedStrategyId !== 'none') {
-                              const quantity = holding.quantity;
-                              const averagePrice = holding.averagePrice;
-                              const currentPrice = holding.currentPrice || averagePrice;
+                            selectedStrategy.profitTargets.forEach(target => {
+                              const tokensToSell = (quantity * target.sellPercentage) / 100;
                               
-                              let remaining = quantity;
-                              let totalProfit = 0;
+                              let targetPrice = 0;
+                              if (target.targetType === 'percentage') {
+                                targetPrice = averagePrice * (1 + target.targetValue / 100);
+                              } else {
+                                targetPrice = target.targetValue;
+                              }
+                              
+                              const profit = tokensToSell * (targetPrice - averagePrice);
+                              totalProfit += profit;
+                              remaining -= tokensToSell;
+                            });
 
-                              selectedStrategy.profitTargets.forEach(target => {
-                                const tokensToSell = (quantity * target.sellPercentage) / 100;
-                                
-                                let targetPrice = 0;
-                                if (target.targetType === 'percentage') {
-                                  targetPrice = averagePrice * (1 + target.targetValue / 100);
-                                } else {
-                                  targetPrice = target.targetValue;
-                                }
-                                
-                                const profit = tokensToSell * (targetPrice - averagePrice);
-                                totalProfit += profit;
-                                remaining -= tokensToSell;
-                              });
+                            const totalInvestedForHolding = quantity * averagePrice;
+                            returnPercentage = totalInvestedForHolding > 0 
+                              ? (totalProfit / totalInvestedForHolding) * 100 
+                              : 0;
+                            projectedValue = totalProfit + (remaining * currentPrice);
+                            remainingTokens = Math.max(0, remaining);
+                          }
 
-                              const totalInvestedForHolding = quantity * averagePrice;
-                              returnPercentage = totalInvestedForHolding > 0 
-                                ? (totalProfit / totalInvestedForHolding) * 100 
-                                : 0;
-                              projectedValue = totalProfit + (remaining * currentPrice);
-                              remainingTokens = Math.max(0, remaining);
-                            }
-
-                            return (
-                              <tr key={holding.id} className={`border-b ${isDarkMode ? 'border-gray-700' : 'border-gray-200'}`}>
-                                <td className={`py-4 px-4 font-medium ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+                          return (
+                            <div key={holding.id} className={`rounded-lg border p-4 space-y-3 ${isDarkMode ? 'bg-gray-700 border-gray-600' : 'bg-gray-50 border-gray-200'}`}>
+                              {/* Header */}
+                              <div className="flex items-center justify-between pb-2 border-b border-gray-300">
+                                <h3 className={`text-base font-semibold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
                                   {holding.token.symbol}
-                                </td>
-                                <td className={`text-right py-4 px-4 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
-                                  {holding.quantity.toLocaleString()}
-                                </td>
-                                <td className={`text-right py-4 px-4 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
-                                  {formatCurrency(holding.investedAmount)}
-                                </td>
-                                <td className={`text-right py-4 px-4 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
-                                  {formatCurrency(holding.averagePrice)}
-                                </td>
-                                <td className="py-4 px-4">
-                                  <Select
-                                    value={selectedStrategyId}
-                                    onValueChange={(value) => handleStrategyChange(holding.id, value)}
-                                  >
-                                    <SelectTrigger className="w-40">
-                                      <SelectValue />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                      <SelectItem value="none">
-                                        {language === 'fr' ? 'Sans TP (défaut)' : 'No PT (default)'}
-                                      </SelectItem>
-                                      {compatibleStrategies.map(strategy => (
-                                        <SelectItem key={strategy.id} value={strategy.id}>
-                                          {strategy.name}
-                                        </SelectItem>
-                                      ))}
-                                    </SelectContent>
-                                  </Select>
-                                </td>
-                                <td className="py-4 px-4">
-                                  <span className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-                                    {language === 'fr' ? 'Détails' : 'Details'}
+                                </h3>
+                                <span className={`text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                                  {holding.token.name}
+                                </span>
+                              </div>
+
+                              {/* Informations de base */}
+                              <div className="grid grid-cols-2 gap-3 text-sm">
+                                <div>
+                                  <span className={`text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                                    {language === 'fr' ? 'Quantité' : 'Quantity'}
                                   </span>
-                                </td>
-                                <td className={`text-right py-4 px-4 ${projectedValue > holding.investedAmount ? 'text-green-600' : isDarkMode ? 'text-white' : 'text-gray-900'}`}>
-                                  {selectedStrategyId !== 'none' ? formatCurrency(projectedValue) : '-'}
-                                </td>
-                                <td className={`text-right py-4 px-4 ${returnPercentage >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                                  {selectedStrategyId !== 'none' ? formatPercentage(returnPercentage) : '-100,0%'}
-                                </td>
-                                <td className={`text-right py-4 px-4 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
-                                  {selectedStrategyId !== 'none' ? remainingTokens.toFixed(2) : holding.quantity.toLocaleString()}
-                                </td>
-                              </tr>
-                            );
-                          })}
-                        </tbody>
-                      </table>
-                    </div>
+                                  <p className={`font-medium ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+                                    {holding.quantity.toLocaleString()}
+                                  </p>
+                                </div>
+                                <div>
+                                  <span className={`text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                                    {language === 'fr' ? 'Investi' : 'Invested'}
+                                  </span>
+                                  <p className={`font-medium ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+                                    {formatCurrency(holding.investedAmount)}
+                                  </p>
+                                </div>
+                                <div>
+                                  <span className={`text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                                    {language === 'fr' ? 'Prix moyen' : 'Avg Price'}
+                                  </span>
+                                  <p className={`font-medium ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+                                    {formatCurrency(holding.averagePrice)}
+                                  </p>
+                                </div>
+                                <div>
+                                  <span className={`text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                                    {language === 'fr' ? 'Tokens restants' : 'Remaining'}
+                                  </span>
+                                  <p className={`font-medium ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+                                    {selectedStrategyId !== 'none' ? remainingTokens.toFixed(2) : holding.quantity.toLocaleString()}
+                                  </p>
+                                </div>
+                              </div>
+
+                              {/* Stratégie */}
+                              <div>
+                                <Label className={`text-xs mb-2 block ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                                  {language === 'fr' ? 'Stratégie' : 'Strategy'}
+                                </Label>
+                                <Select
+                                  value={selectedStrategyId}
+                                  onValueChange={(value) => handleStrategyChange(holding.id, value)}
+                                >
+                                  <SelectTrigger className="w-full text-sm">
+                                    <SelectValue />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="none">
+                                      {language === 'fr' ? 'Sans TP (défaut)' : 'No PT (default)'}
+                                    </SelectItem>
+                                    {compatibleStrategies.map(strategy => (
+                                      <SelectItem key={strategy.id} value={strategy.id}>
+                                        {strategy.name}
+                                      </SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                              </div>
+
+                              {/* Résultats projetés */}
+                              {selectedStrategyId !== 'none' && (
+                                <div className="grid grid-cols-2 gap-3 pt-2 border-t border-gray-300">
+                                  <div>
+                                    <span className={`text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                                      {language === 'fr' ? 'Valeur projetée' : 'Projected Value'}
+                                    </span>
+                                    <p className={`font-medium ${projectedValue > holding.investedAmount ? 'text-green-600' : isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+                                      {formatCurrency(projectedValue)}
+                                    </p>
+                                  </div>
+                                  <div>
+                                    <span className={`text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                                      {language === 'fr' ? 'Rendement' : 'Return'}
+                                    </span>
+                                    <p className={`font-medium ${returnPercentage >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                                      {formatPercentage(returnPercentage)}
+                                    </p>
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+
+                      {/* Version Desktop: Tableau */}
+                      <div className="hidden md:block w-full">
+                        <table className="w-full">
+                          <thead>
+                            <tr className={`border-b ${isDarkMode ? 'border-gray-700' : 'border-gray-200'}`}>
+                              <th className={`text-left py-3 px-4 text-sm font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                                Token
+                              </th>
+                              <th className={`text-right py-3 px-4 text-sm font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                                {language === 'fr' ? 'Quantité' : 'Quantity'}
+                              </th>
+                              <th className={`text-right py-3 px-4 text-sm font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                                {language === 'fr' ? 'Investi' : 'Invested'}
+                              </th>
+                              <th className={`text-right py-3 px-4 text-sm font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                                {language === 'fr' ? 'Prix moyen' : 'Avg Price'}
+                              </th>
+                              <th className={`text-left py-3 px-4 text-sm font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                                {language === 'fr' ? 'Stratégie' : 'Strategy'}
+                              </th>
+                              <th className={`text-left py-3 px-4 text-sm font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                                {language === 'fr' ? 'Prises de profit' : 'Profit-taking'}
+                              </th>
+                              <th className={`text-right py-3 px-4 text-sm font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                                {language === 'fr' ? 'Valeur projetée' : 'Projected Value'}
+                              </th>
+                              <th className={`text-right py-3 px-4 text-sm font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                                {language === 'fr' ? 'Rendement' : 'Return'}
+                              </th>
+                              <th className={`text-right py-3 px-4 text-sm font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                                {language === 'fr' ? 'Tokens restants' : 'Remaining Tokens'}
+                              </th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {holdings.map(holding => {
+                              const compatibleStrategies = getCompatibleStrategies(holding.token.symbol);
+                              const selectedStrategyId = appliedStrategies[holding.id] || 'none';
+                              const selectedStrategy = theoreticalStrategies.find(s => s.id === selectedStrategyId);
+                              
+                              // Calcul rapide pour affichage
+                              let projectedValue = holding.investedAmount;
+                              let returnPercentage = -100;
+                              let remainingTokens = holding.quantity;
+
+                              if (selectedStrategy && selectedStrategyId !== 'none') {
+                                const quantity = holding.quantity;
+                                const averagePrice = holding.averagePrice;
+                                const currentPrice = holding.currentPrice || averagePrice;
+                                
+                                let remaining = quantity;
+                                let totalProfit = 0;
+
+                                selectedStrategy.profitTargets.forEach(target => {
+                                  const tokensToSell = (quantity * target.sellPercentage) / 100;
+                                  
+                                  let targetPrice = 0;
+                                  if (target.targetType === 'percentage') {
+                                    targetPrice = averagePrice * (1 + target.targetValue / 100);
+                                  } else {
+                                    targetPrice = target.targetValue;
+                                  }
+                                  
+                                  const profit = tokensToSell * (targetPrice - averagePrice);
+                                  totalProfit += profit;
+                                  remaining -= tokensToSell;
+                                });
+
+                                const totalInvestedForHolding = quantity * averagePrice;
+                                returnPercentage = totalInvestedForHolding > 0 
+                                  ? (totalProfit / totalInvestedForHolding) * 100 
+                                  : 0;
+                                projectedValue = totalProfit + (remaining * currentPrice);
+                                remainingTokens = Math.max(0, remaining);
+                              }
+
+                              return (
+                                <tr key={holding.id} className={`border-b ${isDarkMode ? 'border-gray-700' : 'border-gray-200'}`}>
+                                  <td className={`py-4 px-4 text-sm font-medium ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+                                    {holding.token.symbol}
+                                  </td>
+                                  <td className={`text-right py-4 px-4 text-sm ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+                                    {holding.quantity.toLocaleString()}
+                                  </td>
+                                  <td className={`text-right py-4 px-4 text-sm ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+                                    {formatCurrency(holding.investedAmount)}
+                                  </td>
+                                  <td className={`text-right py-4 px-4 text-sm ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+                                    {formatCurrency(holding.averagePrice)}
+                                  </td>
+                                  <td className="py-4 px-4">
+                                    <Select
+                                      value={selectedStrategyId}
+                                      onValueChange={(value) => handleStrategyChange(holding.id, value)}
+                                    >
+                                      <SelectTrigger className="w-40 text-sm">
+                                        <SelectValue />
+                                      </SelectTrigger>
+                                      <SelectContent>
+                                        <SelectItem value="none">
+                                          {language === 'fr' ? 'Sans TP (défaut)' : 'No PT (default)'}
+                                        </SelectItem>
+                                        {compatibleStrategies.map(strategy => (
+                                          <SelectItem key={strategy.id} value={strategy.id}>
+                                            {strategy.name}
+                                          </SelectItem>
+                                        ))}
+                                      </SelectContent>
+                                    </Select>
+                                  </td>
+                                  <td className="py-4 px-4">
+                                    <span className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                                      {language === 'fr' ? 'Détails' : 'Details'}
+                                    </span>
+                                  </td>
+                                  <td className={`text-right py-4 px-4 text-sm ${projectedValue > holding.investedAmount ? 'text-green-600' : isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+                                    {selectedStrategyId !== 'none' ? formatCurrency(projectedValue) : '-'}
+                                  </td>
+                                  <td className={`text-right py-4 px-4 text-sm ${returnPercentage >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                                    {selectedStrategyId !== 'none' ? formatPercentage(returnPercentage) : '-100,0%'}
+                                  </td>
+                                  <td className={`text-right py-4 px-4 text-sm ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+                                    {selectedStrategyId !== 'none' ? remainingTokens.toFixed(2) : holding.quantity.toLocaleString()}
+                                  </td>
+                                </tr>
+                              );
+                            })}
+                          </tbody>
+                        </table>
+                      </div>
+                    </>
                   )}
                 </div>
 
                 {/* Bouton Simuler */}
                 {Object.keys(appliedStrategies).length > 0 && (
-                  <div className="flex justify-end">
+                  <div className="flex justify-end mt-4 md:mt-6">
                     <Button 
                       onClick={handleSimulate}
                       size="lg"
-                      className="bg-blue-600 hover:bg-blue-700 text-white flex items-center gap-2"
+                      className="bg-blue-600 hover:bg-blue-700 text-white flex items-center gap-2 px-4 md:px-6 py-2 md:py-3 text-sm md:text-base w-full sm:w-auto"
                     >
-                      <ChartBarIcon className="h-5 w-5" />
+                      <ChartBarIcon className="h-4 w-4 md:h-5 md:w-5" />
                       {language === 'fr' ? 'Simuler les résultats' : 'Simulate Results'}
                     </Button>
                   </div>
@@ -539,33 +684,33 @@ export default function ConfigPage() {
               </>
             ) : (
               // Vue Résultats
-              <div>
-                <h1 className={`text-2xl font-bold mb-2 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+              <div className="w-full max-w-full">
+                <h1 className={`text-xl md:text-2xl font-bold mb-2 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
                   {language === 'fr' ? 'Résultats de la simulation' : 'Simulation Results'}
                 </h1>
-                <p className={`text-sm mb-6 ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                <p className={`text-xs md:text-sm mb-4 md:mb-6 ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
                   {language === 'fr' 
                     ? 'Projection de votre portefeuille pour la stratégie définie'
                     : 'Portfolio projection for the defined strategy'}
                 </p>
 
                 {/* Onglets */}
-                <div className="flex gap-2 mb-6 border-b border-gray-200">
+                <div className="flex gap-1 md:gap-2 mb-4 md:mb-6 border-b border-gray-200 overflow-x-auto">
                   <button
                     onClick={() => {}}
-                    className={`px-4 py-2 font-medium border-b-2 border-blue-600 ${isDarkMode ? 'text-white' : 'text-blue-600'}`}
+                    className={`px-3 md:px-4 py-2 text-xs md:text-sm font-medium border-b-2 border-blue-600 whitespace-nowrap ${isDarkMode ? 'text-white' : 'text-blue-600'}`}
                   >
                     {language === 'fr' ? 'Résumé' : 'Summary'}
                   </button>
                   <button
                     onClick={() => {}}
-                    className={`px-4 py-2 font-medium ${isDarkMode ? 'text-gray-400 hover:text-white' : 'text-gray-600 hover:text-gray-900'}`}
+                    className={`px-3 md:px-4 py-2 text-xs md:text-sm font-medium whitespace-nowrap ${isDarkMode ? 'text-gray-400 hover:text-white' : 'text-gray-600 hover:text-gray-900'}`}
                   >
                     {language === 'fr' ? 'Graphique' : 'Graph'}
                   </button>
                   <button
                     onClick={() => {}}
-                    className={`px-4 py-2 font-medium ${isDarkMode ? 'text-gray-400 hover:text-white' : 'text-gray-600 hover:text-gray-900'}`}
+                    className={`px-3 md:px-4 py-2 text-xs md:text-sm font-medium whitespace-nowrap ${isDarkMode ? 'text-gray-400 hover:text-white' : 'text-gray-600 hover:text-gray-900'}`}
                   >
                     {language === 'fr' ? 'Détails' : 'Details'}
                   </button>
@@ -574,40 +719,40 @@ export default function ConfigPage() {
                 {simulationResults && (
                   <>
                     {/* Résultats financiers */}
-                    <div className={`rounded-xl p-6 mb-6 ${isDarkMode ? 'bg-gray-800' : 'bg-white border border-gray-200'}`}>
-                      <h2 className={`text-lg font-semibold mb-6 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+                    <div className={`rounded-xl p-4 md:p-6 mb-4 md:mb-6 w-full max-w-full ${isDarkMode ? 'bg-gray-800' : 'bg-white border border-gray-200'}`}>
+                      <h2 className={`text-base md:text-lg font-semibold mb-4 md:mb-6 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
                         {language === 'fr' ? 'Résultats financiers' : 'Financial Results'}
                       </h2>
-                      <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
                         <div>
-                          <div className={`text-sm mb-1 ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                          <div className={`text-xs md:text-sm mb-1 ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
                             {language === 'fr' ? 'Investissement initial' : 'Initial Investment'}
                           </div>
-                          <div className={`text-2xl font-bold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+                          <div className={`text-lg md:text-2xl font-bold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
                             {formatCurrency(simulationResults.totalInvested)}
                           </div>
                         </div>
                         <div>
-                          <div className={`text-sm mb-1 ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                          <div className={`text-xs md:text-sm mb-1 ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
                             {language === 'fr' ? 'Valeur projetée du portefeuille' : 'Projected Portfolio Value'}
                           </div>
-                          <div className={`text-2xl font-bold text-green-600`}>
+                          <div className={`text-lg md:text-2xl font-bold text-green-600`}>
                             {formatCurrency(simulationResults.totalProjectedValue)}
                           </div>
                         </div>
                         <div>
-                          <div className={`text-sm mb-1 ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                          <div className={`text-xs md:text-sm mb-1 ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
                             {language === 'fr' ? 'Profit net projeté' : 'Projected Net Profit'}
                           </div>
-                          <div className={`text-2xl font-bold text-green-600`}>
+                          <div className={`text-lg md:text-2xl font-bold text-green-600`}>
                             {formatCurrency(simulationResults.totalProfit)}
                           </div>
                         </div>
                         <div>
-                          <div className={`text-sm mb-1 ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                          <div className={`text-xs md:text-sm mb-1 ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
                             {language === 'fr' ? 'Rendement' : 'Return'}
                           </div>
-                          <div className={`text-2xl font-bold text-green-600`}>
+                          <div className={`text-lg md:text-2xl font-bold text-green-600`}>
                             {formatPercentage(simulationResults.returnPercentage)}
                           </div>
                         </div>
@@ -615,23 +760,23 @@ export default function ConfigPage() {
                     </div>
 
                     {/* Notes */}
-                    <div className={`rounded-xl p-6 mb-6 ${isDarkMode ? 'bg-gray-800' : 'bg-white border border-gray-200'}`}>
-                      <Label className={isDarkMode ? 'text-gray-300' : 'text-gray-700'}>
+                    <div className={`rounded-xl p-4 md:p-6 mb-4 md:mb-6 w-full max-w-full ${isDarkMode ? 'bg-gray-800' : 'bg-white border border-gray-200'}`}>
+                      <Label className={`text-xs md:text-sm ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
                         {language === 'fr' ? 'Notes' : 'Notes'}
                       </Label>
                       <Textarea
                         value={notes}
                         onChange={(e) => setNotes(e.target.value)}
                         placeholder={language === 'fr' ? 'Ajoutez vos notes ici...' : 'Add your notes here...'}
-                        className={`mt-2 ${isDarkMode ? 'bg-gray-700 border-gray-600 text-white' : ''}`}
+                        className={`mt-2 text-sm md:text-base ${isDarkMode ? 'bg-gray-700 border-gray-600 text-white' : ''}`}
                         rows={4}
                       />
                     </div>
 
                     {/* Options et Actions */}
-                    <div className="flex items-center justify-between">
+                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 md:gap-0">
                       <div className="space-y-2">
-                        <label className={`flex items-center gap-2 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                        <label className={`flex items-center gap-2 text-xs md:text-sm ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
                           <input
                             type="checkbox"
                             checked={enableAlerts}
@@ -640,7 +785,7 @@ export default function ConfigPage() {
                           />
                           {language === 'fr' ? 'Activer les alertes' : 'Activate alerts'}
                         </label>
-                        <label className={`flex items-center gap-2 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                        <label className={`flex items-center gap-2 text-xs md:text-sm ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
                           <input
                             type="checkbox"
                             checked={enableSellOrders}
@@ -655,7 +800,7 @@ export default function ConfigPage() {
                         onClick={handleSaveStrategy}
                         disabled={saving || !strategyName.trim()}
                         size="lg"
-                        className="bg-blue-600 hover:bg-blue-700 text-white flex items-center gap-2"
+                        className="bg-blue-600 hover:bg-blue-700 text-white flex items-center gap-2 px-4 md:px-6 py-2 md:py-3 text-sm md:text-base w-full sm:w-auto"
                       >
                         {saving ? (
                           <>
@@ -664,7 +809,7 @@ export default function ConfigPage() {
                           </>
                         ) : (
                           <>
-                            <CheckIcon className="h-5 w-5" />
+                            <CheckIcon className="h-4 w-4 md:h-5 md:w-5" />
                             {language === 'fr' ? 'Sauvegarder la stratégie' : 'Save Strategy'}
                           </>
                         )}
