@@ -4,7 +4,8 @@ import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
-import { StrategyFormData, StrategyStepFormData, TargetType, TransactionResponse } from '@/types/strategies';
+import { StrategyFormData, StrategyStepFormData, TargetType } from '@/types/strategies';
+import { TransactionResponse } from '@/types/transactions';
 import { formatUSD, formatQuantity } from '@/lib/format';
 import {
   PlusIcon,

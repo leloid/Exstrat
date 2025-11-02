@@ -21,9 +21,10 @@ export const strategiesApi = {
       const response = await api.post<StrategyResponse>(BASE_URL, data);
       console.log('Création réussie:', response);
       return response.data;
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Erreur lors de la création:', error);
-      console.error('Détails de l\'erreur:', error.response?.data);
+      const axiosError = error as { response?: { data?: unknown } };
+      console.error('Détails de l\'erreur:', axiosError.response?.data);
       throw error;
     }
   },
@@ -64,9 +65,10 @@ export const strategiesApi = {
       const response = await api.patch<StrategyResponse>(`${BASE_URL}/${id}`, data);
       console.log('Mise à jour réussie:', response);
       return response.data;
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Erreur lors de la mise à jour:', error);
-      console.error('Détails de l\'erreur:', error.response?.data);
+      const axiosError = error as { response?: { data?: unknown } };
+      console.error('Détails de l\'erreur:', axiosError.response?.data);
       throw error;
     }
   },
@@ -92,9 +94,10 @@ export const strategiesApi = {
     try {
       const response = await api.delete(`${BASE_URL}/${id}`);
       console.log('Suppression réussie:', response);
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Erreur lors de la suppression:', error);
-      console.error('Détails de l\'erreur:', error.response?.data);
+      const axiosError = error as { response?: { data?: unknown } };
+      console.error('Détails de l\'erreur:', axiosError.response?.data);
       throw error;
     }
   },

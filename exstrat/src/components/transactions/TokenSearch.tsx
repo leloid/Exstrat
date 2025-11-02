@@ -7,7 +7,7 @@ import { transactionsApi } from '@/lib/transactions-api';
 import { formatPrice, formatPercentage, formatUSD } from '@/lib/format';
 
 interface TokenSearchProps {
-  onTokenSelect: (token: TokenSearchResult) => void;
+  onTokenSelect: (token: TokenSearchResult | null) => void;
   selectedToken?: TokenSearchResult | null;
 }
 
@@ -33,18 +33,19 @@ export const TokenSearch: React.FC<TokenSearchProps> = ({ onTokenSelect, selecte
       setTokens(results);
       setShowResults(true);
       setError(null);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Erreur recherche tokens:', err);
       // Gérer les différentes erreurs
       let errorMessage = 'Erreur lors de la recherche de tokens';
-      if (err.response?.status === 502 || err.response?.status === 503 || err.response?.status === 504) {
+      const error = err as { response?: { status?: number; data?: { message?: string } }; message?: string };
+      if (error.response?.status === 502 || error.response?.status === 503 || error.response?.status === 504) {
         errorMessage = 'Le serveur backend n\'est pas accessible. Veuillez vérifier que le serveur est démarré.';
-      } else if (err.response?.status === 500) {
+      } else if (error.response?.status === 500) {
         errorMessage = 'Erreur interne du serveur. Veuillez réessayer plus tard.';
-      } else if (err.message) {
-        errorMessage = err.message;
-      } else if (err.response?.data?.message) {
-        errorMessage = err.response.data.message;
+      } else if (error.message) {
+        errorMessage = error.message;
+      } else if (error.response?.data?.message) {
+        errorMessage = error.response.data.message;
       }
       setError(errorMessage);
       setTokens([]);
