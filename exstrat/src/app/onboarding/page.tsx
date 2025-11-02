@@ -21,7 +21,7 @@ import { transactionsApi } from '@/lib/transactions-api';
 import { strategiesApi } from '@/lib/strategies-api';
 import { CreatePortfolioDto, UpdatePortfolioDto } from '@/types/portfolio';
 import { CreateTransactionDto, TokenSearchResult, TransactionResponse } from '@/types/transactions';
-import { CreateStrategyDto, TargetType } from '@/types/strategies';
+import { CreateStrategyDto, TargetType, CreateTheoreticalStrategyDto } from '@/types/strategies';
 import { TokenSearch } from '@/components/transactions/TokenSearch';
 import { usePortfolio } from '@/contexts/PortfolioContext';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/Select';
@@ -421,7 +421,7 @@ export default function OnboardingPage() {
       try {
         if (isStrategyVirtualWallet) {
           // Stratégie théorique
-          const strategyData = {
+          const strategyData: CreateTheoreticalStrategyDto = {
             name: strategyName,
             description: `Stratégie pour ${selectedStrategyToken.symbol} - ${numberOfTargets} cibles de profit`,
             tokenSymbol: selectedStrategyToken.symbol,
@@ -434,7 +434,7 @@ export default function OnboardingPage() {
               targetValue: target.targetValue,
               sellPercentage: target.sellPercentage,
             })),
-            status: 'active',
+            status: 'active' as const,
           };
           
           const createdStrategy = await portfoliosApi.createTheoreticalStrategy(strategyData);
@@ -932,7 +932,7 @@ export default function OnboardingPage() {
       console.log('💾 Création de la stratégie théorique...');
       
       // Préparer les données de la stratégie
-      const strategyData = {
+      const strategyData: CreateTheoreticalStrategyDto = {
         name: strategyName,
         description: `Stratégie pour ${selectedStrategyToken.symbol} - ${numberOfTargets} cibles de profit`,
         tokenSymbol: selectedStrategyToken.symbol,
@@ -945,7 +945,7 @@ export default function OnboardingPage() {
           targetValue: target.targetValue,
           sellPercentage: target.sellPercentage,
         })),
-        status: 'active',
+        status: 'active' as const,
       };
       
       console.log('📤 Données de la stratégie:', strategyData);
