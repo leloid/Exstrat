@@ -25,6 +25,10 @@ export default function TopBar({ currentPageName }: TopBarProps) {
   const [showLanguageMenu, setShowLanguageMenu] = useState(false);
   const userMenuRef = useRef<HTMLDivElement>(null);
   const languageMenuRef = useRef<HTMLDivElement>(null);
+  const userButtonRef = useRef<HTMLButtonElement>(null);
+  const languageButtonRef = useRef<HTMLButtonElement>(null);
+  const [userMenuPosition, setUserMenuPosition] = useState({ top: 0, right: 0 });
+  const [languageMenuPosition, setLanguageMenuPosition] = useState({ top: 0, right: 0 });
 
   const handleSignOut = async () => {
     try {
@@ -33,6 +37,28 @@ export default function TopBar({ currentPageName }: TopBarProps) {
       console.error('Erreur lors de la déconnexion:', error);
     }
   };
+
+  // Calculer la position du menu utilisateur
+  useEffect(() => {
+    if (showUserMenu && userButtonRef.current) {
+      const rect = userButtonRef.current.getBoundingClientRect();
+      setUserMenuPosition({
+        top: rect.bottom + 8,
+        right: window.innerWidth - rect.right
+      });
+    }
+  }, [showUserMenu]);
+
+  // Calculer la position du menu langue
+  useEffect(() => {
+    if (showLanguageMenu && languageButtonRef.current) {
+      const rect = languageButtonRef.current.getBoundingClientRect();
+      setLanguageMenuPosition({
+        top: rect.bottom + 8,
+        right: window.innerWidth - rect.right
+      });
+    }
+  }, [showLanguageMenu]);
 
   // Fermer les menus quand on clique ailleurs
   useEffect(() => {
@@ -98,6 +124,7 @@ export default function TopBar({ currentPageName }: TopBarProps) {
         {/* Sélecteur de langue */}
         <div className="relative" ref={languageMenuRef}>
           <button
+            ref={languageButtonRef}
             onClick={() => setShowLanguageMenu(!showLanguageMenu)}
             className={`p-2 rounded-lg transition-colors flex items-center gap-2 ${
               isDarkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-100'
@@ -112,15 +139,29 @@ export default function TopBar({ currentPageName }: TopBarProps) {
           
           {/* Menu langue */}
           {showLanguageMenu && (
-            <div className="absolute right-0 mt-2 w-32 bg-white rounded-lg shadow-lg border border-gray-200 z-50">
+            <div 
+              className={`fixed w-32 rounded-lg shadow-xl border z-[9999] ${
+                isDarkMode 
+                  ? 'bg-gray-800 border-gray-700' 
+                  : 'bg-white border-gray-200'
+              }`}
+              style={{ 
+                top: `${languageMenuPosition.top}px`,
+                right: `${languageMenuPosition.right}px`
+              }}
+            >
               <div className="py-2">
                 <button 
                   onClick={() => {
                     setLanguage('fr');
                     setShowLanguageMenu(false);
                   }}
-                  className={`w-full px-4 py-2 text-left text-sm hover:bg-gray-100 transition-colors ${
-                    language === 'fr' ? 'bg-blue-50 text-blue-600' : 'text-gray-700'
+                  className={`w-full px-4 py-2 text-left text-sm transition-colors ${
+                    language === 'fr' 
+                      ? 'bg-blue-50 text-blue-600' 
+                      : isDarkMode 
+                        ? 'text-gray-300 hover:bg-gray-700' 
+                        : 'text-gray-700 hover:bg-gray-100'
                   }`}
                 >
                   🇫🇷 Français
@@ -130,8 +171,12 @@ export default function TopBar({ currentPageName }: TopBarProps) {
                     setLanguage('en');
                     setShowLanguageMenu(false);
                   }}
-                  className={`w-full px-4 py-2 text-left text-sm hover:bg-gray-100 transition-colors ${
-                    language === 'en' ? 'bg-blue-50 text-blue-600' : 'text-gray-700'
+                  className={`w-full px-4 py-2 text-left text-sm transition-colors ${
+                    language === 'en' 
+                      ? 'bg-blue-50 text-blue-600' 
+                      : isDarkMode 
+                        ? 'text-gray-300 hover:bg-gray-700' 
+                        : 'text-gray-700 hover:bg-gray-100'
                   }`}
                 >
                   🇬🇧 English
@@ -151,6 +196,7 @@ export default function TopBar({ currentPageName }: TopBarProps) {
         {/* Menu utilisateur */}
         <div className="relative" ref={userMenuRef}>
           <button
+            ref={userButtonRef}
             onClick={() => setShowUserMenu(!showUserMenu)}
             className="w-8 h-8 bg-purple-600 rounded-full flex items-center justify-center hover:bg-purple-700 transition-colors"
           >
@@ -161,22 +207,44 @@ export default function TopBar({ currentPageName }: TopBarProps) {
           
               {/* Dropdown menu */}
               {showUserMenu && (
-                <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 z-50">
+                <div 
+                  className={`fixed w-48 rounded-lg shadow-xl border z-[9999] ${
+                    isDarkMode 
+                      ? 'bg-gray-800 border-gray-700' 
+                      : 'bg-white border-gray-200'
+                  }`}
+                  style={{ 
+                    top: `${userMenuPosition.top}px`,
+                    right: `${userMenuPosition.right}px`
+                  }}
+                >
                   <div className="py-2">
-                    <button className="flex items-center gap-3 w-full px-4 py-2 text-gray-700 hover:bg-gray-100 transition-colors">
-                      <UserCircleIcon className="h-5 w-5" />
+                    <button className={`flex items-center gap-3 w-full px-4 py-2 transition-colors ${
+                      isDarkMode 
+                        ? 'text-gray-300 hover:bg-gray-700' 
+                        : 'text-gray-700 hover:bg-gray-100'
+                    }`}>
+                      <UserCircleIcon className={`h-5 w-5 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`} />
                       {language === 'fr' ? 'Mon profil' : 'My Profile'}
                     </button>
-                    <button className="flex items-center gap-3 w-full px-4 py-2 text-gray-700 hover:bg-gray-100 transition-colors">
-                      <Cog6ToothIcon className="h-5 w-5" />
+                    <button className={`flex items-center gap-3 w-full px-4 py-2 transition-colors ${
+                      isDarkMode 
+                        ? 'text-gray-300 hover:bg-gray-700' 
+                        : 'text-gray-700 hover:bg-gray-100'
+                    }`}>
+                      <Cog6ToothIcon className={`h-5 w-5 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`} />
                       {language === 'fr' ? 'Paramètres' : 'Settings'}
                     </button>
-                    <hr className="my-1" />
+                    <hr className={`my-1 ${isDarkMode ? 'border-gray-700' : 'border-gray-200'}`} />
                     <button 
                       onClick={handleSignOut}
-                      className="flex items-center gap-3 w-full px-4 py-2 text-gray-700 hover:bg-gray-100 transition-colors"
+                      className={`flex items-center gap-3 w-full px-4 py-2 transition-colors ${
+                        isDarkMode 
+                          ? 'text-gray-300 hover:bg-gray-700' 
+                          : 'text-gray-700 hover:bg-gray-100'
+                      }`}
                     >
-                      <ArrowRightOnRectangleIcon className="h-5 w-5" />
+                      <ArrowRightOnRectangleIcon className={`h-5 w-5 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`} />
                       {language === 'fr' ? 'Se déconnecter' : 'Sign Out'}
                     </button>
                   </div>
