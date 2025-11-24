@@ -1,19 +1,118 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 
 interface ExchangeIntegrationProps {
   isDarkMode?: boolean;
   language?: 'fr' | 'en';
 }
 
-const exchanges = [
-  { name: 'Binance', logo: 'B', color: 'bg-yellow-500', borderColor: 'border-yellow-600' },
-  { name: 'Coinbase', logo: 'C', color: 'bg-blue-500', borderColor: 'border-blue-600' },
-  { name: 'Kraken', logo: 'K', color: 'bg-purple-500', borderColor: 'border-purple-600' },
-  { name: 'Ledger', logo: '🔒', color: 'bg-gray-500', borderColor: 'border-gray-600' },
-  { name: 'Metamask', logo: '🦊', color: 'bg-orange-500', borderColor: 'border-orange-600' },
-  { name: 'Phantom', logo: 'P', color: 'bg-purple-400', borderColor: 'border-purple-500' },
+interface Exchange {
+  name: string;
+  logoUrl: string;
+  fallbackColor: string;
+  borderColor: string;
+}
+
+interface ExchangeCardProps {
+  exchange: Exchange;
+  isDarkMode: boolean;
+}
+
+const ExchangeCard: React.FC<ExchangeCardProps> = ({ exchange, isDarkMode }) => {
+  const [imageError, setImageError] = useState(false);
+  const [imageLoading, setImageLoading] = useState(true);
+
+  return (
+    <div
+      className={`relative border-2 rounded-lg p-3 md:p-4 opacity-50 pointer-events-none w-full max-w-full transition-all ${
+        isDarkMode 
+          ? `${exchange.borderColor} bg-gray-800` 
+          : `${exchange.borderColor} bg-gray-50`
+      }`}
+    >
+      <div className="flex flex-col items-center text-center">
+        <div className={`w-10 h-10 md:w-12 md:h-12 rounded-lg flex items-center justify-center mb-2 overflow-hidden relative ${
+          imageError ? exchange.fallbackColor : 'bg-transparent'
+        }`}>
+          {!imageError ? (
+            <>
+              {imageLoading && (
+                <div className={`absolute inset-0 ${exchange.fallbackColor} flex items-center justify-center`}>
+                  <span className={`text-white font-bold text-xs ${exchange.fallbackColor} w-full h-full flex items-center justify-center`}>
+                    {exchange.name.charAt(0)}
+                  </span>
+                </div>
+              )}
+              <img
+                src={exchange.logoUrl}
+                alt={exchange.name}
+                className={`w-full h-full object-contain p-1 ${imageLoading ? 'opacity-0' : 'opacity-100'} transition-opacity`}
+                onError={() => {
+                  setImageError(true);
+                  setImageLoading(false);
+                }}
+                onLoad={() => setImageLoading(false)}
+              />
+            </>
+          ) : (
+            <span className={`text-white font-bold text-base md:text-lg ${exchange.fallbackColor} w-full h-full flex items-center justify-center`}>
+              {exchange.name.charAt(0)}
+            </span>
+          )}
+        </div>
+        <h4 className={`text-xs md:text-sm font-medium ${
+          isDarkMode ? 'text-white' : 'text-gray-900'
+        }`}>
+          {exchange.name}
+        </h4>
+        <p className={`text-xs mt-1 ${
+          isDarkMode ? 'text-gray-400' : 'text-gray-500'
+        }`}>
+          Coming soon
+        </p>
+      </div>
+    </div>
+  );
+};
+
+const exchanges: Exchange[] = [
+  { 
+    name: 'Binance', 
+    logoUrl: '/assets/binance.png',
+    fallbackColor: 'bg-yellow-500', 
+    borderColor: 'border-yellow-600' 
+  },
+  { 
+    name: 'Coinbase', 
+    logoUrl: '/assets/Coinbase.png',
+    fallbackColor: 'bg-blue-500', 
+    borderColor: 'border-blue-600' 
+  },
+  { 
+    name: 'Kraken', 
+    logoUrl: '/assets/kraken.png',
+    fallbackColor: 'bg-purple-500', 
+    borderColor: 'border-purple-600' 
+  },
+  { 
+    name: 'Ledger', 
+    logoUrl: '/assets/ledger.png',
+    fallbackColor: 'bg-gray-500', 
+    borderColor: 'border-gray-600' 
+  },
+  { 
+    name: 'Metamask', 
+    logoUrl: '/assets/meta.png',
+    fallbackColor: 'bg-orange-500', 
+    borderColor: 'border-orange-600' 
+  },
+  { 
+    name: 'Phantom', 
+    logoUrl: '/assets/phantom.png',
+    fallbackColor: 'bg-purple-400', 
+    borderColor: 'border-purple-500' 
+  },
 ];
 
 export const ExchangeIntegration: React.FC<ExchangeIntegrationProps> = ({ 
@@ -59,33 +158,13 @@ export const ExchangeIntegration: React.FC<ExchangeIntegrationProps> = ({
       {/* Grille des exchanges */}
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-6 gap-2 md:gap-4 w-full max-w-full">
         {exchanges.map((exchange, index) => (
-          <div
+          <ExchangeCard 
             key={index}
-            className={`relative border-2 rounded-lg p-3 md:p-4 opacity-50 pointer-events-none w-full max-w-full ${
-              isDarkMode 
-                ? `${exchange.borderColor} bg-gray-800` 
-                : `${exchange.borderColor} bg-gray-50`
-            }`}
-          >
-            <div className="flex flex-col items-center text-center">
-              <div className={`w-10 h-10 md:w-12 md:h-12 rounded-lg ${exchange.color} flex items-center justify-center mb-2`}>
-                <span className="text-white font-bold text-base md:text-lg">{exchange.logo}</span>
-              </div>
-              <h4 className={`text-xs md:text-sm font-medium ${
-                isDarkMode ? 'text-white' : 'text-gray-900'
-              }`}>
-                {exchange.name}
-              </h4>
-              <p className={`text-xs mt-1 ${
-                isDarkMode ? 'text-gray-400' : 'text-gray-500'
-              }`}>
-                Coming soon
-              </p>
-            </div>
-          </div>
+            exchange={exchange}
+            isDarkMode={isDarkMode}
+          />
         ))}
       </div>
     </div>
   );
 };
-

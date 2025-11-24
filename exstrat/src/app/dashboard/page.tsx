@@ -1,8 +1,9 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
+import { usePortfolio } from '@/contexts/PortfolioContext';
 import ProtectedRoute from '@/components/auth/ProtectedRoute';
 import Sidebar from '@/components/layout/Sidebar';
 import TopBar from '@/components/layout/TopBar';
@@ -14,129 +15,193 @@ import {
   PlusIcon,
   WalletIcon,
   BellIcon,
-  AcademicCapIcon
+  AcademicCapIcon,
+  ArrowTrendingUpIcon,
+  ArrowTrendingDownIcon,
+  CurrencyDollarIcon,
+  ArrowRightIcon
 } from '@heroicons/react/24/outline';
+import { formatCurrency, formatPercentage } from '@/lib/format';
+import * as portfoliosApi from '@/lib/portfolios-api';
+import { transactionsApi } from '@/lib/transactions-api';
+import { strategiesApi } from '@/lib/strategies-api';
 
-// SVG personnalisés pour le dashboard
-const ETHPriceChart = ({ userPosition }: { userPosition: number }) => (
-  <svg className="w-full h-32" viewBox="0 0 300 120" fill="none">
-    <defs>
-      <linearGradient id="ethGradient" x1="0%" y1="0%" x2="0%" y2="100%">
-        <stop offset="0%" stopColor="#627EEA" stopOpacity="0.8"/>
-        <stop offset="100%" stopColor="#627EEA" stopOpacity="0.1"/>
-      </linearGradient>
-      <linearGradient id="tealGradient" x1="0%" y1="0%" x2="0%" y2="100%">
-        <stop offset="0%" stopColor="#14B8A6" stopOpacity="0.8"/>
-        <stop offset="100%" stopColor="#14B8A6" stopOpacity="0.1"/>
-      </linearGradient>
-    </defs>
-    
-    {/* Grille de fond */}
-    <rect x="0" y="0" width="300" height="120" fill="#1F2937"/>
-    
-    {/* Lignes de grille */}
-    <line x1="0" y1="24" x2="300" y2="24" stroke="#374151" strokeWidth="1"/>
-    <line x1="0" y1="48" x2="300" y2="48" stroke="#374151" strokeWidth="1"/>
-    <line x1="0" y1="72" x2="300" y2="72" stroke="#374151" strokeWidth="1"/>
-    <line x1="0" y1="96" x2="300" y2="96" stroke="#374151" strokeWidth="1"/>
-    
-    {/* Graphique ETH (ligne violette) */}
-    <path
-      d="M20,100 L50,85 L80,70 L110,60 L140,45 L170,35 L200,25 L230,30 L260,20 L290,15"
-      stroke="#8B5CF6"
-      strokeWidth="2"
-      fill="none"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    />
-    
-    {/* Zone remplie ETH */}
-    <path
-      d="M20,100 L50,85 L80,70 L110,60 L140,45 L170,35 L200,25 L230,30 L260,20 L290,15 L290,120 L20,120 Z"
-      fill="url(#ethGradient)"
-    />
-    
-    {/* Graphique secondaire (ligne teal) */}
-    <path
-      d="M20,95 L50,80 L80,65 L110,55 L140,40 L170,30 L200,20 L230,25 L260,15 L290,10"
-      stroke="#14B8A6"
-      strokeWidth="2"
-      fill="none"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    />
-    
-    {/* Position utilisateur */}
-    <circle cx="200" cy="25" r="6" fill="#8B5CF6" stroke="#FFFFFF" strokeWidth="2"/>
-    <circle cx="200" cy="25" r="3" fill="#FFFFFF"/>
-    
-    {/* Ligne de position utilisateur */}
-    <line x1="200" y1="0" x2="200" y2="120" stroke="#8B5CF6" strokeWidth="1" strokeDasharray="4,4" opacity="0.6"/>
-    
-    {/* Labels Y */}
-    <text x="5" y="20" textAnchor="start" fill="#9CA3AF" fontSize="10">50k</text>
-    <text x="5" y="44" textAnchor="start" fill="#9CA3AF" fontSize="10">40k</text>
-    <text x="5" y="68" textAnchor="start" fill="#9CA3AF" fontSize="10">30k</text>
-    <text x="5" y="92" textAnchor="start" fill="#9CA3AF" fontSize="10">20k</text>
-    <text x="5" y="116" textAnchor="start" fill="#9CA3AF" fontSize="10">10k</text>
-  </svg>
-);
+interface DashboardStats {
+  totalPortfolios: number;
+  totalStrategies: number;
+  totalHoldings: number;
+  totalInvested: number;
+  totalValue: number;
+  totalPNL: number;
+  totalPNLPercentage: number;
+}
 
-const TokenCard = ({ symbol, name, price, change, icon, color, isDarkMode }: {
+interface TopHolding {
   symbol: string;
   name: string;
-  price: string;
-  change: string;
+  quantity: number;
+  investedAmount: number;
+  currentValue: number;
+  pnl: number;
+  pnlPercentage: number;
+  averagePrice: number;
+  currentPrice: number;
+}
+
+interface RecentActivity {
+  id: string;
+  type: 'transaction' | 'strategy' | 'portfolio';
+  title: string;
+  description: string;
+  timestamp: Date;
   icon: string;
   color: string;
-  isDarkMode: boolean;
-}) => {
-  const isPositive = change.startsWith('+');
-  
-  return (
-    <div className={`rounded-xl p-3 md:p-4 w-[140px] md:min-w-[200px] flex-shrink-0 transition-colors ${
-      isDarkMode ? 'bg-gray-800 hover:bg-gray-750' : 'bg-white hover:bg-gray-50 border border-gray-200'
-    }`}>
-      <div className="flex items-center gap-2 md:gap-3 mb-2 md:mb-3">
-        <div className={`w-6 h-6 md:w-8 md:h-8 rounded-full flex items-center justify-center ${color}`}>
-          <span className="text-white font-bold text-xs md:text-sm">{icon}</span>
-        </div>
-        <div>
-          <div className={`font-semibold text-sm md:text-base ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>{symbol}</div>
-          <div className="text-gray-400 text-xs hidden md:block">{name}</div>
-        </div>
-      </div>
-      
-      <div className="mb-2">
-        <div className={`text-base md:text-xl font-bold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>{price}</div>
-        <div className={`text-xs md:text-sm flex items-center gap-1 ${isPositive ? 'text-green-400' : 'text-red-400'}`}>
-          {isPositive ? <ArrowUpIcon className="h-3 w-3" /> : <ArrowDownIcon className="h-3 w-3" />}
-          {change}
-        </div>
-      </div>
-      
-      {/* Mini graphique */}
-      <div className="h-6 md:h-8">
-        <svg className="w-full h-full" viewBox="0 0 100 32" fill="none">
-          <path
-            d="M0,20 L20,15 L40,10 L60,8 L80,12 L100,5"
-            stroke={isPositive ? "#10B981" : "#EF4444"}
-            strokeWidth="1.5"
-            fill="none"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-        </svg>
-      </div>
-    </div>
-  );
-};
+}
 
 export default function DashboardPage() {
   const router = useRouter();
   const { user } = useAuth();
+  const { portfolios, isLoading: portfoliosLoading, refreshPortfolios } = usePortfolio();
   const { isDarkMode, language } = useTheme();
   const [activeTab, setActiveTab] = useState('dashboard');
+  const [stats, setStats] = useState<DashboardStats>({
+    totalPortfolios: 0,
+    totalStrategies: 0,
+    totalHoldings: 0,
+    totalInvested: 0,
+    totalValue: 0,
+    totalPNL: 0,
+    totalPNLPercentage: 0,
+  });
+  const [topHoldings, setTopHoldings] = useState<TopHolding[]>([]);
+  const [recentActivities, setRecentActivities] = useState<RecentActivity[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  // Charger les données du dashboard
+  useEffect(() => {
+    const loadDashboardData = async () => {
+      if (!user || portfoliosLoading) return;
+      
+      setLoading(true);
+      try {
+        // Utiliser les portfolios déjà chargés par le contexte
+        const currentPortfolios = portfolios;
+        
+        // Charger toutes les stratégies théoriques
+        const strategies = await portfoliosApi.getTheoreticalStrategies();
+        
+        // Charger les transactions récentes
+        const transactionsResponse = await transactionsApi.getTransactions({
+          limit: 10,
+          page: 1,
+        });
+        
+        // Calculer les statistiques
+        let totalInvested = 0;
+        let totalValue = 0;
+        const holdingsMap = new Map<string, TopHolding>();
+        
+        // Parcourir tous les portfolios pour calculer les stats
+        for (const portfolio of currentPortfolios) {
+          try {
+            const holdings = await portfoliosApi.getPortfolioHoldings(portfolio.id);
+            
+            holdings.forEach((holding: any) => {
+              const invested = holding.investedAmount || 0;
+              const currentPrice = holding.currentPrice || holding.averagePrice || 0;
+              const quantity = holding.quantity || 0;
+              const currentValue = quantity * currentPrice;
+              const pnl = currentValue - invested;
+              const pnlPercentage = invested > 0 ? (pnl / invested) * 100 : 0;
+              
+              totalInvested += invested;
+              totalValue += currentValue;
+              
+              const symbol = holding.token?.symbol || holding.symbol || 'UNKNOWN';
+              const existing = holdingsMap.get(symbol);
+              
+              if (existing) {
+                existing.quantity += quantity;
+                existing.investedAmount += invested;
+                existing.currentValue += currentValue;
+                existing.pnl += pnl;
+              } else {
+                holdingsMap.set(symbol, {
+                  symbol,
+                  name: holding.token?.name || symbol,
+                  quantity,
+                  investedAmount: invested,
+                  currentValue,
+                  pnl,
+                  pnlPercentage,
+                  averagePrice: holding.averagePrice || 0,
+                  currentPrice,
+                });
+              }
+            });
+          } catch (error) {
+            console.error(`Erreur lors du chargement des holdings pour ${portfolio.id}:`, error);
+          }
+        }
+        
+        // Calculer le PNL total
+        const totalPNL = totalValue - totalInvested;
+        const totalPNLPercentage = totalInvested > 0 ? (totalPNL / totalInvested) * 100 : 0;
+        
+        // Mettre à jour les stats
+        setStats({
+          totalPortfolios: currentPortfolios.length,
+          totalStrategies: strategies.length,
+          totalHoldings: holdingsMap.size,
+          totalInvested,
+          totalValue,
+          totalPNL,
+          totalPNLPercentage,
+        });
+        
+        // Calculer les top holdings (triés par valeur actuelle)
+        const holdingsArray = Array.from(holdingsMap.values());
+        holdingsArray.forEach(holding => {
+          holding.pnl = holding.currentValue - holding.investedAmount;
+          holding.pnlPercentage = holding.investedAmount > 0 
+            ? (holding.pnl / holding.investedAmount) * 100 
+            : 0;
+        });
+        
+        const sortedHoldings = holdingsArray
+          .sort((a, b) => b.currentValue - a.currentValue)
+          .slice(0, 5);
+        setTopHoldings(sortedHoldings);
+        
+        // Créer les activités récentes depuis les transactions
+        const activities: RecentActivity[] = transactionsResponse.transactions
+          .slice(0, 5)
+          .map((tx: any) => {
+            const isBuy = tx.type === 'BUY' || tx.type === 'TRANSFER_IN' || tx.type === 'STAKING' || tx.type === 'REWARD';
+            return {
+              id: tx.id,
+              type: 'transaction' as const,
+              title: isBuy 
+                ? (language === 'fr' ? `Achat ${tx.symbol}` : `Buy ${tx.symbol}`)
+                : (language === 'fr' ? `Vente ${tx.symbol}` : `Sell ${tx.symbol}`),
+              description: `${tx.quantity} ${tx.symbol} - ${formatCurrency(tx.amountInvested || 0)}`,
+              timestamp: new Date(tx.transactionDate || tx.createdAt),
+              icon: isBuy ? '📈' : '📉',
+              color: isBuy ? 'bg-green-500' : 'bg-red-500',
+            };
+          });
+        
+        setRecentActivities(activities);
+      } catch (error) {
+        console.error('Erreur lors du chargement du dashboard:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    loadDashboardData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user, portfoliosLoading, language]);
 
   const handleQuickAction = (action: string) => {
     switch (action) {
@@ -159,13 +224,42 @@ export default function DashboardPage() {
     }
   };
 
-  const tokens = [
-    { symbol: 'BTC', name: 'Bitcoin', price: '€44,230', change: '+6.2%', icon: '₿', color: 'bg-orange-500' },
-    { symbol: 'ETH', name: 'Ethereum', price: '€3,420', change: '-3.8%', icon: 'Ξ', color: 'bg-blue-500' },
-    { symbol: 'ADA', name: 'Cardano', price: '€0.52', change: '+4.2%', icon: '₳', color: 'bg-blue-600' },
-    { symbol: 'SOL', name: 'Solana', price: '€98.50', change: '+12.1%', icon: '◎', color: 'bg-purple-500' },
-    { symbol: 'DOT', name: 'Polkadot', price: '€7.20', change: '-2.1%', icon: '●', color: 'bg-pink-500' },
-  ];
+  const formatTimeAgo = (date: Date): string => {
+    const now = new Date();
+    const diff = now.getTime() - date.getTime();
+    const minutes = Math.floor(diff / 60000);
+    const hours = Math.floor(diff / 3600000);
+    const days = Math.floor(diff / 86400000);
+    
+    if (minutes < 60) {
+      return language === 'fr' ? `Il y a ${minutes} min` : `${minutes}m ago`;
+    } else if (hours < 24) {
+      return language === 'fr' ? `Il y a ${hours}h` : `${hours}h ago`;
+    } else {
+      return language === 'fr' ? `Il y a ${days}j` : `${days}d ago`;
+    }
+  };
+
+  if (loading || portfoliosLoading) {
+    return (
+      <ProtectedRoute>
+        <div className={`min-h-screen flex overflow-x-hidden ${isDarkMode ? 'bg-gray-900' : 'bg-gray-50'}`}>
+          <Sidebar activeTab={activeTab} onTabChange={setActiveTab} isDarkMode={isDarkMode} />
+          <div className="flex-1 flex flex-col md:ml-0 overflow-x-hidden w-full max-w-full">
+            <TopBar currentPageName={language === 'fr' ? 'Vue d\'ensemble' : 'Overview'} />
+            <div className={`flex-1 p-3 md:p-6 flex items-center justify-center ${isDarkMode ? 'bg-gray-900' : 'bg-gray-50'}`}>
+              <div className="text-center">
+                <div className={`animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto mb-4`}></div>
+                <p className={`${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                  {language === 'fr' ? 'Chargement...' : 'Loading...'}
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </ProtectedRoute>
+    );
+  }
 
   return (
     <ProtectedRoute>
@@ -180,311 +274,359 @@ export default function DashboardPage() {
 
           {/* Content */}
           <div className={`flex-1 p-3 md:p-6 overflow-x-hidden max-w-full ${isDarkMode ? 'bg-gray-900' : 'bg-gray-50'}`}>
-            {/* Actions Rapides - En haut de la page */}
-            <div className={`rounded-xl p-3 md:p-4 mb-4 md:mb-6 max-w-full ${
+            {/* Actions Rapides */}
+            <div className={`rounded-xl p-4 mb-6 max-w-full ${
               isDarkMode ? 'bg-gray-800' : 'bg-white border border-gray-200'
             }`}>
-              <div className="grid grid-cols-2 md:flex md:items-center gap-2 md:gap-3 w-full">
+              <div className="grid grid-cols-2 md:flex md:items-center gap-3 w-full">
                 <button 
                   onClick={() => handleQuickAction('transaction')}
-                  className="bg-blue-600 hover:bg-blue-700 text-white px-3 md:px-4 py-2 md:py-3 rounded-lg transition-colors flex flex-col md:flex-row items-center justify-center gap-1 md:gap-2"
+                  className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-3 rounded-lg transition-colors flex items-center justify-center gap-2 shadow-lg hover:shadow-xl"
                 >
-                  <PlusIcon className="h-4 w-4 md:h-5 md:w-5" />
-                  <span className="text-xs md:text-sm font-medium text-center">{language === 'fr' ? 'Transaction' : 'Transaction'}</span>
+                  <PlusIcon className="h-5 w-5" />
+                  <span className="text-sm font-medium">{language === 'fr' ? 'Transaction' : 'Transaction'}</span>
                 </button>
                 <button 
                   onClick={() => handleQuickAction('strategy')}
-                  className="bg-purple-600 hover:bg-purple-700 text-white px-3 md:px-4 py-2 md:py-3 rounded-lg transition-colors flex flex-col md:flex-row items-center justify-center gap-1 md:gap-2"
+                  className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-3 rounded-lg transition-colors flex items-center justify-center gap-2 shadow-lg hover:shadow-xl"
                 >
-                  <ChartBarIcon className="h-4 w-4 md:h-5 md:w-5" />
-                  <span className="text-xs md:text-sm font-medium text-center">{language === 'fr' ? 'Stratégie' : 'Strategy'}</span>
+                  <ChartBarIcon className="h-5 w-5" />
+                  <span className="text-sm font-medium">{language === 'fr' ? 'Stratégie' : 'Strategy'}</span>
                 </button>
                 <button 
                   onClick={() => handleQuickAction('portfolio')}
-                  className="bg-green-600 hover:bg-green-700 text-white px-3 md:px-4 py-2 md:py-3 rounded-lg transition-colors flex flex-col md:flex-row items-center justify-center gap-1 md:gap-2"
+                  className="bg-green-600 hover:bg-green-700 text-white px-4 py-3 rounded-lg transition-colors flex items-center justify-center gap-2 shadow-lg hover:shadow-xl"
                 >
-                  <WalletIcon className="h-4 w-4 md:h-5 md:w-5" />
-                  <span className="text-xs md:text-sm font-medium text-center">{language === 'fr' ? 'Portfolio' : 'Portfolio'}</span>
-                </button>
-                <button 
-                  onClick={() => handleQuickAction('alert')}
-                  className="bg-orange-600 hover:bg-orange-700 text-white px-3 md:px-4 py-2 md:py-3 rounded-lg transition-colors flex flex-col md:flex-row items-center justify-center gap-1 md:gap-2"
-                >
-                  <BellIcon className="h-4 w-4 md:h-5 md:w-5" />
-                  <span className="text-xs md:text-sm font-medium text-center">{language === 'fr' ? 'Alerte' : 'Alert'}</span>
+                  <WalletIcon className="h-5 w-5" />
+                  <span className="text-sm font-medium">{language === 'fr' ? 'Portfolio' : 'Portfolio'}</span>
                 </button>
                 <button 
                   onClick={() => handleQuickAction('onboarding')}
-                  className="bg-indigo-600 hover:bg-indigo-700 text-white px-3 md:px-4 py-2 md:py-3 rounded-lg transition-colors flex flex-col md:flex-row items-center justify-center gap-1 md:gap-2 col-span-2 md:col-span-1"
+                  className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-3 rounded-lg transition-colors flex items-center justify-center gap-2 shadow-lg hover:shadow-xl col-span-2 md:col-span-1"
                 >
-                  <AcademicCapIcon className="h-4 w-4 md:h-5 md:w-5" />
-                  <span className="text-xs md:text-sm font-medium text-center">{language === 'fr' ? 'Onboarding' : 'Onboarding'}</span>
+                  <AcademicCapIcon className="h-5 w-5" />
+                  <span className="text-sm font-medium">{language === 'fr' ? 'Onboarding' : 'Onboarding'}</span>
                 </button>
               </div>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6 mb-4 md:mb-6 w-full max-w-full">
-              {/* Hero Section */}
-              <div className="bg-gradient-to-br from-purple-600 to-pink-600 rounded-xl p-4 md:p-6 relative overflow-hidden w-full max-w-full">
-                <div className="relative z-10">
-                  <h2 className="text-white text-xl md:text-2xl font-bold mb-2">
-                    {language === 'fr' ? 'Préparez votre Bull Run' : 'Prepare Your Bull Run'}
-                  </h2>
-                  <div className="text-purple-200 text-xs md:text-sm mb-3 md:mb-4">EXSTRAT 2.0</div>
-                  <p className="text-white text-xs md:text-sm mb-3 md:mb-4">
-                    {language === 'fr' 
-                      ? 'ExStrat est votre plateforme de stratégies crypto. Optimisez vos gains pour le prochain cycle haussier.'
-                      : 'ExStrat is your crypto strategy platform. Optimize your gains for the next bull cycle.'
-                    }
-                  </p>
-                  <button className="bg-blue-600 text-white px-3 md:px-4 py-1.5 md:py-2 rounded-lg text-xs md:text-sm font-medium hover:bg-blue-700 transition-colors">
-                    {language === 'fr' ? 'Commencer maintenant' : 'Start Now'}
-                  </button>
-          </div>
-
-                {/* Formes géométriques décoratives */}
-                <div className="absolute top-4 right-4 w-8 h-8 bg-black rounded-full opacity-20"></div>
-                <div className="absolute bottom-4 right-8 w-6 h-12 bg-blue-400 rounded-full opacity-20"></div>
-                <div className="absolute top-8 right-12 w-0 h-0 border-l-4 border-r-4 border-b-6 border-transparent border-b-purple-300 opacity-20"></div>
+            {/* Statistiques principales */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+              {/* Total Investi */}
+              <div className={`rounded-xl p-6 ${
+                isDarkMode ? 'bg-gray-800' : 'bg-white border border-gray-200'
+              }`}>
+                <div className="flex items-center justify-between mb-2">
+                  <div className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                    {language === 'fr' ? 'Total Investi' : 'Total Invested'}
+                  </div>
+                  <CurrencyDollarIcon className={`h-5 w-5 ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`} />
+                </div>
+                <div className={`text-2xl font-bold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+                  {formatCurrency(stats.totalInvested)}
+                </div>
               </div>
 
-              {/* ETH Price Chart */}
-              <div className={`rounded-xl p-4 md:p-6 w-full max-w-full ${isDarkMode ? 'bg-gray-800' : 'bg-white border border-gray-200'}`}>
-                <div className="flex items-center justify-between mb-3 md:mb-4">
-                  <div className="flex items-center gap-2">
-                    <div className="w-5 h-5 md:w-6 md:h-6 bg-blue-500 rounded-full flex items-center justify-center">
-                      <span className="text-white text-xs font-bold">Ξ</span>
-                    </div>
-                    <span className={`font-semibold text-sm md:text-base ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>ETH/EUR</span>
-                    <ArrowDownIcon className="h-3 w-3 md:h-4 md:w-4 text-gray-400" />
-                          </div>
-                  <div className="flex gap-1 md:gap-2">
-                    <button className="bg-purple-600 text-white px-2 md:px-3 py-1 rounded text-xs">1D</button>
-                    <button className={`px-2 md:px-3 py-1 rounded text-xs ${isDarkMode ? 'bg-gray-700 text-gray-300' : 'bg-gray-200 text-gray-700'}`}>1W</button>
-                    <button className={`px-2 md:px-3 py-1 rounded text-xs ${isDarkMode ? 'bg-gray-700 text-gray-300' : 'bg-gray-200 text-gray-700'}`}>1M</button>
+              {/* Valeur Totale */}
+              <div className={`rounded-xl p-6 ${
+                isDarkMode ? 'bg-gray-800' : 'bg-white border border-gray-200'
+              }`}>
+                <div className="flex items-center justify-between mb-2">
+                  <div className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                    {language === 'fr' ? 'Valeur Totale' : 'Total Value'}
                   </div>
+                  <ArrowTrendingUpIcon className={`h-5 w-5 ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`} />
                 </div>
-                
-                <div className="mb-3 md:mb-4">
-                  <ETHPriceChart userPosition={200} />
+                <div className={`text-2xl font-bold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+                  {formatCurrency(stats.totalValue)}
                 </div>
-                
-                <div className={`text-xs md:text-sm ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
-                  Position: <span className="text-purple-600 font-semibold">€3,420</span>
+              </div>
+
+              {/* PNL Total */}
+              <div className={`rounded-xl p-6 ${
+                isDarkMode ? 'bg-gray-800' : 'bg-white border border-gray-200'
+              }`}>
+                <div className="flex items-center justify-between mb-2">
+                  <div className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                    {language === 'fr' ? 'Profit/Perte' : 'Profit/Loss'}
+                  </div>
+                  {stats.totalPNL >= 0 ? (
+                    <ArrowTrendingUpIcon className="h-5 w-5 text-green-500" />
+                  ) : (
+                    <ArrowTrendingDownIcon className="h-5 w-5 text-red-500" />
+                  )}
+                </div>
+                <div className={`text-2xl font-bold ${
+                  stats.totalPNL >= 0 ? 'text-green-500' : 'text-red-500'
+                }`}>
+                  {formatCurrency(stats.totalPNL)}
+                </div>
+                <div className={`text-sm mt-1 ${
+                  stats.totalPNL >= 0 ? 'text-green-500' : 'text-red-500'
+                }`}>
+                  {formatPercentage(stats.totalPNLPercentage)}
+                </div>
+              </div>
+
+              {/* Portfolios */}
+              <div className={`rounded-xl p-6 ${
+                isDarkMode ? 'bg-gray-800' : 'bg-white border border-gray-200'
+              }`}>
+                <div className="flex items-center justify-between mb-2">
+                  <div className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                    {language === 'fr' ? 'Portfolios' : 'Portfolios'}
+                  </div>
+                  <WalletIcon className={`h-5 w-5 ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`} />
+                </div>
+                <div className={`text-2xl font-bold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+                  {stats.totalPortfolios}
+                </div>
+                <div className={`text-sm mt-1 ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                  {stats.totalStrategies} {language === 'fr' ? 'stratégies' : 'strategies'}
                 </div>
               </div>
             </div>
 
-            {/* Token Overview */}
-            <div className="mb-4 md:mb-6 w-full max-w-full">
-              <h3 className={`text-base md:text-lg font-semibold mb-3 md:mb-4 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
-                {language === 'fr' ? 'Overview des Tokens' : 'Token Overview'}
-              </h3>
-              <div className="flex gap-3 md:gap-4 pb-2 overflow-x-auto">
-                {tokens.map((token, index) => (
-                  <TokenCard key={index} {...token} isDarkMode={isDarkMode} />
-                ))}
-                <div className={`flex items-center justify-center w-[140px] md:min-w-[200px] flex-shrink-0 rounded-xl border-2 border-dashed transition-colors ${
-                  isDarkMode 
-                    ? 'bg-gray-800 border-gray-600 hover:border-gray-500' 
-                    : 'bg-white border-gray-300 hover:border-gray-400'
-                }`}>
-                  <PlusIcon className="h-6 w-6 md:h-8 md:w-8 text-gray-400" />
-                  <span className="text-gray-400 text-xs md:text-sm ml-2">
-                    {language === 'fr' ? '+ Ajouter' : '+ Add'}
-                  </span>
-                </div>
-              </div>
-          </div>
-
-            {/* Bottom Row */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6 w-full max-w-full">
-              {/* Vue d'ensemble */}
-              <div className={`rounded-xl p-4 md:p-6 w-full max-w-full ${
+            {/* Grille principale */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+              {/* Top Holdings */}
+              <div className={`lg:col-span-2 rounded-xl p-6 ${
                 isDarkMode ? 'bg-gray-800' : 'bg-white border border-gray-200'
               }`}>
-                <h3 className={`font-semibold mb-3 md:mb-4 text-sm md:text-base ${
-                  isDarkMode ? 'text-white' : 'text-gray-900'
-                }`}>Vue d'ensemble</h3>
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
-                      <span className={`text-sm ${
-                        isDarkMode ? 'text-white' : 'text-gray-700'
-                      }`}>Portfolios actifs</span>
-                    </div>
-                    <span className={`font-semibold ${
-                      isDarkMode ? 'text-white' : 'text-gray-900'
-                    }`}>3</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className="w-3 h-3 bg-purple-500 rounded-full"></div>
-                      <span className={`text-sm ${
-                        isDarkMode ? 'text-white' : 'text-gray-700'
-                      }`}>Stratégies en cours</span>
-                    </div>
-                    <span className={`font-semibold ${
-                      isDarkMode ? 'text-white' : 'text-gray-900'
-                    }`}>8</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className="w-3 h-3 bg-green-500 rounded-full"></div>
-                      <span className={`text-sm ${
-                        isDarkMode ? 'text-white' : 'text-gray-700'
-                      }`}>Tokens détenus</span>
-                    </div>
-                    <span className={`font-semibold ${
-                      isDarkMode ? 'text-white' : 'text-gray-900'
-                    }`}>12</span>
-                          </div>
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className="w-3 h-3 bg-orange-500 rounded-full"></div>
-                      <span className={`text-sm ${
-                        isDarkMode ? 'text-white' : 'text-gray-700'
-                      }`}>Alertes actives</span>
-                    </div>
-                    <span className={`font-semibold ${
-                      isDarkMode ? 'text-white' : 'text-gray-900'
-                    }`}>5</span>
-                  </div>
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className={`text-lg font-semibold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+                    {language === 'fr' ? 'Top Holdings' : 'Top Holdings'}
+                  </h3>
+                  <button
+                    onClick={() => router.push('/portfolio')}
+                    className="text-blue-600 hover:text-blue-700 text-sm font-medium flex items-center gap-1"
+                  >
+                    {language === 'fr' ? 'Voir tout' : 'View all'}
+                    <ArrowRightIcon className="h-4 w-4" />
+                  </button>
                 </div>
-          </div>
+                
+                {topHoldings.length === 0 ? (
+                  <div className={`text-center py-8 ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                    <WalletIcon className="h-12 w-12 mx-auto mb-2 opacity-50" />
+                    <p>{language === 'fr' ? 'Aucun holding pour le moment' : 'No holdings yet'}</p>
+                    <button
+                      onClick={() => router.push('/transactions')}
+                      className="mt-4 text-blue-600 hover:text-blue-700 text-sm font-medium"
+                    >
+                      {language === 'fr' ? 'Ajouter une transaction' : 'Add a transaction'}
+                    </button>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {topHoldings.map((holding, index) => (
+                      <div
+                        key={holding.symbol}
+                        className={`flex items-center justify-between p-4 rounded-lg ${
+                          isDarkMode ? 'bg-gray-700' : 'bg-gray-50'
+                        }`}
+                      >
+                        <div className="flex items-center gap-3 flex-1">
+                          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center text-white font-bold">
+                            {holding.symbol.charAt(0)}
+                          </div>
+                          <div className="flex-1">
+                            <div className={`font-semibold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+                              {holding.symbol}
+                            </div>
+                            <div className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                              {holding.quantity.toFixed(4)} {holding.symbol}
+                            </div>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <div className={`font-semibold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+                            {formatCurrency(holding.currentValue)}
+                          </div>
+                          <div className={`text-sm flex items-center gap-1 ${
+                            holding.pnl >= 0 ? 'text-green-500' : 'text-red-500'
+                          }`}>
+                            {holding.pnl >= 0 ? (
+                              <ArrowUpIcon className="h-3 w-3" />
+                            ) : (
+                              <ArrowDownIcon className="h-3 w-3" />
+                            )}
+                            {formatPercentage(holding.pnlPercentage)}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
 
               {/* Activités Récentes */}
-              <div className={`rounded-xl p-4 md:p-6 w-full max-w-full ${
+              <div className={`rounded-xl p-6 ${
                 isDarkMode ? 'bg-gray-800' : 'bg-white border border-gray-200'
               }`}>
-                <div className="flex items-center gap-2 mb-3 md:mb-4">
-                  <div className="w-5 h-5 md:w-6 md:h-6 bg-purple-500 rounded-full flex items-center justify-center">
-                    <span className="text-white text-xs">🕐</span>
-                  </div>
-                  <h3 className={`font-semibold text-sm md:text-base ${
-                    isDarkMode ? 'text-white' : 'text-gray-900'
-                  }`}>Activités Récentes</h3>
+                <div className="flex items-center gap-2 mb-4">
+                  <BellIcon className={`h-5 w-5 ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`} />
+                  <h3 className={`text-lg font-semibold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+                    {language === 'fr' ? 'Activités Récentes' : 'Recent Activities'}
+                  </h3>
                 </div>
-                <div className="space-y-3">
-                  <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 bg-purple-600 rounded-full flex items-center justify-center">
-                      <span className="text-white text-xs">⚡</span>
-                    </div>
-                    <div className="flex-1">
-                      <div className={`text-sm ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>Stratégie BTC activée</div>
-                      <div className="text-gray-400 text-xs">Il y a 2h</div>
-                    </div>
+                
+                {recentActivities.length === 0 ? (
+                  <div className={`text-center py-8 ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                    <p className="text-sm">{language === 'fr' ? 'Aucune activité récente' : 'No recent activities'}</p>
                   </div>
-                  <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 bg-green-600 rounded-full flex items-center justify-center">
-                      <span className="text-white text-xs">+</span>
-                    </div>
-                    <div className="flex-1">
-                      <div className={`text-sm ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>Achat ETH +0.5</div>
-                      <div className="text-gray-400 text-xs">Il y a 4h</div>
-                    </div>
+                ) : (
+                  <div className="space-y-3">
+                    {recentActivities.map((activity) => (
+                      <div
+                        key={activity.id}
+                        className="flex items-start gap-3"
+                      >
+                        <div className={`w-8 h-8 rounded-full ${activity.color} flex items-center justify-center flex-shrink-0`}>
+                          <span className="text-white text-xs">{activity.icon}</span>
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className={`text-sm font-medium ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+                            {activity.title}
+                          </div>
+                          <div className={`text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                            {activity.description}
+                          </div>
+                          <div className={`text-xs mt-1 ${isDarkMode ? 'text-gray-500' : 'text-gray-500'}`}>
+                            {formatTimeAgo(activity.timestamp)}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
                   </div>
-                  <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 bg-yellow-600 rounded-full flex items-center justify-center">
-                      <span className="text-white text-xs">⭐</span>
-                    </div>
-                    <div className="flex-1">
-                      <div className={`text-sm ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>Alerte prix atteinte</div>
-                      <div className="text-gray-400 text-xs">Il y a 6h</div>
-                    </div>
-                  </div>
-                </div>
+                )}
               </div>
             </div>
 
-            {/* Second Bottom Row */}
-            <div className="mt-4 md:mt-6 w-full max-w-full">
-              {/* Top Holdings */}
-              <div className={`rounded-xl p-4 md:p-6 w-full max-w-full ${
+            {/* Statistiques détaillées */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {/* Portfolios */}
+              <div className={`rounded-xl p-6 ${
                 isDarkMode ? 'bg-gray-800' : 'bg-white border border-gray-200'
               }`}>
-                <div className="flex items-center gap-2 mb-3 md:mb-4">
-                  <div className="w-5 h-5 md:w-6 md:h-6 bg-blue-500 rounded-full flex items-center justify-center">
-                    <span className="text-white text-xs font-bold">€</span>
-                  </div>
-                  <h3 className={`font-semibold text-sm md:text-base ${
-                    isDarkMode ? 'text-white' : 'text-gray-900'
-                  }`}>Top Holdings</h3>
+                <div className="flex items-center gap-2 mb-4">
+                  <WalletIcon className={`h-5 w-5 ${isDarkMode ? 'text-blue-400' : 'text-blue-600'}`} />
+                  <h3 className={`font-semibold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+                    {language === 'fr' ? 'Portfolios' : 'Portfolios'}
+                  </h3>
                 </div>
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className="w-3 h-3 bg-orange-500 rounded-full"></div>
-                      <span className={`text-sm ${isDarkMode ? 'text-white' : 'text-gray-700'}`}>BTC Bitcoin</span>
-                    </div>
-                    <div className="text-right">
-                      <div className={`text-sm font-semibold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>€18,420</div>
-                      <div className="text-green-400 text-xs flex items-center gap-1">
-                        <ArrowUpIcon className="h-3 w-3" />
-                        +5.2%
-                      </div>
-                    </div>
+                    <span className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                      {language === 'fr' ? 'Portfolios actifs' : 'Active portfolios'}
+                    </span>
+                    <span className={`font-semibold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+                      {stats.totalPortfolios}
+                    </span>
                   </div>
                   <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
-                      <span className={`text-sm ${isDarkMode ? 'text-white' : 'text-gray-700'}`}>ETH Ethereum</span>
-                    </div>
-                    <div className="text-right">
-                      <div className={`text-sm font-semibold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>€12,150</div>
-                      <div className="text-green-400 text-xs flex items-center gap-1">
-                        <ArrowUpIcon className="h-3 w-3" />
-                        +3.8%
-                      </div>
-                    </div>
+                    <span className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                      {language === 'fr' ? 'Stratégies' : 'Strategies'}
+                    </span>
+                    <span className={`font-semibold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+                      {stats.totalStrategies}
+                    </span>
                   </div>
                   <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className="w-3 h-3 bg-blue-600 rounded-full"></div>
-                      <span className={`text-sm ${isDarkMode ? 'text-white' : 'text-gray-700'}`}>ADA Cardano</span>
-                    </div>
-                    <div className="text-right">
-                      <div className={`text-sm font-semibold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>€4,230</div>
-                      <div className="text-green-400 text-xs flex items-center gap-1">
-                        <ArrowUpIcon className="h-3 w-3" />
-                        +7.1%
-                      </div>
-                    </div>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className="w-3 h-3 bg-purple-500 rounded-full"></div>
-                      <span className={`text-sm ${isDarkMode ? 'text-white' : 'text-gray-700'}`}>SOL Solana</span>
-          </div>
-                    <div className="text-right">
-                      <div className={`text-sm font-semibold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>€3,890</div>
-                      <div className="text-gray-400 text-xs">+0.0%</div>
-                    </div>
-            </div>
-          </div>
-
-                {/* Mini pie chart */}
-                <div className="mt-4 flex justify-center">
-                  <svg className="w-24 h-24" viewBox="0 0 100 100" fill="none">
-                    {/* Fond gris foncé */}
-                    <circle cx="50" cy="50" r="45" fill="#1F2937" stroke="#374151" strokeWidth="2"/>
-                    
-                    {/* Segments du donut */}
-                    <path d="M50 5 A45 45 0 0 1 95 50 L50 50 Z" fill="#F97316" />
-                    <path d="M95 50 A45 45 0 0 1 50 95 L50 50 Z" fill="#3B82F6" />
-                    <path d="M50 95 A45 45 0 0 1 5 50 L50 50 Z" fill="#10B981" />
-                    <path d="M5 50 A45 45 0 0 1 50 5 L50 50 Z" fill="#374151" />
-                    
-                    {/* Cercle central */}
-                    <circle cx="50" cy="50" r="25" fill="#1F2937" />
-                    
-                    {/* Texte central */}
-                    <text x="50" y="48" textAnchor="middle" fill="white" fontSize="10" fontWeight="bold">€45.2K</text>
-                  </svg>
-                    </div>
+                    <span className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                      {language === 'fr' ? 'Tokens détenus' : 'Tokens held'}
+                    </span>
+                    <span className={`font-semibold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+                      {stats.totalHoldings}
+                    </span>
                   </div>
                 </div>
+              </div>
+
+              {/* Performance */}
+              <div className={`rounded-xl p-6 ${
+                isDarkMode ? 'bg-gray-800' : 'bg-white border border-gray-200'
+              }`}>
+                <div className="flex items-center gap-2 mb-4">
+                  <ChartBarIcon className={`h-5 w-5 ${isDarkMode ? 'text-purple-400' : 'text-purple-600'}`} />
+                  <h3 className={`font-semibold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+                    {language === 'fr' ? 'Performance' : 'Performance'}
+                  </h3>
+                </div>
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                      {language === 'fr' ? 'Rendement' : 'Return'}
+                    </span>
+                    <span className={`font-semibold ${
+                      stats.totalPNLPercentage >= 0 ? 'text-green-500' : 'text-red-500'
+                    }`}>
+                      {formatPercentage(stats.totalPNLPercentage)}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                      {language === 'fr' ? 'Valeur investie' : 'Invested value'}
+                    </span>
+                    <span className={`font-semibold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+                      {formatCurrency(stats.totalInvested)}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                      {language === 'fr' ? 'Valeur actuelle' : 'Current value'}
+                    </span>
+                    <span className={`font-semibold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+                      {formatCurrency(stats.totalValue)}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Actions Rapides */}
+              <div className={`rounded-xl p-6 ${
+                isDarkMode ? 'bg-gray-800' : 'bg-white border border-gray-200'
+              }`}>
+                <div className="flex items-center gap-2 mb-4">
+                  <PlusIcon className={`h-5 w-5 ${isDarkMode ? 'text-green-400' : 'text-green-600'}`} />
+                  <h3 className={`font-semibold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+                    {language === 'fr' ? 'Actions Rapides' : 'Quick Actions'}
+                  </h3>
+                </div>
+                <div className="space-y-2">
+                  <button
+                    onClick={() => router.push('/transactions')}
+                    className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors ${
+                      isDarkMode 
+                        ? 'bg-gray-700 hover:bg-gray-600 text-white' 
+                        : 'bg-gray-50 hover:bg-gray-100 text-gray-900'
+                    }`}
+                  >
+                    {language === 'fr' ? '➕ Ajouter une transaction' : '➕ Add transaction'}
+                  </button>
+                  <button
+                    onClick={() => router.push('/strategies')}
+                    className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors ${
+                      isDarkMode 
+                        ? 'bg-gray-700 hover:bg-gray-600 text-white' 
+                        : 'bg-gray-50 hover:bg-gray-100 text-gray-900'
+                    }`}
+                  >
+                    {language === 'fr' ? '📊 Créer une stratégie' : '📊 Create strategy'}
+                  </button>
+                  <button
+                    onClick={() => router.push('/portfolio')}
+                    className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors ${
+                      isDarkMode 
+                        ? 'bg-gray-700 hover:bg-gray-600 text-white' 
+                        : 'bg-gray-50 hover:bg-gray-100 text-gray-900'
+                    }`}
+                  >
+                    {language === 'fr' ? '💼 Gérer les portfolios' : '💼 Manage portfolios'}
+                  </button>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
