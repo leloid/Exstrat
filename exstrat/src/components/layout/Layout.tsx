@@ -14,7 +14,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   const pathname = usePathname();
 
   // Pages qui ne doivent pas avoir la barre de navigation
-  const noNavPages = ['/onboarding', '/landing', '/login', '/dashboard', '/portfolio', '/transactions', '/strategies', '/strategies/create', '/config'];
+  const noNavPages = ['/onboarding', '/landing', '/login', '/dashboard', '/portfolio', '/transactions', '/strategies', '/strategies/create', '/config', '/prevision'];
   const shouldShowNav = user && !noNavPages.includes(pathname);
 
   // Si l'utilisateur n'est pas connecté ou si c'est une page sans nav, ne pas afficher la barre de navigation

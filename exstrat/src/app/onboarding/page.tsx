@@ -273,6 +273,7 @@ export default function OnboardingPage() {
   });
   
   // États pour la stratégie théorique
+  const [strategyStep, setStrategyStep] = useState<number>(1); // Étape actuelle (1-5)
   const [strategyName, setStrategyName] = useState<string>('');
   const [selectedStrategyToken, setSelectedStrategyToken] = useState<TokenSearchResult | null>(null);
   const [selectedStrategyPortfolioId, setSelectedStrategyPortfolioId] = useState<string>(''); // ID de portfolio (pas de wallet virtuel par défaut)
@@ -290,6 +291,7 @@ export default function OnboardingPage() {
     currentPNL?: number;
     currentPNLPercentage?: number;
   } | null>(null);
+  const [availableTokens, setAvailableTokens] = useState<TokenSearchResult[]>([]); // Tokens disponibles dans le wallet sélectionné
   
   const isStrategyVirtualWallet = selectedStrategyPortfolioId === 'virtual';
   
@@ -402,6 +404,39 @@ export default function OnboardingPage() {
     }
   }, [currentStep, investmentSubStep, addCryptoMethod, selectedPortfolioForTable, onboardingPortfolios, portfolios]);
 
+  // Fonction pour recharger les holdings après une modification de transaction
+  const refreshHoldingsAfterTransaction = React.useCallback(async (portfolioId: string) => {
+    try {
+      if (selectedPortfolioForTable === 'all') {
+        // Si "Tous les wallets", recharger tous les portfolios
+        const allPortfolios = [
+          ...onboardingPortfolios.filter(p => p && p.id && p.name),
+          ...portfolios.filter(p => p && p.id && p.name)
+        ];
+        const uniquePortfolios = Array.from(
+          new Map(allPortfolios.map(p => [p.id, p])).values()
+        );
+        const allHoldings: any[] = [];
+        for (const portfolio of uniquePortfolios) {
+          try {
+            const portfolioHoldings = await portfoliosApi.getPortfolioHoldings(portfolio.id);
+            allHoldings.push(...portfolioHoldings);
+          } catch (err) {
+            console.error(`Erreur lors du rechargement des holdings pour ${portfolio.id}:`, err);
+          }
+        }
+        setHoldings(allHoldings);
+      } else if (selectedPortfolioForTable === portfolioId) {
+        // Si c'est le portfolio sélectionné, recharger uniquement ce portfolio
+        const portfolioHoldings = await portfoliosApi.getPortfolioHoldings(portfolioId);
+        setHoldings(portfolioHoldings);
+      }
+      // Si le portfolio modifié n'est pas celui sélectionné, ne rien faire
+    } catch (err) {
+      console.error(`Erreur lors du rechargement des holdings pour ${portfolioId}:`, err);
+    }
+  }, [selectedPortfolioForTable, onboardingPortfolios, portfolios]);
+
   // Recharger les holdings quand le portfolio sélectionné change
   React.useEffect(() => {
     if (currentStep === 0 && investmentSubStep === 'add-crypto' && addCryptoMethod === 'manual') {
@@ -507,11 +542,63 @@ export default function OnboardingPage() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedStrategyPortfolioId, selectedStrategyToken?.symbol]);
   
+  // Charger les tokens disponibles dans le wallet sélectionné
+  React.useEffect(() => {
+    const loadAvailableTokens = async () => {
+      if (!selectedStrategyPortfolioId || selectedStrategyPortfolioId === 'virtual') {
+        setAvailableTokens([]);
+        return;
+      }
+
+      try {
+        const portfolioHoldings = await portfoliosApi.getPortfolioHoldings(selectedStrategyPortfolioId);
+        // Extraire les tokens uniques des holdings et rechercher leurs infos complètes
+        const tokens: TokenSearchResult[] = [];
+        for (const holding of portfolioHoldings.filter(h => h.token && h.quantity > 0)) {
+          try {
+            // Rechercher le token complet via l'API
+            const searchResults = await transactionsApi.searchTokens(holding.token?.symbol || '');
+            const fullToken = searchResults.find(t => t.symbol.toUpperCase() === holding.token?.symbol?.toUpperCase());
+            if (fullToken) {
+              tokens.push(fullToken);
+            }
+          } catch (err) {
+            console.error(`Erreur lors de la recherche du token ${holding.token?.symbol}:`, err);
+          }
+        }
+        setAvailableTokens(tokens);
+      } catch (error) {
+        console.error('Erreur lors du chargement des tokens disponibles:', error);
+        setAvailableTokens([]);
+      }
+    };
+    
+    loadAvailableTokens();
+  }, [selectedStrategyPortfolioId]);
+  
   // Auto-remplir le prix moyen avec le prix actuel du token
   const handleStrategyTokenSelect = (token: TokenSearchResult | null) => {
     setSelectedStrategyToken(token);
     if (token && token.quote?.USD?.price) {
       setStrategyAveragePrice(token.quote.USD.price.toFixed(2));
+    }
+    // Passer à l'étape suivante (quantité)
+    if (token && strategyStep === 2) {
+      setStrategyStep(3);
+    }
+  };
+
+  // Fonction pour passer à l'étape suivante
+  const handleStrategyNextStep = () => {
+    if (strategyStep < 5) {
+      setStrategyStep(strategyStep + 1);
+    }
+  };
+
+  // Fonction pour revenir à l'étape précédente
+  const handleStrategyPreviousStep = () => {
+    if (strategyStep > 1) {
+      setStrategyStep(strategyStep - 1);
     }
   };
 
@@ -1294,6 +1381,12 @@ export default function OnboardingPage() {
         setCreatedData(prev => ({ ...prev, transaction: createdTransaction }));
       }
       
+      // Recharger les holdings pour mettre à jour les PNL après l'ajout/modification d'une transaction
+      const portfolioIdToRefresh = transactionData.portfolioId;
+      if (portfolioIdToRefresh) {
+        await refreshHoldingsAfterTransaction(portfolioIdToRefresh);
+      }
+      
       console.log('✅ Transaction sauvegardée:', editingTransaction ? 'mise à jour' : 'créée');
       resetTransactionForm();
       setShowTransactionModal(false);
@@ -1671,14 +1764,6 @@ export default function OnboardingPage() {
               </div>
             )}
 
-            {/* Success Message */}
-            {createdData.portfolio && (
-              <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg">
-                <p className="text-sm text-green-600">
-                  ✅ Portfolio "{createdData.portfolio.name}" créé avec succès !
-                </p>
-              </div>
-            )}
 
         {/* Tableau d'investissement */}
         {(() => {
@@ -2265,14 +2350,6 @@ export default function OnboardingPage() {
               </div>
             )}
 
-            {/* Success Messages */}
-            {createdData.transaction && (
-              <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg">
-                <p className="text-sm text-green-600">
-                  ✅ Transaction {createdData.transaction.symbol} créée avec succès !
-                </p>
-              </div>
-            )}
 
             <div className="text-center">
               <h3 className="text-base md:text-lg font-semibold text-gray-900 mb-2">
@@ -2293,15 +2370,26 @@ export default function OnboardingPage() {
                       <CardContent className="p-4 md:p-6 space-y-4">
                         <h4 className="text-sm md:text-base font-semibold text-gray-900 mb-4">Paramétrage de la stratégie</h4>
                         
-                        {/* Portfolio */}
-                <div>
-                          <Label htmlFor="portfolio" className="text-xs md:text-sm">Portfolios</Label>
+                        {/* Étape 1 : Portfolio */}
+                {strategyStep >= 1 && (
+                  <div className={strategyStep === 1 ? 'ring-2 ring-blue-200 rounded-lg p-2 -m-2' : ''}>
+                          <Label htmlFor="portfolio" className="text-xs md:text-sm flex items-center gap-2">
+                            1. Choisissez votre wallet
+                            {strategyStep > 1 && (
+                              <span className="text-xs text-green-600 font-medium">✓ Complété</span>
+                            )}
+                          </Label>
                   <Select
                     value={selectedStrategyPortfolioId}
                     onValueChange={(value) => {
                       setSelectedStrategyPortfolioId(value);
-                      if (value !== 'virtual') {
+                      setSelectedStrategyToken(null);
                         setStrategyQuantity('');
+                      setStrategyName('');
+                      setNumberOfTargets(0);
+                      setProfitTargets([]);
+                      if (value !== 'virtual' && value) {
+                        setStrategyStep(2); // Passer à l'étape token
                       }
                     }}
                   >
@@ -2322,64 +2410,85 @@ export default function OnboardingPage() {
                       </div>
                     </SelectContent>
                   </Select>
+                  {selectedStrategyPortfolioId && strategyStep === 1 && (
+                    <div className="mt-4 flex gap-2">
+                      <Button
+                        type="button"
+                        onClick={handleStrategyNextStep}
+                        className="flex-1"
+                      >
+                        Suivant
+                      </Button>
+                    </div>
+                  )}
                 </div>
+                )}
                 
-                        {/* Token */}
-                <div>
-                          <Label htmlFor="token" className="text-xs md:text-sm">Tokens</Label>
+                        {/* Étape 2 : Token */}
+                {strategyStep >= 2 && selectedStrategyPortfolioId && (
+                  <div className={strategyStep === 2 ? 'ring-2 ring-blue-200 rounded-lg p-2 -m-2' : ''}>
+                          <Label htmlFor="token" className="text-xs md:text-sm flex items-center gap-2">
+                            2. Choisissez un token
+                            {strategyStep > 2 && (
+                              <span className="text-xs text-green-600 font-medium">✓ Complété</span>
+                            )}
+                          </Label>
+                  {availableTokens.length > 0 && !isStrategyVirtualWallet ? (
+                    <Select
+                      value={selectedStrategyToken?.symbol || ''}
+                      onValueChange={(value) => {
+                        const token = availableTokens.find(t => t.symbol === value);
+                        handleStrategyTokenSelect(token || null);
+                      }}
+                    >
+                      <SelectTrigger className="text-sm md:text-base">
+                        <SelectValue placeholder="Sélectionner un token" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {availableTokens.map((token) => (
+                          <SelectItem key={token.symbol} value={token.symbol}>
+                            {token.symbol} - {token.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  ) : (
                   <TokenSearch
                     onTokenSelect={handleStrategyTokenSelect}
                     selectedToken={selectedStrategyToken}
                   />
+                  )}
+                  {selectedStrategyToken && strategyStep === 2 && (
+                    <div className="mt-4 flex gap-2">
+                      <Button
+                        type="button"
+                        onClick={handleStrategyPreviousStep}
+                        variant="outline"
+                        className="flex-1"
+                      >
+                        Précédent
+                      </Button>
+                      <Button
+                        type="button"
+                        onClick={handleStrategyNextStep}
+                        className="flex-1"
+                      >
+                        Suivant
+                      </Button>
                 </div>
+                  )}
+                </div>
+                )}
                 
-                        {/* Stratégie */}
-                  <div>
-                          <Label htmlFor="strategyName" className="text-xs md:text-sm">Stratégies</Label>
-                    <Input
-                              id="strategyName"
-                              type="text"
-                              value={strategyName}
-                              onChange={(e) => setStrategyName(e.target.value)}
-                              placeholder="Nom de la stratégie"
-                              className="text-sm md:text-base"
-                            />
-              </div>
-
-                        {/* Nombre de sorties */}
-                <div>
-                  <Label htmlFor="numberOfTargets" className="text-xs md:text-sm">Nombre de sorties</Label>
-                  <Select
-                    value={numberOfTargets > 0 ? numberOfTargets.toString() : ''}
-                    onValueChange={(value) => {
-                      if (value === '') {
-                        setNumberOfTargets(0);
-                        return;
-                      }
-                      const val = parseInt(value);
-                      if (!isNaN(val) && val >= 1 && val <= 6) {
-                        setNumberOfTargets(val);
-                      }
-                    }}
-                  >
-                            <SelectTrigger className="text-sm md:text-base">
-                      <SelectValue placeholder="Sélectionner" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="1">1 sortie</SelectItem>
-                      <SelectItem value="2">2 sorties</SelectItem>
-                      <SelectItem value="3">3 sorties</SelectItem>
-                      <SelectItem value="4">4 sorties</SelectItem>
-                      <SelectItem value="5">5 sorties</SelectItem>
-                      <SelectItem value="6">6 sorties</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                        {/* Quantité et Prix moyen */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 md:gap-4">
-                  <div>
-                            <Label htmlFor="quantity" className="text-xs md:text-sm">Quantité *</Label>
+                        {/* Étape 3 : Quantité */}
+                {strategyStep >= 3 && selectedStrategyToken && (
+                  <div className={strategyStep === 3 ? 'ring-2 ring-blue-200 rounded-lg p-2 -m-2' : ''}>
+                            <Label htmlFor="quantity" className="text-xs md:text-sm flex items-center gap-2">
+                              3. Quantité à appliquer à la stratégie
+                              {strategyStep > 3 && (
+                                <span className="text-xs text-green-600 font-medium">✓ Complété</span>
+                      )}
+                    </Label>
                     <Input
                       id="quantity"
                       type="number"
@@ -2415,32 +2524,106 @@ export default function OnboardingPage() {
                                 Quantité supérieure à celle disponible ({availableStrategyQuantity.toLocaleString(undefined, { maximumFractionDigits: 8 })})
                       </p>
                     )}
+                    {strategyQuantity && strategyStep === 3 && (
+                      <div className="mt-4 flex gap-2">
+                        <Button
+                          type="button"
+                          onClick={handleStrategyPreviousStep}
+                          variant="outline"
+                          className="flex-1"
+                        >
+                          Précédent
+                        </Button>
+                        <Button
+                          type="button"
+                          onClick={handleStrategyNextStep}
+                          className="flex-1"
+                        >
+                          Suivant
+                        </Button>
                   </div>
-                  <div>
-                    <Label htmlFor="averagePrice" className={`text-xs md:text-sm ${!isStrategyVirtualWallet && investmentData?.averagePrice ? 'text-gray-400' : ''}`}>
-                      Prix moyen (USD) *
-                    </Label>
-                    <Input
-                      id="averagePrice"
-                      type="number"
-                      value={strategyAveragePrice}
-                      onChange={(e) => setStrategyAveragePrice(e.target.value)}
-                      placeholder="Ex: 45000"
-                      step="0.01"
-                      required
-                      className={`text-sm md:text-base ${!isStrategyVirtualWallet && investmentData?.averagePrice ? 'bg-gray-100 text-gray-500 cursor-not-allowed' : ''}`}
-                      readOnly={!isStrategyVirtualWallet && investmentData?.averagePrice ? true : false}
-                    />
-                    {!isStrategyVirtualWallet && investmentData?.averagePrice && (
-                      <p className="mt-1 text-xs md:text-sm text-gray-400">
-                        Prix moyen calculé depuis vos transactions
-                      </p>
                     )}
                   </div>
+                )}
+                
+                        {/* Étape 4 : Nom de la stratégie */}
+                {strategyStep >= 4 && strategyQuantity && (
+                  <div className={strategyStep === 4 ? 'ring-2 ring-blue-200 rounded-lg p-2 -m-2' : ''}>
+                          <Label htmlFor="strategyName" className="text-xs md:text-sm flex items-center gap-2">
+                            4. Nom de la stratégie
+                            {strategyStep > 4 && (
+                              <span className="text-xs text-green-600 font-medium">✓ Complété</span>
+                            )}
+                          </Label>
+                    <Input
+                              id="strategyName"
+                              type="text"
+                              value={strategyName}
+                              onChange={(e) => setStrategyName(e.target.value)}
+                              placeholder="Nom de la stratégie"
+                      className="text-sm md:text-base"
+                    />
+                    {strategyName && strategyStep === 4 && (
+                      <div className="mt-4 flex gap-2">
+                        <Button
+                          type="button"
+                          onClick={handleStrategyPreviousStep}
+                          variant="outline"
+                          className="flex-1"
+                        >
+                          Précédent
+                        </Button>
+                        <Button
+                          type="button"
+                          onClick={handleStrategyNextStep}
+                          className="flex-1"
+                        >
+                          Suivant
+                        </Button>
+                  </div>
+                    )}
                 </div>
+                )}
+
+                        {/* Étape 5 : Nombre de sorties */}
+                {strategyStep >= 5 && strategyName && (
+                  <div className={strategyStep === 5 ? 'ring-2 ring-blue-200 rounded-lg p-2 -m-2' : ''}>
+                  <Label htmlFor="numberOfTargets" className="text-xs md:text-sm flex items-center gap-2">
+                    5. Nombre de sorties
+                    {strategyStep > 5 && (
+                      <span className="text-xs text-green-600 font-medium">✓ Complété</span>
+                    )}
+                  </Label>
+                  <Select
+                    value={numberOfTargets > 0 ? numberOfTargets.toString() : ''}
+                    onValueChange={(value) => {
+                      if (value === '') {
+                        setNumberOfTargets(0);
+                        return;
+                      }
+                      const val = parseInt(value);
+                      if (!isNaN(val) && val >= 1 && val <= 6) {
+                        setNumberOfTargets(val);
+                      }
+                    }}
+                  >
+                            <SelectTrigger className="text-sm md:text-base">
+                      <SelectValue placeholder="Sélectionner" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="1">1 sortie</SelectItem>
+                      <SelectItem value="2">2 sorties</SelectItem>
+                      <SelectItem value="3">3 sorties</SelectItem>
+                      <SelectItem value="4">4 sorties</SelectItem>
+                      <SelectItem value="5">5 sorties</SelectItem>
+                      <SelectItem value="6">6 sorties</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                )}
                       </CardContent>
                     </Card>
-              </div>
+                </div>
 
                   {/* Colonne droite : Zone B - Données d'investissement */}
                   <div className="space-y-4 md:space-y-6">
@@ -2453,7 +2636,7 @@ export default function OnboardingPage() {
                           <span className="text-sm md:text-base font-semibold text-gray-900">
                             {investmentData?.numberOfTransactions || (strategyQuantity && strategyAveragePrice ? 1 : 0)}
                           </span>
-                        </div>
+                </div>
                         <div className="flex justify-between items-center">
                           <span className="text-xs md:text-sm text-gray-600">Total investi</span>
                           <span className="text-sm md:text-base font-semibold text-green-600">
@@ -2463,13 +2646,13 @@ export default function OnboardingPage() {
                                 ? formatCurrency(parseFloat(strategyQuantity) * parseFloat(strategyAveragePrice), '$', 2)
                                 : '$0.00')}
                           </span>
-                        </div>
+              </div>
                         <div className="flex justify-between items-center">
                           <span className="text-xs md:text-sm text-gray-600">Tokens détenus</span>
                           <span className="text-sm md:text-base font-semibold text-orange-600">
                             {investmentData?.totalQuantity || (strategyQuantity ? parseFloat(strategyQuantity).toLocaleString(undefined, { maximumFractionDigits: 8 }) : '0')}
                           </span>
-                        </div>
+                </div>
                         <div className="flex justify-between items-center">
                           <span className="text-xs md:text-sm text-gray-600">Prix moyen d'achat</span>
                           <span className="text-sm md:text-base font-semibold text-purple-600">
@@ -2540,35 +2723,72 @@ export default function OnboardingPage() {
                       <div key={target.id} className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-8 items-stretch">
                         {/* Carte de gauche : Paramètres */}
                         <div className="border p-4 md:p-6 rounded-lg space-y-4 md:space-y-5 bg-gray-50 h-full flex flex-col">
-                          <div className="flex items-center gap-2">
-                            <div className="w-8 h-8 rounded-full bg-blue-600 text-white flex items-center justify-center text-sm font-semibold">
-                              {index + 1}
+                          <div className="flex items-center justify-between gap-2">
+                            <div className="flex items-center gap-2">
+                              <div className="w-8 h-8 rounded-full bg-blue-600 text-white flex items-center justify-center text-sm font-semibold">
+                                {index + 1}
+                              </div>
+                              <h3 className="text-sm md:text-base font-semibold text-blue-600">Cible de sortie</h3>
                             </div>
-                            <h3 className="text-sm md:text-base font-semibold text-gray-900">Cible de sortie</h3>
+                            {/* Toggle Switch */}
+                            <div className="relative inline-flex items-center">
+                              <button
+                                type="button"
+                                onClick={() => handleTargetChange(index, 'targetType', target.targetType === 'percentage' ? 'price' : 'percentage')}
+                                className={`
+                                  relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2
+                                  ${target.targetType === 'price' ? 'bg-blue-600' : 'bg-gray-300'}
+                                `}
+                              >
+                                <span
+                                  className={`
+                                    inline-block h-4 w-4 transform rounded-full bg-white transition-transform
+                                    ${target.targetType === 'price' ? 'translate-x-6' : 'translate-x-1'}
+                                  `}
+                                />
+                              </button>
+                            </div>
                           </div>
                           
                           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 md:gap-4">
                             <div>
-                              <Label htmlFor={`targetType-${index}`} className="text-xs md:text-sm">Type</Label>
-                              <Select
-                                value={target.targetType}
-                                onValueChange={(value: string) => 
-                                  handleTargetChange(index, 'targetType', value as 'percentage' | 'price')
-                                }
-                              >
-                                <SelectTrigger className="text-sm md:text-base">
-                                  <SelectValue />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  <SelectItem value="percentage">% de profit</SelectItem>
-                                  <SelectItem value="price">Prix exact</SelectItem>
-                                </SelectContent>
-                              </Select>
-                            </div>
-                            <div>
                               <Label htmlFor={`targetValue-${index}`} className="text-xs md:text-sm">
                                 {target.targetType === 'percentage' ? 'Pourcentage (%)' : 'Prix (USD)'}
                               </Label>
+                              {target.targetType === 'percentage' ? (
+                                <div className="flex items-center gap-2">
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      const newValue = Math.max(0, target.targetValue - 10);
+                                      handleTargetChange(index, 'targetValue', newValue);
+                                    }}
+                                    className="flex-shrink-0 w-10 h-10 flex items-center justify-center border border-gray-300 rounded-lg bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors"
+                                  >
+                                    <span className="text-lg font-semibold text-gray-600">−</span>
+                                  </button>
+                                  <Input
+                                    id={`targetValue-${index}`}
+                                    type="number"
+                                    value={target.targetValue}
+                                    onChange={(e) => 
+                                      handleTargetChange(index, 'targetValue', parseFloat(e.target.value) || 0)
+                                    }
+                                    step="0.01"
+                                    className="text-sm md:text-base flex-1"
+                                  />
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      const newValue = target.targetValue + 10;
+                                      handleTargetChange(index, 'targetValue', newValue);
+                                    }}
+                                    className="flex-shrink-0 w-10 h-10 flex items-center justify-center border border-gray-300 rounded-lg bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors"
+                                  >
+                                    <span className="text-lg font-semibold text-gray-600">+</span>
+                                  </button>
+                                </div>
+                              ) : (
                               <Input
                                 id={`targetValue-${index}`}
                                 type="number"
@@ -2579,6 +2799,35 @@ export default function OnboardingPage() {
                                 step="0.01"
                                 className="text-sm md:text-base"
                               />
+                              )}
+                              {target.targetType === 'percentage' && !isNaN(avgPrice) && avgPrice > 0 && (
+                                <div className="mt-2">
+                                  <p className="text-xs text-gray-500 mb-1">Pourcentage du prix moyen d'achat</p>
+                                  <div className="flex items-center gap-3">
+                                    <p className="text-sm md:text-base font-semibold text-purple-600 underline">
+                                      {target.targetValue > 0 ? `${100 + target.targetValue}%` : '100%'}
+                                    </p>
+                                    <p className="text-sm md:text-base font-semibold text-purple-600">
+                                      {formatCurrency(targetPrice, '$', 6)}
+                                    </p>
+                            </div>
+                          </div>
+                              )}
+                              {target.targetType === 'price' && (
+                                <div className="mt-2">
+                                  <p className="text-xs text-gray-500">Valeur exacte du token</p>
+                                </div>
+                              )}
+                              {info && (
+                                <div className="mt-3 pt-3 border-t border-gray-200">
+                                  <div className="flex justify-between items-center">
+                                    <span className="text-xs md:text-sm text-gray-600 font-medium">Nombre de tokens restants:</span>
+                                    <span className="text-sm md:text-base font-bold text-orange-600">
+                                      {info.remainingTokens.toFixed(8)}
+                              </span>
+                            </div>
+                                </div>
+                              )}
                             </div>
                           </div>
 
@@ -2824,14 +3073,6 @@ export default function OnboardingPage() {
               </div>
             )}
 
-            {/* Success Messages */}
-            {createdData.strategy && (
-              <div className="mb-3 md:mb-4 p-3 bg-green-50 border border-green-200 rounded-lg">
-                <p className="text-xs md:text-sm text-green-600">
-                  ✅ Stratégie "{createdData.strategy.name}" créée avec succès !
-                </p>
-              </div>
-            )}
 
             <div className="text-center">
               <h3 className="text-base md:text-lg font-semibold text-gray-900 mb-2">
