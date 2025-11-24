@@ -313,7 +313,12 @@ export default function OnboardingPage() {
     const loadPrevisionTheoreticalStrategies = async () => {
       try {
         const data = await portfoliosApi.getTheoreticalStrategies();
-        setPrevisionTheoreticalStrategies(data);
+        // Normaliser le tokenSymbol en majuscules pour la comparaison
+        const normalizedData = data.map(strategy => ({
+          ...strategy,
+          tokenSymbol: strategy.tokenSymbol?.toUpperCase() || '',
+        }));
+        setPrevisionTheoreticalStrategies(normalizedData);
       } catch (error) {
         console.error('Erreur lors du chargement des stratégies:', error);
       }
@@ -478,7 +483,10 @@ export default function OnboardingPage() {
 
   // Obtenir les stratégies compatibles
   const getPrevisionCompatibleStrategies = (tokenSymbol: string) => {
-    return previsionTheoreticalStrategies.filter(s => s.tokenSymbol === tokenSymbol);
+    const upperSymbol = tokenSymbol.toUpperCase();
+    return previsionTheoreticalStrategies.filter(s => 
+      s.tokenSymbol?.toUpperCase() === upperSymbol
+    );
   };
 
   // Sauvegarder la prévision
@@ -1140,6 +1148,33 @@ export default function OnboardingPage() {
           const createdStrategy = await portfoliosApi.createTheoreticalStrategy(strategyData);
           console.log('✅ Stratégie théorique créée:', createdStrategy);
           setCreatedData(prev => ({ ...prev, strategy: createdStrategy }));
+          
+          // Ajouter la stratégie créée à la liste des stratégies théoriques pour l'étape prévision
+          if (createdStrategy && createdStrategy.id) {
+            // Formater la stratégie au format attendu (même format que getTheoreticalStrategies)
+            const formattedStrategy = {
+              id: createdStrategy.id,
+              name: createdStrategy.name,
+              tokenSymbol: createdStrategy.tokenSymbol?.toUpperCase() || selectedStrategyToken.symbol.toUpperCase(),
+              profitTargets: Array.isArray(createdStrategy.profitTargets) 
+                ? createdStrategy.profitTargets 
+                : [],
+            };
+            
+            console.log('📝 Ajout de la stratégie à la liste:', formattedStrategy);
+            
+            setPrevisionTheoreticalStrategies(prev => {
+              // Vérifier si la stratégie n'existe pas déjà
+              const exists = prev.some(s => s.id === createdStrategy.id);
+              if (exists) {
+                console.log('⚠️ Stratégie déjà présente, mise à jour');
+                // Mettre à jour la stratégie existante
+                return prev.map(s => s.id === createdStrategy.id ? formattedStrategy : s);
+              }
+              console.log('✅ Nouvelle stratégie ajoutée, total:', prev.length + 1);
+              return [...prev, formattedStrategy];
+            });
+          }
         } else {
           // Stratégie réelle
           const strategyData: CreateStrategyDto = {
@@ -3873,7 +3908,7 @@ export default function OnboardingPage() {
                   {currentStep === 0 && investmentSubStep === 'add-crypto' && addCryptoMethod === 'exchange' && 'Link Exchange'}
                   {currentStep === 0 && investmentSubStep === 'add-crypto' && addCryptoMethod === 'wallet' && 'Crypto Wallet'}
                   {currentStep === 1 && 'Créez votre première stratégie'}
-                  {currentStep === 2 && 'Configurez votre wallet avec vos stratégies'}
+                  {currentStep === 2 && 'Créez vos prévisions'}
                 </h1>
                 <div className="flex items-center justify-center sm:justify-start text-xs md:text-sm text-gray-500 mt-1">
                   <ShieldCheckIcon className="w-3 h-3 md:w-4 md:h-4 mr-1" />
@@ -3905,14 +3940,14 @@ export default function OnboardingPage() {
             {/* Masquer le bouton "Suivant" sur la page "Ajouter de la crypto" et "Créer la stratégie" */}
             {!(currentStep === 0 && investmentSubStep === 'add-crypto' && !addCryptoMethod) && 
              !(currentStep === 1) && (
-              <Button
-                onClick={handleNext}
-                disabled={isLoading}
-                className="w-full sm:w-auto px-6 md:px-8 py-2 md:py-3 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-medium rounded-lg flex items-center justify-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed text-sm md:text-base"
-              >
-                <span>{isLoading ? 'Création...' : (currentStep === steps.length - 1 ? 'Terminer' : 'Suivant')}</span>
-                {!isLoading && <ArrowRightIcon className="w-4 h-4" />}
-              </Button>
+            <Button
+              onClick={handleNext}
+              disabled={isLoading}
+              className="w-full sm:w-auto px-6 md:px-8 py-2 md:py-3 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-medium rounded-lg flex items-center justify-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed text-sm md:text-base"
+            >
+              <span>{isLoading ? 'Création...' : (currentStep === steps.length - 1 ? 'Terminer' : 'Suivant')}</span>
+              {!isLoading && <ArrowRightIcon className="w-4 h-4" />}
+            </Button>
             )}
           </div>
 
