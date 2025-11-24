@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { usePortfolio } from '@/contexts/PortfolioContext';
 import ProtectedRoute from '@/components/auth/ProtectedRoute';
@@ -83,16 +83,13 @@ interface SavedForecast {
 
 type TabType = 'create' | 'list';
 
-export default function PrevisionPage() {
+function PrevisionPageContent() {
   const searchParams = useSearchParams();
   const { portfolios, isLoading, refreshPortfolios } = usePortfolio();
   const { isDarkMode, language } = useTheme();
   
   const [activeTab, setActiveTab] = useState('config');
-  const [currentTab, setCurrentTab] = useState<TabType>(() => {
-    const tabParam = searchParams.get('tab');
-    return (tabParam === 'list' ? 'list' : 'create') as TabType;
-  });
+  const [currentTab, setCurrentTab] = useState<TabType>('create');
   const [selectedPortfolioId, setSelectedPortfolioId] = useState<string>('');
   const [forecastName, setForecastName] = useState('');
   const [theoreticalStrategies, setTheoreticalStrategies] = useState<TheoreticalStrategy[]>([]);
@@ -102,6 +99,16 @@ export default function PrevisionPage() {
   const [loading, setLoading] = useState(true);
   const [savedForecasts, setSavedForecasts] = useState<SavedForecast[]>([]);
   const [expandedForecastId, setExpandedForecastId] = useState<string | null>(null);
+
+  useEffect(() => {
+    // Lire le paramètre tab depuis l'URL
+    const tabParam = searchParams.get('tab');
+    if (tabParam === 'list') {
+      setCurrentTab('list');
+    } else {
+      setCurrentTab('create');
+    }
+  }, [searchParams]);
 
   useEffect(() => {
     refreshPortfolios();
@@ -1039,5 +1046,20 @@ export default function PrevisionPage() {
         </div>
       </div>
     </ProtectedRoute>
+  );
+}
+
+export default function PrevisionPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Chargement...</p>
+        </div>
+      </div>
+    }>
+      <PrevisionPageContent />
+    </Suspense>
   );
 }
