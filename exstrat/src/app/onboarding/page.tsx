@@ -39,6 +39,7 @@ interface ProfitTarget {
   targetType: 'percentage' | 'price';
   targetValue: number;
   sellPercentage: number;
+  enabled: boolean; // Toggle pour activer/désactiver la cible
 }
 
 // Icônes pour les plateformes
@@ -279,6 +280,15 @@ export default function OnboardingPage() {
   const [strategyAveragePrice, setStrategyAveragePrice] = useState<string>('');
   const [numberOfTargets, setNumberOfTargets] = useState<number>(3);
   const [profitTargets, setProfitTargets] = useState<ProfitTarget[]>([]);
+  const [investmentData, setInvestmentData] = useState<{
+    numberOfTransactions: number;
+    totalInvested: number;
+    totalQuantity: number;
+    averagePrice: number;
+    currentPrice?: number;
+    currentPNL?: number;
+    currentPNLPercentage?: number;
+  } | null>(null);
   
   const isStrategyVirtualWallet = selectedStrategyPortfolioId === 'virtual';
   
@@ -444,6 +454,7 @@ export default function OnboardingPage() {
         targetType: 'percentage',
         targetValue: (i + 1) * 50, // 50%, 100%, 150%, etc.
         sellPercentage: 100 / numberOfTargets, // Répartition égale
+        enabled: true, // Activé par défaut
       });
     }
     setProfitTargets(newTargets);
@@ -495,6 +506,82 @@ export default function OnboardingPage() {
     }
   };
 
+  // Calculer les données d'investissement depuis les transactions réelles
+  React.useEffect(() => {
+    const calculateInvestmentData = async () => {
+      if (isStrategyVirtualWallet || !selectedStrategyToken || !selectedStrategyPortfolioId) {
+        setInvestmentData(null);
+        return;
+      }
+
+      try {
+        // Récupérer toutes les transactions pour ce portfolio et ce token
+        const allTransactionsForPortfolio = [
+          ...allTransactions,
+          ...onboardingTransactions
+        ].filter(t => 
+          t.portfolioId === selectedStrategyPortfolioId && 
+          t.symbol?.toUpperCase() === selectedStrategyToken.symbol.toUpperCase()
+        );
+
+        if (allTransactionsForPortfolio.length === 0) {
+          setInvestmentData(null);
+          return;
+        }
+
+        // Calculer les totaux
+        let totalQuantity = 0;
+        let totalInvested = 0;
+        let buyCount = 0;
+
+        allTransactionsForPortfolio.forEach(tx => {
+          if (tx.type === 'BUY' || tx.type === 'TRANSFER_IN' || tx.type === 'STAKING' || tx.type === 'REWARD') {
+            totalQuantity += parseFloat(tx.quantity?.toString() || '0');
+            totalInvested += parseFloat(tx.amountInvested?.toString() || '0');
+            buyCount++;
+          } else if (tx.type === 'SELL' || tx.type === 'TRANSFER_OUT') {
+            totalQuantity = Math.max(0, totalQuantity - parseFloat(tx.quantity?.toString() || '0'));
+            totalInvested = Math.max(0, totalInvested - parseFloat(tx.amountInvested?.toString() || '0'));
+          }
+        });
+
+        const averagePrice = totalQuantity > 0 ? totalInvested / totalQuantity : 0;
+
+        // Récupérer le prix actuel depuis le holding
+        const holding = holdings.find(h => 
+          h.token?.symbol?.toUpperCase() === selectedStrategyToken.symbol.toUpperCase()
+        );
+        const currentPrice = holding?.currentPrice || selectedStrategyToken.quote?.USD?.price;
+        const currentValue = totalQuantity * (currentPrice || averagePrice);
+        const currentPNL = currentValue - totalInvested;
+        const currentPNLPercentage = totalInvested > 0 ? (currentPNL / totalInvested) * 100 : 0;
+
+        setInvestmentData({
+          numberOfTransactions: buyCount,
+          totalInvested,
+          totalQuantity,
+          averagePrice,
+          currentPrice,
+          currentPNL,
+          currentPNLPercentage,
+        });
+
+        // Auto-remplir les champs si vides
+        if (!strategyQuantity && totalQuantity > 0) {
+          setStrategyQuantity(totalQuantity.toString());
+        }
+        if (!strategyAveragePrice && averagePrice > 0) {
+          setStrategyAveragePrice(averagePrice.toFixed(2));
+        }
+      } catch (err) {
+        console.error('Erreur lors du calcul des données d\'investissement:', err);
+        setInvestmentData(null);
+      }
+    };
+
+    calculateInvestmentData();
+  }, [selectedStrategyPortfolioId, selectedStrategyToken, allTransactions, onboardingTransactions, holdings, isStrategyVirtualWallet, strategyQuantity, strategyAveragePrice]);
+
   // Gérer les modifications des cibles
   const handleTargetChange = (index: number, field: keyof ProfitTarget, value: any) => {
     const newTargets = [...profitTargets];
@@ -538,6 +625,20 @@ export default function OnboardingPage() {
     }> = [];
     
     profitTargets.forEach((target) => {
+      // Si la cible est désactivée, ne pas calculer mais garder les tokens restants
+      if (!target.enabled) {
+        results.push({
+          tokensSold: 0,
+          amountCollected: 0,
+          remainingTokens,
+          remainingTokensValuation: remainingTokens * (target.targetType === 'percentage' 
+            ? avgPrice * (1 + target.targetValue / 100) 
+            : target.targetValue),
+          remainingBagValue: remainingTokens * avgPrice,
+        });
+        return;
+      }
+      
       // Calculer le prix cible
       let targetPrice = 0;
       if (target.targetType === 'percentage') {
@@ -546,8 +647,8 @@ export default function OnboardingPage() {
         targetPrice = target.targetValue;
       }
       
-      // Calculer les tokens vendus pour cette cible (basé sur la quantité totale initiale)
-      const tokensSold = (qty * target.sellPercentage) / 100;
+      // Calculer les tokens vendus pour cette cible (basé sur la quantité restante)
+      const tokensSold = (remainingTokens * target.sellPercentage) / 100;
       
       // Montant encaissé = tokens vendus × prix cible
       const amountCollected = tokensSold * targetPrice;
@@ -2193,28 +2294,22 @@ export default function OnboardingPage() {
             </div>
 
             <div className="space-y-4 md:space-y-6">
-              {/* Informations de base */}
-              <div className="space-y-3 md:space-y-4">
+
+                {/* Structure en deux colonnes */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-8">
+                  {/* Colonne gauche : Zone A - Inputs */}
+                  <div className="space-y-4 md:space-y-6">
+                    <Card className="border border-gray-200">
+                      <CardContent className="p-4 md:p-6 space-y-4">
+                        <h4 className="text-sm md:text-base font-semibold text-gray-900 mb-4">Paramétrage de la stratégie</h4>
+                        
+                        {/* Portfolio */}
                 <div>
-                  <Label htmlFor="strategyName" className="text-xs md:text-sm">Nom de la stratégie *</Label>
-                  <Input
-                    id="strategyName"
-                    type="text"
-                    value={strategyName}
-                    onChange={(e) => setStrategyName(e.target.value)}
-                    placeholder="Ex: Stratégie BTC Conservative"
-                    required
-                    className="text-sm md:text-base"
-                  />
-                </div>
-                
-                <div>
-                  <Label htmlFor="portfolio" className="text-xs md:text-sm">Portfolio / Wallet *</Label>
+                          <Label htmlFor="portfolio" className="text-xs md:text-sm">Portfolios</Label>
                   <Select
                     value={selectedStrategyPortfolioId}
                     onValueChange={(value) => {
                       setSelectedStrategyPortfolioId(value);
-                      // Réinitialiser la quantité quand on change de portfolio
                       if (value !== 'virtual') {
                         setStrategyQuantity('');
                       }
@@ -2224,96 +2319,47 @@ export default function OnboardingPage() {
                       <SelectValue placeholder="Sélectionner un wallet" />
                     </SelectTrigger>
                     <SelectContent>
-                      {/* Portfolios réels */}
                       {onboardingPortfolios.filter(p => p && p.id && p.name).map((portfolio) => (
                         <SelectItem key={portfolio.id} value={portfolio.id}>
                           {portfolio.name}
                         </SelectItem>
                       ))}
-                      {/* Séparateur visuel */}
                       <div className="px-3 py-2 text-xs font-semibold text-gray-500 border-t border-gray-200">
                         Simulation
                       </div>
-                      {/* Wallet virtuelle */}
-                      <SelectItem value="virtual">
-                        Wallet Virtuelle
-                      </SelectItem>
+                              <SelectItem value="virtual">Wallet Virtuelle</SelectItem>
                     </SelectContent>
                   </Select>
-                  {!isStrategyVirtualWallet && availableStrategyQuantity > 0 && selectedStrategyToken && (
-                    <p className="mt-1 text-xs md:text-sm text-gray-600">
-                      Quantité disponible: {availableStrategyQuantity.toLocaleString()} {selectedStrategyToken.symbol}
-                    </p>
-                  )}
                 </div>
                 
+                        {/* Token */}
                 <div>
-                  <Label htmlFor="token" className="text-xs md:text-sm">Token *</Label>
+                          <Label htmlFor="token" className="text-xs md:text-sm">Tokens</Label>
                   <TokenSearch
                     onTokenSelect={handleStrategyTokenSelect}
                     selectedToken={selectedStrategyToken}
                   />
                 </div>
                 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 md:gap-4">
+                        {/* Stratégie */}
                   <div>
-                    <Label htmlFor="quantity" className="text-xs md:text-sm">
-                      Quantité *
-                      {!isStrategyVirtualWallet && availableStrategyQuantity > 0 && (
-                        <span className="text-xs text-gray-500 ml-2">
-                          (max: {availableStrategyQuantity.toLocaleString()})
-                        </span>
-                      )}
-                    </Label>
+                          <Label htmlFor="strategyName" className="text-xs md:text-sm">Stratégies</Label>
+                          <div className="flex items-center gap-2">
                     <Input
-                      id="quantity"
-                      type="number"
-                      value={strategyQuantity}
-                      onChange={(e) => {
-                        const value = e.target.value;
-                        // Validation : si c'est un wallet réel, ne pas dépasser la quantité disponible
-                        if (!isStrategyVirtualWallet && availableStrategyQuantity > 0 && value) {
-                          const numValue = parseFloat(value);
-                          if (numValue > availableStrategyQuantity) {
-                            setError(
-                              `La quantité ne peut pas dépasser ${availableStrategyQuantity.toLocaleString()} ${selectedStrategyToken?.symbol || ''}`
-                            );
-                            return;
-                          }
-                          setError('');
-                        }
-                        setStrategyQuantity(value);
-                      }}
-                      placeholder="Ex: 1.5"
-                      step="0.00000001"
-                      max={!isStrategyVirtualWallet && availableStrategyQuantity > 0 ? availableStrategyQuantity : undefined}
-                      required
-                      className="text-sm md:text-base"
-                    />
-                    {!isStrategyVirtualWallet && parseFloat(strategyQuantity) > availableStrategyQuantity && (
-                      <p className="mt-1 text-xs md:text-sm text-red-600">
-                        Quantité supérieure à celle disponible ({availableStrategyQuantity.toLocaleString()})
-                      </p>
-                    )}
-                  </div>
-                  <div>
-                    <Label htmlFor="averagePrice" className="text-xs md:text-sm">Prix moyen (USD) *</Label>
-                    <Input
-                      id="averagePrice"
-                      type="number"
-                      value={strategyAveragePrice}
-                      onChange={(e) => setStrategyAveragePrice(e.target.value)}
-                      placeholder="Ex: 45000"
-                      step="0.01"
-                      required
-                      className="text-sm md:text-base"
-                    />
-                  </div>
+                              id="strategyName"
+                              type="text"
+                              value={strategyName}
+                              onChange={(e) => setStrategyName(e.target.value)}
+                              placeholder="Nom de la stratégie"
+                              className="text-sm md:text-base flex-1"
+                            />
+                            <Button variant="outline" size="sm" className="p-2">
+                              <PencilIcon className="w-4 h-4" />
+                            </Button>
                 </div>
               </div>
 
-              {/* Configuration des cibles */}
-              <div className="space-y-3 md:space-y-4">
+                        {/* Nombre de sorties */}
                 <div>
                   <Label htmlFor="numberOfTargets" className="text-xs md:text-sm">Nombre de sorties</Label>
                   <Select
@@ -2325,7 +2371,7 @@ export default function OnboardingPage() {
                       }
                     }}
                   >
-                    <SelectTrigger className="w-full sm:w-40 text-sm md:text-base">
+                            <SelectTrigger className="text-sm md:text-base">
                       <SelectValue placeholder="Sélectionner" />
                     </SelectTrigger>
                     <SelectContent>
@@ -2339,19 +2385,117 @@ export default function OnboardingPage() {
                   </Select>
                 </div>
 
-                {/* Titre pour les deux colonnes */}
-                <div className="mb-4 md:mb-6">
-                  <h3 className="text-base md:text-lg font-semibold text-gray-900">Configuration des cibles de profit</h3>
-                  <p className="text-xs md:text-sm text-gray-600 mt-1">Définissez vos paramètres et visualisez les résultats en temps réel</p>
+                        {/* Quantité et Prix moyen (si wallet virtuel) */}
+                        {isStrategyVirtualWallet && (
+                          <>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 md:gap-4">
+                              <div>
+                                <Label htmlFor="quantity" className="text-xs md:text-sm">Quantité *</Label>
+                                <Input
+                                  id="quantity"
+                                  type="number"
+                                  value={strategyQuantity}
+                                  onChange={(e) => setStrategyQuantity(e.target.value)}
+                                  placeholder="Ex: 1.5"
+                                  step="0.00000001"
+                                  required
+                                  className="text-sm md:text-base"
+                                />
+                              </div>
+                              <div>
+                                <Label htmlFor="averagePrice" className="text-xs md:text-sm">Prix moyen (USD) *</Label>
+                                <Input
+                                  id="averagePrice"
+                                  type="number"
+                                  value={strategyAveragePrice}
+                                  onChange={(e) => setStrategyAveragePrice(e.target.value)}
+                                  placeholder="Ex: 45000"
+                                  step="0.01"
+                                  required
+                                  className="text-sm md:text-base"
+                                />
+                              </div>
+                            </div>
+                          </>
+                        )}
+                      </CardContent>
+                    </Card>
+                  </div>
+
+                  {/* Colonne droite : Zone B - Données d'investissement */}
+                  <div className="space-y-4 md:space-y-6">
+                    <h4 className="text-sm md:text-base font-semibold text-gray-900 mb-4">Vos données d'investissement</h4>
+                    
+                    <Card className="border border-gray-200">
+                      <CardContent className="p-4 md:p-6 space-y-3">
+                        <div className="flex justify-between items-center">
+                          <span className="text-xs md:text-sm text-gray-600">Nombre de saisies</span>
+                          <span className="text-sm md:text-base font-semibold text-gray-900">
+                            {investmentData?.numberOfTransactions || (strategyQuantity && strategyAveragePrice ? 1 : 0)}
+                          </span>
+                        </div>
+                        <div className="flex justify-between items-center">
+                          <span className="text-xs md:text-sm text-gray-600">Total investi</span>
+                          <span className="text-sm md:text-base font-semibold text-green-600">
+                            {investmentData 
+                              ? formatCurrency(investmentData.totalInvested, '$', 2)
+                              : (strategyQuantity && strategyAveragePrice 
+                                ? formatCurrency(parseFloat(strategyQuantity) * parseFloat(strategyAveragePrice), '$', 2)
+                                : '$0.00')}
+                          </span>
+                        </div>
+                        <div className="flex justify-between items-center">
+                          <span className="text-xs md:text-sm text-gray-600">Tokens détenus</span>
+                          <span className="text-sm md:text-base font-semibold text-orange-600">
+                            {investmentData?.totalQuantity || (strategyQuantity ? parseFloat(strategyQuantity).toLocaleString(undefined, { maximumFractionDigits: 8 }) : '0')}
+                          </span>
+                        </div>
+                        <div className="flex justify-between items-center">
+                          <span className="text-xs md:text-sm text-gray-600">Prix moyen d'achat</span>
+                          <span className="text-sm md:text-base font-semibold text-purple-600">
+                            {investmentData?.averagePrice 
+                              ? formatCurrency(investmentData.averagePrice, '$', 2)
+                              : (strategyAveragePrice 
+                                ? formatCurrency(parseFloat(strategyAveragePrice), '$', 2)
+                                : '$0.00')}
+                          </span>
+                        </div>
+                        {investmentData?.currentPNL !== undefined && (
+                          <>
+                            <div className="flex justify-between items-center pt-2 border-t border-gray-200">
+                              <span className="text-xs md:text-sm text-gray-600">PNL actuel</span>
+                              <span className={`text-sm md:text-base font-semibold ${investmentData.currentPNL >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                                {formatCurrency(investmentData.currentPNL, '$', 2)}
+                              </span>
+                            </div>
+                            <div className="flex justify-between items-center">
+                              <span className="text-xs md:text-sm text-gray-600">PNL %</span>
+                              <span className={`text-sm md:text-base font-semibold ${(investmentData.currentPNLPercentage ?? 0) >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                                {(investmentData.currentPNLPercentage ?? 0) >= 0 ? '+' : ''}{(investmentData.currentPNLPercentage ?? 0).toFixed(2)}%
+                              </span>
+                            </div>
+                          </>
+                        )}
+                        {selectedStrategyToken?.quote?.USD?.price && (
+                          <div className="flex justify-between items-center pt-2 border-t border-gray-200">
+                            <span className="text-xs md:text-sm text-gray-600">Prix actuel</span>
+                            <span className="text-sm md:text-base font-semibold text-gray-900">
+                              {formatCurrency(selectedStrategyToken.quote.USD.price, '$', 2)}
+                            </span>
+                          </div>
+                        )}
+                      </CardContent>
+                    </Card>
+                  </div>
                 </div>
 
-                {/* En-têtes des colonnes */}
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-8 mb-4 md:mb-6">
+                {/* En-têtes des colonnes pour les paliers */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-8 mb-4 md:mb-6 mt-6">
                   <div>
-                    <h4 className="text-sm md:text-base font-semibold text-gray-900">Paramètres</h4>
+                    <h4 className="text-sm md:text-base font-semibold text-gray-900">Configuration des paliers</h4>
                   </div>
                   <div>
-                    <h4 className="text-sm md:text-base font-semibold text-gray-900">Informations calculées</h4>
+                    <h4 className="text-sm md:text-base font-semibold text-gray-900">Projections</h4>
                   </div>
                 </div>
 
@@ -2374,7 +2518,26 @@ export default function OnboardingPage() {
                       <div key={target.id} className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-8 items-stretch">
                         {/* Carte de gauche : Paramètres */}
                         <div className="border p-4 md:p-6 rounded-lg space-y-4 md:space-y-5 bg-gray-50 h-full flex flex-col">
-                          <h3 className="text-sm md:text-base font-semibold text-gray-900">Cible #{index + 1}</h3>
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                              <div className="w-8 h-8 rounded-full bg-blue-600 text-white flex items-center justify-center text-sm font-semibold">
+                                {index + 1}
+                              </div>
+                              <h3 className="text-sm md:text-base font-semibold text-gray-900">Cible de sortie</h3>
+                            </div>
+                            {/* Toggle pour activer/désactiver */}
+                            <label className="relative inline-flex items-center cursor-pointer">
+                              <input
+                                type="checkbox"
+                                checked={target.enabled}
+                                onChange={(e) => handleTargetChange(index, 'enabled', e.target.checked)}
+                                className="sr-only peer"
+                              />
+                              <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                            </label>
+                          </div>
+                          {target.enabled && (
+                            <>
                           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 md:gap-4">
                             <div>
                               <Label htmlFor={`targetType-${index}`} className="text-xs md:text-sm">Type</Label>
@@ -2472,6 +2635,8 @@ export default function OnboardingPage() {
                               </p>
                             )}
                           </div>
+                          </>
+                          )}
                         </div>
 
                         {/* Carte de droite : Informations calculées */}
@@ -2512,7 +2677,6 @@ export default function OnboardingPage() {
                     );
                   })}
                 </div>
-              </div>
             </div>
 
             {/* Barre de résumé en bas */}
