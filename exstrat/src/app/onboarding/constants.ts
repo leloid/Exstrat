@@ -3,14 +3,20 @@ import {
   PlusIcon,
   ChartBarIcon,
   Cog6ToothIcon,
+  WalletIcon,
 } from '@heroicons/react/24/outline';
 import { BinanceIcon, CoinbaseIcon, KrakenIcon, LedgerIcon, MetamaskIcon, PhantomIcon } from './components/ExchangeIcons';
 
 export const ONBOARDING_STEPS = [
-  { id: 'portfolio', name: 'Portfolio', icon: ShieldCheckIcon },
-  { id: 'exchange', name: 'Exchange', icon: PlusIcon },
+  { id: 'investment', name: 'Investissement', icon: WalletIcon },
   { id: 'strategy', name: 'Stratégie', icon: ChartBarIcon },
   { id: 'configuration', name: 'Configuration', icon: Cog6ToothIcon },
+] as const;
+
+// Sous-étapes pour l'investissement
+export const INVESTMENT_SUB_STEPS = [
+  { id: 'portfolio', name: 'Création de portfolio' },
+  { id: 'add-crypto', name: 'Ajouter crypto' },
 ] as const;
 
 export const EXCHANGES = [

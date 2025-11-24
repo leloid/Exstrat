@@ -15,7 +15,8 @@ import {
   ArrowLeftIcon,
   XMarkIcon,
   PencilIcon,
-  TrashIcon
+  TrashIcon,
+  ChevronDownIcon
 } from '@heroicons/react/24/outline';
 import { transactionsApi } from '@/lib/transactions-api';
 import { strategiesApi } from '@/lib/strategies-api';
@@ -29,6 +30,7 @@ import { Label } from '@/components/ui/Label';
 import { Slider } from '@/components/ui/Slider';
 import * as portfoliosApi from '@/lib/portfolios-api';
 import { formatCurrency } from '@/lib/format';
+import { ONBOARDING_STEPS, INVESTMENT_SUB_STEPS } from './constants';
 
 // Interface pour les cibles de profit
 interface ProfitTarget {
@@ -77,12 +79,135 @@ const BinanceIcon = () => (
   </div>
 );
 
-const steps = [
-  { id: 'portfolio', name: 'Portfolio', icon: ShieldCheckIcon },
-  { id: 'exchange', name: 'Exchange', icon: PlusIcon },
-  { id: 'strategy', name: 'Stratégie', icon: ChartBarIcon },
-  { id: 'configuration', name: 'Configuration', icon: Cog6ToothIcon },
-];
+// Composant WalletSelector personnalisé avec un design amélioré
+interface WalletSelectorProps {
+  value: string;
+  onChange: (value: string) => void;
+  portfolios: any[];
+}
+
+const WalletSelector: React.FC<WalletSelectorProps> = ({ value, onChange, portfolios }) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const selectRef = useRef<HTMLDivElement>(null);
+
+  // Trouver le label de la valeur sélectionnée
+  const getSelectedLabel = () => {
+    if (value === 'all') return 'Tous les wallets';
+    const portfolio = portfolios.find(p => p.id === value);
+    return portfolio ? portfolio.name : 'Sélectionner un wallet';
+  };
+
+  // Fermer le dropdown quand on clique en dehors
+  React.useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (selectRef.current && !selectRef.current.contains(event.target as Node)) {
+        setIsOpen(false);
+      }
+    };
+
+    if (isOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isOpen]);
+
+  return (
+    <div ref={selectRef} className="relative w-full sm:w-[280px]">
+      <label className="block text-xs font-semibold text-gray-700 mb-2.5 uppercase tracking-wide">
+        Wallet
+      </label>
+      <button
+        type="button"
+        onClick={() => setIsOpen(!isOpen)}
+        className={`
+          w-full h-14 px-5 py-3.5 bg-white border-2 rounded-xl shadow-sm
+          flex items-center justify-between
+          transition-all duration-200
+          ${isOpen 
+            ? 'border-blue-500 ring-4 ring-blue-500/10 shadow-md' 
+            : 'border-gray-200 hover:border-gray-300 hover:shadow-md'
+          }
+          focus:outline-none focus:ring-4 focus:ring-blue-500/10
+        `}
+      >
+        <span className={`text-sm font-medium ${value ? 'text-gray-900' : 'text-gray-400'}`}>
+          {getSelectedLabel()}
+        </span>
+        <ChevronDownIcon 
+          className={`w-5 h-5 text-gray-400 transition-transform duration-200 ${isOpen ? 'transform rotate-180' : ''}`} 
+        />
+      </button>
+
+      {isOpen && (
+        <div className="absolute z-50 w-full mt-2 bg-white border-2 border-gray-200 rounded-xl shadow-2xl overflow-hidden">
+          <div className="py-2 max-h-72 overflow-y-auto">
+            <button
+              type="button"
+              onClick={() => {
+                onChange('all');
+                setIsOpen(false);
+              }}
+              className={`
+                w-full px-5 py-3.5 text-left
+                transition-colors duration-150
+                ${value === 'all' 
+                  ? 'bg-blue-50 text-blue-700 font-semibold' 
+                  : 'text-gray-700 hover:bg-gray-50'
+                }
+              `}
+            >
+              <div className="flex items-center justify-between">
+                <span className="text-sm">Tous les wallets</span>
+                {value === 'all' && (
+                  <div className="w-2 h-2 bg-blue-600 rounded-full"></div>
+                )}
+              </div>
+            </button>
+            
+            {portfolios.map((portfolio) => (
+              <button
+                key={portfolio.id}
+                type="button"
+                onClick={() => {
+                  onChange(portfolio.id);
+                  setIsOpen(false);
+                }}
+                className={`
+                  w-full px-5 py-3.5 text-left
+                  transition-colors duration-150
+                  ${value === portfolio.id 
+                    ? 'bg-blue-50 text-blue-700 font-semibold' 
+                    : 'text-gray-700 hover:bg-gray-50'
+                  }
+                `}
+              >
+                <div className="flex items-center justify-between">
+                  <span className="text-sm">{portfolio.name}</span>
+                  <div className="flex items-center gap-2">
+                    {portfolio.isDefault && (
+                      <span className="px-2.5 py-1 text-xs font-medium bg-blue-100 text-blue-700 rounded-md">
+                        Défaut
+                      </span>
+                    )}
+                    {value === portfolio.id && (
+                      <div className="w-2 h-2 bg-blue-600 rounded-full"></div>
+                    )}
+                  </div>
+                </div>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+// Utiliser les constantes importées
+const steps = ONBOARDING_STEPS;
 
 const exchanges = [
   { id: 'binance', name: 'Binance', icon: BinanceIcon, available: false },
@@ -95,6 +220,9 @@ const exchanges = [
 
 export default function OnboardingPage() {
   const [currentStep, setCurrentStep] = useState(0);
+  const [investmentSubStep, setInvestmentSubStep] = useState<'portfolio' | 'add-crypto'>('portfolio');
+  const [addCryptoMethod, setAddCryptoMethod] = useState<'exchange' | 'wallet' | 'manual' | null>(null);
+  const [selectedPortfolioForTable, setSelectedPortfolioForTable] = useState<string>('all'); // 'all' ou un ID de portfolio
   const [searchTerm, setSearchTerm] = useState('');
   const [showTransactionModal, setShowTransactionModal] = useState(false);
   const [showPortfolioModal, setShowPortfolioModal] = useState(false);
@@ -106,6 +234,7 @@ export default function OnboardingPage() {
     strategy: null as any,
   });
   const [onboardingTransactions, setOnboardingTransactions] = useState<any[]>([]);
+  const [allTransactions, setAllTransactions] = useState<any[]>([]); // Toutes les transactions chargées depuis l'API
   const [editingTransaction, setEditingTransaction] = useState<any | null>(null);
   const [onboardingPortfolios, setOnboardingPortfolios] = useState<any[]>([]);
   const [editingPortfolio, setEditingPortfolio] = useState<any | null>(null);
@@ -200,38 +329,52 @@ export default function OnboardingPage() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [portfolios]);
 
-  // Charger les transactions uniquement quand on arrive sur le step exchange (une seule fois)
-  const prevStepRef = useRef(currentStep);
-  const transactionsLoadedRef = useRef(false);
-  
+  // Charger toutes les transactions depuis l'API quand on arrive sur la sous-étape "add-crypto" avec méthode "manual"
   React.useEffect(() => {
-    // Ne charger que si on change vraiment de step vers le step 1 et qu'on ne les a pas déjà chargées
-    if (currentStep === 1 && prevStepRef.current !== 1 && !transactionsLoadedRef.current) {
-      const loadTransactions = async () => {
+    if (currentStep === 0 && investmentSubStep === 'add-crypto' && addCryptoMethod === 'manual') {
+      const loadAllTransactions = async () => {
         try {
-          transactionsLoadedRef.current = true;
-          const response = await transactionsApi.getTransactions();
+          setIsLoading(true);
+          // Charger toutes les transactions (sans limite pour avoir toutes)
+          const response = await transactionsApi.getTransactions({ limit: 1000 });
           const transactions = response.transactions || [];
-          // Supprimer les doublons dès le chargement
+          // Supprimer les doublons
           const uniqueTransactions = Array.from(
             new Map(transactions.map(t => [t.id, t])).values()
           );
-          setOnboardingTransactions(uniqueTransactions);
+          setAllTransactions(uniqueTransactions);
         } catch (err) {
           console.error('Erreur lors du chargement des transactions:', err);
-          transactionsLoadedRef.current = false; // Permettre de réessayer
+          setError('Erreur lors du chargement des transactions');
+        } finally {
+          setIsLoading(false);
+        }
+      };
+      loadAllTransactions();
+    }
+  }, [currentStep, investmentSubStep, addCryptoMethod]);
+
+  // Recharger les transactions quand le portfolio sélectionné change
+  React.useEffect(() => {
+    if (currentStep === 0 && investmentSubStep === 'add-crypto' && addCryptoMethod === 'manual') {
+      const loadTransactions = async () => {
+        try {
+          setIsLoading(true);
+          const response = await transactionsApi.getTransactions({ limit: 1000 });
+          const transactions = response.transactions || [];
+          const uniqueTransactions = Array.from(
+            new Map(transactions.map(t => [t.id, t])).values()
+          );
+          setAllTransactions(uniqueTransactions);
+        } catch (err) {
+          console.error('Erreur lors du rechargement des transactions:', err);
+        } finally {
+          setIsLoading(false);
         }
       };
       loadTransactions();
     }
-    
-    // Réinitialiser le flag si on quitte le step
-    if (currentStep !== 1) {
-      transactionsLoadedRef.current = false;
-    }
-    
-    prevStepRef.current = currentStep;
-  }, [currentStep]);
+  }, [selectedPortfolioForTable, currentStep, investmentSubStep, addCryptoMethod]);
 
   // Initialiser les cibles de profit quand le nombre change
   React.useEffect(() => {
@@ -377,8 +520,30 @@ export default function OnboardingPage() {
   const progress = ((currentStep + 1) / steps.length) * 100;
 
   const handleNext = async () => {
-    // Si on est sur l'étape stratégie (step 2), créer la stratégie avant de continuer
-    if (currentStep === 2) {
+    // Gérer les sous-étapes de l'investissement
+    if (currentStep === 0) {
+      if (investmentSubStep === 'portfolio') {
+        // Passer à la sous-étape d'ajout de crypto
+        setInvestmentSubStep('add-crypto');
+        return;
+      } else if (investmentSubStep === 'add-crypto') {
+        // Si on n'a pas encore choisi de méthode, ne rien faire
+        if (!addCryptoMethod) {
+          return;
+        }
+        // Si on a choisi "Enter manually" et qu'on a ajouté des transactions, passer à l'étape suivante
+        // Sinon, on reste dans cette sous-étape jusqu'à ce qu'une transaction soit ajoutée
+        if (addCryptoMethod === 'manual' && onboardingTransactions.length > 0) {
+          setCurrentStep(1);
+          setInvestmentSubStep('portfolio'); // Réinitialiser pour la prochaine fois
+          setAddCryptoMethod(null);
+        }
+        return;
+      }
+    }
+    
+    // Si on est sur l'étape stratégie (step 1 maintenant), créer la stratégie avant de continuer
+    if (currentStep === 1) {
       // Validation
       if (!strategyName.trim()) {
         setError('Le nom de la stratégie est requis');
@@ -477,6 +642,21 @@ export default function OnboardingPage() {
     } else {
       // Fin de l'onboarding, rediriger vers le dashboard
       router.push('/dashboard');
+    }
+  };
+
+  const handlePrevious = () => {
+    // Gérer les sous-étapes de l'investissement
+    if (currentStep === 0) {
+      if (investmentSubStep === 'add-crypto') {
+        setInvestmentSubStep('portfolio');
+        setAddCryptoMethod(null);
+        return;
+      }
+    }
+    
+    if (currentStep > 0) {
+      setCurrentStep(currentStep - 1);
     }
   };
 
@@ -709,6 +889,8 @@ export default function OnboardingPage() {
     try {
       await transactionsApi.deleteTransaction(transactionId);
       setOnboardingTransactions(prev => prev.filter(t => t.id !== transactionId));
+      // Supprimer aussi de allTransactions
+      setAllTransactions(prev => prev.filter(t => t.id !== transactionId));
     } catch (err: unknown) {
       setError('Erreur lors de la suppression de la transaction');
       console.error('❌ Erreur suppression transaction:', err);
@@ -807,6 +989,11 @@ export default function OnboardingPage() {
           const unique = Array.from(new Map(prev.map(t => [t.id, t])).values());
           return unique.map(t => t.id === editingTransaction.id ? updatedTransaction : t);
         });
+        // Mettre à jour aussi dans allTransactions
+        setAllTransactions(prev => {
+          const unique = Array.from(new Map(prev.map(t => [t.id, t])).values());
+          return unique.map(t => t.id === editingTransaction.id ? updatedTransaction : t);
+        });
       } else {
         // Validation supplémentaire
         const quantity = parseFloat(transactionData.quantity);
@@ -874,6 +1061,14 @@ export default function OnboardingPage() {
           // Supprimer les doublons existants avant d'ajouter
           const unique = Array.from(new Map(prev.map(t => [t.id, t])).values());
           return [...unique, createdTransaction];
+        });
+        // Ajouter aussi à allTransactions pour qu'elle apparaisse immédiatement
+        setAllTransactions(prev => {
+          const exists = prev.some(t => t && t.id === createdTransaction.id);
+          if (exists) {
+            return prev.map(t => t && t.id === createdTransaction.id ? createdTransaction : t);
+          }
+          return [...prev, createdTransaction];
         });
         setCreatedData(prev => ({ ...prev, transaction: createdTransaction }));
       }
@@ -954,7 +1149,7 @@ export default function OnboardingPage() {
       setCreatedData(prev => ({ ...prev, strategy: createdStrategy }));
       
       console.log('✅ Stratégie créée:', createdStrategy);
-      setCurrentStep(3);
+      setCurrentStep(2);
     } catch (err: unknown) {
       console.error('❌ Erreur création stratégie:', err);
       const error = err as { response?: { data?: { message?: string } } };
@@ -970,11 +1165,6 @@ export default function OnboardingPage() {
   };
 
 
-  const handlePrevious = () => {
-    if (currentStep > 0) {
-      setCurrentStep(currentStep - 1);
-    }
-  };
 
   const handleSkip = () => {
     router.push('/dashboard');
@@ -984,9 +1174,8 @@ export default function OnboardingPage() {
     exchange.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const renderStepContent = () => {
-    switch (currentStep) {
-      case 0: // Portfolio
+  // Fonction pour rendre la sous-étape de création de portfolio
+  const renderPortfolioSubStep = () => {
         return (
           <div className="space-y-6">
             {/* Liste des Portfolios Créés en haut */}
@@ -1125,11 +1314,133 @@ export default function OnboardingPage() {
                 </div>
               </div>
             )}
+      </div>
+    );
+  };
 
+  // Fonction pour rendre la sélection de méthode d'ajout crypto
+  const renderAddCryptoSelection = () => {
+    return (
+      <div className="space-y-6">
+        <div className="text-center mb-6">
+          <h3 className="text-xl md:text-2xl font-bold text-gray-900 mb-2">
+            Ajouter de la crypto
+          </h3>
+          <p className="text-sm md:text-base text-gray-600">
+            Choisissez comment vous souhaitez ajouter vos cryptomonnaies
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
+          {/* Link Exchange */}
+          <Card 
+            className="cursor-pointer transition-all duration-200 hover:shadow-lg hover:border-blue-300 border border-gray-200 h-full flex flex-col"
+            onClick={() => setAddCryptoMethod('exchange')}
+          >
+            <CardContent className="p-6 flex flex-col h-full">
+              <div className="h-32 mb-4 bg-gradient-to-br from-purple-100 to-blue-100 rounded-lg flex items-center justify-center relative overflow-hidden flex-shrink-0">
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <div className="w-24 h-24 bg-white/30 rounded-full blur-xl"></div>
+                  <div className="w-16 h-16 bg-white/20 rounded-full blur-lg absolute"></div>
+                  <div className="w-12 h-12 bg-white/10 rounded-full blur-md absolute"></div>
+                </div>
+              </div>
+              <div className="mb-3 h-6 flex items-center">
+                <span className="inline-flex items-center gap-1 px-2 py-1 bg-green-100 text-green-700 text-xs font-medium rounded">
+                  <ShieldCheckIcon className="w-3 h-3" />
+                  FULLY SECURED
+                </span>
+              </div>
+              <h4 className="font-bold text-base md:text-lg text-gray-900 mb-2">
+                Link Exchange
+              </h4>
+              <p className="text-sm text-gray-600 mb-auto flex-grow">
+                Connect to your exchange and automatically import...
+              </p>
+              <div className="flex justify-end mt-4">
+                <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center flex-shrink-0">
+                  <ArrowRightIcon className="w-5 h-5 text-white" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Crypto Wallet */}
+          <Card 
+            className="cursor-pointer transition-all duration-200 hover:shadow-lg hover:border-blue-300 border border-gray-200 h-full flex flex-col"
+            onClick={() => setAddCryptoMethod('wallet')}
+          >
+            <CardContent className="p-6 flex flex-col h-full">
+              <div className="h-32 mb-4 bg-gradient-to-br from-blue-100 to-cyan-100 rounded-lg flex items-center justify-center relative overflow-hidden flex-shrink-0">
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <div className="w-20 h-20 bg-white/30 rounded-full blur-xl"></div>
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <div className="w-16 h-16 border-4 border-blue-300/50 rounded-full"></div>
+                    <div className="w-12 h-12 border-4 border-blue-400/50 rounded-full absolute"></div>
+                    <div className="w-8 h-8 bg-white/50 rounded-full absolute"></div>
+                  </div>
+                </div>
+              </div>
+              <div className="mb-3 h-6 flex items-center">
+                <span className="inline-flex items-center gap-1 px-2 py-1 bg-green-100 text-green-700 text-xs font-medium rounded">
+                  <ShieldCheckIcon className="w-3 h-3" />
+                  FULLY SECURED
+                </span>
+              </div>
+              <h4 className="font-bold text-base md:text-lg text-gray-900 mb-2">
+                Crypto Wallet
+              </h4>
+              <p className="text-sm text-gray-600 mb-auto flex-grow">
+                Link popular Wallets like Ledger, Metamask and man...
+              </p>
+              <div className="flex justify-end mt-4">
+                <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center flex-shrink-0">
+                  <ArrowRightIcon className="w-5 h-5 text-white" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Enter manually */}
+          <Card 
+            className="cursor-pointer transition-all duration-200 hover:shadow-lg hover:border-blue-300 border border-gray-200 h-full flex flex-col"
+            onClick={() => setAddCryptoMethod('manual')}
+          >
+            <CardContent className="p-6 flex flex-col h-full">
+              <div className="h-32 mb-4 bg-gradient-to-br from-blue-50 to-gray-50 rounded-lg flex items-center justify-center relative overflow-hidden flex-shrink-0">
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <div className="w-24 h-24 bg-blue-200/20 rounded-full blur-2xl"></div>
+                  <div className="relative z-10">
+                    <div className="w-16 h-16 border-4 border-blue-300/30 rounded-full flex items-center justify-center">
+                      <div className="w-1 h-8 bg-blue-400/50 rounded"></div>
+                      <div className="w-8 h-1 bg-blue-400/50 rounded absolute"></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div className="mb-3 h-6 flex items-center">
+                {/* Espace réservé pour l'alignement même sans badge */}
+              </div>
+              <h4 className="font-bold text-base md:text-lg text-gray-900 mb-2">
+                Enter manually
+              </h4>
+              <p className="text-sm text-gray-600 mb-auto flex-grow">
+                10,000 available cryptos, ranging from BTC to Altcoin...
+              </p>
+              <div className="flex justify-end mt-4">
+                <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center flex-shrink-0">
+                  <ArrowRightIcon className="w-5 h-5 text-white" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
           </div>
         );
+  };
 
-      case 1: // Exchange
+  // Fonction pour rendre l'ajout manuel de crypto (avec tableau d'investissement)
+  const renderManualAddCrypto = () => {
         return (
           <div className="space-y-6">
             {/* Error Message */}
@@ -1148,112 +1459,146 @@ export default function OnboardingPage() {
               </div>
             )}
 
-            {/* Search Bar */}
-            <div className="relative">
+        {/* Tableau d'investissement */}
+        {(() => {
+          // Combiner toutes les transactions : celles de l'onboarding + celles chargées depuis l'API
+          const combinedTransactions = [
+            ...allTransactions,
+            ...onboardingTransactions
+          ];
+          // Supprimer les doublons (priorité aux transactions de l'onboarding pour les IDs identiques)
+          const uniqueTransactions = Array.from(
+            new Map(combinedTransactions.map(t => [t.id, t])).values()
+          );
+          
+          // Filtrer selon le portfolio et la recherche
+          const filteredTransactions = uniqueTransactions.filter(transaction => {
+            if (!transaction || !transaction.id) return false;
+            // Filtrer par portfolio si un portfolio est sélectionné
+            if (selectedPortfolioForTable !== 'all' && transaction.portfolioId !== selectedPortfolioForTable) {
+              return false;
+            }
+            // Filtrer par recherche de symbole
+            if (searchTerm && !transaction.symbol?.toLowerCase().includes(searchTerm.toLowerCase())) {
+              return false;
+            }
+            return true;
+          });
+
+          return filteredTransactions.length > 0 || isLoading ? (
+          <div className="mb-6">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-4">
+              <div>
+                <h3 className="text-lg md:text-xl font-bold text-gray-900 mb-2">
+                  Mes investissements
+                </h3>
+                <p className="text-sm text-gray-600">
+                  Choisissez un portfolio et visualisez l'ensemble de vos données d'investissements
+                </p>
+              </div>
+              {/* Sélecteur de wallet */}
+              <div className="w-full sm:w-auto">
+                <WalletSelector
+                  value={selectedPortfolioForTable}
+                  onChange={setSelectedPortfolioForTable}
+                  portfolios={(() => {
+                    const allPortfolios = [
+                      ...onboardingPortfolios.filter(p => p && p.id && p.name),
+                      ...portfolios.filter(p => p && p.id && p.name)
+                    ];
+                    return Array.from(
+                      new Map(allPortfolios.map(p => [p.id, p])).values()
+                    );
+                  })()}
+                />
+              </div>
+            </div>
+            
+            {/* Barre de recherche */}
+            <div className="relative mb-4">
               <MagnifyingGlassIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 md:w-5 md:h-5 text-gray-400" />
               <Input
                 type="text"
-                placeholder="Recherchez votre exchange parmi +700 intégrations"
+                placeholder="Chercher un symbole"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="pl-9 md:pl-10 h-10 md:h-12 text-sm md:text-base"
               />
             </div>
 
-            {/* Exchange Grid */}
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 md:gap-4">
-              {filteredExchanges.map((exchange) => (
-                <Card 
-                  key={exchange.id} 
-                  className={`cursor-pointer transition-all duration-200 ${
-                    exchange.available 
-                      ? 'hover:shadow-lg hover:border-blue-300' 
-                      : 'opacity-50 cursor-not-allowed'
-                  }`}
-                >
-                  <CardContent className="p-3 md:p-4 text-center">
-                    <div className="flex items-center justify-center mb-2 md:mb-3">
-                      <exchange.icon />
+            {/* Tableau */}
+            {isLoading ? (
+              <div className="flex items-center justify-center py-12">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
                     </div>
-                    <h3 className="font-medium text-xs md:text-sm text-gray-900 mb-1">
-                      {exchange.name}
-                    </h3>
-                    {!exchange.available && (
-                      <p className="text-xs text-gray-500">Coming soon</p>
-                    )}
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-
-            {/* Liste des Transactions Créées */}
-            {onboardingTransactions.length > 0 && (
-              <div className="mt-4 md:mt-6">
-                <h3 className="text-base md:text-lg font-semibold text-gray-900 mb-3 md:mb-4">
-                  Transactions ajoutées ({onboardingTransactions.length})
-                </h3>
-                <div className="space-y-3">
-                  {Array.from(
-                    new Map(
-                      onboardingTransactions
-                        .filter(transaction => transaction && transaction.id)
-                        .map(transaction => [transaction.id, transaction])
-                    ).values()
-                  ).map((transaction) => (
-                    <Card key={transaction.id} className="border border-gray-200">
-                      <CardContent className="p-3 md:p-4">
-                        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-                          <div className="flex items-center gap-3 md:gap-4 flex-1 min-w-0">
-                            <div className="w-8 h-8 md:w-10 md:h-10 rounded-full bg-purple-100 flex items-center justify-center flex-shrink-0">
-                              <span className="text-purple-600 font-bold text-xs md:text-sm">
-                                {transaction.symbol.charAt(0)}
-                              </span>
-                            </div>
-                            <div className="flex-1 min-w-0">
-                              <div className="flex flex-wrap items-center gap-2">
-                                <h4 className="font-semibold text-sm md:text-base text-gray-900 truncate">{transaction.symbol}</h4>
-                                <span className="text-xs md:text-sm text-gray-500 hidden sm:inline">{transaction.name}</span>
-                              </div>
-                              <div className="flex flex-wrap items-center gap-2 md:gap-4 mt-1 text-xs md:text-sm text-gray-600">
-                                <span>Qty: {parseFloat(transaction.quantity.toString()).toLocaleString()}</span>
-                                <span className="hidden sm:inline">•</span>
-                                <span>{transaction.type}</span>
-                                <span className="hidden sm:inline">•</span>
-                                <span>{formatCurrency(transaction.averagePrice)}</span>
-                                {transaction.transactionDate && (
-                                  <>
-                                    <span className="hidden sm:inline">•</span>
-                                    <span className="text-xs">
-                                      {new Date(transaction.transactionDate).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' })}
-                                    </span>
-                                  </>
-                                )}
-                              </div>
-                            </div>
-                          </div>
-                          <div className="flex items-center gap-2 flex-shrink-0">
+            ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full border-collapse">
+                <thead>
+                  <tr className="border-b border-gray-200">
+                    <th className="text-left py-3 px-4 text-xs md:text-sm font-semibold text-gray-700"></th>
+                    <th className="text-left py-3 px-4 text-xs md:text-sm font-semibold text-gray-700">Symbol</th>
+                    <th className="text-left py-3 px-4 text-xs md:text-sm font-semibold text-gray-700">Nom</th>
+                    <th className="text-right py-3 px-4 text-xs md:text-sm font-semibold text-gray-700">Quantité</th>
+                    <th className="text-right py-3 px-4 text-xs md:text-sm font-semibold text-gray-700">Montant</th>
+                    <th className="text-right py-3 px-4 text-xs md:text-sm font-semibold text-gray-700">Prix moyen</th>
+                    <th className="text-right py-3 px-4 text-xs md:text-sm font-semibold text-gray-700">Date</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredTransactions.map((transaction) => (
+                    <tr key={transaction.id} className="border-b border-gray-100 hover:bg-gray-50">
+                      <td className="py-3 px-4">
+                        <div className="flex items-center gap-2">
                             <Button
                               variant="outline"
                               onClick={() => handleEditTransaction(transaction)}
-                              className="p-2"
+                            className="p-1 text-gray-600 hover:text-gray-900"
                             >
-                              <PencilIcon className="h-3 w-3 md:h-4 md:w-4 text-gray-600" />
+                            <PencilIcon className="h-4 w-4" />
                             </Button>
                             <Button
                               variant="outline"
                               onClick={() => handleDeleteTransaction(transaction.id)}
-                              className="p-2"
+                            className="p-1 text-red-600 hover:text-red-700"
                             >
-                              <TrashIcon className="h-3 w-3 md:h-4 md:w-4 text-red-600" />
+                            <TrashIcon className="h-4 w-4" />
                             </Button>
                           </div>
-                        </div>
-                      </CardContent>
-                    </Card>
+                      </td>
+                      <td className="py-3 px-4 text-sm font-medium text-gray-900">{transaction.symbol}</td>
+                      <td className="py-3 px-4 text-sm text-gray-700">{transaction.name}</td>
+                      <td className="py-3 px-4 text-sm text-right text-gray-900">{parseFloat(transaction.quantity.toString()).toLocaleString()}</td>
+                      <td className="py-3 px-4 text-sm text-right text-gray-900">{formatCurrency(transaction.amountInvested)}</td>
+                      <td className="py-3 px-4 text-sm text-right text-gray-900">{formatCurrency(transaction.averagePrice)}</td>
+                      <td className="py-3 px-4 text-sm text-right text-gray-600">
+                        {transaction.transactionDate ? new Date(transaction.transactionDate).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: '2-digit' }) : '-'}
+                      </td>
+                    </tr>
                   ))}
-                </div>
+                </tbody>
+              </table>
               </div>
             )}
+          </div>
+          ) : null;
+        })()}
+
+        {/* Footer avec bouton Add Transaction */}
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 pt-4 md:pt-6 border-t border-gray-200">
+          <div className="flex items-center text-xs md:text-sm text-gray-500">
+            <ShieldCheckIcon className="w-3 h-3 md:w-4 md:h-4 mr-2 text-gray-400" />
+            <span className="hidden sm:inline">Connexion rapide et sécurisée à vos transactions</span>
+            <span className="sm:hidden">Sécurisé</span>
+          </div>
+          <Button 
+            onClick={handleAddTransactionClick}
+            className="w-full sm:w-auto px-6 md:px-8 py-2 md:py-3 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-medium rounded-lg text-sm md:text-base"
+          >
+            <PlusIcon className="mr-2 h-4 w-4 inline" />
+            Add Transaction
+          </Button>
+        </div>
 
             {/* Modal de Transaction */}
             {showTransactionModal && (
@@ -1309,18 +1654,13 @@ export default function OnboardingPage() {
                         </SelectTrigger>
                         <SelectContent>
                           {(() => {
-                            // Fusionner portfolios du contexte et onboardingPortfolios pour avoir la liste la plus à jour
-                            // Les portfolios temporaires sont aussi inclus (optimistic update)
                             const allPortfolios = [
                               ...onboardingPortfolios.filter(p => p && p.id && p.name),
                               ...portfolios.filter(p => p && p.id && p.name)
                             ];
-                            
-                            // Supprimer les doublons (priorité aux portfolios du contexte pour les IDs réels)
                             const uniquePortfolios = Array.from(
                               new Map(allPortfolios.map(p => [p.id, p])).values()
                             );
-                            
                             return uniquePortfolios.map((portfolio) => (
                               <SelectItem key={portfolio.id} value={portfolio.id}>
                                 {portfolio.name} {portfolio.isDefault && '(Défaut)'}
@@ -1329,11 +1669,6 @@ export default function OnboardingPage() {
                           })()}
                         </SelectContent>
                       </Select>
-                      {onboardingPortfolios.length === 0 && portfolios.length === 0 && (
-                        <p className="text-sm text-gray-500 mt-1">
-                          Aucun portefeuille disponible. Créez-en un d'abord.
-                        </p>
-                      )}
                     </div>
 
                     {/* Quantité et Montant investi */}
@@ -1386,10 +1721,6 @@ export default function OnboardingPage() {
                         className="bg-gray-100 cursor-not-allowed text-sm md:text-base"
                         required
                       />
-                      <p className="mt-1 text-xs md:text-sm text-gray-500">
-                        Calculé automatiquement: {transactionData.quantity && transactionData.amountInvested ? 
-                          (parseFloat(transactionData.amountInvested) / parseFloat(transactionData.quantity)).toFixed(8) : '0.00'} USD
-                      </p>
                     </div>
 
                     {/* Date de transaction */}
@@ -1446,26 +1777,54 @@ export default function OnboardingPage() {
                 </div>
               </div>
             )}
+      </div>
+    );
+  };
 
-            {/* Footer */}
-            <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 pt-4 md:pt-6 border-t border-gray-200">
-              <div className="flex items-center text-xs md:text-sm text-gray-500">
-                <ShieldCheckIcon className="w-3 h-3 md:w-4 md:h-4 mr-2 text-gray-400" />
-                <span className="hidden sm:inline">Connexion rapide et sécurisée à vos transactions</span>
-                <span className="sm:hidden">Sécurisé</span>
+  // Fonction pour rendre l'ajout via Exchange (placeholder)
+  const renderExchangeAddCrypto = () => {
+    return (
+      <div className="space-y-6">
+        <div className="text-center">
+          <h3 className="text-xl font-bold text-gray-900 mb-2">Link Exchange</h3>
+          <p className="text-sm text-gray-600">Fonctionnalité à venir...</p>
               </div>
-              <Button 
-                onClick={handleAddTransactionClick}
-                className="w-full sm:w-auto px-6 md:px-8 py-2 md:py-3 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-medium rounded-lg text-sm md:text-base"
-              >
-                <PlusIcon className="mr-2 h-4 w-4 inline" />
-                Add Transaction
-              </Button>
+      </div>
+    );
+  };
+
+  // Fonction pour rendre l'ajout via Wallet (placeholder)
+  const renderWalletAddCrypto = () => {
+    return (
+      <div className="space-y-6">
+        <div className="text-center">
+          <h3 className="text-xl font-bold text-gray-900 mb-2">Crypto Wallet</h3>
+          <p className="text-sm text-gray-600">Fonctionnalité à venir...</p>
             </div>
           </div>
         );
+  };
 
-      case 2: // Strategy
+  const renderStepContent = () => {
+    switch (currentStep) {
+      case 0: // Investissement
+        // Gérer les sous-étapes
+        if (investmentSubStep === 'portfolio') {
+          return renderPortfolioSubStep();
+        } else if (investmentSubStep === 'add-crypto') {
+          if (!addCryptoMethod) {
+            return renderAddCryptoSelection();
+          } else if (addCryptoMethod === 'manual') {
+            return renderManualAddCrypto();
+          } else if (addCryptoMethod === 'exchange') {
+            return renderExchangeAddCrypto();
+          } else if (addCryptoMethod === 'wallet') {
+            return renderWalletAddCrypto();
+          }
+        }
+        return null;
+
+      case 1: // Stratégie
         return (
           <div className="space-y-6">
             {/* Error Message */}
@@ -1964,7 +2323,7 @@ export default function OnboardingPage() {
           </div>
         );
 
-      case 3: // Configuration
+      case 2: // Configuration (anciennement step 3)
         return (
           <div className="space-y-4 md:space-y-6">
             {/* Error Message */}
@@ -2069,10 +2428,13 @@ export default function OnboardingPage() {
               </div>
               <div className="sm:ml-4 text-center sm:text-left">
                 <h1 className="text-xl md:text-2xl font-bold text-gray-900">
-                  {currentStep === 0 && 'Nouveau Portfolio'}
-                  {currentStep === 1 && 'Connectez votre exchange'}
-                  {currentStep === 2 && 'Créez votre première stratégie'}
-                  {currentStep === 3 && 'Configurez votre stratégie'}
+                  {currentStep === 0 && investmentSubStep === 'portfolio' && 'Création de portfolio'}
+                  {currentStep === 0 && investmentSubStep === 'add-crypto' && !addCryptoMethod && 'Ajouter de la crypto'}
+                  {currentStep === 0 && investmentSubStep === 'add-crypto' && addCryptoMethod === 'manual' && 'Mes investissements'}
+                  {currentStep === 0 && investmentSubStep === 'add-crypto' && addCryptoMethod === 'exchange' && 'Link Exchange'}
+                  {currentStep === 0 && investmentSubStep === 'add-crypto' && addCryptoMethod === 'wallet' && 'Crypto Wallet'}
+                  {currentStep === 1 && 'Créez votre première stratégie'}
+                  {currentStep === 2 && 'Configurez votre stratégie'}
                 </h1>
                 <div className="flex items-center justify-center sm:justify-start text-xs md:text-sm text-gray-500 mt-1">
                   <ShieldCheckIcon className="w-3 h-3 md:w-4 md:h-4 mr-1" />
@@ -2094,7 +2456,7 @@ export default function OnboardingPage() {
             <Button
               onClick={handlePrevious}
               variant="outline"
-              disabled={currentStep === 0}
+              disabled={currentStep === 0 && investmentSubStep === 'portfolio'}
               className="flex items-center justify-center space-x-2 w-full sm:w-auto px-4 py-2 md:py-3 text-sm md:text-base"
             >
               <ArrowLeftIcon className="w-4 h-4" />
