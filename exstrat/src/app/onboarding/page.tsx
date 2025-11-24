@@ -38,8 +38,9 @@ interface ProfitTarget {
   id: string;
   targetType: 'percentage' | 'price';
   targetValue: number;
-  sellPercentage: number;
-  enabled: boolean; // Toggle pour activer/désactiver la cible
+  sellPercentage: number; // Pourcentage à vendre (base de calcul)
+  sellQuantityType: 'percentage' | 'tokens'; // Type de quantité à vendre
+  sellTokens: number; // Nombre de tokens à vendre (si sellQuantityType === 'tokens')
 }
 
 // Icônes pour les plateformes
@@ -454,7 +455,8 @@ export default function OnboardingPage() {
         targetType: 'percentage',
         targetValue: (i + 1) * 50, // 50%, 100%, 150%, etc.
         sellPercentage: 100 / numberOfTargets, // Répartition égale
-        enabled: true, // Activé par défaut
+        sellQuantityType: 'percentage', // Par défaut, utiliser le pourcentage
+        sellTokens: 0, // Sera calculé automatiquement
       });
     }
     setProfitTargets(newTargets);
@@ -476,17 +478,15 @@ export default function OnboardingPage() {
         
         if (holding) {
           setAvailableStrategyQuantity(holding.quantity);
-          // Si la quantité actuelle dépasse ce qui est disponible, la réduire
-          const currentQty = parseFloat(strategyQuantity);
-          if (!isNaN(currentQty) && currentQty > holding.quantity) {
+          // Auto-remplir avec la quantité maximale disponible par défaut
+          // L'utilisateur pourra ensuite modifier si nécessaire
+          if (holding.quantity > 0) {
             setStrategyQuantity(holding.quantity.toString());
           }
         } else {
           setAvailableStrategyQuantity(0);
           // Si aucun holding n'existe pour ce token, réinitialiser la quantité
-          if (strategyQuantity && parseFloat(strategyQuantity) > 0) {
             setStrategyQuantity('');
-          }
         }
       } catch (error) {
         console.error('Erreur lors du chargement de la quantité disponible pour la stratégie:', error);
@@ -566,12 +566,16 @@ export default function OnboardingPage() {
           currentPNLPercentage,
         });
 
-        // Auto-remplir les champs si vides
-        if (!strategyQuantity && totalQuantity > 0) {
-          setStrategyQuantity(totalQuantity.toString());
-        }
-        if (!strategyAveragePrice && averagePrice > 0) {
-          setStrategyAveragePrice(averagePrice.toFixed(2));
+        // Auto-remplir les champs avec les valeurs calculées (uniquement pour les wallets réels)
+        if (!isStrategyVirtualWallet) {
+          if (totalQuantity > 0) {
+            // Toujours mettre à jour la quantité avec le maximum disponible pour les wallets réels
+            setStrategyQuantity(totalQuantity.toString());
+          }
+          if (averagePrice > 0) {
+            // Toujours mettre à jour le prix moyen avec la valeur calculée depuis les transactions
+            setStrategyAveragePrice(averagePrice.toFixed(2));
+          }
         }
       } catch (err) {
         console.error('Erreur lors du calcul des données d\'investissement:', err);
@@ -580,7 +584,7 @@ export default function OnboardingPage() {
     };
 
     calculateInvestmentData();
-  }, [selectedStrategyPortfolioId, selectedStrategyToken, allTransactions, onboardingTransactions, holdings, isStrategyVirtualWallet, strategyQuantity, strategyAveragePrice]);
+  }, [selectedStrategyPortfolioId, selectedStrategyToken, allTransactions, onboardingTransactions, holdings, isStrategyVirtualWallet]);
 
   // Gérer les modifications des cibles
   const handleTargetChange = (index: number, field: keyof ProfitTarget, value: any) => {
@@ -606,6 +610,33 @@ export default function OnboardingPage() {
     setProfitTargets(newTargets);
   };
 
+  // Fonction pour mettre à jour le pourcentage à partir du nombre de tokens
+  const handleTokensChange = (index: number, tokensValue: number) => {
+    const qty = parseFloat(strategyQuantity);
+    if (isNaN(qty) || qty <= 0) {
+      setError('Veuillez d\'abord saisir une quantité de tokens');
+      return;
+    }
+    
+    // Calculer le pourcentage équivalent basé sur le total initial (pas sur le reste)
+    const percentage = (tokensValue / qty) * 100;
+    
+    // Vérifier que le total ne dépasse pas 100%
+    const otherTargetsTotal = profitTargets.reduce((sum, target, idx) => 
+      idx === index ? sum : sum + target.sellPercentage, 0
+    );
+    const maxPercentage = Math.max(0, 100 - otherTargetsTotal);
+    
+    // Limiter le pourcentage et ajuster les tokens si nécessaire
+    const finalPercentage = Math.min(percentage, maxPercentage);
+    handleTargetChange(index, 'sellPercentage', finalPercentage);
+    
+    // Réinitialiser l'erreur si tout est OK
+    if (finalPercentage <= maxPercentage) {
+      setError('');
+    }
+  };
+
   // Calculer les informations de stratégie pour chaque cible
   const calculateStrategyInfo = () => {
     const qty = parseFloat(strategyQuantity);
@@ -625,20 +656,6 @@ export default function OnboardingPage() {
     }> = [];
     
     profitTargets.forEach((target) => {
-      // Si la cible est désactivée, ne pas calculer mais garder les tokens restants
-      if (!target.enabled) {
-        results.push({
-          tokensSold: 0,
-          amountCollected: 0,
-          remainingTokens,
-          remainingTokensValuation: remainingTokens * (target.targetType === 'percentage' 
-            ? avgPrice * (1 + target.targetValue / 100) 
-            : target.targetValue),
-          remainingBagValue: remainingTokens * avgPrice,
-        });
-        return;
-      }
-      
       // Calculer le prix cible
       let targetPrice = 0;
       if (target.targetType === 'percentage') {
@@ -647,8 +664,18 @@ export default function OnboardingPage() {
         targetPrice = target.targetValue;
       }
       
-      // Calculer les tokens vendus pour cette cible (basé sur la quantité restante)
-      const tokensSold = (remainingTokens * target.sellPercentage) / 100;
+      // Calculer les tokens vendus pour cette cible
+      // Si sellQuantityType est 'tokens', utiliser directement sellTokens
+      // Sinon, utiliser le pourcentage sur le total initial (pas sur le reste)
+      let tokensSold = 0;
+      if (target.sellQuantityType === 'tokens' && target.sellTokens > 0) {
+        tokensSold = Math.min(target.sellTokens, remainingTokens);
+      } else {
+        // Pourcentage calculé sur le total initial, pas sur le reste
+        tokensSold = (qty * target.sellPercentage) / 100;
+        // Ne pas vendre plus que ce qui reste disponible
+        tokensSold = Math.min(tokensSold, remainingTokens);
+      }
       
       // Montant encaissé = tokens vendus × prix cible
       const amountCollected = tokensSold * targetPrice;
@@ -2385,42 +2412,69 @@ export default function OnboardingPage() {
                   </Select>
                 </div>
 
-                        {/* Quantité et Prix moyen (si wallet virtuel) */}
-                        {isStrategyVirtualWallet && (
-                          <>
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 md:gap-4">
-                              <div>
-                                <Label htmlFor="quantity" className="text-xs md:text-sm">Quantité *</Label>
-                                <Input
-                                  id="quantity"
-                                  type="number"
-                                  value={strategyQuantity}
-                                  onChange={(e) => setStrategyQuantity(e.target.value)}
-                                  placeholder="Ex: 1.5"
-                                  step="0.00000001"
-                                  required
-                                  className="text-sm md:text-base"
-                                />
-                              </div>
-                              <div>
-                                <Label htmlFor="averagePrice" className="text-xs md:text-sm">Prix moyen (USD) *</Label>
-                                <Input
-                                  id="averagePrice"
-                                  type="number"
-                                  value={strategyAveragePrice}
-                                  onChange={(e) => setStrategyAveragePrice(e.target.value)}
-                                  placeholder="Ex: 45000"
-                                  step="0.01"
-                                  required
-                                  className="text-sm md:text-base"
-                                />
-                              </div>
-                            </div>
-                          </>
-                        )}
+                        {/* Quantité et Prix moyen */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 md:gap-4">
+                  <div>
+                            <Label htmlFor="quantity" className="text-xs md:text-sm">Quantité *</Label>
+                    <Input
+                      id="quantity"
+                      type="number"
+                      value={strategyQuantity}
+                      onChange={(e) => {
+                        const value = e.target.value;
+                        // Validation : si c'est un wallet réel, ne pas dépasser la quantité disponible
+                        if (!isStrategyVirtualWallet && availableStrategyQuantity > 0 && value) {
+                          const numValue = parseFloat(value);
+                          if (numValue > availableStrategyQuantity) {
+                            setError(
+                                      `La quantité ne peut pas dépasser ${availableStrategyQuantity.toLocaleString(undefined, { maximumFractionDigits: 8 })} ${selectedStrategyToken?.symbol || ''}`
+                            );
+                            return;
+                          }
+                          setError('');
+                        }
+                        setStrategyQuantity(value);
+                      }}
+                      placeholder="Ex: 1.5"
+                      step="0.00000001"
+                      max={!isStrategyVirtualWallet && availableStrategyQuantity > 0 ? availableStrategyQuantity : undefined}
+                      required
+                      className="text-sm md:text-base"
+                    />
+                            {!isStrategyVirtualWallet && availableStrategyQuantity > 0 && (
+                              <p className="mt-1 text-xs md:text-sm text-gray-500">
+                                Maximum disponible: {availableStrategyQuantity.toLocaleString(undefined, { maximumFractionDigits: 8 })} {selectedStrategyToken?.symbol || ''}
+                              </p>
+                            )}
+                    {!isStrategyVirtualWallet && parseFloat(strategyQuantity) > availableStrategyQuantity && (
+                      <p className="mt-1 text-xs md:text-sm text-red-600">
+                                Quantité supérieure à celle disponible ({availableStrategyQuantity.toLocaleString(undefined, { maximumFractionDigits: 8 })})
+                      </p>
+                    )}
+                  </div>
+                  <div>
+                    <Label htmlFor="averagePrice" className="text-xs md:text-sm">Prix moyen (USD) *</Label>
+                    <Input
+                      id="averagePrice"
+                      type="number"
+                      value={strategyAveragePrice}
+                      onChange={(e) => setStrategyAveragePrice(e.target.value)}
+                      placeholder="Ex: 45000"
+                      step="0.01"
+                      required
+                      className="text-sm md:text-base"
+                      readOnly={!isStrategyVirtualWallet && investmentData?.averagePrice ? true : false}
+                    />
+                    {!isStrategyVirtualWallet && investmentData?.averagePrice && (
+                      <p className="mt-1 text-xs md:text-sm text-gray-500">
+                        Prix moyen calculé depuis vos transactions
+                      </p>
+                    )}
+                  </div>
+                </div>
                       </CardContent>
                     </Card>
-                  </div>
+              </div>
 
                   {/* Colonne droite : Zone B - Données d'investissement */}
                   <div className="space-y-4 md:space-y-6">
@@ -2518,26 +2572,13 @@ export default function OnboardingPage() {
                       <div key={target.id} className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-8 items-stretch">
                         {/* Carte de gauche : Paramètres */}
                         <div className="border p-4 md:p-6 rounded-lg space-y-4 md:space-y-5 bg-gray-50 h-full flex flex-col">
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-2">
-                              <div className="w-8 h-8 rounded-full bg-blue-600 text-white flex items-center justify-center text-sm font-semibold">
-                                {index + 1}
-                              </div>
-                              <h3 className="text-sm md:text-base font-semibold text-gray-900">Cible de sortie</h3>
+                          <div className="flex items-center gap-2">
+                            <div className="w-8 h-8 rounded-full bg-blue-600 text-white flex items-center justify-center text-sm font-semibold">
+                              {index + 1}
                             </div>
-                            {/* Toggle pour activer/désactiver */}
-                            <label className="relative inline-flex items-center cursor-pointer">
-                              <input
-                                type="checkbox"
-                                checked={target.enabled}
-                                onChange={(e) => handleTargetChange(index, 'enabled', e.target.checked)}
-                                className="sr-only peer"
-                              />
-                              <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
-                            </label>
+                            <h3 className="text-sm md:text-base font-semibold text-gray-900">Cible de sortie</h3>
                           </div>
-                          {target.enabled && (
-                            <>
+                          
                           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 md:gap-4">
                             <div>
                               <Label htmlFor={`targetType-${index}`} className="text-xs md:text-sm">Type</Label>
@@ -2572,16 +2613,13 @@ export default function OnboardingPage() {
                               />
                             </div>
                           </div>
+
+                          {/* Quantité à vendre - Pourcentage et Tokens */}
                             <div className="flex-grow flex flex-col justify-end">
-                            <div className="flex items-center justify-between mb-2">
-                              <Label htmlFor={`sellPercentage-${index}`} className="text-xs md:text-sm">
-                                Quantité à vendre (%)
+                            <Label htmlFor={`sellPercentage-${index}`} className="text-xs md:text-sm mb-2">
+                              Quantité à vendre
                               </Label>
-                              <span className="text-xs md:text-sm text-gray-500">
-                                Total: {profitTargets.reduce((sum, t) => sum + t.sellPercentage, 0).toFixed(1)}%
-                              </span>
-                            </div>
-                            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:gap-4 mt-2">
+                            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:gap-4">
                               <div className="flex-1">
                                 <Slider
                                   id={`sellPercentage-${index}`}
@@ -2601,7 +2639,7 @@ export default function OnboardingPage() {
                                   className="w-full"
                                 />
                               </div>
-                              <div className="w-full sm:w-24">
+                              <div className="w-full sm:w-32 flex items-center gap-2">
                                 <Input
                                   type="number"
                                   min={0}
@@ -2616,7 +2654,6 @@ export default function OnboardingPage() {
                                   onChange={(e) => {
                                     const value = parseFloat(e.target.value);
                                     if (!isNaN(value) && value >= 0) {
-                                      // Vérifier que la somme ne dépasse pas 100%
                                       const otherTargetsTotal = profitTargets.reduce((sum, t, idx) => 
                                         idx === index ? sum : sum + t.sellPercentage, 0
                                       );
@@ -2627,6 +2664,34 @@ export default function OnboardingPage() {
                                   placeholder="0.0"
                                   className="text-xs md:text-sm"
                                 />
+                                <span className="text-xs text-gray-500">%</span>
+                              </div>
+                              <div className="w-full sm:w-40 flex items-center gap-2">
+                                <Input
+                                  type="number"
+                                  min={0}
+                                  step="0.00000001"
+                                  value={(() => {
+                                    // Calculer le nombre de tokens équivalent basé sur le total initial
+                                    const qty = parseFloat(strategyQuantity);
+                                    if (isNaN(qty) || qty <= 0 || target.sellPercentage <= 0) return '';
+                                    // Calculer le nombre de tokens équivalent au pourcentage sur le total initial
+                                    const tokensEquivalent = (qty * target.sellPercentage) / 100;
+                                    return tokensEquivalent > 0 ? tokensEquivalent.toFixed(8) : '0.00000000';
+                                  })()}
+                                  onChange={(e) => {
+                                    const value = parseFloat(e.target.value);
+                                    if (!isNaN(value) && value >= 0) {
+                                      handleTokensChange(index, value);
+                                    } else if (e.target.value === '') {
+                                      // Si l'input est vide, mettre le pourcentage à 0
+                                      handleTargetChange(index, 'sellPercentage', 0);
+                                    }
+                                  }}
+                                  placeholder="0.00000000"
+                                  className="text-xs md:text-sm"
+                                />
+                                <span className="text-xs text-gray-500">tokens</span>
                               </div>
                             </div>
                             {profitTargets.reduce((sum, t) => sum + t.sellPercentage, 0) > 100 && (
@@ -2635,8 +2700,6 @@ export default function OnboardingPage() {
                               </p>
                             )}
                           </div>
-                          </>
-                          )}
                         </div>
 
                         {/* Carte de droite : Informations calculées */}
@@ -2648,26 +2711,26 @@ export default function OnboardingPage() {
                             <div className="space-y-3 text-xs md:text-sm flex-grow flex flex-col justify-between">
                               <div className="flex justify-between items-center py-1">
                                 <span className="text-gray-600">Valorisation des tokens restants:</span>
-                                <span className="font-medium text-gray-900 text-right">
+                                <span className="font-medium text-green-600 text-right">
                                   {info ? formatCurrency(info.remainingTokensValuation, '$', 2) : '$0.00'}
                                 </span>
                               </div>
                               <div className="flex justify-between items-center py-1">
                                 <span className="text-gray-600">Montant encaissé:</span>
-                                <span className="font-medium text-gray-900 text-right">
+                                <span className="font-medium text-green-600 text-right">
                                   {info ? formatCurrency(info.amountCollected, '$', 2) : '$0.00'}
                                 </span>
                               </div>
                               <div className="flex justify-between items-center py-1">
                                 <span className="text-gray-600">Valeur du bag restant:</span>
-                                <span className="font-medium text-gray-900 text-right">
+                                <span className="font-medium text-green-600 text-right">
                                   {info ? formatCurrency(info.remainingBagValue, '$', 2) : '$0.00'}
                                 </span>
                               </div>
                               <div className="flex justify-between items-center py-1 border-t border-gray-200 pt-3 mt-2">
                                 <span className="text-gray-600 font-medium">Nombre de tokens restants:</span>
                                 <span className="font-bold text-orange-600 text-lg text-right">
-                                  {info ? info.remainingTokens.toFixed(6) : '0.000000'}
+                                  {info ? info.remainingTokens.toFixed(8) : '0.00000000'}
                                 </span>
                               </div>
                             </div>
@@ -2676,7 +2739,7 @@ export default function OnboardingPage() {
                       </div>
                     );
                   })}
-                </div>
+              </div>
             </div>
 
             {/* Barre de résumé en bas */}
