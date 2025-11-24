@@ -1,36 +1,58 @@
-Le tableau d’investissements fonctionne sur deux niveaux complémentaires :
--	Une vue principale (niveau 1) qui affiche 1 ligne par token, quel que soit le nombre de transactions effectuées pour ce token.
-Cette ligne représente le bundle de toutes les transactions associées à ce token dans le wallet sélectionné. Elle affiche les données consolidées : quantités totales, montant investi total, prix moyen pondéré, gains, etc.
--	Une vue détaillée (niveau 2) qui s’affiche lorsque l’utilisateur clique sur une ligne de la vue principale. Le tableau se déploie en dessous pour montrer chaque transaction individuelle liée à ce token. Chaque ligne représente une transaction unique avec ses propres valeurs : quantité, montant, PNL, note, date, etc.
-L’idée clé :
--	Niveau 1 = vue synthétique par token (regroupement de toutes les transactions).
--	Niveau 2 = vue granulaire par transaction (le détail exact de ce qui compose la ligne du niveau 1).
-Les deux vues utilisent des colonnes similaires, mais :
--	au niveau 1, ces colonnes affichent des valeurs agrégées,
--	au niveau 2, ces mêmes colonnes affichent les valeurs individuelles de chaque transaction.
-Ce fonctionnement permet d’avoir un tableau compact, lisible, même si l’utilisateur ajoute des dizaines ou centaines de transactions, tout en lui offrant un accès rapide au détail complet, transaction par transaction. 
-Vue principale : niveau 1 (par token)
-1 ligne = 1 token (même si l’utilisateur a ajouté 5, 20 ou 50 transactions pour ce token)
-Colonnes :
--	Logo
--	Symbole (ex : BTC)
--	Nom (ex : Bitcoin)
--	Quantité totale de tokens détenus
--	Montant investi total
--	Prix moyen d’achat (pondéré)
--	Valeur actuelle du token sur le marché
--	PNL absolu
--	PNL relatif (%)
--	Date de la dernière transaction
+Le module Stratégies est le cœur d’exStrat : c’est ici que l’utilisateur définit comment il prendra ses profits.
+Il doit permettre de :
+1.	Choisir un wallet.
+2.	Choisir un token dans ce wallet.
+3.	Créer ou sélectionner une stratégie existante (puis la modifier, dupliquer ou supprimer).
+4.	Définir 1 à 6 paliers de prise de profit.
+5.	Voir immédiatement l’impact de chaque palier : montant encaissé, valeur restante, quantité de tokens restante et profit global (net et en %).
+6.	À terme, comparer plusieurs stratégies pour un même token, que ce soit sous forme de tableau ou de graphique.
+Une fois comprise, la logique est puissante : chaque palier génère des chiffres clairs et la quantité restante sert de base au palier suivant. L’utilisateur visualise l’évolution de son bag pas à pas, de façon cohérente.
 
-Vue détaillée : niveau 2 (transactions individuelles)
-Affichée uniquement si l’utilisateur clique sur la ligne du token.
-Chaque ligne = 1 transaction.
-Colonnes :
--	Date
--	Quantité
--	Montant investi
--	Prix moyen spécifique à la transaction
--	PNL absolu
--	PNL relatif
--	Note éventuelle
+
+•	Zone A : Inputs - L’utilisateur complète successivement : choix du wallet, choix du token, sélection ou création de stratégie, nombre de paliers et paramètres de chaque sortie.
+Parcours vertical explicite.
+•	Zone B : Données affichées automatiquement - Ce que l’application affiche sans action de l’utilisateur :
+o	Données d’investissement : nombre de transactions, montant total investi, quantité totale détenue, prix moyen d’achat pondéré, PNL actuel (en €, en %).
+o	Données de marché (V1 minimale) : prix actuel du token et éventuellement capitalisation boursière.
+o	Ces informations donnent un contexte richissime pour créer des stratégies, sans surcharge visuelle.
+•	Zone C : Projections dynamiques – Ce qui répond à la question : « Que se passe t il si j’exécute cette stratégie ? »
+o	Valorisation du bag à chaque palier
+o	Montant encaissé
+o	Valeur restante
+o	Quantité de tokens restante
+o	Récapitulatif global
+C’est ici que la valeur d’exStrat se matérialise.
+Pensée “desktop-first” et hiérarchie claire
+•	Exploiter toute la largeur de l’écran via des panneaux / colonnes distinctes.
+•	Hiérarchie nette, éléments stables (pas de repositionnement imprévisible).
+•	Afficher la quantité disponible au moment de paramétrer chaque palier.
+•	Limiter les sliders selon le bag restant (pour éviter de vendre plus que ce que l’on possède).
+•	Ordre logique strict et évident (wallet → token → stratégie → paliers).
+3. Visualisation adaptée : sobriété et clarté
+•	Couleurs pro (rouge/vert) pour afficher gains et pertes, sans flashy.
+•	Séparation visuelle nette entre ce qui est à remplir et ce qui est affiché.
+•	Surligner ce qui aide à la décision (profit net, rendement global, bag restant).
+3.2.4 Ce que nous attendons du designer
+Le designer doit proposer une interface :
+•	Qui guide l’utilisateur étape par étape avec un parcours clair.
+•	Qui sépare visuellement inputs et outputs.
+•	Qui gère une hiérarchie impeccable afin de ne jamais surcharger l’utilisateur.
+•	Qui exploite l’espace desktop (panneaux, split-lignes, etc.).
+•	Qui permet de comparer plusieurs stratégies (tableau / graph) à terme.
+•	Qui reste modulaire et prépare les évolutions (données enrichies, drag & drop, templates, duplication, stop-loss…).
+Nous attendons des propositions créatives pour :
+•	la mise en page,
+•	l’interaction (sliders, toggles, boutons),
+•	la distinction des zones,
+•	la visualisation des projections,
+…tout en respectant la logique “outil professionnel” et en restant clair et fluide.
+
+Le module Stratégies est le cœur d’exStrat : c’est ici que l’utilisateur définit comment il prendra ses profits.
+Il doit permettre de :
+1.	Choisir un wallet.
+2.	Choisir un token dans ce wallet.
+3.	Créer ou sélectionner une stratégie existante (puis la modifier, dupliquer ou supprimer).
+4.	Définir 1 à 6 paliers de prise de profit.
+5.	Voir immédiatement l’impact de chaque palier : montant encaissé, valeur restante, quantité de tokens restante et profit global (net et en %).
+6.	À terme, comparer plusieurs stratégies pour un même token, que ce soit sous forme de tableau ou de graphique.
+Une fois comprise, la logique est puissante : chaque palier génère des chiffres clairs et la quantité restante sert de base au palier suivant. L’utilisateur visualise l’évolution de son bag pas à pas, de façon cohérente.

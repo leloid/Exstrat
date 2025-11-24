@@ -2712,8 +2712,8 @@ export default function OnboardingPage() {
       </div>
 
       {/* Main Content */}
-      <div className={`${currentStep === 2 || (currentStep === 0 && investmentSubStep === 'add-crypto' && addCryptoMethod === 'manual') ? 'max-w-7xl' : 'max-w-4xl'} mx-auto px-3 md:px-4 sm:px-6 lg:px-8 py-4 md:py-8 overflow-x-hidden`}>
-        <div className={`${currentStep === 2 || (currentStep === 0 && investmentSubStep === 'add-crypto' && addCryptoMethod === 'manual') ? 'max-w-full' : 'max-w-2xl'} mx-auto w-full`}>
+      <div className={`${currentStep === 1 || currentStep === 2 || (currentStep === 0 && investmentSubStep === 'add-crypto' && addCryptoMethod === 'manual') ? 'max-w-7xl' : 'max-w-4xl'} mx-auto px-3 md:px-4 sm:px-6 lg:px-8 py-4 md:py-8 overflow-x-hidden`}>
+        <div className={`${currentStep === 1 || currentStep === 2 || (currentStep === 0 && investmentSubStep === 'add-crypto' && addCryptoMethod === 'manual') ? 'max-w-full' : 'max-w-2xl'} mx-auto w-full`}>
           {/* Step Header */}
           <div className="text-center mb-4 md:mb-8">
             <div className="flex flex-col sm:flex-row items-center justify-center mb-3 md:mb-4 gap-3 sm:gap-0">
