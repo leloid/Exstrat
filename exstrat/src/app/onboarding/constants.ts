@@ -10,7 +10,7 @@ import { BinanceIcon, CoinbaseIcon, KrakenIcon, LedgerIcon, MetamaskIcon, Phanto
 export const ONBOARDING_STEPS = [
   { id: 'investment', name: 'Investissement', icon: WalletIcon },
   { id: 'strategy', name: 'Stratégie', icon: ChartBarIcon },
-  { id: 'configuration', name: 'Configuration', icon: Cog6ToothIcon },
+  { id: 'configuration', name: 'Prévisions', icon: Cog6ToothIcon },
 ] as const;
 
 // Sous-étapes pour l'investissement

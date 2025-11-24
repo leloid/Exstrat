@@ -59,7 +59,7 @@ export default function Sidebar({ activeTab, onTabChange, isDarkMode = true }: S
     { id: 'portfolio', name: 'Portfolio', href: '/portfolio', icon: PortfolioIcon },
     { id: 'transactions', name: 'Transactions', href: '/transactions', icon: TransactionIcon },
     { id: 'strategies', name: 'Stratégies', href: '/strategies', icon: StrategyIcon },
-    { id: 'config', name: 'Configuration', href: '/config', icon: ConfigIcon },
+    { id: 'config', name: 'Prévisions', href: '/prevision', icon: ConfigIcon },
   ];
 
   const handleSignOut = async () => {

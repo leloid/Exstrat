@@ -299,7 +299,7 @@ export default function ConfigPage() {
         <div className={`min-h-screen flex overflow-x-hidden ${isDarkMode ? 'bg-gray-900' : 'bg-gray-50'}`}>
           <Sidebar activeTab={activeTab} onTabChange={setActiveTab} isDarkMode={isDarkMode} />
           <div className="flex-1 flex flex-col overflow-x-hidden w-full max-w-full">
-            <TopBar currentPageName={language === 'fr' ? 'Configuration' : 'Configuration'} />
+            <TopBar currentPageName={language === 'fr' ? 'Prévisions' : 'Forecasts'} />
             <div className={`flex-1 p-3 md:p-6 flex items-center justify-center overflow-x-hidden max-w-full ${isDarkMode ? 'bg-gray-900' : 'bg-gray-50'}`}>
               <div className="text-center">
                 <div className={`animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto`}></div>
@@ -320,7 +320,7 @@ export default function ConfigPage() {
         <Sidebar activeTab={activeTab} onTabChange={setActiveTab} isDarkMode={isDarkMode} />
         
         <div className="flex-1 flex flex-col overflow-x-hidden w-full max-w-full">
-          <TopBar currentPageName={language === 'fr' ? 'Configuration' : 'Configuration'} />
+          <TopBar currentPageName={language === 'fr' ? 'Prévisions' : 'Forecasts'} />
 
           <div className={`flex-1 p-3 md:p-6 overflow-x-hidden max-w-full ${isDarkMode ? 'bg-gray-900' : 'bg-gray-50'}`}>
             {viewMode === 'config' ? (
@@ -376,7 +376,7 @@ export default function ConfigPage() {
                 {/* Tableau des holdings */}
                 <div className={`rounded-xl p-4 md:p-6 mb-4 md:mb-6 w-full max-w-full ${isDarkMode ? 'bg-gray-800' : 'bg-white border border-gray-200'}`}>
                   <h2 className={`text-base md:text-xl font-semibold mb-3 md:mb-4 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
-                    {language === 'fr' ? 'Configuration' : 'Configuration'}
+                    {language === 'fr' ? 'Prévisions' : 'Forecasts'}
                   </h2>
                   <p className={`text-xs md:text-sm mb-4 md:mb-6 ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
                     {language === 'fr' 

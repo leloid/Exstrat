@@ -275,7 +275,7 @@ export default function OnboardingPage() {
   // États pour la stratégie théorique
   const [strategyName, setStrategyName] = useState<string>('');
   const [selectedStrategyToken, setSelectedStrategyToken] = useState<TokenSearchResult | null>(null);
-  const [selectedStrategyPortfolioId, setSelectedStrategyPortfolioId] = useState<string>('virtual'); // 'virtual' ou un ID de portfolio
+  const [selectedStrategyPortfolioId, setSelectedStrategyPortfolioId] = useState<string>(''); // ID de portfolio (pas de wallet virtuel par défaut)
   const [availableStrategyQuantity, setAvailableStrategyQuantity] = useState<number>(0); // Quantité disponible dans le portfolio
   const [strategyQuantity, setStrategyQuantity] = useState<string>('');
   const [strategyAveragePrice, setStrategyAveragePrice] = useState<string>('');
@@ -339,6 +339,11 @@ export default function OnboardingPage() {
     // Ne mettre à jour que si les IDs ont vraiment changé
     if (currentIds !== newIds) {
       setOnboardingPortfolios(uniquePortfolios);
+      
+      // Initialiser selectedStrategyPortfolioId avec le premier portfolio disponible si vide
+      if (!selectedStrategyPortfolioId && uniquePortfolios.length > 0) {
+        setSelectedStrategyPortfolioId(uniquePortfolios[0].id);
+      }
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [portfolios]);
@@ -2049,17 +2054,6 @@ export default function OnboardingPage() {
                       </div>
                     )}
 
-                    {/* Recherche de token */}
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Token *
-                      </label>
-                      <TokenSearch
-                        onTokenSelect={handleTokenSelect}
-                        selectedToken={selectedToken}
-                      />
-                    </div>
-
                     {/* Sélection du portefeuille */}
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -2091,6 +2085,17 @@ export default function OnboardingPage() {
                           })()}
                         </SelectContent>
                       </Select>
+                    </div>
+
+                    {/* Recherche de token */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Token *
+                      </label>
+                      <TokenSearch
+                        onTokenSelect={handleTokenSelect}
+                        selectedToken={selectedToken}
+                      />
                     </div>
 
                     {/* Quantité et Montant investi */}
@@ -2274,58 +2279,12 @@ export default function OnboardingPage() {
               </p>
             </div>
 
-            {/* Informations récapitulatives en haut */}
-            <div className="bg-gray-50 border border-gray-200 rounded-lg p-3 md:p-4 mb-4 md:mb-6">
-              <div className="grid grid-cols-2 md:grid-cols-5 gap-3 md:gap-4 text-xs md:text-sm">
-                <div>
-                  <p className="text-gray-500 mb-1">Portfolio</p>
-                  <p className="font-semibold text-gray-900">
-                    {selectedStrategyPortfolioId === 'virtual' 
-                      ? 'Wallet Virtuelle' 
-                      : onboardingPortfolios.find(p => p.id === selectedStrategyPortfolioId)?.name || '-'}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-gray-500 mb-1">Token</p>
-                  <p className="font-semibold text-gray-900">
-                    {selectedStrategyToken?.symbol || '-'}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-gray-500 mb-1">Nombre de sorties</p>
-                  <p className="font-semibold text-gray-900">{numberOfTargets}</p>
-                </div>
-                <div>
-                  <p className="text-gray-500 mb-1">Tokens détenus</p>
-                  <p className="font-semibold text-gray-900">
-                    {strategyQuantity ? parseFloat(strategyQuantity).toLocaleString() : '-'}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-gray-500 mb-1">Prix moyen d'achat</p>
-                  <p className="font-semibold text-purple-600">
-                    {strategyAveragePrice ? `$${parseFloat(strategyAveragePrice).toLocaleString()}` : '-'}
-                  </p>
-                </div>
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4 pt-4 border-t border-gray-200">
-                <div>
-                  <p className="text-gray-500 mb-1">Total investi</p>
-                  <p className="text-lg font-bold text-green-600">
-                    {strategyQuantity && strategyAveragePrice 
-                      ? formatCurrency(parseFloat(strategyQuantity) * parseFloat(strategyAveragePrice), '$', 2)
-                      : '$0.00'}
-                  </p>
-                </div>
-              </div>
-            </div>
-
             <div className="space-y-4 md:space-y-6">
 
                 {/* Structure en deux colonnes */}
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-8">
                   {/* Colonne gauche : Zone A - Inputs */}
-                  <div className="space-y-4 md:space-y-6">
+            <div className="space-y-4 md:space-y-6">
                     <Card className="border border-gray-200">
                       <CardContent className="p-4 md:p-6 space-y-4">
                         <h4 className="text-sm md:text-base font-semibold text-gray-900 mb-4">Paramétrage de la stratégie</h4>
@@ -2354,7 +2313,9 @@ export default function OnboardingPage() {
                       <div className="px-3 py-2 text-xs font-semibold text-gray-500 border-t border-gray-200">
                         Simulation
                       </div>
-                              <SelectItem value="virtual">Wallet Virtuelle</SelectItem>
+                      <div className="px-3 py-2 text-sm text-gray-400 cursor-not-allowed opacity-50">
+                        Wallet Virtuelle
+                      </div>
                     </SelectContent>
                   </Select>
                 </div>
@@ -2371,19 +2332,14 @@ export default function OnboardingPage() {
                         {/* Stratégie */}
                   <div>
                           <Label htmlFor="strategyName" className="text-xs md:text-sm">Stratégies</Label>
-                          <div className="flex items-center gap-2">
                     <Input
                               id="strategyName"
                               type="text"
                               value={strategyName}
                               onChange={(e) => setStrategyName(e.target.value)}
                               placeholder="Nom de la stratégie"
-                              className="text-sm md:text-base flex-1"
+                              className="text-sm md:text-base"
                             />
-                            <Button variant="outline" size="sm" className="p-2">
-                              <PencilIcon className="w-4 h-4" />
-                            </Button>
-                </div>
               </div>
 
                         {/* Nombre de sorties */}
@@ -2453,7 +2409,9 @@ export default function OnboardingPage() {
                     )}
                   </div>
                   <div>
-                    <Label htmlFor="averagePrice" className="text-xs md:text-sm">Prix moyen (USD) *</Label>
+                    <Label htmlFor="averagePrice" className={`text-xs md:text-sm ${!isStrategyVirtualWallet && investmentData?.averagePrice ? 'text-gray-400' : ''}`}>
+                      Prix moyen (USD) *
+                    </Label>
                     <Input
                       id="averagePrice"
                       type="number"
@@ -2462,11 +2420,11 @@ export default function OnboardingPage() {
                       placeholder="Ex: 45000"
                       step="0.01"
                       required
-                      className="text-sm md:text-base"
+                      className={`text-sm md:text-base ${!isStrategyVirtualWallet && investmentData?.averagePrice ? 'bg-gray-100 text-gray-500 cursor-not-allowed' : ''}`}
                       readOnly={!isStrategyVirtualWallet && investmentData?.averagePrice ? true : false}
                     />
                     {!isStrategyVirtualWallet && investmentData?.averagePrice && (
-                      <p className="mt-1 text-xs md:text-sm text-gray-500">
+                      <p className="mt-1 text-xs md:text-sm text-gray-400">
                         Prix moyen calculé depuis vos transactions
                       </p>
                     )}
