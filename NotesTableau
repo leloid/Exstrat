@@ -1,0 +1,36 @@
+Le tableau d’investissements fonctionne sur deux niveaux complémentaires :
+-	Une vue principale (niveau 1) qui affiche 1 ligne par token, quel que soit le nombre de transactions effectuées pour ce token.
+Cette ligne représente le bundle de toutes les transactions associées à ce token dans le wallet sélectionné. Elle affiche les données consolidées : quantités totales, montant investi total, prix moyen pondéré, gains, etc.
+-	Une vue détaillée (niveau 2) qui s’affiche lorsque l’utilisateur clique sur une ligne de la vue principale. Le tableau se déploie en dessous pour montrer chaque transaction individuelle liée à ce token. Chaque ligne représente une transaction unique avec ses propres valeurs : quantité, montant, PNL, note, date, etc.
+L’idée clé :
+-	Niveau 1 = vue synthétique par token (regroupement de toutes les transactions).
+-	Niveau 2 = vue granulaire par transaction (le détail exact de ce qui compose la ligne du niveau 1).
+Les deux vues utilisent des colonnes similaires, mais :
+-	au niveau 1, ces colonnes affichent des valeurs agrégées,
+-	au niveau 2, ces mêmes colonnes affichent les valeurs individuelles de chaque transaction.
+Ce fonctionnement permet d’avoir un tableau compact, lisible, même si l’utilisateur ajoute des dizaines ou centaines de transactions, tout en lui offrant un accès rapide au détail complet, transaction par transaction. 
+Vue principale : niveau 1 (par token)
+1 ligne = 1 token (même si l’utilisateur a ajouté 5, 20 ou 50 transactions pour ce token)
+Colonnes :
+-	Logo
+-	Symbole (ex : BTC)
+-	Nom (ex : Bitcoin)
+-	Quantité totale de tokens détenus
+-	Montant investi total
+-	Prix moyen d’achat (pondéré)
+-	Valeur actuelle du token sur le marché
+-	PNL absolu
+-	PNL relatif (%)
+-	Date de la dernière transaction
+
+Vue détaillée : niveau 2 (transactions individuelles)
+Affichée uniquement si l’utilisateur clique sur la ligne du token.
+Chaque ligne = 1 transaction.
+Colonnes :
+-	Date
+-	Quantité
+-	Montant investi
+-	Prix moyen spécifique à la transaction
+-	PNL absolu
+-	PNL relatif
+-	Note éventuelle

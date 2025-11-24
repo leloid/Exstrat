@@ -16,7 +16,8 @@ import {
   XMarkIcon,
   PencilIcon,
   TrashIcon,
-  ChevronDownIcon
+  ChevronDownIcon,
+  WalletIcon
 } from '@heroicons/react/24/outline';
 import { transactionsApi } from '@/lib/transactions-api';
 import { strategiesApi } from '@/lib/strategies-api';
@@ -223,6 +224,7 @@ export default function OnboardingPage() {
   const [investmentSubStep, setInvestmentSubStep] = useState<'portfolio' | 'add-crypto'>('portfolio');
   const [addCryptoMethod, setAddCryptoMethod] = useState<'exchange' | 'wallet' | 'manual' | null>(null);
   const [selectedPortfolioForTable, setSelectedPortfolioForTable] = useState<string>('all'); // 'all' ou un ID de portfolio
+  const [expandedTokens, setExpandedTokens] = useState<Set<string>>(new Set()); // Tokens dont les détails sont affichés
   const [searchTerm, setSearchTerm] = useState('');
   const [showTransactionModal, setShowTransactionModal] = useState(false);
   const [showPortfolioModal, setShowPortfolioModal] = useState(false);
@@ -235,6 +237,7 @@ export default function OnboardingPage() {
   });
   const [onboardingTransactions, setOnboardingTransactions] = useState<any[]>([]);
   const [allTransactions, setAllTransactions] = useState<any[]>([]); // Toutes les transactions chargées depuis l'API
+  const [holdings, setHoldings] = useState<any[]>([]); // Holdings pour obtenir les prix actuels et PNL
   const [editingTransaction, setEditingTransaction] = useState<any | null>(null);
   const [onboardingPortfolios, setOnboardingPortfolios] = useState<any[]>([]);
   const [editingPortfolio, setEditingPortfolio] = useState<any | null>(null);
@@ -329,10 +332,10 @@ export default function OnboardingPage() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [portfolios]);
 
-  // Charger toutes les transactions depuis l'API quand on arrive sur la sous-étape "add-crypto" avec méthode "manual"
+  // Charger toutes les transactions et holdings depuis l'API quand on arrive sur la sous-étape "add-crypto" avec méthode "manual"
   React.useEffect(() => {
     if (currentStep === 0 && investmentSubStep === 'add-crypto' && addCryptoMethod === 'manual') {
-      const loadAllTransactions = async () => {
+      const loadAllData = async () => {
         try {
           setIsLoading(true);
           // Charger toutes les transactions (sans limite pour avoir toutes)
@@ -343,6 +346,35 @@ export default function OnboardingPage() {
             new Map(transactions.map(t => [t.id, t])).values()
           );
           setAllTransactions(uniqueTransactions);
+
+          // Charger les holdings pour obtenir les prix actuels et PNL
+          if (selectedPortfolioForTable !== 'all') {
+            try {
+              const portfolioHoldings = await portfoliosApi.getPortfolioHoldings(selectedPortfolioForTable);
+              setHoldings(portfolioHoldings);
+            } catch (err) {
+              console.error('Erreur lors du chargement des holdings:', err);
+            }
+          } else {
+            // Si "Tous les wallets", charger les holdings de tous les portfolios
+            const allPortfolios = [
+              ...onboardingPortfolios.filter(p => p && p.id && p.name),
+              ...portfolios.filter(p => p && p.id && p.name)
+            ];
+            const uniquePortfolios = Array.from(
+              new Map(allPortfolios.map(p => [p.id, p])).values()
+            );
+            const allHoldings: any[] = [];
+            for (const portfolio of uniquePortfolios) {
+              try {
+                const portfolioHoldings = await portfoliosApi.getPortfolioHoldings(portfolio.id);
+                allHoldings.push(...portfolioHoldings);
+              } catch (err) {
+                console.error(`Erreur lors du chargement des holdings pour ${portfolio.id}:`, err);
+              }
+            }
+            setHoldings(allHoldings);
+          }
         } catch (err) {
           console.error('Erreur lors du chargement des transactions:', err);
           setError('Erreur lors du chargement des transactions');
@@ -350,31 +382,58 @@ export default function OnboardingPage() {
           setIsLoading(false);
         }
       };
-      loadAllTransactions();
+      loadAllData();
     }
-  }, [currentStep, investmentSubStep, addCryptoMethod]);
+  }, [currentStep, investmentSubStep, addCryptoMethod, selectedPortfolioForTable, onboardingPortfolios, portfolios]);
 
-  // Recharger les transactions quand le portfolio sélectionné change
+  // Recharger les holdings quand le portfolio sélectionné change
   React.useEffect(() => {
     if (currentStep === 0 && investmentSubStep === 'add-crypto' && addCryptoMethod === 'manual') {
-      const loadTransactions = async () => {
+      const loadHoldings = async () => {
         try {
-          setIsLoading(true);
-          const response = await transactionsApi.getTransactions({ limit: 1000 });
-          const transactions = response.transactions || [];
-          const uniqueTransactions = Array.from(
-            new Map(transactions.map(t => [t.id, t])).values()
-          );
-          setAllTransactions(uniqueTransactions);
+          if (selectedPortfolioForTable !== 'all') {
+            const portfolioHoldings = await portfoliosApi.getPortfolioHoldings(selectedPortfolioForTable);
+            setHoldings(portfolioHoldings);
+          } else {
+            // Si "Tous les wallets", charger les holdings de tous les portfolios
+            const allPortfolios = [
+              ...onboardingPortfolios.filter(p => p && p.id && p.name),
+              ...portfolios.filter(p => p && p.id && p.name)
+            ];
+            const uniquePortfolios = Array.from(
+              new Map(allPortfolios.map(p => [p.id, p])).values()
+            );
+            const allHoldings: any[] = [];
+            for (const portfolio of uniquePortfolios) {
+              try {
+                const portfolioHoldings = await portfoliosApi.getPortfolioHoldings(portfolio.id);
+                allHoldings.push(...portfolioHoldings);
+              } catch (err) {
+                console.error(`Erreur lors du chargement des holdings pour ${portfolio.id}:`, err);
+              }
+            }
+            setHoldings(allHoldings);
+          }
         } catch (err) {
-          console.error('Erreur lors du rechargement des transactions:', err);
-        } finally {
-          setIsLoading(false);
+          console.error('Erreur lors du chargement des holdings:', err);
         }
       };
-      loadTransactions();
+      loadHoldings();
     }
-  }, [selectedPortfolioForTable, currentStep, investmentSubStep, addCryptoMethod]);
+  }, [selectedPortfolioForTable, currentStep, investmentSubStep, addCryptoMethod, onboardingPortfolios, portfolios]);
+
+  // Fonction pour gérer l'expansion/collapse des tokens
+  const toggleTokenExpansion = (symbol: string) => {
+    setExpandedTokens(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(symbol)) {
+        newSet.delete(symbol);
+      } else {
+        newSet.add(symbol);
+      }
+      return newSet;
+    });
+  };
 
   // Initialiser les cibles de profit quand le nombre change
   React.useEffect(() => {
@@ -1485,7 +1544,65 @@ export default function OnboardingPage() {
             return true;
           });
 
-          return filteredTransactions.length > 0 || isLoading ? (
+          // Grouper les transactions par token (symbol) pour la vue niveau 1
+          const transactionsByToken = new Map<string, any[]>();
+          filteredTransactions.forEach(transaction => {
+            const symbol = transaction.symbol?.toUpperCase() || '';
+            if (!transactionsByToken.has(symbol)) {
+              transactionsByToken.set(symbol, []);
+            }
+            transactionsByToken.get(symbol)!.push(transaction);
+          });
+
+          // Calculer les valeurs agrégées pour chaque token (niveau 1)
+          const tokenSummaries = Array.from(transactionsByToken.entries()).map(([symbol, transactions]) => {
+            // Calculer les totaux
+            const totalQuantity = transactions.reduce((sum, t) => sum + parseFloat(t.quantity?.toString() || '0'), 0);
+            const totalAmountInvested = transactions.reduce((sum, t) => sum + parseFloat(t.amountInvested?.toString() || '0'), 0);
+            const weightedAveragePrice = totalQuantity > 0 ? totalAmountInvested / totalQuantity : 0;
+            
+            // Trouver la dernière transaction
+            const lastTransaction = transactions.sort((a, b) => {
+              const dateA = a.transactionDate ? new Date(a.transactionDate).getTime() : 0;
+              const dateB = b.transactionDate ? new Date(b.transactionDate).getTime() : 0;
+              return dateB - dateA;
+            })[0];
+
+            // Trouver le holding correspondant pour obtenir le prix actuel et PNL
+            const holding = holdings.find(h => 
+              h.token?.symbol?.toUpperCase() === symbol.toUpperCase()
+            );
+
+            const currentPrice = holding?.currentPrice || holding?.averagePrice || weightedAveragePrice;
+            const currentValue = totalQuantity * currentPrice;
+            const pnlAbsolute = currentValue - totalAmountInvested;
+            const pnlPercentage = totalAmountInvested > 0 ? (pnlAbsolute / totalAmountInvested) * 100 : 0;
+
+            return {
+              symbol,
+              name: lastTransaction?.name || symbol,
+              totalQuantity,
+              totalAmountInvested,
+              weightedAveragePrice,
+              currentPrice,
+              currentValue,
+              pnlAbsolute,
+              pnlPercentage,
+              lastTransactionDate: lastTransaction?.transactionDate,
+              transactions, // Garder les transactions pour la vue détaillée
+              logoUrl: holding?.token?.logoUrl
+            };
+          });
+
+          // Filtrer par recherche de symbole au niveau des tokens
+          const filteredTokenSummaries = tokenSummaries.filter(summary => {
+            if (searchTerm && !summary.symbol.toLowerCase().includes(searchTerm.toLowerCase())) {
+              return false;
+            }
+            return true;
+          });
+
+          return filteredTokenSummaries.length > 0 || isLoading ? (
           <div className="mb-6">
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-4">
               <div>
@@ -1530,52 +1647,158 @@ export default function OnboardingPage() {
             {isLoading ? (
               <div className="flex items-center justify-center py-12">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-                    </div>
+              </div>
             ) : (
             <div className="overflow-x-auto">
               <table className="w-full border-collapse">
                 <thead>
-                  <tr className="border-b border-gray-200">
-                    <th className="text-left py-3 px-4 text-xs md:text-sm font-semibold text-gray-700"></th>
+                  <tr className="border-b border-gray-200 bg-gray-50">
+                    <th className="text-left py-3 px-4 text-xs md:text-sm font-semibold text-gray-700 w-12"></th>
                     <th className="text-left py-3 px-4 text-xs md:text-sm font-semibold text-gray-700">Symbol</th>
                     <th className="text-left py-3 px-4 text-xs md:text-sm font-semibold text-gray-700">Nom</th>
                     <th className="text-right py-3 px-4 text-xs md:text-sm font-semibold text-gray-700">Quantité</th>
                     <th className="text-right py-3 px-4 text-xs md:text-sm font-semibold text-gray-700">Montant</th>
                     <th className="text-right py-3 px-4 text-xs md:text-sm font-semibold text-gray-700">Prix moyen</th>
+                    <th className="text-right py-3 px-4 text-xs md:text-sm font-semibold text-gray-700">Valeur actuelle</th>
+                    <th className="text-right py-3 px-4 text-xs md:text-sm font-semibold text-gray-700">PNL</th>
+                    <th className="text-right py-3 px-4 text-xs md:text-sm font-semibold text-gray-700">PNL %</th>
                     <th className="text-right py-3 px-4 text-xs md:text-sm font-semibold text-gray-700">Date</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredTransactions.map((transaction) => (
-                    <tr key={transaction.id} className="border-b border-gray-100 hover:bg-gray-50">
-                      <td className="py-3 px-4">
-                        <div className="flex items-center gap-2">
-                            <Button
-                              variant="outline"
-                              onClick={() => handleEditTransaction(transaction)}
-                            className="p-1 text-gray-600 hover:text-gray-900"
-                            >
-                            <PencilIcon className="h-4 w-4" />
-                            </Button>
-                            <Button
-                              variant="outline"
-                              onClick={() => handleDeleteTransaction(transaction.id)}
-                            className="p-1 text-red-600 hover:text-red-700"
-                            >
-                            <TrashIcon className="h-4 w-4" />
-                            </Button>
-                          </div>
-                      </td>
-                      <td className="py-3 px-4 text-sm font-medium text-gray-900">{transaction.symbol}</td>
-                      <td className="py-3 px-4 text-sm text-gray-700">{transaction.name}</td>
-                      <td className="py-3 px-4 text-sm text-right text-gray-900">{parseFloat(transaction.quantity.toString()).toLocaleString()}</td>
-                      <td className="py-3 px-4 text-sm text-right text-gray-900">{formatCurrency(transaction.amountInvested)}</td>
-                      <td className="py-3 px-4 text-sm text-right text-gray-900">{formatCurrency(transaction.averagePrice)}</td>
-                      <td className="py-3 px-4 text-sm text-right text-gray-600">
-                        {transaction.transactionDate ? new Date(transaction.transactionDate).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: '2-digit' }) : '-'}
-                      </td>
-                    </tr>
-                  ))}
+                  {filteredTokenSummaries.map((tokenSummary) => {
+                    const isExpanded = expandedTokens.has(tokenSummary.symbol);
+                    return (
+                      <React.Fragment key={tokenSummary.symbol}>
+                        {/* Niveau 1 : Vue principale par token (agrégée) */}
+                        <tr 
+                          className="border-b border-gray-100 hover:bg-gray-50 cursor-pointer transition-colors"
+                          onClick={() => toggleTokenExpansion(tokenSummary.symbol)}
+                        >
+                          <td className="py-3 px-4">
+                            <div className="flex items-center justify-center">
+                              {isExpanded ? (
+                                <ChevronDownIcon className="h-4 w-4 text-gray-400 transform rotate-180 transition-transform" />
+                              ) : (
+                                <ChevronDownIcon className="h-4 w-4 text-gray-400 transition-transform" />
+                              )}
+                            </div>
+                          </td>
+                          <td className="py-3 px-4">
+                            <div className="flex items-center gap-2">
+                              {tokenSummary.logoUrl ? (
+                                <img src={tokenSummary.logoUrl} alt={tokenSummary.symbol} className="w-6 h-6 rounded-full" />
+                              ) : (
+                                <div className="w-6 h-6 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center">
+                                  <span className="text-white text-xs font-bold">{tokenSummary.symbol.charAt(0)}</span>
+                                </div>
+                              )}
+                              <span className="text-sm font-medium text-gray-900">{tokenSummary.symbol}</span>
+                            </div>
+                          </td>
+                          <td className="py-3 px-4 text-sm text-gray-700">{tokenSummary.name}</td>
+                          <td className="py-3 px-4 text-sm text-right text-gray-900">{tokenSummary.totalQuantity.toLocaleString(undefined, { maximumFractionDigits: 8 })}</td>
+                          <td className="py-3 px-4 text-sm text-right text-gray-900">{formatCurrency(tokenSummary.totalAmountInvested, '$', 2)}</td>
+                          <td className="py-3 px-4 text-sm text-right text-gray-900">{formatCurrency(tokenSummary.weightedAveragePrice, '$', 2)}</td>
+                          <td className="py-3 px-4 text-sm text-right text-gray-900">{formatCurrency(tokenSummary.currentValue, '$', 2)}</td>
+                          <td className={`py-3 px-4 text-sm text-right font-medium ${tokenSummary.pnlAbsolute >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                            {formatCurrency(tokenSummary.pnlAbsolute, '$', 2)}
+                          </td>
+                          <td className={`py-3 px-4 text-sm text-right font-medium ${tokenSummary.pnlPercentage >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                            {tokenSummary.pnlPercentage >= 0 ? '+' : ''}{tokenSummary.pnlPercentage.toFixed(2)}%
+                          </td>
+                          <td className="py-3 px-4 text-sm text-right text-gray-600">
+                            {tokenSummary.lastTransactionDate ? new Date(tokenSummary.lastTransactionDate).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: '2-digit' }) : '-'}
+                          </td>
+                        </tr>
+                        {/* Niveau 2 : Vue détaillée par transaction (expandable) */}
+                        {isExpanded && (
+                          <>
+                            {/* En-tête pour la vue détaillée */}
+                            <tr className="bg-gray-100/50">
+                              <td colSpan={10} className="py-2 px-4">
+                                <div className="text-xs font-semibold text-gray-600 uppercase tracking-wide">
+                                  Transactions individuelles ({tokenSummary.transactions.length})
+                                </div>
+                              </td>
+                            </tr>
+                            {tokenSummary.transactions.map((transaction) => {
+                              // Calculer PNL pour chaque transaction
+                              const transactionCurrentPrice = tokenSummary.currentPrice;
+                              const transactionCurrentValue = parseFloat(transaction.quantity?.toString() || '0') * transactionCurrentPrice;
+                              const transactionAmountInvested = parseFloat(transaction.amountInvested?.toString() || '0');
+                              const transactionPnlAbsolute = transactionCurrentValue - transactionAmountInvested;
+                              const transactionPnlPercentage = transactionAmountInvested > 0 ? (transactionPnlAbsolute / transactionAmountInvested) * 100 : 0;
+
+                              return (
+                                <React.Fragment key={transaction.id}>
+                                  <tr 
+                                    className="border-b border-gray-50 bg-gray-50/50 hover:bg-gray-100"
+                                    onClick={(e) => e.stopPropagation()}
+                                  >
+                                    <td className="py-2 px-4"></td>
+                                    <td className="py-2 px-4"></td>
+                                    <td className="py-2 px-4"></td>
+                                    <td className="py-2 px-4 text-xs text-right text-gray-700">{parseFloat(transaction.quantity?.toString() || '0').toLocaleString(undefined, { maximumFractionDigits: 8 })}</td>
+                                    <td className="py-2 px-4 text-xs text-right text-gray-700">{formatCurrency(transactionAmountInvested, '$', 2)}</td>
+                                    <td className="py-2 px-4 text-xs text-right text-gray-700">{formatCurrency(parseFloat(transaction.averagePrice?.toString() || '0'), '$', 2)}</td>
+                                    <td className="py-2 px-4 text-xs text-right text-gray-700">{formatCurrency(transactionCurrentValue, '$', 2)}</td>
+                                    <td className={`py-2 px-4 text-xs text-right font-medium ${transactionPnlAbsolute >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                                      {formatCurrency(transactionPnlAbsolute, '$', 2)}
+                                    </td>
+                                    <td className={`py-2 px-4 text-xs text-right font-medium ${transactionPnlPercentage >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                                      {transactionPnlPercentage >= 0 ? '+' : ''}{transactionPnlPercentage.toFixed(2)}%
+                                    </td>
+                                    <td className="py-2 px-4">
+                                      <div className="flex items-center justify-end gap-2">
+                                        <span className="text-xs text-right text-gray-600">
+                                          {transaction.transactionDate ? new Date(transaction.transactionDate).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: '2-digit' }) : '-'}
+                                        </span>
+                                        <div className="flex items-center gap-1">
+                                          <Button
+                                            variant="outline"
+                                            onClick={(e) => {
+                                              e.stopPropagation();
+                                              handleEditTransaction(transaction);
+                                            }}
+                                            className="p-1 h-6 w-6 text-gray-600 hover:text-gray-900"
+                                          >
+                                            <PencilIcon className="h-3 w-3" />
+                                          </Button>
+                                          <Button
+                                            variant="outline"
+                                            onClick={(e) => {
+                                              e.stopPropagation();
+                                              handleDeleteTransaction(transaction.id);
+                                            }}
+                                            className="p-1 h-6 w-6 text-red-600 hover:text-red-700"
+                                          >
+                                            <TrashIcon className="h-3 w-3" />
+                                          </Button>
+                                        </div>
+                                      </div>
+                                    </td>
+                                  </tr>
+                                  {transaction.notes && (
+                                    <tr 
+                                      className="bg-gray-50/30"
+                                      onClick={(e) => e.stopPropagation()}
+                                    >
+                                      <td colSpan={10} className="py-1 px-4">
+                                        <div className="text-xs text-gray-600 italic pl-8">
+                                          📝 Note: {transaction.notes}
+                                        </div>
+                                      </td>
+                                    </tr>
+                                  )}
+                                </React.Fragment>
+                              );
+                            })}
+                          </>
+                        )}
+                      </React.Fragment>
+                    );
+                  })}
                 </tbody>
               </table>
               </div>
