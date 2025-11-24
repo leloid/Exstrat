@@ -309,22 +309,32 @@ export default function OnboardingPage() {
   const router = useRouter();
 
   // Charger les stratégies théoriques pour la prévision
-  React.useEffect(() => {
-    const loadPrevisionTheoreticalStrategies = async () => {
-      try {
-        const data = await portfoliosApi.getTheoreticalStrategies();
-        // Normaliser le tokenSymbol en majuscules pour la comparaison
-        const normalizedData = data.map(strategy => ({
-          ...strategy,
-          tokenSymbol: strategy.tokenSymbol?.toUpperCase() || '',
-        }));
-        setPrevisionTheoreticalStrategies(normalizedData);
-      } catch (error) {
-        console.error('Erreur lors du chargement des stratégies:', error);
-      }
-    };
-    loadPrevisionTheoreticalStrategies();
+  const loadPrevisionTheoreticalStrategies = React.useCallback(async () => {
+    try {
+      const data = await portfoliosApi.getTheoreticalStrategies();
+      // Normaliser le tokenSymbol en majuscules pour la comparaison
+      const normalizedData = data.map(strategy => ({
+        ...strategy,
+        tokenSymbol: strategy.tokenSymbol?.toUpperCase() || '',
+      }));
+      setPrevisionTheoreticalStrategies(normalizedData);
+      console.log('📋 Stratégies théoriques chargées:', normalizedData.length);
+    } catch (error) {
+      console.error('Erreur lors du chargement des stratégies:', error);
+    }
   }, []);
+
+  React.useEffect(() => {
+    loadPrevisionTheoreticalStrategies();
+  }, [loadPrevisionTheoreticalStrategies]);
+
+  // Recharger les stratégies quand on arrive sur l'étape prévisions
+  React.useEffect(() => {
+    if (currentStep === 2) {
+      console.log('🔄 Arrivée sur l\'étape prévisions, rechargement des stratégies...');
+      loadPrevisionTheoreticalStrategies();
+    }
+  }, [currentStep, loadPrevisionTheoreticalStrategies]);
 
   // Charger les holdings quand un portfolio est sélectionné
   React.useEffect(() => {
@@ -1208,7 +1218,17 @@ export default function OnboardingPage() {
     }
     
     if (currentStep < steps.length - 1) {
-      setCurrentStep(currentStep + 1);
+      const nextStep = currentStep + 1;
+      setCurrentStep(nextStep);
+      
+      // Si on passe à l'étape prévisions (step 2), recharger les stratégies théoriques
+      if (nextStep === 2) {
+        // Attendre un peu pour s'assurer que la stratégie est bien sauvegardée côté backend
+        setTimeout(() => {
+          console.log('🔄 Passage à l\'étape prévisions, rechargement des stratégies...');
+          loadPrevisionTheoreticalStrategies();
+        }, 500);
+      }
     } else {
       // Fin de l'onboarding
       // Si une prévision a été sauvegardée, rediriger vers /prevision avec l'onglet "Mes prévisions"
