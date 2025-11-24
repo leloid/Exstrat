@@ -11,7 +11,7 @@ import { Button } from '@/components/ui/Button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/Select';
 import { Input } from '@/components/ui/Input';
 import { Label } from '@/components/ui/Label';
-import { ChartBarIcon, ChevronDownIcon, ChevronUpIcon, PencilIcon, TrashIcon, DocumentDuplicateIcon, EyeIcon } from '@heroicons/react/24/outline';
+import { ChartBarIcon, ChevronDownIcon, ChevronUpIcon, PencilIcon, TrashIcon, DocumentDuplicateIcon, EyeIcon, CurrencyDollarIcon, ArrowTrendingUpIcon, ArrowTrendingDownIcon } from '@heroicons/react/24/outline';
 import { formatCurrency, formatPercentage } from '@/lib/format';
 import * as portfoliosApi from '@/lib/portfolios-api';
 
@@ -377,25 +377,45 @@ function PrevisionPageContent() {
           <TopBar currentPageName={language === 'fr' ? 'Prévisions' : 'Forecasts'} />
 
           <div className={`flex-1 p-3 md:p-6 overflow-x-hidden max-w-full ${isDarkMode ? 'bg-gray-900' : 'bg-gray-50'}`}>
+            {/* Header */}
+            <div className="mb-6">
+              <h1 className={`text-2xl md:text-3xl font-bold mb-2 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+                {language === 'fr' ? 'Prévisions' : 'Forecasts'}
+                  </h1>
+              <p className={`text-sm md:text-base ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                    {language === 'fr' 
+                  ? 'Créez et gérez vos stratégies de prise de profit'
+                  : 'Create and manage your profit-taking strategies'}
+              </p>
+            </div>
+
             {/* Onglets */}
-            <div className="flex gap-1 md:gap-2 mb-6 border-b border-gray-200">
+            <div className="flex gap-2 mb-6">
               <button
                 onClick={() => setCurrentTab('create')}
-                className={`px-4 md:px-6 py-2 md:py-3 text-sm md:text-base font-medium border-b-2 transition-colors ${
+                className={`px-6 py-3 rounded-xl text-sm md:text-base font-medium transition-all ${
                   currentTab === 'create'
-                    ? 'border-blue-600 text-blue-600'
-                    : 'border-transparent text-gray-600 hover:text-gray-900'
-                } ${isDarkMode ? (currentTab === 'create' ? 'text-blue-400' : 'text-gray-400 hover:text-gray-300') : ''}`}
+                    ? isDarkMode
+                      ? 'bg-gradient-to-r from-purple-600 to-blue-600 text-white shadow-lg'
+                      : 'bg-gradient-to-r from-purple-600 to-blue-600 text-white shadow-lg'
+                    : isDarkMode
+                      ? 'bg-gray-800 text-gray-400 hover:text-gray-300 hover:bg-gray-750'
+                      : 'bg-white border border-gray-200 text-gray-600 hover:text-gray-900 hover:border-gray-300'
+                }`}
               >
                 {language === 'fr' ? 'Créer une prévision' : 'Create a forecast'}
               </button>
               <button
                 onClick={() => setCurrentTab('list')}
-                className={`px-4 md:px-6 py-2 md:py-3 text-sm md:text-base font-medium border-b-2 transition-colors ${
+                className={`px-6 py-3 rounded-xl text-sm md:text-base font-medium transition-all ${
                   currentTab === 'list'
-                    ? 'border-blue-600 text-blue-600'
-                    : 'border-transparent text-gray-600 hover:text-gray-900'
-                } ${isDarkMode ? (currentTab === 'list' ? 'text-blue-400' : 'text-gray-400 hover:text-gray-300') : ''}`}
+                    ? isDarkMode
+                      ? 'bg-gradient-to-r from-purple-600 to-blue-600 text-white shadow-lg'
+                      : 'bg-gradient-to-r from-purple-600 to-blue-600 text-white shadow-lg'
+                    : isDarkMode
+                      ? 'bg-gray-800 text-gray-400 hover:text-gray-300 hover:bg-gray-750'
+                      : 'bg-white border border-gray-200 text-gray-600 hover:text-gray-900 hover:border-gray-300'
+                }`}
               >
                 {language === 'fr' ? 'Mes prévisions' : 'My forecasts'}
               </button>
@@ -404,15 +424,22 @@ function PrevisionPageContent() {
             {currentTab === 'create' ? (
               <div className="space-y-6">
                 {/* Zone A - Configuration de la prévision */}
-                <div className={`rounded-xl p-4 md:p-6 ${isDarkMode ? 'bg-gray-800' : 'bg-white border border-gray-200'}`}>
-                  <h2 className={`text-lg md:text-xl font-bold mb-2 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
-                    {language === 'fr' ? 'Stratégie globale de portfolio' : 'Global Portfolio Strategy'}
-                  </h2>
-                  <p className={`text-xs md:text-sm mb-4 md:mb-6 ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-                    {language === 'fr' 
-                      ? 'Choisissez un portfolio et renseignez un nom pour votre nouvelle stratégie globale.'
-                      : 'Choose a portfolio and enter a name for your new global strategy.'}
-                  </p>
+                <div className={`rounded-xl p-6 shadow-sm ${isDarkMode ? 'bg-gray-800' : 'bg-white border border-gray-200'}`}>
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${isDarkMode ? 'bg-gradient-to-br from-purple-600 to-blue-600' : 'bg-gradient-to-br from-purple-100 to-blue-100'}`}>
+                      <ChartBarIcon className={`h-6 w-6 ${isDarkMode ? 'text-white' : 'text-purple-600'}`} />
+                    </div>
+                    <div>
+                      <h2 className={`text-lg md:text-xl font-bold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+                        {language === 'fr' ? 'Stratégie globale de portfolio' : 'Global Portfolio Strategy'}
+                      </h2>
+                      <p className={`text-xs md:text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                        {language === 'fr' 
+                          ? 'Choisissez un portfolio et renseignez un nom pour votre nouvelle stratégie globale.'
+                          : 'Choose a portfolio and enter a name for your new global strategy.'}
+                      </p>
+                    </div>
+                  </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
                     <div>
@@ -450,11 +477,11 @@ function PrevisionPageContent() {
 
                 {/* Zone A - Tableau de configuration */}
                 {selectedPortfolioId && holdings.length > 0 && (
-                  <div className={`rounded-xl p-4 md:p-6 ${isDarkMode ? 'bg-gray-800' : 'bg-white border border-gray-200'}`}>
+                  <div className={`rounded-xl p-6 shadow-sm ${isDarkMode ? 'bg-gray-800' : 'bg-white border border-gray-200'}`}>
                     <h3 className={`text-base md:text-lg font-semibold mb-2 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
                     {language === 'fr' ? 'Configuration' : 'Configuration'}
                     </h3>
-                  <p className={`text-xs md:text-sm mb-4 md:mb-6 ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                    <p className={`text-xs md:text-sm mb-6 ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
                     {language === 'fr' 
                         ? 'Pour chaque token de votre portfolio, choisissez une stratégie de prise de profit.'
                         : 'For each token in your portfolio, choose a profit-taking strategy.'}
@@ -687,7 +714,7 @@ function PrevisionPageContent() {
 
                 {/* Zone B - Résultats par token */}
                 {selectedPortfolioId && holdings.length > 0 && (
-                  <div className={`rounded-xl p-4 md:p-6 ${isDarkMode ? 'bg-gray-800' : 'bg-white border border-gray-200'}`}>
+                  <div className={`rounded-xl p-6 shadow-sm ${isDarkMode ? 'bg-gray-800' : 'bg-white border border-gray-200'}`}>
                     <h3 className={`text-base md:text-lg font-semibold mb-4 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
                       {language === 'fr' ? 'Résultats par token' : 'Results by token'}
                     </h3>
@@ -781,48 +808,71 @@ function PrevisionPageContent() {
 
                 {/* Zone C - Résumé global */}
                 {selectedPortfolioId && holdings.length > 0 && Object.keys(appliedStrategies).some(id => appliedStrategies[id] !== 'none') && (
-                  <div className={`rounded-xl p-4 md:p-6 ${isDarkMode ? 'bg-gray-800' : 'bg-white border border-gray-200'}`}>
-                    <h3 className={`text-base md:text-lg font-semibold mb-4 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+                  <div className={`rounded-xl p-6 shadow-sm ${isDarkMode ? 'bg-gray-800' : 'bg-white border border-gray-200'}`}>
+                    <h3 className={`text-base md:text-lg font-semibold mb-6 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
                       {language === 'fr' ? 'Résumé global du wallet' : 'Global wallet summary'}
                     </h3>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 md:gap-6">
-                      <div>
-                        <div className={`text-xs md:text-sm mb-1 ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-                          {language === 'fr' ? 'Total investi' : 'Total invested'}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+                      <div className={`rounded-lg p-4 ${isDarkMode ? 'bg-gray-700' : 'bg-gray-50'}`}>
+                        <div className="flex items-center justify-between mb-2">
+                          <div className={`text-xs md:text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                            {language === 'fr' ? 'Total investi' : 'Total invested'}
+                          </div>
+                          <CurrencyDollarIcon className={`h-5 w-5 ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`} />
                         </div>
-                        <div className={`text-lg md:text-2xl font-bold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+                        <div className={`text-lg md:text-xl font-bold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
                           {formatCurrency(globalSummary.totalInvested)}
                         </div>
                       </div>
-                      <div>
-                        <div className={`text-xs md:text-sm mb-1 ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-                          {language === 'fr' ? 'Total encaissé' : 'Total collected'}
+                      <div className={`rounded-lg p-4 ${isDarkMode ? 'bg-gray-700' : 'bg-gray-50'}`}>
+                        <div className="flex items-center justify-between mb-2">
+                          <div className={`text-xs md:text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                            {language === 'fr' ? 'Total encaissé' : 'Total collected'}
+                          </div>
+                          <ArrowTrendingUpIcon className="h-5 w-5 text-green-500" />
                         </div>
-                        <div className={`text-lg md:text-2xl font-bold text-green-600`}>
+                        <div className={`text-lg md:text-xl font-bold text-green-500`}>
                           {formatCurrency(globalSummary.totalCollected)}
                         </div>
                       </div>
-                      <div>
-                        <div className={`text-xs md:text-sm mb-1 ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-                          {language === 'fr' ? 'Profit net' : 'Net profit'}
+                      <div className={`rounded-lg p-4 ${isDarkMode ? 'bg-gray-700' : 'bg-gray-50'}`}>
+                        <div className="flex items-center justify-between mb-2">
+                          <div className={`text-xs md:text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                            {language === 'fr' ? 'Profit net' : 'Net profit'}
+                          </div>
+                          {globalSummary.totalProfit >= 0 ? (
+                            <ArrowTrendingUpIcon className="h-5 w-5 text-green-500" />
+                          ) : (
+                            <ArrowTrendingDownIcon className="h-5 w-5 text-red-500" />
+                          )}
                         </div>
-                        <div className={`text-lg md:text-2xl font-bold text-green-600`}>
+                        <div className={`text-lg md:text-xl font-bold ${globalSummary.totalProfit >= 0 ? 'text-green-500' : 'text-red-500'}`}>
                           {formatCurrency(globalSummary.totalProfit)}
                         </div>
                       </div>
-                      <div>
-                        <div className={`text-xs md:text-sm mb-1 ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-                          {language === 'fr' ? 'Rendement net' : 'Net return'}
+                      <div className={`rounded-lg p-4 ${isDarkMode ? 'bg-gray-700' : 'bg-gray-50'}`}>
+                        <div className="flex items-center justify-between mb-2">
+                          <div className={`text-xs md:text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                            {language === 'fr' ? 'Rendement net' : 'Net return'}
+                          </div>
+                          {globalSummary.returnPercentage >= 0 ? (
+                            <ArrowTrendingUpIcon className="h-5 w-5 text-green-500" />
+                          ) : (
+                            <ArrowTrendingDownIcon className="h-5 w-5 text-red-500" />
+                          )}
                         </div>
-                        <div className={`text-lg md:text-2xl font-bold text-green-600`}>
+                        <div className={`text-lg md:text-xl font-bold ${globalSummary.returnPercentage >= 0 ? 'text-green-500' : 'text-red-500'}`}>
                           {formatPercentage(globalSummary.returnPercentage)}
                         </div>
                       </div>
-                      <div>
-                        <div className={`text-xs md:text-sm mb-1 ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-                          {language === 'fr' ? 'Valeur tokens restants' : 'Remaining tokens value'}
+                      <div className={`rounded-lg p-4 ${isDarkMode ? 'bg-gray-700' : 'bg-gray-50'}`}>
+                        <div className="flex items-center justify-between mb-2">
+                          <div className={`text-xs md:text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                            {language === 'fr' ? 'Valeur tokens restants' : 'Remaining tokens value'}
+                          </div>
+                          <CurrencyDollarIcon className={`h-5 w-5 ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`} />
                         </div>
-                        <div className={`text-lg md:text-2xl font-bold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+                        <div className={`text-lg md:text-xl font-bold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
                           {formatCurrency(globalSummary.remainingTokensValue)}
                         </div>
                       </div>
@@ -833,7 +883,7 @@ function PrevisionPageContent() {
                     <Button 
                         onClick={handleSaveForecast}
                         disabled={!forecastName.trim() || !selectedPortfolioId}
-                        className="bg-blue-600 hover:bg-blue-700 text-white"
+                        className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white shadow-lg hover:shadow-xl transition-all"
                       >
                         {language === 'fr' ? 'Sauvegarder la prévision' : 'Save forecast'}
                     </Button>
@@ -845,7 +895,7 @@ function PrevisionPageContent() {
                 {selectedPortfolioId && holdings.length === 0 && !loading && (
                   <div className={`rounded-xl p-8 text-center ${isDarkMode ? 'bg-gray-800' : 'bg-white border border-gray-200'}`}>
                     <p className={`text-sm md:text-base ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-                      {language === 'fr' 
+                  {language === 'fr' 
                         ? 'Aucun holding disponible. Ajoutez des transactions d\'abord.'
                         : 'No holdings available. Add transactions first.'}
                     </p>
@@ -855,19 +905,8 @@ function PrevisionPageContent() {
             ) : (
               /* Onglet "Mes prévisions" */
               <div className="space-y-6">
-                <div>
-                  <h2 className={`text-xl md:text-2xl font-bold mb-2 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
-                    {language === 'fr' ? 'Mes prévisions' : 'My forecasts'}
-                  </h2>
-                  <p className={`text-xs md:text-sm mb-6 ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-                  {language === 'fr' 
-                      ? 'Consultez et gérez vos stratégies globales de portfolio'
-                      : 'Consult and manage your global portfolio strategies'}
-                  </p>
-                </div>
-
                 {/* Sélection du portfolio */}
-                <div className={`rounded-xl p-4 md:p-6 ${isDarkMode ? 'bg-gray-800' : 'bg-white border border-gray-200'}`}>
+                <div className={`rounded-xl p-6 shadow-sm ${isDarkMode ? 'bg-gray-800' : 'bg-white border border-gray-200'}`}>
                   <Label className={`text-xs md:text-sm mb-2 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
                     {language === 'fr' ? 'Portfolio' : 'Portfolio'}
                   </Label>
@@ -910,7 +949,7 @@ function PrevisionPageContent() {
                       .map(forecast => {
                         const isExpanded = expandedForecastId === forecast.id;
                         return (
-                          <div key={forecast.id} className={`rounded-xl p-4 md:p-6 ${isDarkMode ? 'bg-gray-800' : 'bg-white border border-gray-200'}`}>
+                          <div key={forecast.id} className={`rounded-xl p-6 shadow-sm transition-all hover:shadow-md ${isDarkMode ? 'bg-gray-800 hover:bg-gray-750' : 'bg-white border border-gray-200 hover:border-purple-300'}`}>
                             <div className="flex items-start justify-between mb-4">
                               <div className="flex-1">
                                 <div className="flex items-center gap-2 mb-2">
@@ -962,38 +1001,58 @@ function PrevisionPageContent() {
 
                             {/* Métriques */}
                             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
-                        <div>
-                          <div className={`text-xs md:text-sm mb-1 ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-                                  {language === 'fr' ? 'Total investi' : 'Total invested'}
+                              <div className={`rounded-lg p-3 ${isDarkMode ? 'bg-gray-700' : 'bg-gray-50'}`}>
+                                <div className="flex items-center justify-between mb-1">
+                                  <div className={`text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                                    {language === 'fr' ? 'Total investi' : 'Total invested'}
                           </div>
-                                <div className={`text-base md:text-lg font-bold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+                                  <CurrencyDollarIcon className={`h-4 w-4 ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`} />
+                          </div>
+                                <div className={`text-base font-bold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
                                   {formatCurrency(forecast.totalInvested)}
-                          </div>
                         </div>
-                        <div>
-                          <div className={`text-xs md:text-sm mb-1 ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-                                  {language === 'fr' ? 'Total encaissé' : 'Total collected'}
                           </div>
-                                <div className={`text-base md:text-lg font-bold text-green-600`}>
+                              <div className={`rounded-lg p-3 ${isDarkMode ? 'bg-gray-700' : 'bg-gray-50'}`}>
+                                <div className="flex items-center justify-between mb-1">
+                                  <div className={`text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                                    {language === 'fr' ? 'Total encaissé' : 'Total collected'}
+                          </div>
+                                  <ArrowTrendingUpIcon className="h-4 w-4 text-green-500" />
+                        </div>
+                                <div className={`text-base font-bold text-green-500`}>
                                   {formatCurrency(forecast.totalCollected)}
                           </div>
-                        </div>
-                        <div>
-                          <div className={`text-xs md:text-sm mb-1 ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-                                  {language === 'fr' ? 'Profit net' : 'Net profit'}
                           </div>
-                                <div className={`text-base md:text-lg font-bold text-green-600`}>
+                              <div className={`rounded-lg p-3 ${isDarkMode ? 'bg-gray-700' : 'bg-gray-50'}`}>
+                                <div className="flex items-center justify-between mb-1">
+                                  <div className={`text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                                    {language === 'fr' ? 'Profit net' : 'Net profit'}
+                        </div>
+                                  {forecast.totalProfit >= 0 ? (
+                                    <ArrowTrendingUpIcon className="h-4 w-4 text-green-500" />
+                                  ) : (
+                                    <ArrowTrendingDownIcon className="h-4 w-4 text-red-500" />
+                                  )}
+                          </div>
+                                <div className={`text-base font-bold ${forecast.totalProfit >= 0 ? 'text-green-500' : 'text-red-500'}`}>
                                   {formatCurrency(forecast.totalProfit)}
                           </div>
                         </div>
-                        <div>
-                          <div className={`text-xs md:text-sm mb-1 ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-                                  {language === 'fr' ? 'Rendement net' : 'Net return'}
-                          </div>
-                                <div className={`text-base md:text-lg font-bold text-green-600`}>
-                                  {formatPercentage(forecast.returnPercentage)}
-                        </div>
+                              <div className={`rounded-lg p-3 ${isDarkMode ? 'bg-gray-700' : 'bg-gray-50'}`}>
+                                <div className="flex items-center justify-between mb-1">
+                                  <div className={`text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                                    {language === 'fr' ? 'Rendement net' : 'Net return'}
                       </div>
+                                  {forecast.returnPercentage >= 0 ? (
+                                    <ArrowTrendingUpIcon className="h-4 w-4 text-green-500" />
+                                  ) : (
+                                    <ArrowTrendingDownIcon className="h-4 w-4 text-red-500" />
+                                  )}
+                    </div>
+                                <div className={`text-base font-bold ${forecast.returnPercentage >= 0 ? 'text-green-500' : 'text-red-500'}`}>
+                                  {formatPercentage(forecast.returnPercentage)}
+                                </div>
+                              </div>
                     </div>
 
                             {/* Détails dépliables */}
@@ -1005,7 +1064,7 @@ function PrevisionPageContent() {
                                     : 'Details of profit-taking strategies for each token in the portfolio'}
                                 </button>
                                 {/* TODO: Afficher les détails par token */}
-                    </div>
+                      </div>
                             )}
 
                             {/* Actions */}
