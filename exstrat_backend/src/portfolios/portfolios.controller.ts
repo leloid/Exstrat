@@ -17,6 +17,7 @@ import { PortfoliosService } from './portfolios.service';
 import { CreatePortfolioDto, UpdatePortfolioDto } from './dto/portfolio.dto';
 import { CreateHoldingDto, UpdateHoldingDto } from './dto/holding.dto';
 import { CreateUserStrategyDto, UpdateUserStrategyDto, TokenStrategyConfigDto } from './dto/user-strategy.dto';
+import { CreateForecastDto, UpdateForecastDto } from './dto/forecast.dto';
 
 @Controller('portfolios')
 @UseGuards(JwtAuthGuard)
@@ -112,6 +113,39 @@ export class PortfoliosController {
   @Post('strategies/:strategyId/simulate')
   async simulateStrategy(@Request() req, @Param('strategyId') strategyId: string) {
     return this.portfoliosService.simulateStrategy(req.user.id, strategyId);
+  }
+
+  // ===== FORECASTS (PRÉVISIONS) =====
+  // IMPORTANT: Ces routes doivent être AVANT les routes avec paramètres génériques (:id)
+
+  @Post('forecasts')
+  async createForecast(@Request() req, @Body() createForecastDto: CreateForecastDto) {
+    return this.portfoliosService.createForecast(req.user.id, createForecastDto);
+  }
+
+  @Get('forecasts')
+  async getUserForecasts(@Request() req) {
+    return this.portfoliosService.getUserForecasts(req.user.id);
+  }
+
+  @Get('forecasts/:id')
+  async getForecastById(@Request() req, @Param('id') id: string) {
+    return this.portfoliosService.getForecastById(req.user.id, id);
+  }
+
+  @Put('forecasts/:id')
+  async updateForecast(
+    @Request() req,
+    @Param('id') id: string,
+    @Body() updateForecastDto: UpdateForecastDto,
+  ) {
+    return this.portfoliosService.updateForecast(req.user.id, id, updateForecastDto);
+  }
+
+  @Delete('forecasts/:id')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async deleteForecast(@Request() req, @Param('id') id: string) {
+    await this.portfoliosService.deleteForecast(req.user.id, id);
   }
 
   // ===== PORTFOLIOS =====

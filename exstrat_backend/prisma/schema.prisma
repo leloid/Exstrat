@@ -23,6 +23,7 @@ model User {
   portfolios            Portfolio[]
   userStrategies        UserStrategy[]
   theoreticalStrategies TheoreticalStrategy[]
+  forecasts             Forecast[]
 }
 
 model ExchangeAccount {
@@ -303,4 +304,21 @@ model TheoreticalStrategy {
   
   @@index([userId])
   @@index([tokenSymbol])
+}
+
+// ===== PRÉVISIONS (Forecasts) =====
+
+model Forecast {
+  id                String   @id @default(cuid())
+  userId            String
+  portfolioId       String
+  name              String
+  appliedStrategies Json     // Record<string, string> - mapping holdingId -> strategyId
+  summary           Json     // {totalInvested, totalCollected, totalProfit, returnPercentage, remainingTokensValue, tokenCount}
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  user              User     @relation(fields: [userId], references: [id])
+  
+  @@index([userId])
+  @@index([portfolioId])
 }

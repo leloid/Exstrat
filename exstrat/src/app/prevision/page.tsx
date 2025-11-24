@@ -154,9 +154,25 @@ export default function PrevisionPage() {
   };
 
   const loadSavedForecasts = async () => {
-    // TODO: Implémenter l'API pour charger les prévisions sauvegardées
-    // Pour l'instant, on utilise des données mockées
-    setSavedForecasts([]);
+    try {
+      const forecasts = await portfoliosApi.getForecasts();
+      setSavedForecasts(forecasts.map(f => ({
+        id: f.id,
+        name: f.name,
+        portfolioId: f.portfolioId,
+        portfolioName: f.portfolioName || '',
+        createdAt: f.createdAt,
+        tokenCount: f.summary?.tokenCount || 0,
+        totalInvested: f.summary?.totalInvested || 0,
+        totalCollected: f.summary?.totalCollected || 0,
+        totalProfit: f.summary?.totalProfit || 0,
+        returnPercentage: f.summary?.returnPercentage || 0,
+        appliedStrategies: f.appliedStrategies,
+      })));
+    } catch (error) {
+      console.error('Erreur lors du chargement des prévisions:', error);
+      setSavedForecasts([]);
+    }
   };
 
   const calculateTokenResult = (holding: Holding): TokenResult | null => {
@@ -285,19 +301,24 @@ export default function PrevisionPage() {
     }
 
     try {
-      // TODO: Implémenter l'API de sauvegarde
-      const newForecast: SavedForecast = {
-        id: `forecast-${Date.now()}`,
-        name: forecastName,
+      const summary = calculateGlobalSummary();
+      const newForecast = await portfoliosApi.createForecast({
         portfolioId: selectedPortfolioId,
-        portfolioName: portfolios.find(p => p.id === selectedPortfolioId)?.name || '',
-        createdAt: new Date().toISOString(),
-        tokenCount: holdings.length,
-        ...calculateGlobalSummary(),
+        name: forecastName,
         appliedStrategies,
-      };
+        summary: {
+          totalInvested: summary.totalInvested,
+          totalCollected: summary.totalCollected,
+          totalProfit: summary.totalProfit,
+          returnPercentage: summary.returnPercentage,
+          remainingTokensValue: summary.remainingTokensValue,
+          tokenCount: holdings.length,
+        },
+      });
       
-      setSavedForecasts(prev => [...prev, newForecast]);
+      // Recharger la liste des prévisions
+      await loadSavedForecasts();
+      
       alert(language === 'fr' 
         ? 'Prévision sauvegardée avec succès !' 
         : 'Forecast saved successfully!');
@@ -905,6 +926,21 @@ export default function PrevisionPage() {
                                   )}
                   </button>
                   <button
+                                  onClick={async () => {
+                                    if (confirm(language === 'fr' 
+                                      ? 'Êtes-vous sûr de vouloir supprimer cette prévision ?' 
+                                      : 'Are you sure you want to delete this forecast?')) {
+                                      try {
+                                        await portfoliosApi.deleteForecast(forecast.id);
+                                        await loadSavedForecasts();
+                                      } catch (error) {
+                                        console.error('Erreur lors de la suppression:', error);
+                                        alert(language === 'fr' 
+                                          ? 'Erreur lors de la suppression de la prévision' 
+                                          : 'Error deleting forecast');
+                                      }
+                                    }
+                                  }}
                                   className={`p-2 rounded-lg hover:bg-gray-100 ${isDarkMode ? 'hover:bg-gray-700' : ''}`}
                                   title={language === 'fr' ? 'Supprimer' : 'Delete'}
                   >

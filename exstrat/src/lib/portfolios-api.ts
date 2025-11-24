@@ -166,3 +166,61 @@ export const syncPortfolios = async (): Promise<{ message: string; portfoliosCre
   const response = await api.post('/portfolios/sync');
   return response.data;
 };
+
+// ===== FORECASTS (PRÉVISIONS) =====
+
+export interface CreateForecastDto {
+  portfolioId: string;
+  name: string;
+  appliedStrategies: Record<string, string>;
+  summary: {
+    totalInvested: number;
+    totalCollected: number;
+    totalProfit: number;
+    returnPercentage: number;
+    remainingTokensValue: number;
+    tokenCount: number;
+  };
+}
+
+export interface ForecastResponse {
+  id: string;
+  portfolioId: string;
+  portfolioName?: string;
+  name: string;
+  appliedStrategies: Record<string, string>;
+  summary: {
+    totalInvested: number;
+    totalCollected: number;
+    totalProfit: number;
+    returnPercentage: number;
+    remainingTokensValue: number;
+    tokenCount: number;
+  };
+  createdAt: string;
+  updatedAt: string;
+}
+
+export const createForecast = async (data: CreateForecastDto): Promise<ForecastResponse> => {
+  const response = await api.post<ForecastResponse>('/portfolios/forecasts', data);
+  return response.data;
+};
+
+export const getForecasts = async (): Promise<ForecastResponse[]> => {
+  const response = await api.get<ForecastResponse[]>('/portfolios/forecasts');
+  return response.data;
+};
+
+export const getForecastById = async (id: string): Promise<ForecastResponse> => {
+  const response = await api.get<ForecastResponse>(`/portfolios/forecasts/${id}`);
+  return response.data;
+};
+
+export const updateForecast = async (id: string, data: Partial<CreateForecastDto>): Promise<ForecastResponse> => {
+  const response = await api.put<ForecastResponse>(`/portfolios/forecasts/${id}`, data);
+  return response.data;
+};
+
+export const deleteForecast = async (id: string): Promise<void> => {
+  await api.delete(`/portfolios/forecasts/${id}`);
+};

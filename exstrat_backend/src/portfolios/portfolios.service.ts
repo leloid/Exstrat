@@ -5,6 +5,7 @@ import { CreatePortfolioDto, UpdatePortfolioDto, PortfolioResponseDto } from './
 import { CreateHoldingDto, UpdateHoldingDto, HoldingResponseDto } from './dto/holding.dto';
 import { CreateUserStrategyDto, UpdateUserStrategyDto, UserStrategyResponseDto, TokenStrategyConfigDto, TokenStrategyConfigResponseDto } from './dto/user-strategy.dto';
 import { StrategyTemplateResponseDto, ProfitTakingTemplateResponseDto, SimulationResultDto } from './dto/template.dto';
+import { CreateForecastDto, UpdateForecastDto } from './dto/forecast.dto';
 
 @Injectable()
 export class PortfoliosService {
@@ -1095,5 +1096,187 @@ export class PortfoliosService {
       returnPercentage,
       numberOfTargets: profitTargets.length,
     };
+  }
+
+  // ===== FORECASTS (PRÉVISIONS) =====
+
+  async createForecast(userId: string, createForecastDto: CreateForecastDto) {
+    const forecast = await this.prisma.forecast.create({
+      data: {
+        userId,
+        portfolioId: createForecastDto.portfolioId,
+        name: createForecastDto.name,
+        appliedStrategies: createForecastDto.appliedStrategies as any,
+        summary: createForecastDto.summary as any,
+      },
+    });
+
+    const summary = forecast.summary as any;
+    const parsedSummary = typeof summary === 'string' ? JSON.parse(summary) : summary;
+
+    return {
+      id: forecast.id,
+      portfolioId: forecast.portfolioId,
+      name: forecast.name,
+      appliedStrategies: forecast.appliedStrategies as Record<string, string>,
+      summary: {
+        tokenCount: parsedSummary?.tokenCount ? Number(parsedSummary.tokenCount) : 0,
+        totalInvested: parsedSummary?.totalInvested ? Number(parsedSummary.totalInvested) : 0,
+        totalCollected: parsedSummary?.totalCollected ? Number(parsedSummary.totalCollected) : 0,
+        totalProfit: parsedSummary?.totalProfit ? Number(parsedSummary.totalProfit) : 0,
+        returnPercentage: parsedSummary?.returnPercentage ? Number(parsedSummary.returnPercentage) : 0,
+        remainingTokensValue: parsedSummary?.remainingTokensValue ? Number(parsedSummary.remainingTokensValue) : 0,
+      },
+      createdAt: forecast.createdAt.toISOString(),
+      updatedAt: forecast.updatedAt.toISOString(),
+    };
+  }
+
+  async getUserForecasts(userId: string) {
+    const forecasts = await this.prisma.forecast.findMany({
+      where: { userId },
+      orderBy: { createdAt: 'desc' },
+      include: {
+        user: {
+          select: {
+            id: true,
+          },
+        },
+      },
+    });
+
+    // Récupérer les noms des portfolios
+    const portfolioIds = [...new Set(forecasts.map(f => f.portfolioId))];
+    const portfolios = await this.prisma.portfolio.findMany({
+      where: {
+        id: { in: portfolioIds },
+        userId,
+      },
+      select: {
+        id: true,
+        name: true,
+      },
+    });
+
+    const portfolioMap = new Map(portfolios.map(p => [p.id, p.name]));
+
+    return forecasts.map(forecast => {
+      const summary = forecast.summary as any;
+      // S'assurer que le summary est bien parsé (Prisma peut retourner un JSON string)
+      const parsedSummary = typeof summary === 'string' ? JSON.parse(summary) : summary;
+      
+      return {
+        id: forecast.id,
+        name: forecast.name,
+        portfolioId: forecast.portfolioId,
+        portfolioName: portfolioMap.get(forecast.portfolioId) || '',
+        createdAt: forecast.createdAt.toISOString(),
+        summary: {
+          tokenCount: parsedSummary?.tokenCount ? Number(parsedSummary.tokenCount) : 0,
+          totalInvested: parsedSummary?.totalInvested ? Number(parsedSummary.totalInvested) : 0,
+          totalCollected: parsedSummary?.totalCollected ? Number(parsedSummary.totalCollected) : 0,
+          totalProfit: parsedSummary?.totalProfit ? Number(parsedSummary.totalProfit) : 0,
+          returnPercentage: parsedSummary?.returnPercentage ? Number(parsedSummary.returnPercentage) : 0,
+          remainingTokensValue: parsedSummary?.remainingTokensValue ? Number(parsedSummary.remainingTokensValue) : 0,
+        },
+        appliedStrategies: forecast.appliedStrategies as Record<string, string>,
+      };
+    });
+  }
+
+  async getForecastById(userId: string, id: string) {
+    const forecast = await this.prisma.forecast.findFirst({
+      where: {
+        id,
+        userId,
+      },
+    });
+
+    if (!forecast) {
+      throw new Error('Forecast not found');
+    }
+
+    const portfolio = await this.prisma.portfolio.findUnique({
+      where: { id: forecast.portfolioId },
+      select: { name: true },
+    });
+
+    const summary = forecast.summary as any;
+    const parsedSummary = typeof summary === 'string' ? JSON.parse(summary) : summary;
+
+    return {
+      id: forecast.id,
+      name: forecast.name,
+      portfolioId: forecast.portfolioId,
+      portfolioName: portfolio?.name || '',
+      appliedStrategies: forecast.appliedStrategies as Record<string, string>,
+      summary: {
+        tokenCount: parsedSummary?.tokenCount ? Number(parsedSummary.tokenCount) : 0,
+        totalInvested: parsedSummary?.totalInvested ? Number(parsedSummary.totalInvested) : 0,
+        totalCollected: parsedSummary?.totalCollected ? Number(parsedSummary.totalCollected) : 0,
+        totalProfit: parsedSummary?.totalProfit ? Number(parsedSummary.totalProfit) : 0,
+        returnPercentage: parsedSummary?.returnPercentage ? Number(parsedSummary.returnPercentage) : 0,
+        remainingTokensValue: parsedSummary?.remainingTokensValue ? Number(parsedSummary.remainingTokensValue) : 0,
+      },
+      createdAt: forecast.createdAt.toISOString(),
+      updatedAt: forecast.updatedAt.toISOString(),
+    };
+  }
+
+  async updateForecast(userId: string, id: string, updateForecastDto: UpdateForecastDto) {
+    const forecast = await this.prisma.forecast.findFirst({
+      where: { id, userId },
+    });
+
+    if (!forecast) {
+      throw new Error('Forecast not found');
+    }
+
+    const updated = await this.prisma.forecast.update({
+      where: { id },
+      data: {
+        ...(updateForecastDto.name && { name: updateForecastDto.name }),
+        ...(updateForecastDto.appliedStrategies && {
+          appliedStrategies: updateForecastDto.appliedStrategies as any,
+        }),
+        ...(updateForecastDto.summary && {
+          summary: updateForecastDto.summary as any,
+        }),
+      },
+    });
+
+    const summary = updated.summary as any;
+    const parsedSummary = typeof summary === 'string' ? JSON.parse(summary) : summary;
+
+    return {
+      id: updated.id,
+      portfolioId: updated.portfolioId,
+      name: updated.name,
+      appliedStrategies: updated.appliedStrategies as Record<string, string>,
+      summary: {
+        tokenCount: parsedSummary?.tokenCount ? Number(parsedSummary.tokenCount) : 0,
+        totalInvested: parsedSummary?.totalInvested ? Number(parsedSummary.totalInvested) : 0,
+        totalCollected: parsedSummary?.totalCollected ? Number(parsedSummary.totalCollected) : 0,
+        totalProfit: parsedSummary?.totalProfit ? Number(parsedSummary.totalProfit) : 0,
+        returnPercentage: parsedSummary?.returnPercentage ? Number(parsedSummary.returnPercentage) : 0,
+        remainingTokensValue: parsedSummary?.remainingTokensValue ? Number(parsedSummary.remainingTokensValue) : 0,
+      },
+      createdAt: updated.createdAt.toISOString(),
+      updatedAt: updated.updatedAt.toISOString(),
+    };
+  }
+
+  async deleteForecast(userId: string, id: string) {
+    const forecast = await this.prisma.forecast.findFirst({
+      where: { id, userId },
+    });
+
+    if (!forecast) {
+      throw new Error('Forecast not found');
+    }
+
+    await this.prisma.forecast.delete({
+      where: { id },
+    });
   }
 }
