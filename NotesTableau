@@ -1,12 +1,3 @@
-Le module Prévisions répond à la question :
-« Si j’applique ces stratégies de prise de profit sur tous mes tokens de ce wallet, quel sera le résultat global ? ».
-En pratique, l’utilisateur :
-1.	sélectionne un wallet ;
-2.	attribue une stratégie existante à chaque token (créée dans le module Stratégies) ;
-3.	observe, token par token, l’impact de chaque stratégie (montant encaissé, rendement, tokens restants) ;
-4.	obtient un résumé global des performances projetées.
-Important : les prévisions ne servent pas à créer des stratégies (faites par token dans le module Stratégies), mais à combiner ces stratégies pour simuler un portefeuille entier.
-
 Dans le MVP, l’interface se composait de :
 •	un écran « Stratégie globale de portefeuille » (terme qui prêtait à confusion) ;
 •	la sélection d’un portefeuille et le choix d’un nom pour cette « stratégie globale » ;
@@ -55,17 +46,3 @@ Zone C – Résumé global du wallet (outputs globaux)
 •	En V1, un résumé chiffré simple est suffisant.
 •	À terme, un graphique pourra être ajouté pour visualiser l’évolution du portefeuille (voir section vision long terme).
 À noter sur le recalcul : pour ne pas ajouter d’étapes inutiles, un recalcul en temps réel est préférable. Un bouton “Mettre à jour la prévision” pourrait être envisagé uniquement si cela clarifie la charge cognitive, mais l’expérience doit rester fluide et sans friction.
-
-1. État vide
-•	Message : « Créez votre première prévision pour ce wallet. »
-•	Bouton : “Créer une prévision”.
-2. État rempli
-Pour chaque prévision :
-•	Nom de la prévision.
-•	Wallet associé (si nécessaire).
-•	Résumé (investi / encaissé / profit / rendement).
-•	Actions possibles :
-o	Voir (ouverture en lecture seule).
-o	Modifier (recharge l’écran de création avec les choix existants).
-o	Dupliquer (copie pour tester une variante sans tout recréer).
-o	Supprimer (suppression après confirmation).

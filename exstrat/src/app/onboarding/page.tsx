@@ -17,6 +17,7 @@ import {
   PencilIcon,
   TrashIcon,
   ChevronDownIcon,
+  ChevronUpIcon,
   WalletIcon
 } from '@heroicons/react/24/outline';
 import { transactionsApi } from '@/lib/transactions-api';
@@ -30,7 +31,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Label } from '@/components/ui/Label';
 import { Slider } from '@/components/ui/Slider';
 import * as portfoliosApi from '@/lib/portfolios-api';
-import { formatCurrency } from '@/lib/format';
+import { formatCurrency, formatPercentage } from '@/lib/format';
 import { ONBOARDING_STEPS, INVESTMENT_SUB_STEPS } from './constants';
 
 // Interface pour les cibles de profit
@@ -295,7 +296,233 @@ export default function OnboardingPage() {
   
   const isStrategyVirtualWallet = selectedStrategyPortfolioId === 'virtual';
   
+  // États pour la partie Prévisions (étape 3)
+  const [previsionPortfolioId, setPrevisionPortfolioId] = useState<string>('');
+  const [previsionName, setPrevisionName] = useState<string>('');
+  const [previsionHoldings, setPrevisionHoldings] = useState<any[]>([]);
+  const [previsionAppliedStrategies, setPrevisionAppliedStrategies] = useState<Record<string, string>>({});
+  const [previsionExpandedTokens, setPrevisionExpandedTokens] = useState<Set<string>>(new Set());
+  const [previsionTheoreticalStrategies, setPrevisionTheoreticalStrategies] = useState<any[]>([]);
+  const [previsionLoading, setPrevisionLoading] = useState(false);
+  const [savedPrevision, setSavedPrevision] = useState<any | null>(null);
+  
   const router = useRouter();
+
+  // Charger les stratégies théoriques pour la prévision
+  React.useEffect(() => {
+    const loadPrevisionTheoreticalStrategies = async () => {
+      try {
+        const data = await portfoliosApi.getTheoreticalStrategies();
+        setPrevisionTheoreticalStrategies(data);
+      } catch (error) {
+        console.error('Erreur lors du chargement des stratégies:', error);
+      }
+    };
+    loadPrevisionTheoreticalStrategies();
+  }, []);
+
+  // Charger les holdings quand un portfolio est sélectionné
+  React.useEffect(() => {
+    const loadPrevisionHoldings = async () => {
+      if (!previsionPortfolioId || previsionPortfolioId === 'virtual') {
+        setPrevisionHoldings([]);
+        setPrevisionAppliedStrategies({});
+        return;
+      }
+      
+      try {
+        setPrevisionLoading(true);
+        const holdingsData = await portfoliosApi.getPortfolioHoldings(previsionPortfolioId);
+        const portfolio = portfolios.find(p => p.id === previsionPortfolioId);
+        
+        const formattedHoldings: any[] = holdingsData.map((holding: any) => ({
+          id: holding.id,
+          token: {
+            symbol: holding.token?.symbol || holding.symbol || '',
+            name: holding.token?.name || holding.tokenName || '',
+          },
+          quantity: holding.quantity || 0,
+          investedAmount: holding.investedAmount || holding.amountInvested || 0,
+          averagePrice: holding.averagePrice || 0,
+          currentPrice: holding.currentPrice,
+          portfolioId: portfolio?.id || '',
+          portfolioName: portfolio?.name || '',
+        }));
+        
+        setPrevisionHoldings(formattedHoldings);
+      } catch (error) {
+        console.error('Erreur lors du chargement des holdings:', error);
+        setPrevisionHoldings([]);
+      } finally {
+        setPrevisionLoading(false);
+      }
+    };
+    
+    loadPrevisionHoldings();
+  }, [previsionPortfolioId, portfolios]);
+
+  // Calculer le résultat pour un token
+  const calculatePrevisionTokenResult = (holding: any): any | null => {
+    const strategyId = previsionAppliedStrategies[holding.id];
+    if (!strategyId || strategyId === 'none') {
+      return null;
+    }
+
+    const strategy = previsionTheoreticalStrategies.find(s => s.id === strategyId);
+    if (!strategy) return null;
+
+    const quantity = holding.quantity;
+    const averagePrice = holding.averagePrice;
+    const currentPrice = holding.currentPrice || averagePrice;
+    
+    let remainingTokens = quantity;
+    let totalCollected = 0;
+    const profitTargetsDetails: Array<{
+      order: number;
+      targetPrice: number;
+      tokensSold: number;
+      amountCollected: number;
+    }> = [];
+
+    strategy.profitTargets.forEach((target: any) => {
+      const tokensToSell = (quantity * target.sellPercentage) / 100;
+      
+      let targetPrice = 0;
+      if (target.targetType === 'percentage') {
+        targetPrice = averagePrice * (1 + target.targetValue / 100);
+      } else {
+        targetPrice = target.targetValue;
+      }
+      
+      const amountCollected = tokensToSell * targetPrice;
+      totalCollected += amountCollected;
+      remainingTokens -= tokensToSell;
+
+      profitTargetsDetails.push({
+        order: target.order,
+        targetPrice,
+        tokensSold: tokensToSell,
+        amountCollected,
+      });
+    });
+
+    const totalInvested = quantity * averagePrice;
+    const totalProfit = totalCollected - totalInvested;
+    const returnPercentage = totalInvested > 0 ? (totalProfit / totalInvested) * 100 : 0;
+    const remainingTokensValue = remainingTokens * currentPrice;
+
+    return {
+      holdingId: holding.id,
+      token: holding.token.symbol,
+      quantity,
+      invested: totalInvested,
+      averagePrice,
+      amountCollected: totalCollected,
+      returnPercentage,
+      remainingTokens: Math.max(0, remainingTokens),
+      remainingTokensValue,
+      profitTargetsDetails,
+    };
+  };
+
+  // Calculer le résumé global
+  const calculatePrevisionGlobalSummary = (): any => {
+    let totalInvested = 0;
+    let totalCollected = 0;
+    let totalRemainingTokensValue = 0;
+
+    previsionHoldings.forEach(holding => {
+      const result = calculatePrevisionTokenResult(holding);
+      if (result) {
+        totalInvested += result.invested;
+        totalCollected += result.amountCollected;
+        totalRemainingTokensValue += result.remainingTokensValue;
+      } else {
+        totalInvested += holding.investedAmount;
+        totalRemainingTokensValue += holding.investedAmount;
+      }
+    });
+
+    const totalProfit = totalCollected + totalRemainingTokensValue - totalInvested;
+    const returnPercentage = totalInvested > 0 ? (totalProfit / totalInvested) * 100 : 0;
+
+    return {
+      totalInvested,
+      totalCollected,
+      totalProfit,
+      returnPercentage,
+      remainingTokensValue: totalRemainingTokensValue,
+    };
+  };
+
+  // Gérer le changement de stratégie
+  const handlePrevisionStrategyChange = (holdingId: string, strategyId: string) => {
+    setPrevisionAppliedStrategies(prev => ({
+      ...prev,
+      [holdingId]: strategyId,
+    }));
+  };
+
+  // Toggle expansion des tokens
+  const togglePrevisionTokenExpansion = (holdingId: string) => {
+    setPrevisionExpandedTokens(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(holdingId)) {
+        newSet.delete(holdingId);
+      } else {
+        newSet.add(holdingId);
+      }
+      return newSet;
+    });
+  };
+
+  // Obtenir les stratégies compatibles
+  const getPrevisionCompatibleStrategies = (tokenSymbol: string) => {
+    return previsionTheoreticalStrategies.filter(s => s.tokenSymbol === tokenSymbol);
+  };
+
+  // Sauvegarder la prévision
+  const handleSavePrevision = async () => {
+    if (!previsionName.trim() || !previsionPortfolioId) {
+      return;
+    }
+
+    try {
+      const summary = calculatePrevisionGlobalSummary();
+      const portfolio = portfolios.find(p => p.id === previsionPortfolioId);
+      const newForecast = await portfoliosApi.createForecast({
+        portfolioId: previsionPortfolioId,
+        name: previsionName,
+        appliedStrategies: previsionAppliedStrategies,
+        summary: {
+          totalInvested: summary.totalInvested,
+          totalCollected: summary.totalCollected,
+          totalProfit: summary.totalProfit,
+          returnPercentage: summary.returnPercentage,
+          remainingTokensValue: summary.remainingTokensValue,
+          tokenCount: previsionHoldings.length,
+        },
+      });
+      
+      // Stocker la prévision sauvegardée pour afficher le récapitulatif
+      setSavedPrevision({
+        id: newForecast.id,
+        name: previsionName,
+        portfolioId: previsionPortfolioId,
+        portfolioName: portfolio?.name || '',
+        createdAt: new Date().toISOString(),
+        tokenCount: previsionHoldings.length,
+        totalInvested: summary.totalInvested,
+        totalCollected: summary.totalCollected,
+        totalProfit: summary.totalProfit,
+        returnPercentage: summary.returnPercentage,
+        remainingTokensValue: summary.remainingTokensValue,
+        appliedStrategies: previsionAppliedStrategies,
+      });
+    } catch (error) {
+      console.error('Erreur lors de la sauvegarde:', error);
+    }
+  };
 
   // Les portfolios sont déjà chargés par le PortfolioContext, pas besoin de les recharger ici
 
@@ -948,8 +1175,14 @@ export default function OnboardingPage() {
     if (currentStep < steps.length - 1) {
       setCurrentStep(currentStep + 1);
     } else {
-      // Fin de l'onboarding, rediriger vers le dashboard
+      // Fin de l'onboarding
+      // Si une prévision a été sauvegardée, rediriger vers /prevision avec l'onglet "Mes prévisions"
+      if (savedPrevision) {
+        router.push('/prevision?tab=list');
+      } else {
+        // Sinon, rediriger vers le dashboard
       router.push('/dashboard');
+      }
     }
   };
 
@@ -1648,8 +1881,7 @@ export default function OnboardingPage() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
           {/* Link Exchange */}
           <Card 
-            className="cursor-pointer transition-all duration-200 hover:shadow-lg hover:border-blue-300 border border-gray-200 h-full flex flex-col"
-            onClick={() => setAddCryptoMethod('exchange')}
+            className="opacity-50 grayscale cursor-not-allowed transition-all duration-200 border border-gray-200 h-full flex flex-col pointer-events-none"
           >
             <CardContent className="p-6 flex flex-col h-full">
               <div className="h-32 mb-4 bg-gradient-to-br from-purple-100 to-blue-100 rounded-lg flex items-center justify-center relative overflow-hidden flex-shrink-0">
@@ -1681,8 +1913,7 @@ export default function OnboardingPage() {
 
           {/* Crypto Wallet */}
           <Card 
-            className="cursor-pointer transition-all duration-200 hover:shadow-lg hover:border-blue-300 border border-gray-200 h-full flex flex-col"
-            onClick={() => setAddCryptoMethod('wallet')}
+            className="opacity-50 grayscale cursor-not-allowed transition-all duration-200 border border-gray-200 h-full flex flex-col pointer-events-none"
           >
             <CardContent className="p-6 flex flex-col h-full">
               <div className="h-32 mb-4 bg-gradient-to-br from-blue-100 to-cyan-100 rounded-lg flex items-center justify-center relative overflow-hidden flex-shrink-0">
@@ -3063,9 +3294,65 @@ export default function OnboardingPage() {
           </div>
         );
 
-      case 2: // Configuration (anciennement step 3)
+      case 2: // Prévisions (anciennement Configuration)
+        const previsionGlobalSummary = calculatePrevisionGlobalSummary();
+        
+        // Si une prévision a été sauvegardée, afficher le récapitulatif
+        if (savedPrevision) {
         return (
-          <div className="space-y-4 md:space-y-6">
+            <div className="space-y-4 md:space-y-6 max-w-7xl mx-auto">
+              <div className="rounded-xl p-4 md:p-6 bg-white border border-gray-200">
+                <div className="flex items-center gap-2 mb-4">
+                  <span className="px-3 py-1 rounded-full text-xs font-semibold bg-blue-100 text-blue-700">
+                    {savedPrevision.name}
+                  </span>
+                </div>
+                <p className="text-xs md:text-sm text-gray-600 mb-4">
+                  Créé le {new Date(savedPrevision.createdAt).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })} - {savedPrevision.tokenCount} actifs configurés
+                </p>
+
+                {/* Métriques */}
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+                  <div>
+                    <div className="text-xs md:text-sm mb-1 text-gray-600">
+                      Total investi
+                    </div>
+                    <div className="text-base md:text-lg font-bold text-gray-900">
+                      {formatCurrency(savedPrevision.totalInvested)}
+                    </div>
+                  </div>
+                  <div>
+                    <div className="text-xs md:text-sm mb-1 text-gray-600">
+                      Total encaissé
+                    </div>
+                    <div className="text-base md:text-lg font-bold text-green-600">
+                      {formatCurrency(savedPrevision.totalCollected)}
+                    </div>
+                  </div>
+                  <div>
+                    <div className="text-xs md:text-sm mb-1 text-gray-600">
+                      Profit net
+                    </div>
+                    <div className="text-base md:text-lg font-bold text-green-600">
+                      {formatCurrency(savedPrevision.totalProfit)}
+                    </div>
+                  </div>
+                  <div>
+                    <div className="text-xs md:text-sm mb-1 text-gray-600">
+                      Rendement net
+                    </div>
+                    <div className="text-base md:text-lg font-bold text-green-600">
+                      {formatPercentage(savedPrevision.returnPercentage)}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          );
+        }
+        
+        return (
+          <div className="space-y-4 md:space-y-6 max-w-7xl mx-auto">
             {/* Error Message */}
             {error && (
               <div className="mb-3 md:mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
@@ -3073,28 +3360,448 @@ export default function OnboardingPage() {
               </div>
             )}
 
-
-            <div className="text-center">
-              <h3 className="text-base md:text-lg font-semibold text-gray-900 mb-2">
-                Configurez votre stratégie
-              </h3>
-              <p className="text-xs md:text-sm text-gray-600">
-                Personnalisez les paramètres de votre stratégie
+            {/* Zone A - Configuration de la prévision */}
+            <div className="rounded-xl p-4 md:p-6 bg-white border border-gray-200">
+              <h2 className="text-lg md:text-xl font-bold mb-2 text-gray-900">
+                Stratégie globale de portfolio
+              </h2>
+              <p className="text-xs md:text-sm mb-4 md:mb-6 text-gray-600">
+                Choisissez un portfolio et renseignez un nom pour votre nouvelle stratégie globale.
               </p>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
+                <div>
+                  <Label className="text-xs md:text-sm mb-2 text-gray-700">
+                    Portfolio *
+                  </Label>
+                  <Select value={previsionPortfolioId} onValueChange={setPrevisionPortfolioId}>
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="Sélectionner un portfolio" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {portfolios.filter(p => p.id !== 'virtual').map(portfolio => (
+                        <SelectItem key={portfolio.id} value={portfolio.id}>
+                          {portfolio.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+              </div>
+
+                <div>
+                  <Label className="text-xs md:text-sm mb-2 text-gray-700">
+                    Nom de la prévision de mon Wallet *
+                  </Label>
+                  <Input
+                    type="text"
+                    placeholder="Ex: Stratégie Bullrun 2025"
+                    value={previsionName}
+                    onChange={(e) => setPrevisionName(e.target.value)}
+                    className="w-full"
+                  />
+                </div>
+              </div>
             </div>
 
-            <div className="text-center py-6 md:py-8">
-              <Cog6ToothIcon className="w-12 h-12 md:w-16 md:h-16 text-gray-400 mx-auto mb-3 md:mb-4" />
-              <p className="text-xs md:text-sm text-gray-600 mb-4 md:mb-6 px-2">
-                Accédez à la page de configuration pour personnaliser vos paramètres
+            {/* Zone A - Tableau de configuration */}
+            {previsionPortfolioId && previsionHoldings.length > 0 && (
+              <div className="rounded-xl p-4 md:p-6 bg-white border border-gray-200">
+                <h3 className="text-base md:text-lg font-semibold mb-2 text-gray-900">
+                  Configuration
+                </h3>
+                <p className="text-xs md:text-sm mb-4 md:mb-6 text-gray-600">
+                  Pour chaque token de votre portfolio, choisissez une stratégie de prise de profit.
+                </p>
+
+                {/* Tableau Desktop */}
+                <div className="hidden md:block overflow-x-auto">
+                  <table className="w-full">
+                    <thead>
+                      <tr className="border-b border-gray-200">
+                        <th className="text-left py-3 px-4 text-sm font-medium text-gray-700">Token</th>
+                        <th className="text-right py-3 px-4 text-sm font-medium text-gray-700">
+                          Quantité
+                        </th>
+                        <th className="text-right py-3 px-4 text-sm font-medium text-gray-700">
+                          Investi
+                        </th>
+                        <th className="text-left py-3 px-4 text-sm font-medium text-gray-700">
+                          Stratégie
+                        </th>
+                        <th className="text-left py-3 px-4 text-sm font-medium text-gray-700">
+                          Détails
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {previsionHoldings.map(holding => {
+                        const compatibleStrategies = getPrevisionCompatibleStrategies(holding.token.symbol);
+                        const selectedStrategyId = previsionAppliedStrategies[holding.id] || 'none';
+                        const isExpanded = previsionExpandedTokens.has(holding.id);
+                        const result = calculatePrevisionTokenResult(holding);
+
+                        return (
+                          <React.Fragment key={holding.id}>
+                            <tr className="border-b border-gray-200">
+                              <td className="py-4 px-4 text-sm font-medium text-gray-900">
+                                {holding.token.symbol}
+                              </td>
+                              <td className="text-right py-4 px-4 text-sm text-gray-900">
+                                {holding.quantity.toLocaleString()}
+                              </td>
+                              <td className="text-right py-4 px-4 text-sm text-gray-900">
+                                {formatCurrency(holding.investedAmount)}
+                              </td>
+                              <td className="py-4 px-4">
+                                <Select
+                                  value={selectedStrategyId}
+                                  onValueChange={(value) => handlePrevisionStrategyChange(holding.id, value)}
+                                >
+                                  <SelectTrigger className="w-40 text-sm">
+                                    <SelectValue />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="none">
+                                      Sans TP (défaut)
+                                    </SelectItem>
+                                    {compatibleStrategies.length === 0 ? (
+                                      <div className="px-3 py-2 text-xs text-gray-500">
+                                        Aucune stratégie disponible. Créez-en une dans le module Stratégies.
+                                      </div>
+                                    ) : (
+                                      compatibleStrategies.map(strategy => (
+                                        <SelectItem key={strategy.id} value={strategy.id}>
+                                          {strategy.name}
+                                        </SelectItem>
+                                      ))
+                                    )}
+                                  </SelectContent>
+                                </Select>
+                              </td>
+                              <td className="py-4 px-4">
+                                {selectedStrategyId !== 'none' && result ? (
+                                  <button
+                                    onClick={() => togglePrevisionTokenExpansion(holding.id)}
+                                    className="flex items-center gap-1 text-sm text-blue-600 hover:text-blue-700"
+                                  >
+                                    {isExpanded ? (
+                                      <>
+                                        Masquer
+                                        <ChevronUpIcon className="w-4 h-4" />
+                                      </>
+                                    ) : (
+                                      <>
+                                        Afficher
+                                        <ChevronDownIcon className="w-4 h-4" />
+                                      </>
+                                    )}
+                                  </button>
+                                ) : (
+                                  <span className="text-sm text-gray-500">
+                                    -
+                                  </span>
+                                )}
+                              </td>
+                            </tr>
+                            {/* Détails des prises de profit */}
+                            {isExpanded && result && (
+                              <tr>
+                                <td colSpan={5} className="py-4 px-4">
+                                  <div className="rounded-lg p-4 bg-gray-50">
+                                    <h4 className="text-sm font-semibold mb-3 text-gray-900">
+                                      Prises de profits pour stratégie {previsionTheoreticalStrategies.find(s => s.id === selectedStrategyId)?.name} sur {holding.token.symbol}
+                                    </h4>
+                                    <div className="space-y-2">
+                                      {result.profitTargetsDetails.map((detail: any, idx: number) => (
+                                        <div key={idx} className="flex items-center gap-2">
+                                          <input
+                                            type="checkbox"
+                                            checked={true}
+                                            readOnly
+                                            className="w-4 h-4"
+                                          />
+                                          <span className="text-sm text-gray-700">
+                                            TP {detail.order}: {holding.token.symbol} = {formatCurrency(detail.targetPrice)} Vendre {((detail.tokensSold / holding.quantity) * 100).toFixed(1)}%
+                                          </span>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  </div>
+                                </td>
+                              </tr>
+                            )}
+                          </React.Fragment>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+
+                {/* Version Mobile */}
+                <div className="md:hidden space-y-4">
+                  {previsionHoldings.map(holding => {
+                    const compatibleStrategies = getPrevisionCompatibleStrategies(holding.token.symbol);
+                    const selectedStrategyId = previsionAppliedStrategies[holding.id] || 'none';
+                    const isExpanded = previsionExpandedTokens.has(holding.id);
+                    const result = calculatePrevisionTokenResult(holding);
+
+                    return (
+                      <div key={holding.id} className="rounded-lg border p-4 bg-gray-50 border-gray-200">
+                        <div className="flex items-center justify-between mb-3">
+                          <h3 className="text-base font-semibold text-gray-900">
+                            {holding.token.symbol}
+              </h3>
+                        </div>
+                        <div className="grid grid-cols-2 gap-3 text-sm mb-3">
+                          <div>
+                            <span className="text-xs text-gray-600">
+                              Quantité
+                            </span>
+                            <p className="font-medium text-gray-900">
+                              {holding.quantity.toLocaleString()}
               </p>
+            </div>
+                          <div>
+                            <span className="text-xs text-gray-600">
+                              Investi
+                            </span>
+                            <p className="font-medium text-gray-900">
+                              {formatCurrency(holding.investedAmount)}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="mb-3">
+                          <Label className="text-xs mb-2 block text-gray-700">
+                            Stratégie
+                          </Label>
+                          <Select
+                            value={selectedStrategyId}
+                            onValueChange={(value) => handlePrevisionStrategyChange(holding.id, value)}
+                          >
+                            <SelectTrigger className="w-full text-sm">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="none">
+                                Sans TP (défaut)
+                              </SelectItem>
+                              {compatibleStrategies.map(strategy => (
+                                <SelectItem key={strategy.id} value={strategy.id}>
+                                  {strategy.name}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        {selectedStrategyId !== 'none' && result && (
+                          <>
+                            <button
+                              onClick={() => togglePrevisionTokenExpansion(holding.id)}
+                              className="w-full flex items-center justify-between text-sm text-blue-600 hover:text-blue-700 mb-2"
+                            >
+                              <span>Détails</span>
+                              {isExpanded ? <ChevronUpIcon className="w-4 h-4" /> : <ChevronDownIcon className="w-4 h-4" />}
+                            </button>
+                            {isExpanded && (
+                              <div className="rounded-lg p-3 mt-2 bg-white">
+                                <h4 className="text-sm font-semibold mb-2 text-gray-900">
+                                  Prises de profits pour stratégie {previsionTheoreticalStrategies.find(s => s.id === selectedStrategyId)?.name}
+                                </h4>
+                                <div className="space-y-2">
+                                  {result.profitTargetsDetails.map((detail: any, idx: number) => (
+                                    <div key={idx} className="flex items-center gap-2">
+                                      <input type="checkbox" checked={true} readOnly className="w-4 h-4" />
+                                      <span className="text-xs text-gray-700">
+                                        TP {detail.order}: {formatCurrency(detail.targetPrice)} Vendre {((detail.tokensSold / holding.quantity) * 100).toFixed(1)}%
+                                      </span>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+                          </>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* Zone B - Résultats par token */}
+            {previsionPortfolioId && previsionHoldings.length > 0 && (
+              <div className="rounded-xl p-4 md:p-6 bg-white border border-gray-200">
+                <h3 className="text-base md:text-lg font-semibold mb-4 text-gray-900">
+                  Résultats par token
+                </h3>
+                
+                {/* Tableau Desktop */}
+                <div className="hidden md:block overflow-x-auto">
+                  <table className="w-full">
+                    <thead>
+                      <tr className="border-b border-gray-200">
+                        <th className="text-left py-3 px-4 text-sm font-medium text-gray-700">Token</th>
+                        <th className="text-right py-3 px-4 text-sm font-medium text-gray-700">
+                          Montant encaissé
+                        </th>
+                        <th className="text-right py-3 px-4 text-sm font-medium text-gray-700">
+                          Rendement net
+                        </th>
+                        <th className="text-right py-3 px-4 text-sm font-medium text-gray-700">
+                          Token restants
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {previsionHoldings.map(holding => {
+                        const result = calculatePrevisionTokenResult(holding);
+                        if (!result) return null;
+
+                        return (
+                          <tr key={holding.id} className="border-b border-gray-200">
+                            <td className="py-4 px-4 text-sm font-medium text-gray-900">
+                              {holding.token.symbol}
+                            </td>
+                            <td className="text-right py-4 px-4 text-sm font-medium text-green-600">
+                              {formatCurrency(result.amountCollected)}
+                            </td>
+                            <td className={`text-right py-4 px-4 text-sm font-medium ${result.returnPercentage >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                              {formatPercentage(result.returnPercentage)}
+                            </td>
+                            <td className="text-right py-4 px-4 text-sm text-gray-900">
+                              {result.remainingTokens.toFixed(8)} ({formatCurrency(result.remainingTokensValue)})
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+
+                {/* Version Mobile */}
+                <div className="md:hidden space-y-4">
+                  {previsionHoldings.map(holding => {
+                    const result = calculatePrevisionTokenResult(holding);
+                    if (!result) return null;
+
+                    return (
+                      <div key={holding.id} className="rounded-lg border p-4 bg-gray-50 border-gray-200">
+                        <h3 className="text-base font-semibold mb-3 text-gray-900">
+                          {holding.token.symbol}
+                        </h3>
+                        <div className="grid grid-cols-2 gap-3 text-sm">
+                          <div>
+                            <span className="text-xs text-gray-600">
+                              Montant encaissé
+                            </span>
+                            <p className="font-medium text-green-600">
+                              {formatCurrency(result.amountCollected)}
+                            </p>
+                          </div>
+                          <div>
+                            <span className="text-xs text-gray-600">
+                              Rendement net
+                            </span>
+                            <p className={`font-medium ${result.returnPercentage >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                              {formatPercentage(result.returnPercentage)}
+                            </p>
+                          </div>
+                          <div className="col-span-2">
+                            <span className="text-xs text-gray-600">
+                              Token restants
+                            </span>
+                            <p className="font-medium text-gray-900">
+                              {result.remainingTokens.toFixed(8)} ({formatCurrency(result.remainingTokensValue)})
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* Zone C - Résumé global */}
+            {previsionPortfolioId && previsionHoldings.length > 0 && Object.keys(previsionAppliedStrategies).some(id => previsionAppliedStrategies[id] !== 'none') && (
+              <div className="rounded-xl p-4 md:p-6 bg-white border border-gray-200">
+                <h3 className="text-base md:text-lg font-semibold mb-4 text-gray-900">
+                  Résumé global du wallet
+                </h3>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 md:gap-6">
+                  <div>
+                    <div className="text-xs md:text-sm mb-1 text-gray-600">
+                      Total investi
+                    </div>
+                    <div className="text-lg md:text-2xl font-bold text-gray-900">
+                      {formatCurrency(previsionGlobalSummary.totalInvested)}
+                    </div>
+                  </div>
+                  <div>
+                    <div className="text-xs md:text-sm mb-1 text-gray-600">
+                      Total encaissé
+                    </div>
+                    <div className="text-lg md:text-2xl font-bold text-green-600">
+                      {formatCurrency(previsionGlobalSummary.totalCollected)}
+                    </div>
+                  </div>
+                  <div>
+                    <div className="text-xs md:text-sm mb-1 text-gray-600">
+                      Profit net
+                    </div>
+                    <div className="text-lg md:text-2xl font-bold text-green-600">
+                      {formatCurrency(previsionGlobalSummary.totalProfit)}
+                    </div>
+                  </div>
+                  <div>
+                    <div className="text-xs md:text-sm mb-1 text-gray-600">
+                      Rendement net
+                    </div>
+                    <div className="text-lg md:text-2xl font-bold text-green-600">
+                      {formatPercentage(previsionGlobalSummary.returnPercentage)}
+                    </div>
+                  </div>
+                  <div>
+                    <div className="text-xs md:text-sm mb-1 text-gray-600">
+                      Valeur tokens restants
+                    </div>
+                    <div className="text-lg md:text-2xl font-bold text-gray-900">
+                      {formatCurrency(previsionGlobalSummary.remainingTokensValue)}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Bouton Sauvegarder */}
+                <div className="mt-6 flex justify-end">
               <Button
-                onClick={handleConfigureStrategy}
-                className="w-full sm:w-auto px-6 md:px-8 py-2 md:py-3 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-medium rounded-lg text-sm md:text-base"
+                    onClick={handleSavePrevision}
+                    disabled={!previsionName.trim() || !previsionPortfolioId}
+                    className="bg-blue-600 hover:bg-blue-700 text-white"
               >
-                Configurer
+                    Sauvegarder la prévision
               </Button>
             </div>
+              </div>
+            )}
+
+            {/* Message si aucun holding */}
+            {previsionPortfolioId && previsionHoldings.length === 0 && !previsionLoading && (
+              <div className="rounded-xl p-8 text-center bg-white border border-gray-200">
+                <p className="text-sm md:text-base text-gray-600">
+                  Aucun holding disponible. Ajoutez des transactions d'abord.
+                </p>
+              </div>
+            )}
+
+            {/* Loading state */}
+            {previsionLoading && (
+              <div className="rounded-xl p-8 text-center bg-white border border-gray-200">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+                <p className="text-sm md:text-base text-gray-600">
+                  Chargement...
+                </p>
+              </div>
+            )}
           </div>
         );
 
@@ -3166,7 +3873,7 @@ export default function OnboardingPage() {
                   {currentStep === 0 && investmentSubStep === 'add-crypto' && addCryptoMethod === 'exchange' && 'Link Exchange'}
                   {currentStep === 0 && investmentSubStep === 'add-crypto' && addCryptoMethod === 'wallet' && 'Crypto Wallet'}
                   {currentStep === 1 && 'Créez votre première stratégie'}
-                  {currentStep === 2 && 'Configurez votre stratégie'}
+                  {currentStep === 2 && 'Configurez votre wallet avec vos stratégies'}
                 </h1>
                 <div className="flex items-center justify-center sm:justify-start text-xs md:text-sm text-gray-500 mt-1">
                   <ShieldCheckIcon className="w-3 h-3 md:w-4 md:h-4 mr-1" />
@@ -3195,14 +3902,18 @@ export default function OnboardingPage() {
               <span>Précédent</span>
             </Button>
 
-            <Button
-              onClick={handleNext}
-              disabled={isLoading}
-              className="w-full sm:w-auto px-6 md:px-8 py-2 md:py-3 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-medium rounded-lg flex items-center justify-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed text-sm md:text-base"
-            >
-              <span>{isLoading ? 'Création...' : (currentStep === steps.length - 1 ? 'Terminer' : 'Suivant')}</span>
-              {!isLoading && <ArrowRightIcon className="w-4 h-4" />}
-            </Button>
+            {/* Masquer le bouton "Suivant" sur la page "Ajouter de la crypto" et "Créer la stratégie" */}
+            {!(currentStep === 0 && investmentSubStep === 'add-crypto' && !addCryptoMethod) && 
+             !(currentStep === 1) && (
+              <Button
+                onClick={handleNext}
+                disabled={isLoading}
+                className="w-full sm:w-auto px-6 md:px-8 py-2 md:py-3 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-medium rounded-lg flex items-center justify-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed text-sm md:text-base"
+              >
+                <span>{isLoading ? 'Création...' : (currentStep === steps.length - 1 ? 'Terminer' : 'Suivant')}</span>
+                {!isLoading && <ArrowRightIcon className="w-4 h-4" />}
+              </Button>
+            )}
           </div>
 
           {/* Security Info */}

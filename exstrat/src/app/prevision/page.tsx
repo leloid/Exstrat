@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { usePortfolio } from '@/contexts/PortfolioContext';
 import ProtectedRoute from '@/components/auth/ProtectedRoute';
 import Sidebar from '@/components/layout/Sidebar';
@@ -83,11 +84,15 @@ interface SavedForecast {
 type TabType = 'create' | 'list';
 
 export default function PrevisionPage() {
+  const searchParams = useSearchParams();
   const { portfolios, isLoading, refreshPortfolios } = usePortfolio();
   const { isDarkMode, language } = useTheme();
   
   const [activeTab, setActiveTab] = useState('config');
-  const [currentTab, setCurrentTab] = useState<TabType>('create');
+  const [currentTab, setCurrentTab] = useState<TabType>(() => {
+    const tabParam = searchParams.get('tab');
+    return (tabParam === 'list' ? 'list' : 'create') as TabType;
+  });
   const [selectedPortfolioId, setSelectedPortfolioId] = useState<string>('');
   const [forecastName, setForecastName] = useState('');
   const [theoreticalStrategies, setTheoreticalStrategies] = useState<TheoreticalStrategy[]>([]);
@@ -319,13 +324,12 @@ export default function PrevisionPage() {
       // Recharger la liste des prévisions
       await loadSavedForecasts();
       
-      alert(language === 'fr' 
-        ? 'Prévision sauvegardée avec succès !' 
-        : 'Forecast saved successfully!');
-      
       // Réinitialiser le formulaire
       setForecastName('');
       setAppliedStrategies({});
+      
+      // Rediriger vers l'onglet "Mes prévisions"
+      setCurrentTab('list');
     } catch (error) {
       console.error('Erreur lors de la sauvegarde:', error);
       alert(language === 'fr' 
