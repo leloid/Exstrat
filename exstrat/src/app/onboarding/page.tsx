@@ -279,7 +279,7 @@ export default function OnboardingPage() {
   const [availableStrategyQuantity, setAvailableStrategyQuantity] = useState<number>(0); // Quantité disponible dans le portfolio
   const [strategyQuantity, setStrategyQuantity] = useState<string>('');
   const [strategyAveragePrice, setStrategyAveragePrice] = useState<string>('');
-  const [numberOfTargets, setNumberOfTargets] = useState<number>(3);
+  const [numberOfTargets, setNumberOfTargets] = useState<number>(0);
   const [profitTargets, setProfitTargets] = useState<ProfitTarget[]>([]);
   const [investmentData, setInvestmentData] = useState<{
     numberOfTransactions: number;
@@ -453,6 +453,10 @@ export default function OnboardingPage() {
 
   // Initialiser les cibles de profit quand le nombre change
   React.useEffect(() => {
+    if (numberOfTargets <= 0) {
+      setProfitTargets([]);
+      return;
+    }
     const newTargets: ProfitTarget[] = [];
     for (let i = 0; i < numberOfTargets; i++) {
       newTargets.push({
@@ -2346,8 +2350,12 @@ export default function OnboardingPage() {
                 <div>
                   <Label htmlFor="numberOfTargets" className="text-xs md:text-sm">Nombre de sorties</Label>
                   <Select
-                    value={numberOfTargets.toString()}
+                    value={numberOfTargets > 0 ? numberOfTargets.toString() : ''}
                     onValueChange={(value) => {
+                      if (value === '') {
+                        setNumberOfTargets(0);
+                        return;
+                      }
                       const val = parseInt(value);
                       if (!isNaN(val) && val >= 1 && val <= 6) {
                         setNumberOfTargets(val);
@@ -2501,19 +2509,21 @@ export default function OnboardingPage() {
                   </div>
                 </div>
 
-                {/* En-têtes des colonnes pour les paliers */}
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-8 mb-4 md:mb-6 mt-6">
+                {/* En-têtes des colonnes pour les paliers - affichés seulement si des sorties sont définies */}
+                {numberOfTargets > 0 && profitTargets.length > 0 && (
+                  <>
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-8 mb-4 md:mb-6 mt-6">
                   <div>
-                    <h4 className="text-sm md:text-base font-semibold text-gray-900">Configuration des paliers</h4>
+                        <h4 className="text-sm md:text-base font-semibold text-gray-900">Configuration des paliers</h4>
                   </div>
                   <div>
-                    <h4 className="text-sm md:text-base font-semibold text-gray-900">Projections</h4>
+                        <h4 className="text-sm md:text-base font-semibold text-gray-900">Projections</h4>
                   </div>
                 </div>
 
                 {/* Cartes alignées par paire : Cible #1 avec Cible #1, etc. */}
                 <div className="space-y-4 md:space-y-6">
-                  {profitTargets.map((target, index) => {
+                      {profitTargets.slice(0, numberOfTargets).map((target, index) => {
                     const info = strategyInfo[index];
                     const qty = parseFloat(strategyQuantity);
                     const avgPrice = parseFloat(strategyAveragePrice);
@@ -2697,7 +2707,9 @@ export default function OnboardingPage() {
                       </div>
                     );
                   })}
-              </div>
+                </div>
+                  </>
+                )}
             </div>
 
             {/* Barre de résumé en bas */}
