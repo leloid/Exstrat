@@ -1,5 +1,6 @@
-import { Injectable, NotFoundException, ConflictException, BadRequestException } from '@nestjs/common';
+import { Injectable, NotFoundException, ConflictException, BadRequestException, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { TokensService } from '../tokens/tokens.service';
 import { CreatePortfolioDto, UpdatePortfolioDto, PortfolioResponseDto } from './dto/portfolio.dto';
 import { CreateHoldingDto, UpdateHoldingDto, HoldingResponseDto } from './dto/holding.dto';
 import { CreateUserStrategyDto, UpdateUserStrategyDto, UserStrategyResponseDto, TokenStrategyConfigDto, TokenStrategyConfigResponseDto } from './dto/user-strategy.dto';
@@ -7,7 +8,12 @@ import { StrategyTemplateResponseDto, ProfitTakingTemplateResponseDto, Simulatio
 
 @Injectable()
 export class PortfoliosService {
-  constructor(private prisma: PrismaService) {}
+  private readonly logger = new Logger(PortfoliosService.name);
+
+  constructor(
+    private prisma: PrismaService,
+    private tokensService: TokensService,
+  ) {}
 
   // ===== PORTFOLIOS =====
 
@@ -159,7 +165,50 @@ export class PortfoliosService {
       orderBy: { token: { symbol: 'asc' } },
     });
 
+    // Mettre à jour les prix actuels depuis CoinMarketCap
+    await this.updateHoldingsPrices(holdings);
+
     return holdings.map(holding => this.formatHoldingResponse(holding));
+  }
+
+  /**
+   * Met à jour les prix actuels des holdings depuis CoinMarketCap
+   */
+  private async updateHoldingsPrices(holdings: any[]): Promise<void> {
+    // Mettre à jour les prix en parallèle pour améliorer les performances
+    const updatePromises = holdings.map(async (holding) => {
+      if (!holding.token?.cmcId) {
+        this.logger.warn(`Token ${holding.token?.symbol} n'a pas de cmcId, impossible de mettre à jour le prix`);
+        return;
+      }
+
+      try {
+        // Récupérer le prix actuel depuis CoinMarketCap
+        const tokenData = await this.tokensService.getTokenById(holding.token.cmcId);
+        const currentPrice = tokenData.quote?.USD?.price;
+
+        if (currentPrice && currentPrice > 0) {
+          // Mettre à jour le prix actuel dans la base de données
+          await this.prisma.holding.update({
+            where: { id: holding.id },
+            data: {
+              currentPrice: currentPrice,
+              lastUpdated: new Date(),
+            },
+          });
+
+          // Mettre à jour l'objet holding en mémoire pour la réponse
+          holding.currentPrice = currentPrice.toString(); // Convertir en string pour correspondre au type Decimal de Prisma
+          holding.lastUpdated = new Date();
+        }
+      } catch (error) {
+        // Ne pas faire échouer la requête si la mise à jour du prix échoue
+        this.logger.warn(`Erreur lors de la mise à jour du prix pour ${holding.token?.symbol}: ${error.message}`);
+      }
+    });
+
+    // Attendre que toutes les mises à jour soient terminées
+    await Promise.all(updatePromises);
   }
 
   async addHolding(userId: string, portfolioId: string, createHoldingDto: CreateHoldingDto): Promise<HoldingResponseDto> {

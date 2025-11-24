@@ -590,11 +590,36 @@ export default function OnboardingPage() {
         if (!addCryptoMethod) {
           return;
         }
-        // Si on a choisi "Enter manually" et qu'on a ajouté des transactions, passer à l'étape suivante
-        // Sinon, on reste dans cette sous-étape jusqu'à ce qu'une transaction soit ajoutée
-        if (addCryptoMethod === 'manual' && onboardingTransactions.length > 0) {
+        // Si on a choisi "Enter manually", vérifier qu'il y a des transactions (onboarding ou existantes)
+        if (addCryptoMethod === 'manual') {
+          // Combiner toutes les transactions pour vérifier s'il y en a
+          const combinedTransactions = [
+            ...allTransactions,
+            ...onboardingTransactions
+          ];
+          const uniqueTransactions = Array.from(
+            new Map(combinedTransactions.map(t => [t.id, t])).values()
+          );
+          
+          // Filtrer selon le portfolio sélectionné
+          const filteredTransactions = uniqueTransactions.filter(transaction => {
+            if (!transaction || !transaction.id) return false;
+            if (selectedPortfolioForTable !== 'all' && transaction.portfolioId !== selectedPortfolioForTable) {
+              return false;
+            }
+            return true;
+          });
+          
+          // Si on a des transactions, passer à l'étape suivante
+          if (filteredTransactions.length > 0) {
+            setCurrentStep(1);
+            setInvestmentSubStep('portfolio'); // Réinitialiser pour la prochaine fois
+            setAddCryptoMethod(null);
+          }
+        } else {
+          // Pour les autres méthodes (exchange, wallet), passer directement à l'étape suivante
           setCurrentStep(1);
-          setInvestmentSubStep('portfolio'); // Réinitialiser pour la prochaine fois
+          setInvestmentSubStep('portfolio');
           setAddCryptoMethod(null);
         }
         return;
@@ -1569,14 +1594,58 @@ export default function OnboardingPage() {
             })[0];
 
             // Trouver le holding correspondant pour obtenir le prix actuel et PNL
+            // Si "Tous les wallets" est sélectionné, on doit trouver le holding qui correspond au token
+            // parmi tous les portfolios. Si un portfolio spécifique est sélectionné, les holdings
+            // sont déjà filtrés par ce portfolio dans le useEffect.
             const holding = holdings.find(h => 
               h.token?.symbol?.toUpperCase() === symbol.toUpperCase()
             );
 
-            const currentPrice = holding?.currentPrice || holding?.averagePrice || weightedAveragePrice;
-            const currentValue = totalQuantity * currentPrice;
-            const pnlAbsolute = currentValue - totalAmountInvested;
-            const pnlPercentage = totalAmountInvested > 0 ? (pnlAbsolute / totalAmountInvested) * 100 : 0;
+            // Utiliser le prix actuel du holding s'il existe
+            // IMPORTANT: Si currentPrice n'existe pas, on ne peut pas calculer un PNL valide
+            // car utiliser averagePrice donnerait toujours un PNL de 0
+            let currentPrice: number;
+            let currentValue: number;
+            let pnlAbsolute: number;
+            let pnlPercentage: number;
+            
+            if (holding?.currentPrice && holding.currentPrice > 0) {
+              // Calculer avec le vrai prix actuel du marché
+              currentPrice = holding.currentPrice;
+              currentValue = totalQuantity * currentPrice;
+              pnlAbsolute = currentValue - totalAmountInvested;
+              pnlPercentage = totalAmountInvested > 0 ? (pnlAbsolute / totalAmountInvested) * 100 : 0;
+            } else if (holding?.currentValue !== undefined && holding?.profitLoss !== undefined && holding?.profitLossPercentage !== undefined) {
+              // Utiliser les valeurs calculées par le backend si disponibles
+              // Ajuster proportionnellement si les quantités diffèrent
+              const holdingQuantity = holding.quantity || 0;
+              if (holdingQuantity > 0 && Math.abs(holdingQuantity - totalQuantity) < 0.0001) {
+                // Les quantités correspondent exactement, utiliser directement les valeurs du holding
+                currentPrice = holding.currentValue / holdingQuantity;
+                currentValue = holding.currentValue;
+                pnlAbsolute = holding.profitLoss;
+                pnlPercentage = holding.profitLossPercentage;
+              } else if (holdingQuantity > 0) {
+                // Les quantités diffèrent, recalculer proportionnellement
+                const pricePerToken = holding.currentValue / holdingQuantity;
+                currentPrice = pricePerToken;
+                currentValue = totalQuantity * pricePerToken;
+                pnlAbsolute = currentValue - totalAmountInvested;
+                pnlPercentage = totalAmountInvested > 0 ? (pnlAbsolute / totalAmountInvested) * 100 : 0;
+              } else {
+                // Pas de quantité dans le holding, utiliser le prix moyen
+                currentPrice = holding?.averagePrice || weightedAveragePrice;
+                currentValue = totalQuantity * currentPrice;
+                pnlAbsolute = currentValue - totalAmountInvested;
+                pnlPercentage = totalAmountInvested > 0 ? (pnlAbsolute / totalAmountInvested) * 100 : 0;
+              }
+            } else {
+              // Pas de prix actuel disponible - utiliser le prix moyen (PNL sera 0 ou proche de 0)
+              currentPrice = holding?.averagePrice || weightedAveragePrice;
+              currentValue = totalQuantity * currentPrice;
+              pnlAbsolute = currentValue - totalAmountInvested;
+              pnlPercentage = totalAmountInvested > 0 ? (pnlAbsolute / totalAmountInvested) * 100 : 0;
+            }
 
             return {
               symbol,
@@ -1647,7 +1716,7 @@ export default function OnboardingPage() {
             {isLoading ? (
               <div className="flex items-center justify-center py-12">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-              </div>
+                    </div>
             ) : (
             <div className="overflow-x-auto">
               <table className="w-full border-collapse">
@@ -1682,7 +1751,7 @@ export default function OnboardingPage() {
                               ) : (
                                 <ChevronDownIcon className="h-4 w-4 text-gray-400 transition-transform" />
                               )}
-                            </div>
+            </div>
                           </td>
                           <td className="py-3 px-4">
                             <div className="flex items-center gap-2">
@@ -1691,10 +1760,10 @@ export default function OnboardingPage() {
                               ) : (
                                 <div className="w-6 h-6 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center">
                                   <span className="text-white text-xs font-bold">{tokenSummary.symbol.charAt(0)}</span>
-                                </div>
+                            </div>
                               )}
                               <span className="text-sm font-medium text-gray-900">{tokenSummary.symbol}</span>
-                            </div>
+                              </div>
                           </td>
                           <td className="py-3 px-4 text-sm text-gray-700">{tokenSummary.name}</td>
                           <td className="py-3 px-4 text-sm text-right text-gray-900">{tokenSummary.totalQuantity.toLocaleString(undefined, { maximumFractionDigits: 8 })}</td>
@@ -1719,13 +1788,15 @@ export default function OnboardingPage() {
                               <td colSpan={10} className="py-2 px-4">
                                 <div className="text-xs font-semibold text-gray-600 uppercase tracking-wide">
                                   Transactions individuelles ({tokenSummary.transactions.length})
-                                </div>
+                              </div>
                               </td>
                             </tr>
                             {tokenSummary.transactions.map((transaction) => {
                               // Calculer PNL pour chaque transaction
-                              const transactionCurrentPrice = tokenSummary.currentPrice;
-                              const transactionCurrentValue = parseFloat(transaction.quantity?.toString() || '0') * transactionCurrentPrice;
+                              // Utiliser le prix actuel du token (même que pour le résumé agrégé)
+                              const transactionCurrentPrice = tokenSummary.currentPrice || parseFloat(transaction.averagePrice?.toString() || '0');
+                              const transactionQuantity = parseFloat(transaction.quantity?.toString() || '0');
+                              const transactionCurrentValue = transactionQuantity * transactionCurrentPrice;
                               const transactionAmountInvested = parseFloat(transaction.amountInvested?.toString() || '0');
                               const transactionPnlAbsolute = transactionCurrentValue - transactionAmountInvested;
                               const transactionPnlPercentage = transactionAmountInvested > 0 ? (transactionPnlAbsolute / transactionAmountInvested) * 100 : 0;
@@ -1755,8 +1826,8 @@ export default function OnboardingPage() {
                                           {transaction.transactionDate ? new Date(transaction.transactionDate).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: '2-digit' }) : '-'}
                                         </span>
                                         <div className="flex items-center gap-1">
-                                          <Button
-                                            variant="outline"
+                            <Button
+                              variant="outline"
                                             onClick={(e) => {
                                               e.stopPropagation();
                                               handleEditTransaction(transaction);
@@ -1764,9 +1835,9 @@ export default function OnboardingPage() {
                                             className="p-1 h-6 w-6 text-gray-600 hover:text-gray-900"
                                           >
                                             <PencilIcon className="h-3 w-3" />
-                                          </Button>
-                                          <Button
-                                            variant="outline"
+                            </Button>
+                            <Button
+                              variant="outline"
                                             onClick={(e) => {
                                               e.stopPropagation();
                                               handleDeleteTransaction(transaction.id);
@@ -1774,9 +1845,9 @@ export default function OnboardingPage() {
                                             className="p-1 h-6 w-6 text-red-600 hover:text-red-700"
                                           >
                                             <TrashIcon className="h-3 w-3" />
-                                          </Button>
-                                        </div>
-                                      </div>
+                            </Button>
+                          </div>
+                        </div>
                                     </td>
                                   </tr>
                                   {transaction.notes && (
@@ -1787,7 +1858,7 @@ export default function OnboardingPage() {
                                       <td colSpan={10} className="py-1 px-4">
                                         <div className="text-xs text-gray-600 italic pl-8">
                                           📝 Note: {transaction.notes}
-                                        </div>
+                </div>
                                       </td>
                                     </tr>
                                   )}
