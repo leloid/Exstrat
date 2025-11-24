@@ -1274,8 +1274,15 @@ export default function OnboardingPage() {
       if (editingPortfolio) {
         // Mettre à jour le portfolio existant (nom uniquement)
         const updatedPortfolio = await updatePortfolioContext(editingPortfolio.id, portfolioDto);
-        // Le contexte est déjà mis à jour par updatePortfolioContext
-        // Le useEffect synchronisera automatiquement onboardingPortfolios avec portfolios
+        
+        // Mettre à jour immédiatement onboardingPortfolios pour refléter les changements
+        setOnboardingPortfolios(prev => 
+          prev.map(p => p.id === editingPortfolio.id ? updatedPortfolio : p)
+        );
+        
+        // Rafraîchir les portfolios du contexte pour s'assurer de la synchronisation
+        await refreshPortfolios();
+        
         setCreatedData(prev => ({ ...prev, portfolio: updatedPortfolio }));
       }
       
