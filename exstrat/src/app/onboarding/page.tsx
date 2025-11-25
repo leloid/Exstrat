@@ -27,6 +27,7 @@ import { CreateTransactionDto, TokenSearchResult, TransactionResponse } from '@/
 import { CreateStrategyDto, TargetType, CreateTheoreticalStrategyDto } from '@/types/strategies';
 import { TokenSearch } from '@/components/transactions/TokenSearch';
 import { usePortfolio } from '@/contexts/PortfolioContext';
+import { useTheme } from '@/contexts/ThemeContext';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/Select';
 import { Label } from '@/components/ui/Label';
 import { Slider } from '@/components/ui/Slider';
@@ -88,9 +89,10 @@ interface WalletSelectorProps {
   value: string;
   onChange: (value: string) => void;
   portfolios: any[];
+  isDarkMode?: boolean;
 }
 
-const WalletSelector: React.FC<WalletSelectorProps> = ({ value, onChange, portfolios }) => {
+const WalletSelector: React.FC<WalletSelectorProps> = ({ value, onChange, portfolios, isDarkMode = false }) => {
   const [isOpen, setIsOpen] = useState(false);
   const selectRef = useRef<HTMLDivElement>(null);
 
@@ -120,33 +122,51 @@ const WalletSelector: React.FC<WalletSelectorProps> = ({ value, onChange, portfo
 
   return (
     <div ref={selectRef} className="relative w-full sm:w-[280px]">
-      <label className="block text-xs font-semibold text-gray-700 mb-2.5 uppercase tracking-wide">
+      <label className={`block text-xs font-semibold mb-2.5 uppercase tracking-wide ${
+        isDarkMode ? 'text-gray-300' : 'text-gray-700'
+      }`}>
         Wallet
       </label>
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}
         className={`
-          w-full h-14 px-5 py-3.5 bg-white border-2 rounded-xl shadow-sm
+          w-full h-14 px-5 py-3.5 border-2 rounded-xl shadow-sm
           flex items-center justify-between
           transition-all duration-200
+          ${isDarkMode 
+            ? 'bg-gray-800 border-gray-700' 
+            : 'bg-white border-gray-200'
+          }
           ${isOpen 
             ? 'border-blue-500 ring-4 ring-blue-500/10 shadow-md' 
-            : 'border-gray-200 hover:border-gray-300 hover:shadow-md'
+            : isDarkMode
+              ? 'hover:border-gray-600 hover:shadow-md'
+              : 'hover:border-gray-300 hover:shadow-md'
           }
           focus:outline-none focus:ring-4 focus:ring-blue-500/10
         `}
       >
-        <span className={`text-sm font-medium ${value ? 'text-gray-900' : 'text-gray-400'}`}>
+        <span className={`text-sm font-medium ${
+          value 
+            ? (isDarkMode ? 'text-white' : 'text-gray-900')
+            : (isDarkMode ? 'text-gray-500' : 'text-gray-400')
+        }`}>
           {getSelectedLabel()}
         </span>
         <ChevronDownIcon 
-          className={`w-5 h-5 text-gray-400 transition-transform duration-200 ${isOpen ? 'transform rotate-180' : ''}`} 
+          className={`w-5 h-5 transition-transform duration-200 ${isOpen ? 'transform rotate-180' : ''} ${
+            isDarkMode ? 'text-gray-400' : 'text-gray-400'
+          }`} 
         />
       </button>
 
       {isOpen && (
-        <div className="absolute z-50 w-full mt-2 bg-white border-2 border-gray-200 rounded-xl shadow-2xl overflow-hidden">
+        <div className={`absolute z-50 w-full mt-2 border-2 rounded-xl shadow-2xl overflow-hidden ${
+          isDarkMode 
+            ? 'bg-gray-800 border-gray-700' 
+            : 'bg-white border-gray-200'
+        }`}>
           <div className="py-2 max-h-72 overflow-y-auto">
             <button
               type="button"
@@ -158,8 +178,12 @@ const WalletSelector: React.FC<WalletSelectorProps> = ({ value, onChange, portfo
                 w-full px-5 py-3.5 text-left
                 transition-colors duration-150
                 ${value === 'all' 
-                  ? 'bg-blue-50 text-blue-700 font-semibold' 
-                  : 'text-gray-700 hover:bg-gray-50'
+                  ? isDarkMode
+                    ? 'bg-blue-900/30 text-blue-400 font-semibold'
+                    : 'bg-blue-50 text-blue-700 font-semibold'
+                  : isDarkMode
+                    ? 'text-gray-300 hover:bg-gray-700'
+                    : 'text-gray-700 hover:bg-gray-50'
                 }
               `}
             >
@@ -183,8 +207,12 @@ const WalletSelector: React.FC<WalletSelectorProps> = ({ value, onChange, portfo
                   w-full px-5 py-3.5 text-left
                   transition-colors duration-150
                   ${value === portfolio.id 
-                    ? 'bg-blue-50 text-blue-700 font-semibold' 
-                    : 'text-gray-700 hover:bg-gray-50'
+                    ? isDarkMode
+                      ? 'bg-blue-900/30 text-blue-400 font-semibold'
+                      : 'bg-blue-50 text-blue-700 font-semibold'
+                    : isDarkMode
+                      ? 'text-gray-300 hover:bg-gray-700'
+                      : 'text-gray-700 hover:bg-gray-50'
                   }
                 `}
               >
@@ -192,7 +220,11 @@ const WalletSelector: React.FC<WalletSelectorProps> = ({ value, onChange, portfo
                   <span className="text-sm">{portfolio.name}</span>
                   <div className="flex items-center gap-2">
                     {portfolio.isDefault && (
-                      <span className="px-2.5 py-1 text-xs font-medium bg-blue-100 text-blue-700 rounded-md">
+                      <span className={`px-2.5 py-1 text-xs font-medium rounded-md ${
+                        isDarkMode
+                          ? 'bg-blue-900/30 text-blue-400'
+                          : 'bg-blue-100 text-blue-700'
+                      }`}>
                         Défaut
                       </span>
                     )}
@@ -223,6 +255,7 @@ const exchanges = [
 ];
 
 export default function OnboardingPage() {
+  const { isDarkMode } = useTheme();
   const [currentStep, setCurrentStep] = useState(0);
   const [investmentSubStep, setInvestmentSubStep] = useState<'portfolio' | 'add-crypto'>('portfolio');
   const [addCryptoMethod, setAddCryptoMethod] = useState<'exchange' | 'wallet' | 'manual' | null>(null);
@@ -1862,7 +1895,9 @@ export default function OnboardingPage() {
             {showPortfolioModal && editingPortfolio && (
               <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-3 md:p-4">
                 <div className="bg-white rounded-lg max-w-lg w-full max-h-[90vh] overflow-y-auto">
-                  <div className="sticky top-0 bg-white border-b border-gray-200 px-4 md:px-6 py-3 md:py-4 flex items-center justify-between">
+                  <div className={`sticky top-0 border-b px-4 md:px-6 py-3 md:py-4 flex items-center justify-between ${
+                    isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'
+                  }`}>
                     <h3 className="text-base md:text-lg font-semibold text-gray-900">
                       Modifier le portfolio
                     </h3>
@@ -2211,6 +2246,7 @@ export default function OnboardingPage() {
                       new Map(allPortfolios.map(p => [p.id, p])).values()
                     );
                   })()}
+                  isDarkMode={isDarkMode}
                 />
               </div>
             </div>
@@ -2236,17 +2272,41 @@ export default function OnboardingPage() {
             <div className="overflow-x-auto">
               <table className="w-full border-collapse">
                 <thead>
-                  <tr className="border-b border-gray-200 bg-gray-50">
-                    <th className="text-left py-3 px-4 text-xs md:text-sm font-semibold text-gray-700 w-12"></th>
-                    <th className="text-left py-3 px-4 text-xs md:text-sm font-semibold text-gray-700">Symbol</th>
-                    <th className="text-left py-3 px-4 text-xs md:text-sm font-semibold text-gray-700">Nom</th>
-                    <th className="text-right py-3 px-4 text-xs md:text-sm font-semibold text-gray-700">Quantité</th>
-                    <th className="text-right py-3 px-4 text-xs md:text-sm font-semibold text-gray-700">Montant</th>
-                    <th className="text-right py-3 px-4 text-xs md:text-sm font-semibold text-gray-700">Prix moyen</th>
-                    <th className="text-right py-3 px-4 text-xs md:text-sm font-semibold text-gray-700">Valeur actuelle</th>
-                    <th className="text-right py-3 px-4 text-xs md:text-sm font-semibold text-gray-700">PNL</th>
-                    <th className="text-right py-3 px-4 text-xs md:text-sm font-semibold text-gray-700">PNL %</th>
-                    <th className="text-right py-3 px-4 text-xs md:text-sm font-semibold text-gray-700">Date</th>
+                  <tr className={`border-b ${
+                    isDarkMode 
+                      ? 'border-gray-700 bg-gray-800' 
+                      : 'border-gray-200 bg-gray-50'
+                  }`}>
+                    <th className={`text-left py-3 px-4 text-xs md:text-sm font-semibold w-12 ${
+                      isDarkMode ? 'text-gray-300' : 'text-gray-700'
+                    }`}></th>
+                    <th className={`text-left py-3 px-4 text-xs md:text-sm font-semibold ${
+                      isDarkMode ? 'text-gray-300' : 'text-gray-700'
+                    }`}>Symbol</th>
+                    <th className={`text-left py-3 px-4 text-xs md:text-sm font-semibold ${
+                      isDarkMode ? 'text-gray-300' : 'text-gray-700'
+                    }`}>Nom</th>
+                    <th className={`text-right py-3 px-4 text-xs md:text-sm font-semibold ${
+                      isDarkMode ? 'text-gray-300' : 'text-gray-700'
+                    }`}>Quantité</th>
+                    <th className={`text-right py-3 px-4 text-xs md:text-sm font-semibold ${
+                      isDarkMode ? 'text-gray-300' : 'text-gray-700'
+                    }`}>Montant</th>
+                    <th className={`text-right py-3 px-4 text-xs md:text-sm font-semibold ${
+                      isDarkMode ? 'text-gray-300' : 'text-gray-700'
+                    }`}>Prix moyen</th>
+                    <th className={`text-right py-3 px-4 text-xs md:text-sm font-semibold ${
+                      isDarkMode ? 'text-gray-300' : 'text-gray-700'
+                    }`}>Valeur actuelle</th>
+                    <th className={`text-right py-3 px-4 text-xs md:text-sm font-semibold ${
+                      isDarkMode ? 'text-gray-300' : 'text-gray-700'
+                    }`}>PNL</th>
+                    <th className={`text-right py-3 px-4 text-xs md:text-sm font-semibold ${
+                      isDarkMode ? 'text-gray-300' : 'text-gray-700'
+                    }`}>PNL %</th>
+                    <th className={`text-right py-3 px-4 text-xs md:text-sm font-semibold ${
+                      isDarkMode ? 'text-gray-300' : 'text-gray-700'
+                    }`}>Date</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -2256,15 +2316,23 @@ export default function OnboardingPage() {
                       <React.Fragment key={tokenSummary.symbol}>
                         {/* Niveau 1 : Vue principale par token (agrégée) */}
                         <tr 
-                          className="border-b border-gray-100 hover:bg-gray-50 cursor-pointer transition-colors"
+                          className={`border-b cursor-pointer transition-colors ${
+                            isDarkMode
+                              ? 'border-gray-700 hover:bg-gray-800'
+                              : 'border-gray-100 hover:bg-gray-50'
+                          }`}
                           onClick={() => toggleTokenExpansion(tokenSummary.symbol)}
                         >
                           <td className="py-3 px-4">
                             <div className="flex items-center justify-center">
                               {isExpanded ? (
-                                <ChevronDownIcon className="h-4 w-4 text-gray-400 transform rotate-180 transition-transform" />
+                                <ChevronDownIcon className={`h-4 w-4 transform rotate-180 transition-transform ${
+                                  isDarkMode ? 'text-gray-500' : 'text-gray-400'
+                                }`} />
                               ) : (
-                                <ChevronDownIcon className="h-4 w-4 text-gray-400 transition-transform" />
+                                <ChevronDownIcon className={`h-4 w-4 transition-transform ${
+                                  isDarkMode ? 'text-gray-500' : 'text-gray-400'
+                                }`} />
                               )}
             </div>
                           </td>
@@ -2277,21 +2345,35 @@ export default function OnboardingPage() {
                                   <span className="text-white text-xs font-bold">{tokenSummary.symbol.charAt(0)}</span>
                             </div>
                               )}
-                              <span className="text-sm font-medium text-gray-900">{tokenSummary.symbol}</span>
+                              <span className={`text-sm font-medium ${
+                                isDarkMode ? 'text-white' : 'text-gray-900'
+                              }`}>{tokenSummary.symbol}</span>
                               </div>
                           </td>
-                          <td className="py-3 px-4 text-sm text-gray-700">{tokenSummary.name}</td>
-                          <td className="py-3 px-4 text-sm text-right text-gray-900">{tokenSummary.totalQuantity.toLocaleString(undefined, { maximumFractionDigits: 8 })}</td>
-                          <td className="py-3 px-4 text-sm text-right text-gray-900">{formatCurrency(tokenSummary.totalAmountInvested, '$', 2)}</td>
-                          <td className="py-3 px-4 text-sm text-right text-gray-900">{formatCurrency(tokenSummary.weightedAveragePrice, '$', 2)}</td>
-                          <td className="py-3 px-4 text-sm text-right text-gray-900">{formatCurrency(tokenSummary.currentValue, '$', 2)}</td>
+                          <td className={`py-3 px-4 text-sm ${
+                            isDarkMode ? 'text-gray-300' : 'text-gray-700'
+                          }`}>{tokenSummary.name}</td>
+                          <td className={`py-3 px-4 text-sm text-right ${
+                            isDarkMode ? 'text-white' : 'text-gray-900'
+                          }`}>{tokenSummary.totalQuantity.toLocaleString(undefined, { maximumFractionDigits: 8 })}</td>
+                          <td className={`py-3 px-4 text-sm text-right ${
+                            isDarkMode ? 'text-white' : 'text-gray-900'
+                          }`}>{formatCurrency(tokenSummary.totalAmountInvested, '$', 2)}</td>
+                          <td className={`py-3 px-4 text-sm text-right ${
+                            isDarkMode ? 'text-white' : 'text-gray-900'
+                          }`}>{formatCurrency(tokenSummary.weightedAveragePrice, '$', 2)}</td>
+                          <td className={`py-3 px-4 text-sm text-right ${
+                            isDarkMode ? 'text-white' : 'text-gray-900'
+                          }`}>{formatCurrency(tokenSummary.currentValue, '$', 2)}</td>
                           <td className={`py-3 px-4 text-sm text-right font-medium ${tokenSummary.pnlAbsolute >= 0 ? 'text-green-600' : 'text-red-600'}`}>
                             {formatCurrency(tokenSummary.pnlAbsolute, '$', 2)}
                           </td>
                           <td className={`py-3 px-4 text-sm text-right font-medium ${tokenSummary.pnlPercentage >= 0 ? 'text-green-600' : 'text-red-600'}`}>
                             {tokenSummary.pnlPercentage >= 0 ? '+' : ''}{tokenSummary.pnlPercentage.toFixed(2)}%
                           </td>
-                          <td className="py-3 px-4 text-sm text-right text-gray-600">
+                          <td className={`py-3 px-4 text-sm text-right ${
+                            isDarkMode ? 'text-gray-400' : 'text-gray-600'
+                          }`}>
                             {tokenSummary.lastTransactionDate ? new Date(tokenSummary.lastTransactionDate).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: '2-digit' }) : '-'}
                           </td>
                         </tr>
@@ -2299,9 +2381,11 @@ export default function OnboardingPage() {
                         {isExpanded && (
                           <>
                             {/* En-tête pour la vue détaillée */}
-                            <tr className="bg-gray-100/50">
+                            <tr className={isDarkMode ? 'bg-gray-800' : 'bg-gray-100/50'}>
                               <td colSpan={10} className="py-2 px-4">
-                                <div className="text-xs font-semibold text-gray-600 uppercase tracking-wide">
+                                <div className={`text-xs font-semibold uppercase tracking-wide ${
+                                  isDarkMode ? 'text-gray-400' : 'text-gray-600'
+                                }`}>
                                   Transactions individuelles ({tokenSummary.transactions.length})
                               </div>
                               </td>
@@ -2319,16 +2403,28 @@ export default function OnboardingPage() {
                               return (
                                 <React.Fragment key={transaction.id}>
                                   <tr 
-                                    className="border-b border-gray-50 bg-gray-50/50 hover:bg-gray-100"
+                                    className={`border-b ${
+                                      isDarkMode
+                                        ? 'border-gray-700 bg-gray-800/50 hover:bg-gray-800'
+                                        : 'border-gray-50 bg-gray-50/50 hover:bg-gray-100'
+                                    }`}
                                     onClick={(e) => e.stopPropagation()}
                                   >
                                     <td className="py-2 px-4"></td>
                                     <td className="py-2 px-4"></td>
                                     <td className="py-2 px-4"></td>
-                                    <td className="py-2 px-4 text-xs text-right text-gray-700">{parseFloat(transaction.quantity?.toString() || '0').toLocaleString(undefined, { maximumFractionDigits: 8 })}</td>
-                                    <td className="py-2 px-4 text-xs text-right text-gray-700">{formatCurrency(transactionAmountInvested, '$', 2)}</td>
-                                    <td className="py-2 px-4 text-xs text-right text-gray-700">{formatCurrency(parseFloat(transaction.averagePrice?.toString() || '0'), '$', 2)}</td>
-                                    <td className="py-2 px-4 text-xs text-right text-gray-700">{formatCurrency(transactionCurrentValue, '$', 2)}</td>
+                                    <td className={`py-2 px-4 text-xs text-right ${
+                                      isDarkMode ? 'text-gray-300' : 'text-gray-700'
+                                    }`}>{parseFloat(transaction.quantity?.toString() || '0').toLocaleString(undefined, { maximumFractionDigits: 8 })}</td>
+                                    <td className={`py-2 px-4 text-xs text-right ${
+                                      isDarkMode ? 'text-gray-300' : 'text-gray-700'
+                                    }`}>{formatCurrency(transactionAmountInvested, '$', 2)}</td>
+                                    <td className={`py-2 px-4 text-xs text-right ${
+                                      isDarkMode ? 'text-gray-300' : 'text-gray-700'
+                                    }`}>{formatCurrency(parseFloat(transaction.averagePrice?.toString() || '0'), '$', 2)}</td>
+                                    <td className={`py-2 px-4 text-xs text-right ${
+                                      isDarkMode ? 'text-gray-300' : 'text-gray-700'
+                                    }`}>{formatCurrency(transactionCurrentValue, '$', 2)}</td>
                                     <td className={`py-2 px-4 text-xs text-right font-medium ${transactionPnlAbsolute >= 0 ? 'text-green-600' : 'text-red-600'}`}>
                                       {formatCurrency(transactionPnlAbsolute, '$', 2)}
                                     </td>
@@ -2337,7 +2433,9 @@ export default function OnboardingPage() {
                                     </td>
                                     <td className="py-2 px-4">
                                       <div className="flex items-center justify-end gap-2">
-                                        <span className="text-xs text-right text-gray-600">
+                                        <span className={`text-xs text-right ${
+                                          isDarkMode ? 'text-gray-400' : 'text-gray-600'
+                                        }`}>
                                           {transaction.transactionDate ? new Date(transaction.transactionDate).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: '2-digit' }) : '-'}
                                         </span>
                                         <div className="flex items-center gap-1">
@@ -2347,7 +2445,11 @@ export default function OnboardingPage() {
                                               e.stopPropagation();
                                               handleEditTransaction(transaction);
                                             }}
-                                            className="p-1 h-6 w-6 text-gray-600 hover:text-gray-900"
+                                            className={`p-1 h-6 w-6 ${
+                                              isDarkMode 
+                                                ? 'text-gray-400 hover:text-gray-300 border-gray-700' 
+                                                : 'text-gray-600 hover:text-gray-900'
+                                            }`}
                                           >
                                             <PencilIcon className="h-3 w-3" />
                             </Button>
@@ -2413,7 +2515,9 @@ export default function OnboardingPage() {
             {showTransactionModal && (
               <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-3 md:p-4">
                 <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-                  <div className="sticky top-0 bg-white border-b border-gray-200 px-4 md:px-6 py-3 md:py-4 flex items-center justify-between">
+                  <div className={`sticky top-0 border-b px-4 md:px-6 py-3 md:py-4 flex items-center justify-between ${
+                    isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'
+                  }`}>
                     <h3 className="text-base md:text-lg font-semibold text-gray-900">
                       {editingTransaction ? 'Modifier la transaction' : 'Ajouter une transaction'}
                     </h3>
@@ -2659,9 +2763,13 @@ export default function OnboardingPage() {
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-8">
                   {/* Colonne gauche : Zone A - Inputs */}
             <div className="space-y-4 md:space-y-6">
-                    <Card className="border border-gray-200">
+                    <Card className={`border ${
+                      isDarkMode ? 'border-gray-700 bg-gray-800' : 'border-gray-200 bg-white'
+                    }`}>
                       <CardContent className="p-4 md:p-6 space-y-4">
-                        <h4 className="text-sm md:text-base font-semibold text-gray-900 mb-4">Paramétrage de la stratégie</h4>
+                        <h4 className={`text-sm md:text-base font-semibold mb-4 ${
+                          isDarkMode ? 'text-white' : 'text-gray-900'
+                        }`}>Paramétrage de la stratégie</h4>
                         
                         {/* Étape 1 : Portfolio */}
                 {strategyStep >= 1 && (
@@ -3056,7 +3164,11 @@ export default function OnboardingPage() {
                                       const newValue = Math.max(0, target.targetValue - 10);
                                       handleTargetChange(index, 'targetValue', newValue);
                                     }}
-                                    className="flex-shrink-0 w-10 h-10 flex items-center justify-center border border-gray-300 rounded-lg bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors"
+                                    className={`flex-shrink-0 w-10 h-10 flex items-center justify-center border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors ${
+                                      isDarkMode
+                                        ? 'border-gray-600 bg-gray-700 hover:bg-gray-600'
+                                        : 'border-gray-300 bg-white hover:bg-gray-50'
+                                    }`}
                                   >
                                     <span className="text-lg font-semibold text-gray-600">−</span>
                                   </button>
@@ -3076,7 +3188,11 @@ export default function OnboardingPage() {
                                       const newValue = target.targetValue + 10;
                                       handleTargetChange(index, 'targetValue', newValue);
                                     }}
-                                    className="flex-shrink-0 w-10 h-10 flex items-center justify-center border border-gray-300 rounded-lg bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors"
+                                    className={`flex-shrink-0 w-10 h-10 flex items-center justify-center border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors ${
+                                      isDarkMode
+                                        ? 'border-gray-600 bg-gray-700 hover:bg-gray-600'
+                                        : 'border-gray-300 bg-white hover:bg-gray-50'
+                                    }`}
                                   >
                                     <span className="text-lg font-semibold text-gray-600">+</span>
                                   </button>
@@ -3307,7 +3423,11 @@ export default function OnboardingPage() {
             )}
 
             {/* Footer - Design amélioré avec plus d'espace */}
-            <div className="mt-4 md:mt-8 pt-4 md:pt-8 border-t-2 border-gray-200 bg-gradient-to-r from-gray-50 to-blue-50 rounded-xl p-4 md:p-6 -mx-4 md:-mx-0 w-full max-w-full overflow-x-hidden">
+            <div className={`mt-4 md:mt-8 pt-4 md:pt-8 border-t-2 rounded-xl p-4 md:p-6 -mx-4 md:-mx-0 w-full max-w-full overflow-x-hidden ${
+              isDarkMode
+                ? 'border-gray-700 bg-gradient-to-r from-gray-800 to-gray-800'
+                : 'border-gray-200 bg-gradient-to-r from-gray-50 to-blue-50'
+            }`}>
               <div className="max-w-7xl mx-auto">
                 <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4 md:gap-6">
                   {/* Section informative à gauche */}
@@ -3317,10 +3437,14 @@ export default function OnboardingPage() {
                         <ChartBarIcon className="w-4 h-4 md:w-5 md:h-5 text-blue-600" />
                       </div>
                       <div>
-                        <h4 className="text-sm md:text-base font-semibold text-gray-900">
+                        <h4 className={`text-sm md:text-base font-semibold ${
+                          isDarkMode ? 'text-white' : 'text-gray-900'
+                        }`}>
                           Stratégie optimisée pour vos gains
                         </h4>
-                        <p className="text-xs md:text-sm text-gray-600 mt-1">
+                        <p className={`text-xs md:text-sm mt-1 ${
+                          isDarkMode ? 'text-gray-400' : 'text-gray-600'
+                        }`}>
                           Vos cibles de profit sont calculées en temps réel pour maximiser vos rendements
                         </p>
                       </div>
@@ -3363,28 +3487,40 @@ export default function OnboardingPage() {
         if (savedPrevision) {
         return (
             <div className="space-y-4 md:space-y-6 max-w-7xl mx-auto">
-              <div className="rounded-xl p-4 md:p-6 bg-white border border-gray-200">
+              <div className={`rounded-xl p-4 md:p-6 border ${
+                isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'
+              }`}>
                 <div className="flex items-center gap-2 mb-4">
-                  <span className="px-3 py-1 rounded-full text-xs font-semibold bg-blue-100 text-blue-700">
+                  <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
+                    isDarkMode ? 'bg-blue-900/30 text-blue-400' : 'bg-blue-100 text-blue-700'
+                  }`}>
                     {savedPrevision.name}
                   </span>
                 </div>
-                <p className="text-xs md:text-sm text-gray-600 mb-4">
+                <p className={`text-xs md:text-sm mb-4 ${
+                  isDarkMode ? 'text-gray-400' : 'text-gray-600'
+                }`}>
                   Créé le {new Date(savedPrevision.createdAt).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })} - {savedPrevision.tokenCount} actifs configurés
                 </p>
 
                 {/* Métriques */}
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
                   <div>
-                    <div className="text-xs md:text-sm mb-1 text-gray-600">
+                    <div className={`text-xs md:text-sm mb-1 ${
+                      isDarkMode ? 'text-gray-400' : 'text-gray-600'
+                    }`}>
                       Total investi
                     </div>
-                    <div className="text-base md:text-lg font-bold text-gray-900">
+                    <div className={`text-base md:text-lg font-bold ${
+                      isDarkMode ? 'text-white' : 'text-gray-900'
+                    }`}>
                       {formatCurrency(savedPrevision.totalInvested)}
                     </div>
                   </div>
                   <div>
-                    <div className="text-xs md:text-sm mb-1 text-gray-600">
+                    <div className={`text-xs md:text-sm mb-1 ${
+                      isDarkMode ? 'text-gray-400' : 'text-gray-600'
+                    }`}>
                       Total encaissé
                     </div>
                     <div className="text-base md:text-lg font-bold text-green-600">
@@ -3392,7 +3528,9 @@ export default function OnboardingPage() {
                     </div>
                   </div>
                   <div>
-                    <div className="text-xs md:text-sm mb-1 text-gray-600">
+                    <div className={`text-xs md:text-sm mb-1 ${
+                      isDarkMode ? 'text-gray-400' : 'text-gray-600'
+                    }`}>
                       Profit net
                     </div>
                     <div className="text-base md:text-lg font-bold text-green-600">
@@ -3400,7 +3538,9 @@ export default function OnboardingPage() {
                     </div>
                   </div>
                   <div>
-                    <div className="text-xs md:text-sm mb-1 text-gray-600">
+                    <div className={`text-xs md:text-sm mb-1 ${
+                      isDarkMode ? 'text-gray-400' : 'text-gray-600'
+                    }`}>
                       Rendement net
                     </div>
                     <div className="text-base md:text-lg font-bold text-green-600">
@@ -3423,11 +3563,17 @@ export default function OnboardingPage() {
             )}
 
             {/* Zone A - Configuration de la prévision */}
-            <div className="rounded-xl p-4 md:p-6 bg-white border border-gray-200">
-              <h2 className="text-lg md:text-xl font-bold mb-2 text-gray-900">
+            <div className={`rounded-xl p-4 md:p-6 border ${
+              isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'
+            }`}>
+              <h2 className={`text-lg md:text-xl font-bold mb-2 ${
+                isDarkMode ? 'text-white' : 'text-gray-900'
+              }`}>
                 Stratégie globale de portfolio
               </h2>
-              <p className="text-xs md:text-sm mb-4 md:mb-6 text-gray-600">
+              <p className={`text-xs md:text-sm mb-4 md:mb-6 ${
+                isDarkMode ? 'text-gray-400' : 'text-gray-600'
+              }`}>
                 Choisissez un portfolio et renseignez un nom pour votre nouvelle stratégie globale.
               </p>
 
@@ -3467,7 +3613,9 @@ export default function OnboardingPage() {
 
             {/* Zone A - Tableau de configuration */}
             {previsionPortfolioId && previsionHoldings.length > 0 && (
-              <div className="rounded-xl p-4 md:p-6 bg-white border border-gray-200">
+              <div className={`rounded-xl p-4 md:p-6 border ${
+                isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'
+              }`}>
                 <h3 className="text-base md:text-lg font-semibold mb-2 text-gray-900">
                   Configuration
                 </h3>
@@ -3692,7 +3840,9 @@ export default function OnboardingPage() {
 
             {/* Zone B - Résultats par token */}
             {previsionPortfolioId && previsionHoldings.length > 0 && (
-              <div className="rounded-xl p-4 md:p-6 bg-white border border-gray-200">
+              <div className={`rounded-xl p-4 md:p-6 border ${
+                isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'
+              }`}>
                 <h3 className="text-base md:text-lg font-semibold mb-4 text-gray-900">
                   Résultats par token
                 </h3>
@@ -3786,7 +3936,9 @@ export default function OnboardingPage() {
 
             {/* Zone C - Résumé global */}
             {previsionPortfolioId && previsionHoldings.length > 0 && Object.keys(previsionAppliedStrategies).some(id => previsionAppliedStrategies[id] !== 'none') && (
-              <div className="rounded-xl p-4 md:p-6 bg-white border border-gray-200">
+              <div className={`rounded-xl p-4 md:p-6 border ${
+                isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'
+              }`}>
                 <h3 className="text-base md:text-lg font-semibold mb-4 text-gray-900">
                   Résumé global du wallet
                 </h3>
@@ -3848,7 +4000,9 @@ export default function OnboardingPage() {
 
             {/* Message si aucun holding */}
             {previsionPortfolioId && previsionHoldings.length === 0 && !previsionLoading && (
-              <div className="rounded-xl p-8 text-center bg-white border border-gray-200">
+              <div className={`rounded-xl p-8 text-center border ${
+              isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'
+            }`}>
                 <p className="text-sm md:text-base text-gray-600">
                   Aucun holding disponible. Ajoutez des transactions d'abord.
                 </p>
@@ -3857,7 +4011,9 @@ export default function OnboardingPage() {
 
             {/* Loading state */}
             {previsionLoading && (
-              <div className="rounded-xl p-8 text-center bg-white border border-gray-200">
+              <div className={`rounded-xl p-8 text-center border ${
+              isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'
+            }`}>
                 <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
                 <p className="text-sm md:text-base text-gray-600">
                   Chargement...
@@ -3873,9 +4029,17 @@ export default function OnboardingPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-white to-blue-50 overflow-x-hidden">
+    <div className={`min-h-screen overflow-x-hidden ${
+      isDarkMode 
+        ? 'bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900' 
+        : 'bg-gradient-to-br from-purple-50 via-white to-blue-50'
+    }`}>
       {/* Progress Bar */}
-      <div className="bg-white border-b border-gray-200">
+      <div className={`border-b ${
+        isDarkMode 
+          ? 'bg-gray-800 border-gray-700' 
+          : 'bg-white border-gray-200'
+      }`}>
         <div className="max-w-4xl mx-auto px-3 md:px-4 sm:px-6 lg:px-8 py-3 md:py-4">
           <div className="flex items-center justify-between mb-2">
             <div className="flex items-center space-x-2 md:space-x-3">
@@ -3887,7 +4051,11 @@ export default function OnboardingPage() {
             </div>
             <button
               onClick={handleSkip}
-              className="flex items-center space-x-1 md:space-x-2 text-gray-500 hover:text-gray-700 text-xs md:text-sm"
+              className={`flex items-center space-x-1 md:space-x-2 text-xs md:text-sm ${
+                isDarkMode 
+                  ? 'text-gray-400 hover:text-gray-300' 
+                  : 'text-gray-500 hover:text-gray-700'
+              }`}
             >
               <XMarkIcon className="w-4 h-4 md:w-5 md:h-5" />
               <span className="hidden sm:inline">Passer</span>
@@ -3897,19 +4065,25 @@ export default function OnboardingPage() {
             {steps.map((step, index) => (
               <div key={step.id} className="flex items-center flex-shrink-0">
                 <div className={`flex items-center space-x-1 md:space-x-2 ${
-                  index <= currentStep ? 'text-blue-600' : 'text-gray-400'
+                  index <= currentStep 
+                    ? (isDarkMode ? 'text-blue-400' : 'text-blue-600')
+                    : (isDarkMode ? 'text-gray-500' : 'text-gray-400')
                 }`}>
                   <step.icon className="w-4 h-4 md:w-5 md:h-5" />
                   <span className="text-xs md:text-sm font-medium hidden sm:inline">{step.name}</span>
                   <span className="text-xs md:text-sm font-medium sm:hidden">{step.name.substring(0, 4)}</span>
                 </div>
                 {index < steps.length - 1 && (
-                  <ArrowRightIcon className="w-3 h-3 md:w-4 md:h-4 text-gray-300 mx-2 md:mx-4" />
+                  <ArrowRightIcon className={`w-3 h-3 md:w-4 md:h-4 mx-2 md:mx-4 ${
+                    isDarkMode ? 'text-gray-600' : 'text-gray-300'
+                  }`} />
                 )}
               </div>
             ))}
           </div>
-          <div className="w-full bg-gray-200 rounded-full h-1.5 md:h-2">
+          <div className={`w-full rounded-full h-1.5 md:h-2 ${
+            isDarkMode ? 'bg-gray-700' : 'bg-gray-200'
+          }`}>
             <div 
               className="bg-gradient-to-r from-blue-600 to-purple-600 h-1.5 md:h-2 rounded-full transition-all duration-300"
               style={{ width: `${progress}%` }}
@@ -3928,7 +4102,9 @@ export default function OnboardingPage() {
                 <currentStepData.icon className="w-5 h-5 md:w-6 md:h-6 text-white" />
               </div>
               <div className="sm:ml-4 text-center sm:text-left">
-                <h1 className="text-xl md:text-2xl font-bold text-gray-900">
+                <h1 className={`text-xl md:text-2xl font-bold ${
+                  isDarkMode ? 'text-white' : 'text-gray-900'
+                }`}>
                   {currentStep === 0 && investmentSubStep === 'portfolio' && 'Création de portfolio'}
                   {currentStep === 0 && investmentSubStep === 'add-crypto' && !addCryptoMethod && 'Ajouter de la crypto'}
                   {currentStep === 0 && investmentSubStep === 'add-crypto' && addCryptoMethod === 'manual' && 'Mes investissements'}
@@ -3937,7 +4113,9 @@ export default function OnboardingPage() {
                   {currentStep === 1 && 'Créez votre première stratégie'}
                   {currentStep === 2 && 'Créez vos prévisions'}
                 </h1>
-                <div className="flex items-center justify-center sm:justify-start text-xs md:text-sm text-gray-500 mt-1">
+                <div className={`flex items-center justify-center sm:justify-start text-xs md:text-sm mt-1 ${
+                  isDarkMode ? 'text-gray-400' : 'text-gray-500'
+                }`}>
                   <ShieldCheckIcon className="w-3 h-3 md:w-4 md:h-4 mr-1" />
                   <span>1 min</span>
                 </div>
@@ -3946,7 +4124,9 @@ export default function OnboardingPage() {
           </div>
 
           {/* Step Content */}
-          <Card className="mb-4 md:mb-8">
+          <Card className={`mb-4 md:mb-8 ${
+            isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'
+          }`}>
             <CardContent className={`${currentStep === 2 ? 'p-4 md:p-6 lg:p-10' : 'p-4 md:p-6 lg:p-8'} w-full max-w-full overflow-x-hidden`}>
               {renderStepContent()}
             </CardContent>
@@ -3965,8 +4145,10 @@ export default function OnboardingPage() {
             </Button>
 
             {/* Masquer le bouton "Suivant" sur la page "Ajouter de la crypto" et "Créer la stratégie" */}
+            {/* Masquer le bouton "Terminer" dans la première partie de "Créer votre prévision" (avant sauvegarde) */}
             {!(currentStep === 0 && investmentSubStep === 'add-crypto' && !addCryptoMethod) && 
-             !(currentStep === 1) && (
+             !(currentStep === 1) &&
+             !(currentStep === 2 && !savedPrevision) && (
             <Button
               onClick={handleNext}
               disabled={isLoading}
