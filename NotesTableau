@@ -1,48 +1,113 @@
-Dans le MVP, l’interface se composait de :
-•	un écran « Stratégie globale de portefeuille » (terme qui prêtait à confusion) ;
-•	la sélection d’un portefeuille et le choix d’un nom pour cette « stratégie globale » ;
-•	un tableau listant chaque token (quantité, investissement total, prix moyen), avec un menu déroulant pour choisir une stratégie ;
-•	un panneau latéral affichant le montant encaissé, le rendement net et les tokens restants pour chaque token sélectionné ;
-•	un sous-tableau « Afficher le détail » montrant les TP (TP1, TP2, …) associés à la stratégie choisie ;
-•	un bloc « Résultats de la simulation » en bas (total investi, total encaissé, profit net, rendement net) ;
-•	des boutons pour activer alertes et ordres, qui mélangeaient projection et configuration.
+3.4 Module Dashboard
+Le Dashboard est la page d’accueil opérationnelle de l’utilisateur. Il doit fonctionner comme un cockpit crypto : clair, professionnel, lisible et adapté aux écrans larges. C’est ici que l’utilisateur visualise :
+•	l’état réel de son portefeuille (investi, valeur actuelle, gains/pertes),
+•	l’évolution de ses performances,
+•	et, grâce à la surcouche exStrat, l’impact de ses stratégies sur ses gains futurs.
+3.4.1 Objectifs du module
+1.	Vue immédiate et utile du portefeuille : capital investi, valeur actuelle, gains et pertes absolus et relatifs.
+2.	Fonctions avancées dépassant les wallet trackers classiques : distinction valeur brute vs nette, surcouche stratégique (TP, projections), indicateurs complémentaires.
+3.	Expérience fluide et puissante : ergonomie “outil pro”, hiérarchie claire, lectures multiples (tableaux, graphiques).
 
-Ce qui fonctionnait
-•	Permettre de travailler au niveau du portefeuille, non plus token par token.
-•	Affecter facilement une stratégie à chaque token existant.
-•	Voir les résultats par token puis globalement.
-•	Rester cohérent avec les stratégies définies dans le module Stratégies.
-•	Offrir un résumé clair (total investi, total encaissé, profit, rendement).
-Les limites constatées
-•	Wording confus (« stratégie globale » au lieu de prévision).
-•	Inputs et résultats mélangés dans le même tableau → l’utilisateur ne sait pas ce qui est à saisir ou ce qui est calculé.
-•	Hiérarchie peu claire : paramètres, détail des TP et résultats empilés au même endroit.
-•	Cause-effet peu explicitée : sélectionner une stratégie n’était pas lié visuellement au résultat global, et le bouton « Simuler » ajoutait de la confusion.
-•	Espace mal utilisé : tout était compressé, sans panneaux distincts.
-•	Mélange projection / configuration : les boutons “Activer alertes” et “Activer ordres de vente” à cet endroit n’étaient pas pertinents (désormais géré dans le module Configuration).
+3.4.2 Structure générale du Dashboard (V1)
+Pour plus de lisibilité, le Dashboard est divisé en cinq blocs :
+1.	Bloc A – Résumé global du wallet
+2.	Bloc B – Graphique d’évolution du portefeuille
+3.	Bloc C – Tableau des tokens
+4.	Bloc D – Visualisations graphiques complémentaires
+5.	Bloc E – Surcouche Stratégies & Prévisions (uniquement si une prévision est sélectionnée)
 
-3.3.3 Prévisions V1 : objectifs et structure
-Nous conservons la logique métier, mais avec une interface plus simple, plus lisible et modulaire.
-A. Wording et rôle
-•	Nom clair : « Prévisions ».
-•	Objet principal : prévision de wallet.
-•	Distinction claire :
-o	Stratégies → définir des plans de prise de profit par token.
-o	Prévisions → assembler ces plans pour projeter un portefeuille entier.
-B. Écran “Créer une prévision” (V1)
-Zone A – Configuration de la prévision (inputs)
-•	Choix du wallet.
-•	Nom de la prévision (ex. « Bullrun 2025 », « Scénario conservateur »).
-•	Tableau listant les tokens du wallet (quantité, montant investi, prix moyen, etc.).
-•	Pour chaque token : menu déroulant pour choisir une stratégie existante.
-•	Si aucune stratégie n’est disponible → message d’aide avec lien vers le module Stratégies.
-Zone B – Résultats par token (outputs locaux)
-•	Séparation visuelle claire : aucun input ici.
-•	Pour chaque token + stratégie : affichage immédiat du montant encaissé, du rendement net et des tokens restants (avec leur valeur).
-•	Possibilité de déplier une ligne pour voir les détails (TP1, TP2, TP3…).
-•	Objectif : comprendre d’un coup d’œil l’impact de chaque stratégie, sans quitter l’écran.
-Zone C – Résumé global du wallet (outputs globaux)
-•	Bloc de synthèse : total investi, total encaissé, profit net projeté, rendement net global, valeur des tokens restants.
-•	En V1, un résumé chiffré simple est suffisant.
-•	À terme, un graphique pourra être ajouté pour visualiser l’évolution du portefeuille (voir section vision long terme).
-À noter sur le recalcul : pour ne pas ajouter d’étapes inutiles, un recalcul en temps réel est préférable. Un bouton “Mettre à jour la prévision” pourrait être envisagé uniquement si cela clarifie la charge cognitive, mais l’expérience doit rester fluide et sans friction.
+
+
+
+3.4.3 Bloc A – Résumé global du wallet
+Lorsqu’un wallet est choisi, afficher :
+•	capital investi ;
+•	valeur actuelle du portefeuille ;
+•	PNL absolu (gains/pertes en monnaie) ;
+•	PNL relatif (%).
+Utiliser un code couleur sobre et professionnel : vert pour les gains, rouge pour les pertes.
+3.4.4 Bloc B – Graphique d’évolution du portefeuille
+Le graphique principal doit superposer deux courbes :
+•	Valeur brute : somme (prix actuel × quantité totale).
+•	Valeur nette : valeur brute – total investi cumulé.
+Objectif : distinguer clairement les apports financiers des gains de marché.
+Exigences UX :
+•	courbes lisibles ;
+•	tooltip comparatif (Brute, Nette, Investi) ;
+•	prévoir des plages de temps sélectionnables (24 h, 7 j, 30 j, YTD, All).
+
+3.4.5 Bloc C – Tableau des tokens
+Ce tableau liste chaque token du wallet, avec :
+•	logo ;
+•	symbole (ex. BTC, ETH) ;
+•	quantité totale détenue ;
+•	montant investi ;
+•	valeur actuelle ;
+•	PNL absolu (vert/rouge) ;
+•	PNL relatif (%).
+Le tableau doit être triable, clair et cohérent avec le module “Investissements”. Chaque ligne est cliquable pour accéder à la surcouche Stratégies (Bloc E).
+
+3.4.6 Bloc D – Visualisations graphiques complémentaires
+Ce bloc présente des graphiques pour saisir rapidement la structure et les performances du portefeuille.
+1. Diagramme camembert – Répartition du portefeuille
+•	Représente le pourcentage de chaque token dans le portefeuille.
+•	Utiliser des couleurs harmonisées avec le tableau.
+À terme, lorsque la connexion aux exchanges sera active, un second camembert pourra montrer la répartition par stockage (sur quel exchange ou hardware wallet les tokens sont répartis).
+
+
+2. Histogramme “gains / pertes par token”
+•	Barres verticales ou horizontales montrant pour chaque token si la performance est en gain ou en perte (couleurs vert/rouge).
+•	Donne une lecture immédiate des performances individuelles.
+
+
+3. Histogramme “valorisation des actifs à l’achat vs valeur réelle”
+•	Compare, pour chaque token, sa valeur à l’achat et sa valeur actuelle.
+•	Permet de visualiser l’appréciation ou la dépréciation de chaque actif.
+(Plus tard, ce diagramme pourra intégrer une troisième barre « valeur projetée » issue des TP de la stratégie, voir Bloc E.)
+
+3.4.7 Bloc E – Surcouche Stratégies & Prévisions
+Ce bloc s’affiche uniquement si l’utilisateur sélectionne une prévision via un menu déroulant.
+Si aucune prévision n’a été créée, on reste sur les blocs A – D. Si une prévision est configurée (notamment celle utilisée pour les alertes), elle est appliquée par défaut.
+E1 – Sélecteur de prévision active
+•	Menu listant toutes les prévisions pour ce wallet, avec indication de la stratégie “principale” (celle activée dans Configuration).
+E2 – Résultats globaux projetés
+•	Valeur actuelle du wallet.
+•	Valeur projetée si tous les TP sont atteints.
+•	Ces chiffres doivent insuffler un sentiment positif (dopamine), tout en restant sobres.
+E3 – Colonnes supplémentaires dans le tableau des tokens
+Chaque token bénéficie de nouvelles colonnes :
+•	Nombre total de TP (paliers) ;
+•	Icônes de TP :
+o	coché (TP atteint),
+o	vide (TP à venir),
+o	couleur chaude/froide (distance au TP) ;
+•	Pourcentage de complétude de la stratégie ;
+•	(Plus tard) état de l’ordre actif (oui/non).
+E4 – Encarts détaillés lors du clic sur un token
+•	Récap des TP : liste les seuils (TP1, TP2…), pourcentage ou quantité vendue, montant projeté, progression.
+•	Mini-graphique du cours : barres horizontales indiquant le prix actuel, l’emplacement de chaque TP et la distance restante.
+Graphique simple, lisible et professionnel.
+(Ces encarts reprennent la logique du module Stratégies pour plus de cohérence.)
+E5 – Extension de l’histogramme “achat vs réel vs projeté”
+Pour chaque token, on pourra ajouter une troisième barre “valeur projetée”, calculée à partir de la stratégie sélectionnée (TP).
+Cela affiche simultanément la valeur à l’achat, la valeur actuelle et la valeur future supposée.
+
+3.4.8 Cohérence avec Prévisions et Configuration
+Le Dashboard doit toujours refléter :
+•	la prévision active (choisie dans Prévisions) ;
+•	la stratégie principale (celle sur laquelle des alertes/ordres sont configurés) ;
+•	l’état des ordres (V2).
+Si un utilisateur modifie une stratégie déjà utilisée, un système de warning (géré dans le module Configuration) avertira des impacts. Le Dashboard doit rester robuste et synchronisé.
+
+3.4.9 Synthèse
+Le module Dashboard doit être :
+•	un cockpit crypto clair, puissant et professionnel ;
+•	cohérent avec Stratégies (pour la logique de paliers et de projections) ;
+•	capable de mêler données d’investissement et données stratégiques sans surcharge ;
+•	modulable et extensible, desktop-first ;
+•	structuré en blocs distincts, chacun ayant un rôle précis.
+Le designer est libre de proposer la mise en page la plus intuitive possible, pourvu que :
+•	la hiérarchie des informations soit nette ;
+•	la lecture soit fluide et immédiate ;
+•	l’impact visuel soit présent sans être confus ;
+•	la surcouche stratégique (Bloc E) reste facile à comprendre.
