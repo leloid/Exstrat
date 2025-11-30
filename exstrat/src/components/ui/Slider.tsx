@@ -17,6 +17,8 @@ const Slider = React.forwardRef<HTMLInputElement, SliderProps>(
       }
     };
 
+    const style = props.style || {};
+    
     return (
       <input
         type="range"
@@ -26,7 +28,11 @@ const Slider = React.forwardRef<HTMLInputElement, SliderProps>(
         step={step}
         value={value[0]}
         onChange={handleChange}
-        className={`w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-blue-600 ${className}`}
+        className={`w-full h-2 rounded-lg appearance-none cursor-pointer accent-blue-600 ${className}`}
+        style={{
+          background: style.background || 'transparent',
+          ...style,
+        }}
         {...props}
       />
     )

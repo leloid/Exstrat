@@ -3131,24 +3131,33 @@ export default function OnboardingPage() {
                               Quantité à vendre
                               </Label>
                             <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:gap-4">
-                              <div className="flex-1">
-                                <Slider
-                                  id={`sellPercentage-${index}`}
-                                  min={0}
-                                  max={(() => {
-                                    // Calculer le maximum possible pour cette cible
-                                    const otherTargetsTotal = profitTargets.reduce((sum, t, idx) => 
-                                      idx === index ? sum : sum + t.sellPercentage, 0
-                                    );
-                                    return Math.min(100, 100 - otherTargetsTotal);
-                                  })()}
-                                  step={0.1}
-                                  value={[target.sellPercentage]}
-                                  onValueChange={(value) => 
-                                    handleTargetChange(index, 'sellPercentage', value[0])
-                                  }
-                                  className="w-full"
-                                />
+                              <div className="flex-1 relative">
+                                {/* Barre de fond grise */}
+                                <div className="absolute inset-0 flex items-center">
+                                  <div className="w-full h-2 rounded-lg bg-gray-200" />
+                                </div>
+                                
+                                {/* Slider par-dessus avec fond transparent */}
+                                <div className="relative z-10">
+                                  <Slider
+                                    id={`sellPercentage-${index}`}
+                                    min={0}
+                                    max={100}
+                                    step={0.1}
+                                    value={[target.sellPercentage]}
+                                    onValueChange={(value) => {
+                                      const otherTargetsTotal = profitTargets.reduce((sum, t, idx) => 
+                                        idx === index ? sum : sum + t.sellPercentage, 0
+                                      );
+                                      const maxValue = Math.max(0, 100 - otherTargetsTotal);
+                                      handleTargetChange(index, 'sellPercentage', Math.min(value[0], maxValue));
+                                    }}
+                                    className="w-full slider-transparent"
+                                    style={{
+                                      background: 'transparent',
+                                    }}
+                                  />
+                                </div>
                               </div>
                               <div className="w-full sm:w-32 flex items-center gap-2">
                                 <Input
