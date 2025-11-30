@@ -14,7 +14,9 @@ import {
   SparklesIcon,
   AdjustmentsHorizontalIcon,
   Bars3Icon,
-  XMarkIcon
+  XMarkIcon,
+  ChevronLeftIcon,
+  ChevronRightIcon
 } from '@heroicons/react/24/outline';
 
 // SVG personnalisés pour le dashboard
@@ -55,11 +57,13 @@ export default function Sidebar({ activeTab, onTabChange, isDarkMode = true }: S
   const userMenuRef = useRef<HTMLDivElement>(null);
 
   const navigation = [
-    { id: 'dashboard', name: 'Dashboard', href: '/dashboard', icon: DashboardIcon },
-    { id: 'investissements', name: 'Investissements', href: '/investissements', icon: PortfolioIcon },
-    { id: 'strategies', name: 'Stratégies', href: '/strategies', icon: StrategyIcon },
-    { id: 'config', name: 'Prévisions', href: '/prevision', icon: ConfigIcon },
+    { id: 'dashboard', name: 'Dashboard', emoji: '📊', href: '/dashboard', icon: DashboardIcon },
+    { id: 'investissements', name: 'Investissements', emoji: '💼', href: '/investissements', icon: PortfolioIcon },
+    { id: 'strategies', name: 'Stratégies', emoji: '✨', href: '/strategies', icon: StrategyIcon },
+    { id: 'config', name: 'Prévisions', emoji: '📈', href: '/prevision', icon: ConfigIcon },
   ];
+
+  const [isExpanded, setIsExpanded] = useState(false);
 
   const handleSignOut = async () => {
     try {
@@ -86,20 +90,47 @@ export default function Sidebar({ activeTab, onTabChange, isDarkMode = true }: S
   return (
     <>
       {/* Sidebar Desktop */}
-      <div className={`hidden md:flex w-16 flex-col items-center py-6 ${isDarkMode ? 'bg-gray-800' : 'bg-white border-r border-gray-200'}`}>
-        {/* Logo ExStrat */}
-        <div className="mb-8">
-          <Image 
-            src={isDarkMode ? "/logo_dark.svg" : "/logo_light.svg"}
-            alt="ExStrat Logo"
-            width={32}
-            height={32}
-            className="w-8 h-8"
-          />
+      <div className={`hidden md:flex ${isExpanded ? 'w-64' : 'w-20'} flex-col ${isExpanded ? 'items-start px-4' : 'items-center'} py-6 transition-all duration-300 ${isDarkMode ? 'bg-gray-800' : 'bg-white border-r border-gray-200'}`}>
+        {/* Logo ExStrat et bouton toggle */}
+        <div className={`mb-8 flex items-center ${isExpanded ? 'w-full justify-between' : 'justify-center'}`}>
+          {isExpanded && (
+            <div className="flex items-center gap-2">
+              <Image 
+                src="/logo_dark.svg"
+                alt="ExStrat Logo"
+                width={32}
+                height={32}
+                className="w-8 h-8"
+              />
+              <span className={`text-lg font-bold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+                ExStrat
+              </span>
+            </div>
+          )}
+          {!isExpanded && (
+            <Image 
+              src="/logo_dark.svg"
+              alt="ExStrat Logo"
+              width={32}
+              height={32}
+              className="w-8 h-8"
+            />
+          )}
+          <button
+            onClick={() => setIsExpanded(!isExpanded)}
+            className={`p-1.5 rounded-lg transition-colors ${isDarkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-100'}`}
+            title={isExpanded ? 'Réduire' : 'Développer'}
+          >
+            {isExpanded ? (
+              <ChevronLeftIcon className={`h-5 w-5 ${isDarkMode ? 'text-white' : 'text-gray-700'}`} />
+            ) : (
+              <ChevronRightIcon className={`h-5 w-5 ${isDarkMode ? 'text-white' : 'text-gray-700'}`} />
+            )}
+          </button>
         </div>
         
         {/* Navigation */}
-        <div className="flex flex-col gap-4">
+        <div className="flex flex-col gap-2 w-full">
           {navigation.map((item) => {
             const IconComponent = item.icon;
             return (
@@ -109,32 +140,47 @@ export default function Sidebar({ activeTab, onTabChange, isDarkMode = true }: S
                   onTabChange(item.id);
                   router.push(item.href);
                 }}
-                className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors ${
-                  activeTab === item.id ? 'bg-purple-600' : (isDarkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-100')
+                className={`${isExpanded ? 'w-full px-4 py-3 rounded-lg flex items-center gap-3' : 'w-12 h-12 rounded-lg flex items-center justify-center'} transition-colors ${
+                  activeTab === item.id 
+                    ? isExpanded 
+                      ? 'bg-purple-600 text-white' 
+                      : 'bg-purple-600'
+                    : (isDarkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-100')
                 }`}
-                title={item.name}
+                title={!isExpanded ? item.name : undefined}
               >
-                <IconComponent isDark={isDarkMode} />
+                {!isExpanded && <IconComponent isDark={isDarkMode} />}
+                {isExpanded && (
+                  <span className={`font-medium text-lg ${activeTab === item.id ? 'text-white' : (isDarkMode ? 'text-white' : 'text-gray-700')}`}>
+                    <span className="mr-2 text-xl">{item.emoji}</span>
+                    {item.name}
+                  </span>
+                )}
               </button>
             );
           })}
         </div>
         
         {/* Menu utilisateur */}
-        <div className="mt-auto relative" ref={userMenuRef}>
+        <div className={`mt-auto ${isExpanded ? 'w-full' : 'relative'}`} ref={userMenuRef}>
           <button
             onClick={() => setShowUserMenu(!showUserMenu)}
-            className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors ${
+            className={`${isExpanded ? 'w-full px-4 py-3 rounded-lg flex items-center gap-3' : 'w-12 h-12 rounded-lg flex items-center justify-center'} transition-colors ${
               isDarkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-100'
             }`}
-            title={user?.email || 'Utilisateur'}
+            title={!isExpanded ? (user?.email || 'Utilisateur') : undefined}
           >
-            <UserCircleIcon className={`h-6 w-6 ${isDarkMode ? 'text-white' : 'text-gray-700'}`} />
+            {!isExpanded && <UserCircleIcon className={`h-6 w-6 ${isDarkMode ? 'text-white' : 'text-gray-700'}`} />}
+            {isExpanded && (
+              <span className={`font-medium ${isDarkMode ? 'text-white' : 'text-gray-700'}`}>
+                {user?.email || 'Utilisateur'}
+              </span>
+            )}
           </button>
 
           {/* Menu déroulant */}
           {showUserMenu && (
-            <div className={`absolute bottom-16 left-0 mb-2 w-56 rounded-lg shadow-lg border ${
+            <div className={`absolute ${isExpanded ? 'bottom-16 left-0' : 'bottom-16 left-0'} mb-2 w-56 rounded-lg shadow-lg border ${
               isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'
             }`}>
               <div className="py-2">
@@ -194,7 +240,7 @@ export default function Sidebar({ activeTab, onTabChange, isDarkMode = true }: S
           {/* Header avec logo et bouton fermer */}
           <div className="flex items-center justify-between px-4 mb-8">
             <Image 
-              src={isDarkMode ? "/logo_dark.svg" : "/logo_light.svg"}
+              src="/logo_dark.svg"
               alt="ExStrat Logo"
               width={32}
               height={32}

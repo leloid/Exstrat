@@ -5,13 +5,8 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import { 
-  MagnifyingGlassIcon,
-  BellIcon,
   UserCircleIcon,
-  Cog6ToothIcon,
   ArrowRightOnRectangleIcon,
-  SunIcon,
-  MoonIcon,
   LanguageIcon
 } from '@heroicons/react/24/outline';
 
@@ -22,7 +17,7 @@ interface TopBarProps {
 export default function TopBar({ currentPageName }: TopBarProps) {
   const router = useRouter();
   const { user, signOut } = useAuth();
-  const { isDarkMode, language, toggleDarkMode, setLanguage } = useTheme();
+  const { isDarkMode, language, setLanguage } = useTheme();
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [showLanguageMenu, setShowLanguageMenu] = useState(false);
   const userMenuRef = useRef<HTMLDivElement>(null);
@@ -90,39 +85,6 @@ export default function TopBar({ currentPageName }: TopBarProps) {
       </div>
       
       <div className="flex items-center gap-2 md:gap-4">
-        <div className="relative hidden md:block">
-          <MagnifyingGlassIcon className="h-5 w-5 text-gray-400 absolute left-3 top-1/2 transform -translate-y-1/2" />
-          <input
-            type="text"
-            placeholder={language === 'fr' ? 'Rechercher' : 'Search'}
-            className={`px-10 py-2 rounded-lg w-64 ${
-              isDarkMode 
-                ? 'bg-gray-700 text-white placeholder-gray-400' 
-                : 'bg-gray-100 text-gray-900 placeholder-gray-500 border border-gray-300'
-            }`}
-          />
-        </div>
-        
-        {/* Bouton recherche mobile */}
-        <button className={`md:hidden p-2 rounded-lg ${isDarkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-100'}`}>
-          <MagnifyingGlassIcon className={`h-5 w-5 ${isDarkMode ? 'text-white' : 'text-gray-700'}`} />
-        </button>
-        
-        {/* Mode sombre/clair */}
-        <button 
-          onClick={toggleDarkMode}
-          className={`p-2 rounded-lg transition-colors ${
-            isDarkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-100'
-          }`}
-          title={language === 'fr' ? 'Changer le thème' : 'Toggle theme'}
-        >
-          {isDarkMode ? (
-            <SunIcon className="h-5 w-5 text-yellow-400" />
-          ) : (
-            <MoonIcon className="h-5 w-5 text-gray-700" />
-          )}
-        </button>
-        
         {/* Sélecteur de langue */}
         <div className="relative" ref={languageMenuRef}>
           <button
@@ -188,13 +150,6 @@ export default function TopBar({ currentPageName }: TopBarProps) {
           )}
         </div>
         
-        <button className={`relative p-2 rounded-lg transition-colors ${
-          isDarkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-100'
-        }`}>
-          <BellIcon className={`h-5 w-5 ${isDarkMode ? 'text-white' : 'text-gray-700'}`} />
-          <div className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></div>
-        </button>
-        
         {/* Menu utilisateur */}
         <div className="relative" ref={userMenuRef}>
           <button
@@ -234,20 +189,6 @@ export default function TopBar({ currentPageName }: TopBarProps) {
                     >
                       <UserCircleIcon className={`h-5 w-5 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`} />
                       {language === 'fr' ? 'Mon profil' : 'My Profile'}
-                    </button>
-                    <button 
-                      onClick={() => {
-                        router.push('/settings');
-                        setShowUserMenu(false);
-                      }}
-                      className={`flex items-center gap-3 w-full px-4 py-2 transition-colors ${
-                        isDarkMode 
-                          ? 'text-gray-300 hover:bg-gray-700' 
-                          : 'text-gray-700 hover:bg-gray-100'
-                      }`}
-                    >
-                      <Cog6ToothIcon className={`h-5 w-5 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`} />
-                      {language === 'fr' ? 'Paramètres' : 'Settings'}
                     </button>
                     <hr className={`my-1 ${isDarkMode ? 'border-gray-700' : 'border-gray-200'}`} />
                     <button 
