@@ -368,6 +368,11 @@ export default function DashboardPage() {
                       <BlocB_EvolutionPortfolio data={evolutionData} />
                   </div>
                     
+                    {/* Graphique Gains/Pertes ou Valorisation - juste en dessous du graphique d'évolution */}
+                    <div className="mt-3">
+                      <BlocD_HistogrammeValorisation holdings={displayHoldings} compact={true} />
+                    </div>
+                    
                     {/* Tableau des tokens - collé juste en dessous sans espace */}
                     <div className="-mt-3">
                       <BlocC_TableauTokens
@@ -392,9 +397,6 @@ export default function DashboardPage() {
                   <div className="xl:col-span-4 space-y-3">
                     {/* Visualisations compactes */}
                     <BlocD_VisualisationsCompact holdings={displayHoldings} />
-                    
-                    {/* Histogramme valorisation */}
-                    <BlocD_HistogrammeValorisation holdings={displayHoldings} compact={true} />
                 </div>
               </div>
 

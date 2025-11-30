@@ -6,15 +6,10 @@ import {
   Pie,
   Cell,
   ResponsiveContainer,
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  CartesianGrid,
   Tooltip,
 } from 'recharts';
 import { useTheme } from '@/contexts/ThemeContext';
-import { formatCurrency, formatPercentage } from '@/lib/format';
+import { formatCurrency } from '@/lib/format';
 import { Holding } from '@/types/portfolio';
 
 interface BlocDCompactProps {
@@ -81,24 +76,6 @@ export const BlocD_VisualisationsCompact: React.FC<BlocDCompactProps> = ({ holdi
       .slice(0, 8); // Limiter à 8 tokens pour la version compacte
   }, [holdings]);
 
-  // Préparer les données pour l'histogramme gains/pertes (top 5)
-  const pnlData = useMemo(() => {
-    return holdings
-      .map((holding) => {
-        const currentValue = holding.currentValue || (holding.currentPrice || holding.averagePrice) * holding.quantity;
-        const pnl = currentValue - holding.investedAmount;
-        const pnlPercentage = holding.investedAmount > 0 ? (pnl / holding.investedAmount) * 100 : 0;
-        
-        return {
-          symbol: holding.token.symbol,
-          pnlPercentage,
-          pnl,
-          color: pnlPercentage >= 0 ? '#10b981' : '#ef4444',
-        };
-      })
-      .sort((a, b) => Math.abs(b.pnlPercentage) - Math.abs(a.pnlPercentage))
-      .slice(0, 5); // Top 5 seulement
-  }, [holdings]);
 
   const CustomTooltip = ({ active, payload }: any) => {
     if (active && payload && payload.length) {
@@ -199,53 +176,6 @@ export const BlocD_VisualisationsCompact: React.FC<BlocDCompactProps> = ({ holdi
             ))}
           </div>
         )}
-      </div>
-
-      {/* 2. Histogramme gains / pertes par token (top 5) */}
-      <div className={`rounded-lg p-3 ${isDarkMode ? 'bg-gray-800 border border-gray-700' : 'bg-white border border-gray-200'}`}>
-        <h3 className={`text-xs font-semibold mb-2 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-          {language === 'fr' ? 'Top 5 Gains/Pertes' : 'Top 5 Gains/Losses'}
-        </h3>
-        <ResponsiveContainer width="100%" height={140}>
-          <BarChart data={pnlData} layout="vertical" margin={{ top: 5, right: 10, left: 40, bottom: 5 }}>
-            <CartesianGrid strokeDasharray="3 3" stroke={isDarkMode ? '#374151' : '#e5e7eb'} />
-            <XAxis
-              type="number"
-              stroke={isDarkMode ? '#9ca3af' : '#6b7280'}
-              tick={{ fill: isDarkMode ? '#9ca3af' : '#6b7280', fontSize: 12 }}
-              tickFormatter={(value) => formatPercentage(value)}
-            />
-            <YAxis
-              type="category"
-              dataKey="symbol"
-              stroke={isDarkMode ? '#9ca3af' : '#6b7280'}
-              tick={{ fill: isDarkMode ? '#9ca3af' : '#6b7280', fontSize: 12 }}
-              width={45}
-            />
-            <Tooltip
-              content={({ active, payload }) => {
-                if (active && payload && payload.length) {
-                  const data = payload[0].payload;
-                  return (
-                    <div className={`rounded-lg p-3 shadow-lg ${isDarkMode ? 'bg-gray-800 border border-gray-700' : 'bg-white border border-gray-200'}`}>
-                      <div className={`text-sm ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-                        <div className="font-semibold">{data.symbol}</div>
-                        <div>{formatPercentage(data.pnlPercentage)}</div>
-                        <div>{formatCurrency(data.pnl)}</div>
-                      </div>
-                    </div>
-                  );
-                }
-                return null;
-              }}
-            />
-            <Bar dataKey="pnlPercentage" radius={[0, 4, 4, 0]}>
-              {pnlData.map((entry, index) => (
-                <Cell key={`cell-${index}`} fill={entry.color} />
-              ))}
-            </Bar>
-          </BarChart>
-        </ResponsiveContainer>
       </div>
     </div>
   );
