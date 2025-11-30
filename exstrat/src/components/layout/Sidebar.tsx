@@ -57,10 +57,10 @@ export default function Sidebar({ activeTab, onTabChange, isDarkMode = true }: S
   const userMenuRef = useRef<HTMLDivElement>(null);
 
   const navigation = [
-    { id: 'dashboard', name: 'Dashboard', emoji: '📊', href: '/dashboard', icon: DashboardIcon },
-    { id: 'investissements', name: 'Investissements', emoji: '💼', href: '/investissements', icon: PortfolioIcon },
-    { id: 'strategies', name: 'Stratégies', emoji: '✨', href: '/strategies', icon: StrategyIcon },
-    { id: 'config', name: 'Prévisions', emoji: '📈', href: '/prevision', icon: ConfigIcon },
+    { id: 'dashboard', name: 'Dashboard', href: '/dashboard', icon: DashboardIcon },
+    { id: 'investissements', name: 'Investissements', href: '/investissements', icon: PortfolioIcon },
+    { id: 'strategies', name: 'Stratégies', href: '/strategies', icon: StrategyIcon },
+    { id: 'config', name: 'Prévisions', href: '/prevision', icon: ConfigIcon },
   ];
 
   const [isExpanded, setIsExpanded] = useState(false);
@@ -149,7 +149,7 @@ export default function Sidebar({ activeTab, onTabChange, isDarkMode = true }: S
                 }`}
                 title={!isExpanded ? item.name : undefined}
               >
-                {!isExpanded && <IconComponent isDark={isDarkMode} />}
+                <IconComponent isDark={isDarkMode} />
                 {isExpanded && (
                   <span className={`font-medium text-lg ${activeTab === item.id ? 'text-white' : (isDarkMode ? 'text-white' : 'text-gray-700')}`}>
                     <span className="mr-2 text-xl">{item.emoji}</span>
@@ -170,7 +170,7 @@ export default function Sidebar({ activeTab, onTabChange, isDarkMode = true }: S
             }`}
             title={!isExpanded ? (user?.email || 'Utilisateur') : undefined}
           >
-            {!isExpanded && <UserCircleIcon className={`h-6 w-6 ${isDarkMode ? 'text-white' : 'text-gray-700'}`} />}
+            <UserCircleIcon className={`h-6 w-6 ${isDarkMode ? 'text-white' : 'text-gray-700'}`} />
             {isExpanded && (
               <span className={`font-medium ${isDarkMode ? 'text-white' : 'text-gray-700'}`}>
                 {user?.email || 'Utilisateur'}
