@@ -10,7 +10,7 @@ import type { ForecastResponse } from '@/lib/portfolios-api';
 import type { TheoreticalStrategyResponse } from '@/types/strategies';
 
 interface BlocEProps {
-  portfolioId: string;
+  portfolioId?: string;
   holdings: Holding[];
   onClose?: () => void;
 }
@@ -41,7 +41,10 @@ export const BlocE_StrategiesPrevisions: React.FC<BlocEProps> = ({
       try {
         setLoading(true);
         const data = await portfoliosApi.getForecasts();
-        const portfolioForecasts = data.filter(f => f.portfolioId === portfolioId);
+        // Si portfolioId est undefined, on charge toutes les prévisions (vue globale)
+        const portfolioForecasts = portfolioId 
+          ? data.filter(f => f.portfolioId === portfolioId)
+          : data;
         setForecasts(portfolioForecasts);
         
         // Réinitialiser la sélection quand le portfolio change
