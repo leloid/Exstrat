@@ -121,17 +121,61 @@ export default function Sidebar({ activeTab, onTabChange, isDarkMode = true }: S
           })}
         </div>
         
-        {/* Déconnexion */}
-        <div className="mt-auto">
-          <button 
-            onClick={handleSignOut}
+        {/* Menu utilisateur */}
+        <div className="mt-auto relative" ref={userMenuRef}>
+          <button
+            onClick={() => setShowUserMenu(!showUserMenu)}
             className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors ${
               isDarkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-100'
             }`}
-            title="Se déconnecter"
+            title={user?.email || 'Utilisateur'}
           >
-            <PowerIcon className={`h-5 w-5 ${isDarkMode ? 'text-white' : 'text-gray-700'}`} />
+            <UserCircleIcon className={`h-6 w-6 ${isDarkMode ? 'text-white' : 'text-gray-700'}`} />
           </button>
+
+          {/* Menu déroulant */}
+          {showUserMenu && (
+            <div className={`absolute bottom-16 left-0 mb-2 w-56 rounded-lg shadow-lg border ${
+              isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'
+            }`}>
+              <div className="py-2">
+                {/* Email utilisateur */}
+                <div className={`px-4 py-2 border-b ${isDarkMode ? 'border-gray-700' : 'border-gray-200'}`}>
+                  <p className={`text-sm font-medium ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+                    {user?.email || 'Utilisateur'}
+                  </p>
+                </div>
+
+                {/* Réglages */}
+                <button
+                  onClick={() => {
+                    router.push('/settings');
+                    setShowUserMenu(false);
+                  }}
+                  className={`w-full flex items-center gap-3 px-4 py-2 text-left transition-colors ${
+                    isDarkMode ? 'hover:bg-gray-700 text-gray-300' : 'hover:bg-gray-100 text-gray-700'
+                  }`}
+                >
+                  <Cog6ToothIcon className="h-5 w-5" />
+                  <span className="text-sm">Réglages</span>
+                </button>
+
+                {/* Déconnexion */}
+                <button
+                  onClick={() => {
+                    handleSignOut();
+                    setShowUserMenu(false);
+                  }}
+                  className={`w-full flex items-center gap-3 px-4 py-2 text-left transition-colors ${
+                    isDarkMode ? 'hover:bg-gray-700 text-gray-300' : 'hover:bg-gray-100 text-gray-700'
+                  }`}
+                >
+                  <ArrowRightOnRectangleIcon className="h-5 w-5" />
+                  <span className="text-sm">Se déconnecter</span>
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
@@ -190,15 +234,35 @@ export default function Sidebar({ activeTab, onTabChange, isDarkMode = true }: S
             })}
           </div>
 
-          {/* Déconnexion */}
-          <div className="mt-auto px-4">
+          {/* Menu utilisateur mobile */}
+          <div className="mt-auto px-4 space-y-2">
+            {/* Réglages */}
+            <button
+              onClick={() => {
+                router.push('/settings');
+                setIsMobileMenuOpen(false);
+              }}
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
+                activeTab === 'settings'
+                  ? 'bg-purple-600 text-white'
+                  : (isDarkMode ? 'text-gray-300 hover:bg-gray-700' : 'text-gray-700 hover:bg-gray-100')
+              }`}
+            >
+              <Cog6ToothIcon className="h-5 w-5" />
+              <span className="font-medium">Réglages</span>
+            </button>
+
+            {/* Déconnexion */}
             <button 
-              onClick={handleSignOut}
+              onClick={() => {
+                handleSignOut();
+                setIsMobileMenuOpen(false);
+              }}
               className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
                 isDarkMode ? 'text-gray-300 hover:bg-gray-700' : 'text-gray-700 hover:bg-gray-100'
               }`}
             >
-              <PowerIcon className={`h-5 w-5`} />
+              <ArrowRightOnRectangleIcon className="h-5 w-5" />
               <span className="font-medium">Se déconnecter</span>
             </button>
           </div>

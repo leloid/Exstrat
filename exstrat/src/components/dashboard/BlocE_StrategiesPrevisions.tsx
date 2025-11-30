@@ -44,8 +44,12 @@ export const BlocE_StrategiesPrevisions: React.FC<BlocEProps> = ({
         const portfolioForecasts = data.filter(f => f.portfolioId === portfolioId);
         setForecasts(portfolioForecasts);
         
+        // Réinitialiser la sélection quand le portfolio change
+        setSelectedForecastId(null);
+        setSelectedToken(null);
+        
         // Sélectionner la première prévision par défaut si disponible
-        if (portfolioForecasts.length > 0 && !selectedForecastId) {
+        if (portfolioForecasts.length > 0) {
           setSelectedForecastId(portfolioForecasts[0].id);
         }
       } catch (error) {
@@ -59,22 +63,115 @@ export const BlocE_StrategiesPrevisions: React.FC<BlocEProps> = ({
   }, [portfolioId]);
 
   // Charger les stratégies théoriques et les associer aux holdings
+  const [strategiesMap, setStrategiesMap] = useState<Map<string, TheoreticalStrategyResponse>>(new Map());
+
+  const selectedForecast = forecasts.find(f => f.id === selectedForecastId);
+
+  // Charger les stratégies quand la prévision sélectionnée change
+  useEffect(() => {
+    const loadStrategies = async () => {
+      if (!selectedForecastId || !selectedForecast) {
+        setStrategiesMap(new Map());
+        return;
+      }
+
+      try {
+        const appliedStrategies = selectedForecast.appliedStrategies || {};
+        const strategyIds = Object.values(appliedStrategies);
+        
+        if (strategyIds.length === 0) {
+          setStrategiesMap(new Map());
+          return;
+        }
+
+        // Charger toutes les stratégies théoriques
+        const allStrategies = await portfoliosApi.getTheoreticalStrategies();
+        const strategiesById = new Map<string, TheoreticalStrategyResponse>();
+        
+        // Filtrer et mapper les stratégies appliquées
+        strategyIds.forEach(strategyId => {
+          const strategy = allStrategies.find(s => s.id === strategyId);
+          if (strategy) {
+            strategiesById.set(strategyId, strategy);
+          }
+        });
+
+        setStrategiesMap(strategiesById);
+      } catch (error) {
+        console.error('Erreur lors du chargement des stratégies:', error);
+        setStrategiesMap(new Map());
+      }
+    };
+
+    loadStrategies();
+  }, [selectedForecastId, selectedForecast]);
+
+  // Associer les stratégies aux holdings
   const tokensWithStrategies = useMemo(() => {
-    return holdings.map(holding => {
-      // Pour l'instant, on simule la récupération de la stratégie
-      // Dans une vraie implémentation, on utiliserait appliedStrategies de la prévision
-      return {
+    if (!selectedForecast) {
+      return holdings.map(holding => ({
         ...holding,
-        strategy: undefined, // À implémenter avec les vraies données
+        strategy: undefined,
         tpCount: 0,
         completedTpCount: 0,
         completionPercentage: 0,
         projectedValue: holding.currentValue || 0,
+      }));
+    }
+
+    const appliedStrategies = selectedForecast.appliedStrategies || {};
+    
+    return holdings.map(holding => {
+      const strategyId = appliedStrategies[holding.id];
+      const strategy = strategyId ? strategiesMap.get(strategyId) : undefined;
+      
+      if (!strategy) {
+        return {
+          ...holding,
+          strategy: undefined,
+          tpCount: 0,
+          completedTpCount: 0,
+          completionPercentage: 0,
+          projectedValue: holding.currentValue || 0,
+        };
+      }
+
+      // Calculer les statistiques de la stratégie
+      const profitTargets = Array.isArray(strategy.profitTargets) 
+        ? strategy.profitTargets 
+        : [];
+      const tpCount = profitTargets.length;
+      
+      // Calculer les TP complétés (simplifié - à améliorer avec les vraies données)
+      const currentPrice = holding.currentPrice || holding.averagePrice;
+      const completedTpCount = profitTargets.filter((tp: any) => {
+        const targetPrice = tp.targetType === 'percentage'
+          ? holding.averagePrice * (1 + tp.targetValue / 100)
+          : tp.targetValue;
+        return currentPrice >= targetPrice;
+      }).length;
+
+      const completionPercentage = tpCount > 0 ? (completedTpCount / tpCount) * 100 : 0;
+
+      // Calculer la valeur projetée (simplifié)
+      const projectedValue = profitTargets.reduce((acc: number, tp: any) => {
+        const targetPrice = tp.targetType === 'percentage'
+          ? holding.averagePrice * (1 + tp.targetValue / 100)
+          : tp.targetValue;
+        const sellQuantity = holding.quantity * (tp.sellPercentage / 100);
+        return acc + (sellQuantity * targetPrice);
+      }, 0) + (holding.quantity * (1 - profitTargets.reduce((acc: number, tp: any) => acc + (tp.sellPercentage || 0) / 100, 0)) * currentPrice);
+
+      return {
+        ...holding,
+        strategy: strategy as TheoreticalStrategyResponse,
+        tpCount,
+        completedTpCount,
+        completionPercentage,
+        projectedValue,
       };
     });
-  }, [holdings]);
-
-  const selectedForecast = forecasts.find(f => f.id === selectedForecastId);
+  }, [holdings, selectedForecast, strategiesMap]);
 
   if (loading) {
     return (

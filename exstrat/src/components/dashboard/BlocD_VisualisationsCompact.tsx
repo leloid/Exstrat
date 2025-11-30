@@ -40,15 +40,34 @@ export const BlocD_VisualisationsCompact: React.FC<BlocDCompactProps> = ({ holdi
 
   // Préparer les données pour le camembert (répartition)
   const pieData = useMemo(() => {
-    const totalValue = holdings.reduce((sum, h) => {
-      const currentValue = h.currentValue || (h.currentPrice || h.averagePrice) * h.quantity;
-      return sum + currentValue;
-    }, 0);
+    // Calculer la valeur actuelle pour chaque holding de manière cohérente
+    const holdingsWithValue = holdings.map((holding) => {
+      // Priorité: currentValue > currentPrice * quantity > averagePrice * quantity
+      let currentValue = 0;
+      
+      if (holding.currentValue && holding.currentValue > 0) {
+        currentValue = Number(holding.currentValue);
+      } else if (holding.currentPrice && holding.currentPrice > 0) {
+        currentValue = Number(holding.currentPrice) * Number(holding.quantity);
+      } else if (holding.averagePrice && holding.averagePrice > 0) {
+        currentValue = Number(holding.averagePrice) * Number(holding.quantity);
+      }
+      
+      return {
+        holding,
+        currentValue,
+      };
+    });
 
-    return holdings
-      .map((holding, index) => {
-        const currentValue = holding.currentValue || (holding.currentPrice || holding.averagePrice) * holding.quantity;
-        const percentage = totalValue > 0 ? (currentValue / totalValue) * 100 : 0;
+    const totalValue = holdingsWithValue.reduce((sum, h) => sum + h.currentValue, 0);
+
+    if (totalValue === 0) {
+      return [];
+    }
+
+    return holdingsWithValue
+      .map(({ holding, currentValue }, index) => {
+        const percentage = (currentValue / totalValue) * 100;
         
         return {
           name: holding.token.symbol,
@@ -57,7 +76,7 @@ export const BlocD_VisualisationsCompact: React.FC<BlocDCompactProps> = ({ holdi
           color: CHART_COLORS[index % CHART_COLORS.length],
         };
       })
-      .filter(item => item.value > 0)
+      .filter(item => item.value > 0) // Filtrer uniquement les valeurs strictement positives
       .sort((a, b) => b.value - a.value)
       .slice(0, 8); // Limiter à 8 tokens pour la version compacte
   }, [holdings]);
@@ -164,6 +183,22 @@ export const BlocD_VisualisationsCompact: React.FC<BlocDCompactProps> = ({ holdi
             <Tooltip content={<CustomTooltip />} />
           </PieChart>
         </ResponsiveContainer>
+        {/* Légende pour tous les tokens */}
+        {pieData.length > 0 && (
+          <div className="mt-2 flex flex-wrap gap-2 justify-center">
+            {pieData.map((entry, index) => (
+              <div key={index} className="flex items-center gap-1.5">
+                <div
+                  className="w-2.5 h-2.5 rounded-full"
+                  style={{ backgroundColor: entry.color }}
+                />
+                <span className={`text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                  {entry.name} {entry.percentage.toFixed(2)}%
+                </span>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* 2. Histogramme gains / pertes par token (top 5) */}
