@@ -74,12 +74,12 @@ export const BlocD_HistogrammeValorisation: React.FC<BlocDHistogrammeProps> = ({
   }
 
   return (
-    <div className={`rounded-2xl p-5 shadow-lg ${isDarkMode ? 'bg-gray-800/95 backdrop-blur-sm border border-gray-700/50' : 'bg-white border border-gray-200/80 shadow-sm'}`}>
-      <h3 className={`text-sm font-bold mb-4 uppercase tracking-wide ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+    <div className={`rounded-lg p-3 ${isDarkMode ? 'bg-gray-800 border border-gray-700' : 'bg-white border border-gray-200'}`}>
+      <h3 className={`text-xs font-semibold mb-2 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
         {language === 'fr' ? 'Valorisation des actifs' : 'Asset Valuation'}
       </h3>
-      <ResponsiveContainer width="100%" height={compact ? 300 : 400}>
-        <BarChart data={valuationData} margin={{ top: 5, right: 20, left: 10, bottom: compact ? 40 : 60 }}>
+      <ResponsiveContainer width="100%" height={compact ? 200 : 400}>
+        <BarChart data={valuationData} margin={{ top: 5, right: 10, left: 0, bottom: compact ? 30 : 50 }}>
           <CartesianGrid strokeDasharray="3 3" stroke={isDarkMode ? '#374151' : '#e5e7eb'} />
           <XAxis
             dataKey="symbol"

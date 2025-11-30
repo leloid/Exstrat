@@ -129,8 +129,8 @@ export const BlocC_TableauTokens: React.FC<BlocCProps> = ({ holdings, onTokenCli
   }
 
   return (
-    <div className={`rounded-2xl p-6 shadow-lg ${isDarkMode ? 'bg-gray-800/95 backdrop-blur-sm border border-gray-700/50' : 'bg-white border border-gray-200/80 shadow-sm'}`}>
-      <h2 className={`text-xl font-bold mb-6 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+    <div className={`rounded-none p-3 ${isDarkMode ? 'bg-gray-800 border border-t-0 border-b-0 border-gray-700' : 'bg-white border border-t-0 border-b-0 border-gray-200'}`}>
+      <h2 className={`text-sm font-semibold mb-3 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
         {language === 'fr' ? 'Tableau des tokens' : 'Tokens Table'}
       </h2>
 
@@ -139,7 +139,7 @@ export const BlocC_TableauTokens: React.FC<BlocCProps> = ({ holdings, onTokenCli
           <thead>
             <tr className={`border-b-2 ${isDarkMode ? 'border-gray-700/50' : 'border-gray-200'}`}>
               <th
-                className="text-left py-4 px-4 cursor-pointer transition-colors"
+                className="text-left py-2 px-2 text-xs font-medium cursor-pointer transition-colors"
                 onClick={() => handleSort('symbol')}
               >
                 <div className="flex items-center gap-2">
@@ -219,7 +219,7 @@ export const BlocC_TableauTokens: React.FC<BlocCProps> = ({ holdings, onTokenCli
                       : 'border-gray-200/50 hover:bg-gray-50/80 hover:shadow-sm'
                   }`}
                 >
-                  <td className="py-4 px-4">
+                  <td className="py-2 px-2 text-sm">
                     <div className="flex items-center gap-3">
                       {getTokenLogo(holding.token.symbol)}
                       <div>

@@ -39,7 +39,6 @@ export default function DashboardPage() {
   const [activeTab, setActiveTab] = useState('dashboard');
   const [showStrategies, setShowStrategies] = useState(false);
   const [forecasts, setForecasts] = useState<ForecastResponse[]>([]);
-  const [loading, setLoading] = useState(true);
 
   // Charger les prévisions pour vérifier s'il y en a
   useEffect(() => {
@@ -98,20 +97,17 @@ export default function DashboardPage() {
 
     const now = new Date();
     const data: EvolutionDataPoint[] = [];
-    const days = 30; // Générer 30 jours de données
+    const days = 30;
 
-    // Calculer les valeurs actuelles
     const currentInvested = portfolioStats.capitalInvesti;
     const currentValue = portfolioStats.valeurActuelle;
 
-    // Générer des données historiques simulées
     for (let i = days; i >= 0; i--) {
       const date = new Date(now);
       date.setDate(date.getDate() - i);
       
-      // Simuler une évolution progressive
       const progress = i / days;
-      const simulatedInvested = currentInvested * (0.7 + 0.3 * progress); // Investissement progressif
+      const simulatedInvested = currentInvested * (0.7 + 0.3 * progress);
       const simulatedValue = simulatedInvested * (1 + (portfolioStats.pnlRelatif / 100) * progress);
       
       data.push({
@@ -127,14 +123,9 @@ export default function DashboardPage() {
 
   // Gérer le clic sur un token dans le tableau
   const handleTokenClick = (holding: Holding) => {
-    // Si le bloc E est affiché, on peut ouvrir les détails
-    // Sinon, on peut naviguer vers la page des stratégies
     if (showStrategies) {
-      // Le bloc E gérera l'affichage des détails
       return;
     }
-    // Optionnel : naviguer vers les stratégies pour ce token
-    // router.push(`/strategies?token=${holding.token.symbol}`);
   };
 
   if (portfoliosLoading) {
@@ -144,7 +135,7 @@ export default function DashboardPage() {
           <Sidebar activeTab={activeTab} onTabChange={setActiveTab} isDarkMode={isDarkMode} />
           <div className="flex-1 flex flex-col md:ml-0 overflow-x-hidden w-full max-w-full">
             <TopBar currentPageName={language === 'fr' ? 'Dashboard' : 'Dashboard'} />
-            <div className={`flex-1 p-3 md:p-6 flex items-center justify-center ${isDarkMode ? 'bg-gray-900' : 'bg-gray-50'}`}>
+            <div className={`flex-1 p-4 flex items-center justify-center ${isDarkMode ? 'bg-gray-900' : 'bg-gray-50'}`}>
               <div className="text-center">
                 <div className={`animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto mb-4`}></div>
                 <p className={`${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
@@ -166,20 +157,18 @@ export default function DashboardPage() {
         <div className="flex-1 flex flex-col md:ml-0 overflow-x-hidden w-full max-w-full">
           <TopBar currentPageName={language === 'fr' ? 'Dashboard' : 'Dashboard'} />
 
-          <div className={`flex-1 p-4 md:p-6 lg:p-8 overflow-x-hidden max-w-full ${isDarkMode ? 'bg-gradient-to-br from-gray-900 via-gray-900 to-gray-800' : 'bg-gradient-to-br from-gray-50 via-white to-gray-50'}`}>
-            {/* Sélecteur de portfolio */}
+          <div className={`flex-1 p-3 md:p-4 overflow-x-hidden max-w-full ${isDarkMode ? 'bg-gray-900' : 'bg-gray-50'}`}>
+            {/* Sélecteur de portfolio - Compact inline */}
             {portfolios.length > 1 && (
-              <div className={`mb-5 rounded-2xl p-4 shadow-lg ${isDarkMode ? 'bg-gray-800/95 backdrop-blur-sm border border-gray-700/50' : 'bg-white border border-gray-200/80 shadow-sm'}`}>
-                <label className={`block text-xs font-bold uppercase tracking-wide mb-3 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-                  {language === 'fr' ? 'Sélectionner un portfolio' : 'Select Portfolio'}
-                </label>
+              <div className={`mb-3 inline-flex items-center gap-2 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                <span className="text-xs font-medium">{language === 'fr' ? 'Portfolio:' : 'Portfolio:'}</span>
                 <select
                   value={currentPortfolio?.id || ''}
                   onChange={(e) => selectPortfolio(e.target.value)}
-                  className={`w-full md:w-64 px-4 py-2.5 rounded-lg border transition-all duration-200 ${
+                  className={`px-3 py-1.5 text-sm rounded-lg border transition-all ${
                     isDarkMode
-                      ? 'bg-gray-700/50 border-gray-600/50 text-white hover:border-gray-500 focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20'
-                      : 'bg-gray-50 border-gray-300/60 text-gray-900 hover:border-gray-400 focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20'
+                      ? 'bg-gray-800 border-gray-700 text-white hover:border-gray-600'
+                      : 'bg-white border-gray-300 text-gray-900 hover:border-gray-400'
                   }`}
                 >
                   {portfolios.map((portfolio) => (
@@ -193,40 +182,40 @@ export default function DashboardPage() {
             )}
 
             {!currentPortfolio ? (
-              <div className={`rounded-2xl p-8 shadow-lg ${isDarkMode ? 'bg-gray-800/95 backdrop-blur-sm border border-gray-700/50' : 'bg-white border border-gray-200/80 shadow-sm'}`}>
-                <div className={`text-center py-12 ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-                  <p className="text-lg mb-4">
+              <div className={`rounded-xl p-6 ${isDarkMode ? 'bg-gray-800' : 'bg-white border border-gray-200'}`}>
+                <div className={`text-center py-8 ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                  <p className="mb-4">
                     {language === 'fr' 
                       ? 'Aucun portfolio sélectionné. Veuillez créer un portfolio ou en sélectionner un.'
                       : 'No portfolio selected. Please create a portfolio or select one.'}
                   </p>
                   <button
                     onClick={() => router.push('/portfolio')}
-                    className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all duration-200 shadow-md hover:shadow-lg font-medium"
+                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
                   >
                     {language === 'fr' ? 'Gérer les portfolios' : 'Manage Portfolios'}
                   </button>
                 </div>
               </div>
             ) : holdings.length === 0 ? (
-              <div className={`rounded-2xl p-8 shadow-lg ${isDarkMode ? 'bg-gray-800/95 backdrop-blur-sm border border-gray-700/50' : 'bg-white border border-gray-200/80 shadow-sm'}`}>
-                <div className={`text-center py-12 ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-                  <p className="text-lg mb-4">
+              <div className={`rounded-xl p-6 ${isDarkMode ? 'bg-gray-800' : 'bg-white border border-gray-200'}`}>
+                  <div className={`text-center py-8 ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                  <p className="mb-4">
                     {language === 'fr' 
                       ? 'Ce portfolio ne contient aucun token. Ajoutez des transactions pour commencer.'
                       : 'This portfolio contains no tokens. Add transactions to get started.'}
                   </p>
-                  <button
-                    onClick={() => router.push('/transactions')}
-                    className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all duration-200 shadow-md hover:shadow-lg font-medium"
-                  >
+                    <button
+                      onClick={() => router.push('/transactions')}
+                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
+                    >
                     {language === 'fr' ? 'Ajouter une transaction' : 'Add Transaction'}
-                  </button>
+                    </button>
                 </div>
               </div>
             ) : (
-              <div className="space-y-5">
-                {/* Bloc A - Résumé global (toujours en haut, pleine largeur) */}
+                <div className="space-y-3">
+                {/* Bloc A - Résumé global */}
                 <BlocA_ResumeGlobal
                   capitalInvesti={portfolioStats.capitalInvesti}
                   valeurActuelle={portfolioStats.valeurActuelle}
@@ -234,58 +223,75 @@ export default function DashboardPage() {
                   pnlRelatif={portfolioStats.pnlRelatif}
                 />
 
-                {/* Grille principale : Bloc B (graphique) + Bloc D (visualisations compact) */}
-                <div className="grid grid-cols-1 xl:grid-cols-3 gap-5">
-                  {/* Bloc B - Graphique d'évolution (2/3 de la largeur sur grand écran) */}
-                  <div className="xl:col-span-2">
-                    <BlocB_EvolutionPortfolio data={evolutionData} />
+                {/* Graphique + Tableau collés ensemble */}
+                <div className="grid grid-cols-1 xl:grid-cols-12 gap-3">
+                  {/* Colonne gauche : Graphique + Tableau */}
+                  <div className="xl:col-span-8">
+                    {/* Graphique d'évolution */}
+                    <div className="rounded-lg overflow-hidden">
+                      <BlocB_EvolutionPortfolio data={evolutionData} />
+                  </div>
+                    
+                    {/* Tableau des tokens - collé juste en dessous sans espace */}
+                    <div className="-mt-3">
+                      <BlocC_TableauTokens
+                        holdings={holdings}
+                        onTokenClick={handleTokenClick}
+                      />
+              </div>
+
+                    {/* Bloc E - Stratégies & Prévisions - collé juste en dessous du tableau */}
+                    {showStrategies && currentPortfolio && (
+                      <div className="-mt-3">
+                        <BlocE_StrategiesPrevisions
+                          portfolioId={currentPortfolio.id}
+                          holdings={holdings}
+                          onClose={() => setShowStrategies(false)}
+                        />
+                </div>
+                    )}
                   </div>
 
-                  {/* Bloc D - Visualisations graphiques compactes (1/3 de la largeur sur grand écran) */}
-                  <div className="xl:col-span-1">
+                  {/* Colonne droite : Visualisations */}
+                  <div className="xl:col-span-4 space-y-3">
+                    {/* Visualisations compactes */}
                     <BlocD_VisualisationsCompact holdings={holdings} />
-                  </div>
-                </div>
-
-                {/* Grille : Bloc C (tableau) + Histogramme valorisation */}
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
-                  {/* Bloc C - Tableau des tokens (2/3 de la largeur sur grand écran) */}
-                  <div className="lg:col-span-2">
-                    <BlocC_TableauTokens
-                      holdings={holdings}
-                      onTokenClick={handleTokenClick}
-                    />
-                  </div>
-
-                  {/* Histogramme valorisation (1/3 de la largeur sur grand écran) */}
-                  <div className="lg:col-span-1">
+                    
+                    {/* Histogramme valorisation */}
                     <BlocD_HistogrammeValorisation holdings={holdings} compact={true} />
-                  </div>
                 </div>
+              </div>
 
-                {/* Bloc E - Surcouche Stratégies & Prévisions (conditionnel, pleine largeur) */}
-                {showStrategies && currentPortfolio && (
-                  <BlocE_StrategiesPrevisions
-                    portfolioId={currentPortfolio.id}
-                    holdings={holdings}
-                    onClose={() => setShowStrategies(false)}
-                  />
+                {/* Bouton pour afficher le bloc E si pas encore affiché */}
+                {forecasts.length > 0 && !showStrategies && (
+                  <div className="text-center pt-2">
+                  <button
+                      onClick={() => setShowStrategies(true)}
+                      className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                      isDarkMode 
+                          ? 'bg-purple-600 hover:bg-purple-700 text-white'
+                          : 'bg-purple-600 hover:bg-purple-700 text-white'
+                    }`}
+                  >
+                      {language === 'fr' ? 'Afficher les Stratégies & Prévisions' : 'Show Strategies & Forecasts'}
+                  </button>
+                  </div>
                 )}
 
-                {/* Bouton pour afficher le bloc E si des prévisions existent mais ne sont pas affichées */}
+                {/* Bouton pour afficher le bloc E */}
                 {forecasts.length > 0 && !showStrategies && (
-                  <div className="text-center">
-                    <button
+                  <div className="text-center pt-2">
+                  <button
                       onClick={() => setShowStrategies(true)}
-                      className={`px-6 py-3 rounded-xl font-medium transition-all duration-200 shadow-md hover:shadow-lg ${
-                        isDarkMode
-                          ? 'bg-purple-600 hover:bg-purple-700 text-white shadow-purple-500/20'
-                          : 'bg-purple-600 hover:bg-purple-700 text-white shadow-purple-500/20'
+                      className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                      isDarkMode 
+                          ? 'bg-purple-600 hover:bg-purple-700 text-white'
+                          : 'bg-purple-600 hover:bg-purple-700 text-white'
                       }`}
                     >
                       {language === 'fr' ? 'Afficher les Stratégies & Prévisions' : 'Show Strategies & Forecasts'}
-                    </button>
-                  </div>
+                  </button>
+                </div>
                 )}
               </div>
             )}

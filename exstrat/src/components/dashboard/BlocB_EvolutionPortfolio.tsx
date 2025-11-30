@@ -103,26 +103,26 @@ export const BlocB_EvolutionPortfolio: React.FC<BlocBProps> = ({ data }) => {
   }
 
   return (
-    <div className={`rounded-2xl p-6 shadow-lg ${isDarkMode ? 'bg-gray-800/95 backdrop-blur-sm border border-gray-700/50' : 'bg-white border border-gray-200/80 shadow-sm'}`}>
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 gap-4">
-        <h2 className={`text-xl font-bold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+    <div className={`rounded-t-lg rounded-b-none p-3 ${isDarkMode ? 'bg-gray-800 border border-b-0 border-gray-700' : 'bg-white border border-b-0 border-gray-200'}`}>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-3 gap-2">
+        <h2 className={`text-sm font-semibold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
           {language === 'fr' ? "Évolution du portefeuille" : "Portfolio Evolution"}
         </h2>
         
         {/* Sélecteur de période */}
-        <div className="flex gap-2 flex-wrap">
+        <div className="flex gap-1 flex-wrap">
           {timeRangeOptions.map((option) => (
             <button
               key={option.value}
               onClick={() => setTimeRange(option.value)}
-              className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
+              className={`px-2 py-1 rounded text-xs font-medium transition-colors ${
                 timeRange === option.value
                   ? isDarkMode
-                    ? 'bg-purple-600 text-white shadow-md shadow-purple-500/20'
-                    : 'bg-purple-600 text-white shadow-md shadow-purple-500/20'
+                    ? 'bg-purple-600 text-white'
+                    : 'bg-purple-600 text-white'
                   : isDarkMode
-                  ? 'bg-gray-700/50 text-gray-300 hover:bg-gray-600/50 border border-gray-600/50'
-                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200 border border-gray-200'
+                  ? 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
               }`}
             >
               {option.label}
@@ -131,8 +131,8 @@ export const BlocB_EvolutionPortfolio: React.FC<BlocBProps> = ({ data }) => {
         </div>
       </div>
 
-      <ResponsiveContainer width="100%" height={350}>
-        <LineChart data={filteredData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
+      <ResponsiveContainer width="100%" height={240}>
+        <LineChart data={filteredData} margin={{ top: 5, right: 15, left: 5, bottom: 5 }}>
           <CartesianGrid strokeDasharray="3 3" stroke={isDarkMode ? '#374151' : '#e5e7eb'} />
           <XAxis
             dataKey="date"
