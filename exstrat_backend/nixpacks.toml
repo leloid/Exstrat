@@ -1,15 +1,12 @@
 # Configuration Nixpacks pour Railway
 [phases.setup]
-nixPkgs = ['nodejs-20', 'npm-9']
+nixPkgs = ['nodejs-20']
 
 [phases.install]
 cmds = ['npm ci']
 
 [phases.build]
 cmds = ['npm run build', 'npx prisma generate']
-
-[phases.deploy]
-cmds = ['npx prisma migrate deploy']
 
 [start]
 cmd = 'npm run start:prod'
