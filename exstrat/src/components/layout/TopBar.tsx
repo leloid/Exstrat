@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useRef, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import { 
@@ -19,6 +20,7 @@ interface TopBarProps {
 }
 
 export default function TopBar({ currentPageName }: TopBarProps) {
+  const router = useRouter();
   const { user, signOut } = useAuth();
   const { isDarkMode, language, toggleDarkMode, setLanguage } = useTheme();
   const [showUserMenu, setShowUserMenu] = useState(false);
@@ -219,19 +221,31 @@ export default function TopBar({ currentPageName }: TopBarProps) {
                   }}
                 >
                   <div className="py-2">
-                    <button className={`flex items-center gap-3 w-full px-4 py-2 transition-colors ${
-                      isDarkMode 
-                        ? 'text-gray-300 hover:bg-gray-700' 
-                        : 'text-gray-700 hover:bg-gray-100'
-                    }`}>
+                    <button 
+                      onClick={() => {
+                        router.push('/settings');
+                        setShowUserMenu(false);
+                      }}
+                      className={`flex items-center gap-3 w-full px-4 py-2 transition-colors ${
+                        isDarkMode 
+                          ? 'text-gray-300 hover:bg-gray-700' 
+                          : 'text-gray-700 hover:bg-gray-100'
+                      }`}
+                    >
                       <UserCircleIcon className={`h-5 w-5 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`} />
                       {language === 'fr' ? 'Mon profil' : 'My Profile'}
                     </button>
-                    <button className={`flex items-center gap-3 w-full px-4 py-2 transition-colors ${
-                      isDarkMode 
-                        ? 'text-gray-300 hover:bg-gray-700' 
-                        : 'text-gray-700 hover:bg-gray-100'
-                    }`}>
+                    <button 
+                      onClick={() => {
+                        router.push('/settings');
+                        setShowUserMenu(false);
+                      }}
+                      className={`flex items-center gap-3 w-full px-4 py-2 transition-colors ${
+                        isDarkMode 
+                          ? 'text-gray-300 hover:bg-gray-700' 
+                          : 'text-gray-700 hover:bg-gray-100'
+                      }`}
+                    >
                       <Cog6ToothIcon className={`h-5 w-5 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`} />
                       {language === 'fr' ? 'Paramètres' : 'Settings'}
                     </button>
