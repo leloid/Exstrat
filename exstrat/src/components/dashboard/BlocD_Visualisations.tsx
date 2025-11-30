@@ -224,7 +224,7 @@ export const BlocD_Visualisations: React.FC<BlocDProps> = ({ holdings }) => {
                   return null;
                 }}
               />
-              <Bar dataKey="pnlPercentage" fill={(entry: any) => entry.color}>
+              <Bar dataKey="pnlPercentage">
                 {pnlData.map((entry, index) => (
                   <Cell key={`cell-${index}`} fill={entry.color} />
                 ))}
