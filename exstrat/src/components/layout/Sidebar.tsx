@@ -152,7 +152,6 @@ export default function Sidebar({ activeTab, onTabChange, isDarkMode = true }: S
                 <IconComponent isDark={isDarkMode} />
                 {isExpanded && (
                   <span className={`font-medium text-lg ${activeTab === item.id ? 'text-white' : (isDarkMode ? 'text-white' : 'text-gray-700')}`}>
-                    <span className="mr-2 text-xl">{item.emoji}</span>
                     {item.name}
                   </span>
                 )}
