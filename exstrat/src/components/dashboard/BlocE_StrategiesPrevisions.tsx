@@ -440,58 +440,6 @@ export const BlocE_StrategiesPrevisions: React.FC<BlocEProps> = ({
                             })}
                           </div>
                         </div>
-
-                        {/* Mini-graphique du cours */}
-                        <div>
-                          <h4 className={`text-sm font-bold uppercase tracking-wide mb-3 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-                            {language === 'fr' ? 'Position des TP' : 'TP Positions'}
-                          </h4>
-                          <div className={`p-4 rounded-lg ${isDarkMode ? 'bg-gray-600/50 border border-gray-500/30' : 'bg-white border border-gray-200/60 shadow-sm'}`}>
-                            <div className="relative h-32">
-                              {/* Barre horizontale représentant le prix */}
-                              <div className="absolute inset-0 flex items-center">
-                                <div className="w-full h-2 bg-gray-300 rounded-full" />
-                              </div>
-                              
-                              {/* Prix actuel */}
-                              <div className="absolute left-0 top-0 bottom-0 flex items-center">
-                                <div className="w-1 h-full bg-blue-500" />
-                                <div className="ml-2 text-xs font-medium text-blue-500">
-                                  {formatCurrency(selectedToken.currentPrice || selectedToken.averagePrice)}
-                                </div>
-                              </div>
-
-                              {/* TP */}
-                              {selectedToken.strategy.profitTargets.map((tp, index) => {
-                                const currentPrice = selectedToken.currentPrice || selectedToken.averagePrice;
-                                const targetPrice = tp.targetType === 'percentage'
-                                  ? selectedToken.averagePrice * (1 + tp.targetValue / 100)
-                                  : tp.targetValue;
-                                const maxPrice = Math.max(
-                                  ...selectedToken.strategy!.profitTargets.map(t => 
-                                    t.targetType === 'percentage'
-                                      ? selectedToken.averagePrice * (1 + t.targetValue / 100)
-                                      : t.targetValue
-                                  )
-                                );
-                                const position = ((targetPrice - currentPrice) / (maxPrice - currentPrice)) * 100;
-                                
-                                return (
-                                  <div
-                                    key={index}
-                                    className="absolute top-0 bottom-0 flex items-center"
-                                    style={{ left: `${Math.max(0, Math.min(100, position))}%` }}
-                                  >
-                                    <div className="w-1 h-full bg-green-500" />
-                                    <div className="ml-2 text-xs font-medium text-green-500">
-                                      TP{tp.order}
-                                    </div>
-                                  </div>
-                                );
-                              })}
-                            </div>
-                          </div>
-                        </div>
                       </div>
                     ) : (
                       <div className={`text-center py-8 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
