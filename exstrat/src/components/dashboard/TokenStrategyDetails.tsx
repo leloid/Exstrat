@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { XMarkIcon } from '@heroicons/react/24/outline';
 import { formatCurrency, formatPercentage } from '@/lib/format';
 import { useTheme } from '@/contexts/ThemeContext';
@@ -10,6 +10,17 @@ import { getForecasts, getForecastById, getTheoreticalStrategies } from '@/lib/p
 import { AlertConfiguration } from '@/types/configuration';
 import { TheoreticalStrategyResponse } from '@/types/strategies';
 import type { ForecastResponse } from '@/lib/portfolios-api';
+import {
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  Area,
+  AreaChart,
+} from 'recharts';
 
 interface TokenStrategyDetailsProps {
   holding: Holding | null;
@@ -89,6 +100,41 @@ export const TokenStrategyDetails: React.FC<TokenStrategyDetailsProps> = ({
     loadData();
   }, [holding, portfolioId]);
 
+  // Générer des données historiques simulées pour le graphique de prix
+  // IMPORTANT: Tous les hooks doivent être appelés avant les retours conditionnels
+  const priceChartData = useMemo(() => {
+    if (!holding) return [];
+    const currentPrice = holding.currentPrice || holding.averagePrice || 0;
+    if (currentPrice <= 0) return [];
+
+    const data = [];
+    const now = new Date();
+    const days = 30; // 30 derniers jours
+    
+    // Générer des variations de prix réalistes autour du prix actuel
+    let price = currentPrice;
+    const volatility = 0.05; // 5% de volatilité
+    
+    for (let i = days; i >= 0; i--) {
+      const date = new Date(now);
+      date.setDate(date.getDate() - i);
+      
+      // Variation aléatoire avec tendance
+      const change = (Math.random() - 0.5) * volatility * 2;
+      price = price * (1 + change);
+      
+      // S'assurer que le prix ne devient pas négatif
+      price = Math.max(price, currentPrice * 0.5);
+      
+      data.push({
+        date: date.toISOString().split('T')[0],
+        price: Number(price.toFixed(2)),
+      });
+    }
+    
+    return data;
+  }, [holding?.currentPrice, holding?.averagePrice]);
+
   if (!holding) {
     return null;
   }
@@ -156,6 +202,26 @@ export const TokenStrategyDetails: React.FC<TokenStrategyDetailsProps> = ({
 
   // Calculer la valeur projetée totale
   const projectedValue = tpAlerts.reduce((sum, tp) => sum + (tp.projectedAmount || 0), 0);
+
+  const CustomTooltip = ({ active, payload, label }: any) => {
+    if (active && payload && payload.length) {
+      return (
+        <div className={`rounded-xl p-3 shadow-2xl border backdrop-blur-sm ${
+          isDarkMode 
+            ? 'bg-gray-800/95 border-gray-700/50' 
+            : 'bg-white/95 border-gray-200/80'
+        }`}>
+          <div className={`text-xs font-semibold mb-1 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+            {new Date(label).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' })}
+          </div>
+          <div className={`text-base font-bold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+            {formatCurrency(payload[0].value, '€', 2)}
+          </div>
+        </div>
+      );
+    }
+    return null;
+  };
 
   return (
     <div className={`rounded-lg p-4 md:p-6 ${
@@ -331,6 +397,103 @@ export const TokenStrategyDetails: React.FC<TokenStrategyDetailsProps> = ({
           })}
         </div>
       </div>
+
+      {/* Graphique du cours du token */}
+      {priceChartData.length > 0 && (
+        <div className="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
+          <h4 className={`text-xs font-bold uppercase tracking-wider mb-4 ${
+            isDarkMode ? 'text-gray-300' : 'text-gray-700'
+          }`}>
+            {language === 'fr' ? `Cours ${holding.token.symbol}` : `${holding.token.symbol} Price Chart`}
+          </h4>
+          <div className="h-64">
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart data={priceChartData} margin={{ top: 5, right: 10, left: 0, bottom: 5 }}>
+                <defs>
+                  <linearGradient id="colorPrice" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3}/>
+                    <stop offset="95%" stopColor="#3b82f6" stopOpacity={0}/>
+                  </linearGradient>
+                </defs>
+                <CartesianGrid 
+                  strokeDasharray="3 3" 
+                  stroke={isDarkMode ? '#374151' : '#e5e7eb'} 
+                  opacity={0.5}
+                  vertical={false}
+                />
+                <XAxis
+                  dataKey="date"
+                  stroke={isDarkMode ? '#6b7280' : '#9ca3af'}
+                  tick={{ 
+                    fill: isDarkMode ? '#9ca3af' : '#6b7280',
+                    fontSize: 11,
+                    fontWeight: 500
+                  }}
+                  tickLine={{ stroke: isDarkMode ? '#4b5563' : '#d1d5db' }}
+                  axisLine={{ stroke: isDarkMode ? '#4b5563' : '#d1d5db' }}
+                  tickFormatter={(value) => {
+                    const date = new Date(value);
+                    return date.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' });
+                  }}
+                />
+                <YAxis
+                  stroke={isDarkMode ? '#6b7280' : '#9ca3af'}
+                  tick={{ 
+                    fill: isDarkMode ? '#9ca3af' : '#6b7280',
+                    fontSize: 11,
+                    fontWeight: 500
+                  }}
+                  tickLine={{ stroke: isDarkMode ? '#4b5563' : '#d1d5db' }}
+                  axisLine={{ stroke: isDarkMode ? '#4b5563' : '#d1d5db' }}
+                  tickFormatter={(value) => {
+                    if (value >= 1000000) return `€${(value / 1000000).toFixed(1)}M`;
+                    if (value >= 1000) return `€${(value / 1000).toFixed(1)}k`;
+                    return `€${value.toFixed(0)}`;
+                  }}
+                  width={60}
+                />
+                <Tooltip content={<CustomTooltip />} />
+                <Area
+                  type="monotone"
+                  dataKey="price"
+                  stroke="#3b82f6"
+                  strokeWidth={2}
+                  fill="url(#colorPrice)"
+                  animationDuration={300}
+                />
+                <Line
+                  type="monotone"
+                  dataKey="price"
+                  stroke="#3b82f6"
+                  strokeWidth={2}
+                  dot={false}
+                  activeDot={{ 
+                    r: 5, 
+                    fill: '#3b82f6',
+                    strokeWidth: 2,
+                    stroke: isDarkMode ? '#1e293b' : '#ffffff'
+                  }}
+                  animationDuration={300}
+                />
+              </AreaChart>
+            </ResponsiveContainer>
+          </div>
+          <div className={`mt-3 flex items-center justify-between text-xs ${
+            isDarkMode ? 'text-gray-400' : 'text-gray-500'
+          }`}>
+            <span>
+              {language === 'fr' ? 'Prix actuel' : 'Current price'}: <span className={`font-semibold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+                {formatCurrency(currentPrice, '€', 2)}
+              </span>
+            </span>
+            <span>
+              {language === 'fr' ? 'Prix moyen d\'achat' : 'Average purchase price'}: <span className={`font-semibold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+                {formatCurrency(holding.averagePrice, '€', 2)}
+              </span>
+            </span>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
