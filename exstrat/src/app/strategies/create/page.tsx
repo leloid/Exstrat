@@ -6,7 +6,7 @@ import ProtectedRoute from '@/components/auth/ProtectedRoute';
 import Sidebar from '@/components/layout/Sidebar';
 import TopBar from '@/components/layout/TopBar';
 import { useTheme } from '@/contexts/ThemeContext';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card';
+import { Card, CardContent } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Label } from '@/components/ui/Label';
@@ -14,23 +14,24 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Slider } from '@/components/ui/Slider';
 import { 
   ArrowLeftIcon,
-  InformationCircleIcon,
   ChartBarIcon,
-  PencilIcon
 } from '@heroicons/react/24/outline';
 import { formatCurrency, formatPercentage } from '@/lib/format';
 import * as portfoliosApi from '@/lib/portfolios-api';
 import { TokenSearch } from '@/components/transactions/TokenSearch';
 import { TokenSearchResult } from '@/types/transactions';
 import { usePortfolio } from '@/contexts/PortfolioContext';
-import { strategiesApi } from '@/lib/strategies-api';
-import { CreateStrategyStepDto, TargetType, CreateTheoreticalStrategyDto, UpdateTheoreticalStrategyDto } from '@/types/strategies';
+import { CreateTheoreticalStrategyDto, UpdateTheoreticalStrategyDto } from '@/types/strategies';
+import { transactionsApi } from '@/lib/transactions-api';
 
+// Interface pour les cibles de profit (identique à l'onboarding)
 interface ProfitTarget {
   id: string;
   targetType: 'percentage' | 'price';
   targetValue: number;
   sellPercentage: number;
+  sellQuantityType: 'percentage' | 'tokens';
+  sellTokens: number;
 }
 
 export default function CreateStrategyPage() {
@@ -39,15 +40,28 @@ export default function CreateStrategyPage() {
   const { portfolios, refreshPortfolios } = usePortfolio();
   const [activeTab, setActiveTab] = useState('strategies');
   
-  // État du formulaire
+  // États pour la stratégie (identique à l'onboarding)
+  const [strategyStep, setStrategyStep] = useState<number>(1); // Étape actuelle (1-5)
   const [strategyName, setStrategyName] = useState<string>('');
-  const [selectedToken, setSelectedToken] = useState<TokenSearchResult | null>(null);
-  const [selectedPortfolioId, setSelectedPortfolioId] = useState<string>('virtual'); // 'virtual' ou un ID de portfolio
-  const [availableQuantity, setAvailableQuantity] = useState<number>(0); // Quantité disponible dans le portfolio
-  const [quantity, setQuantity] = useState<string>('');
-  const [averagePrice, setAveragePrice] = useState<string>('');
-  const [numberOfTargets, setNumberOfTargets] = useState<number>(3);
+  const [selectedStrategyToken, setSelectedStrategyToken] = useState<TokenSearchResult | null>(null);
+  const [selectedStrategyPortfolioId, setSelectedStrategyPortfolioId] = useState<string>(''); // ID de portfolio (pas de wallet virtuel par défaut)
+  const [availableStrategyQuantity, setAvailableStrategyQuantity] = useState<number>(0);
+  const [strategyQuantity, setStrategyQuantity] = useState<string>('');
+  const [strategyAveragePrice, setStrategyAveragePrice] = useState<string>('');
+  const [numberOfTargets, setNumberOfTargets] = useState<number>(0);
   const [profitTargets, setProfitTargets] = useState<ProfitTarget[]>([]);
+  const [investmentData, setInvestmentData] = useState<{
+    numberOfTransactions: number;
+    totalInvested: number;
+    totalQuantity: number;
+    averagePrice: number;
+    currentPrice?: number;
+    currentPNL?: number;
+    currentPNLPercentage?: number;
+  } | null>(null);
+  const [availableTokens, setAvailableTokens] = useState<TokenSearchResult[]>([]);
+  
+  const isStrategyVirtualWallet = selectedStrategyPortfolioId === 'virtual';
   
   // États de chargement
   const [loading, setLoading] = useState(false);
@@ -55,51 +69,11 @@ export default function CreateStrategyPage() {
   const [isEditMode, setIsEditMode] = useState(false);
   const [editingStrategyId, setEditingStrategyId] = useState<string | null>(null);
   
-  const isVirtualWallet = selectedPortfolioId === 'virtual';
-  
-  // Charger la quantité disponible quand le portfolio ou le token change
-  useEffect(() => {
-    const loadAvailableQuantity = async () => {
-      if (isVirtualWallet || !selectedToken || !selectedPortfolioId || selectedPortfolioId === 'virtual') {
-        setAvailableQuantity(0);
-        return;
-      }
-      
-      try {
-        const holdings = await portfoliosApi.getPortfolioHoldings(selectedPortfolioId);
-        const holding = holdings.find(h => 
-          h.token.symbol.toUpperCase() === selectedToken.symbol.toUpperCase()
-        );
-        
-        if (holding) {
-          setAvailableQuantity(holding.quantity);
-          // Si la quantité actuelle dépasse ce qui est disponible, la réduire
-          const currentQty = parseFloat(quantity);
-          if (!isNaN(currentQty) && currentQty > holding.quantity) {
-            setQuantity(holding.quantity.toString());
-          }
-        } else {
-          setAvailableQuantity(0);
-          // Si aucun holding n'existe pour ce token, réinitialiser la quantité
-          if (quantity && parseFloat(quantity) > 0) {
-            setQuantity('');
-          }
-        }
-      } catch (error) {
-        console.error('Erreur lors du chargement de la quantité disponible:', error);
-        setAvailableQuantity(0);
-      }
-    };
-    
-    loadAvailableQuantity();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedPortfolioId, selectedToken?.symbol]);
-  
   // Charger les portfolios au montage
   useEffect(() => {
     refreshPortfolios();
   }, [refreshPortfolios]);
-  
+
   // Charger la stratégie à modifier si un ID est fourni
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
@@ -120,13 +94,14 @@ export default function CreateStrategyPage() {
       
       // Pré-remplir le formulaire
       setStrategyName(strategy.name);
-      setQuantity(strategy.quantity.toString());
-      setAveragePrice(strategy.averagePrice.toString());
-      setNumberOfTargets(strategy.numberOfTargets || strategy.profitTargets.length || 1);
+      setStrategyQuantity(strategy.quantity.toString());
+      setStrategyAveragePrice(strategy.averagePrice.toString());
+      setNumberOfTargets(strategy.numberOfTargets || strategy.profitTargets.length || 0);
+      setStrategyStep(5); // Aller directement à l'étape 5 (nombre de sorties)
       
       // Pré-remplir le token
-      setSelectedToken({
-        id: 0, // Pas d'ID CMC pour les stratégies théoriques
+      setSelectedStrategyToken({
+        id: 0,
         name: strategy.tokenName,
         symbol: strategy.tokenSymbol,
         slug: strategy.tokenSymbol.toLowerCase(),
@@ -171,6 +146,8 @@ export default function CreateStrategyPage() {
         targetType: target.targetType,
         targetValue: target.targetValue,
         sellPercentage: target.sellPercentage,
+        sellQuantityType: 'percentage',
+        sellTokens: 0,
       }));
       setProfitTargets(targets);
       
@@ -185,6 +162,10 @@ export default function CreateStrategyPage() {
 
   // Initialiser les cibles de profit quand le nombre change
   useEffect(() => {
+    if (numberOfTargets <= 0) {
+      setProfitTargets([]);
+      return;
+    }
     const newTargets: ProfitTarget[] = [];
     for (let i = 0; i < numberOfTargets; i++) {
       newTargets.push({
@@ -192,29 +173,177 @@ export default function CreateStrategyPage() {
         targetType: 'percentage',
         targetValue: (i + 1) * 50, // 50%, 100%, 150%, etc.
         sellPercentage: 100 / numberOfTargets, // Répartition égale
+        sellQuantityType: 'percentage',
+        sellTokens: 0,
       });
     }
     setProfitTargets(newTargets);
   }, [numberOfTargets]);
 
-  // Auto-remplir le prix moyen avec le prix actuel du token
-  const handleTokenSelect = (token: TokenSearchResult | null) => {
-    setSelectedToken(token);
-    if (token && token.quote?.USD?.price) {
-      setAveragePrice(token.quote.USD.price.toFixed(2));
+  // Charger la quantité disponible pour la stratégie quand le portfolio ou le token change
+  useEffect(() => {
+    const loadAvailableStrategyQuantity = async () => {
+      if (isStrategyVirtualWallet || !selectedStrategyToken || !selectedStrategyPortfolioId || selectedStrategyPortfolioId === 'virtual') {
+        setAvailableStrategyQuantity(0);
+        return;
+      }
+      
+      try {
+        const holdings = await portfoliosApi.getPortfolioHoldings(selectedStrategyPortfolioId);
+        const holding = holdings.find(h => 
+          h.token.symbol.toUpperCase() === selectedStrategyToken.symbol.toUpperCase()
+        );
+        
+        if (holding) {
+          setAvailableStrategyQuantity(holding.quantity);
+          if (holding.quantity > 0) {
+            setStrategyQuantity(holding.quantity.toString());
+          }
+        } else {
+          setAvailableStrategyQuantity(0);
+          setStrategyQuantity('');
+        }
+      } catch (error) {
+        console.error('Erreur lors du chargement de la quantité disponible pour la stratégie:', error);
+        setAvailableStrategyQuantity(0);
+      }
+    };
+    
+    loadAvailableStrategyQuantity();
+  }, [selectedStrategyPortfolioId, selectedStrategyToken?.symbol, isStrategyVirtualWallet]);
+
+  // Charger les tokens disponibles dans le wallet sélectionné
+  useEffect(() => {
+    const loadAvailableTokens = async () => {
+      if (!selectedStrategyPortfolioId || selectedStrategyPortfolioId === 'virtual') {
+        setAvailableTokens([]);
+        return;
+      }
+
+      try {
+        const portfolioHoldings = await portfoliosApi.getPortfolioHoldings(selectedStrategyPortfolioId);
+        const tokens: TokenSearchResult[] = [];
+        for (const holding of portfolioHoldings.filter(h => h.token && h.quantity > 0)) {
+          try {
+            const searchResults = await transactionsApi.searchTokens(holding.token?.symbol || '');
+            const fullToken = searchResults.find(t => t.symbol.toUpperCase() === holding.token?.symbol?.toUpperCase());
+            if (fullToken) {
+              tokens.push(fullToken);
+            }
+          } catch (err) {
+            console.error(`Erreur lors de la recherche du token ${holding.token?.symbol}:`, err);
+          }
+        }
+        setAvailableTokens(tokens);
+      } catch (error) {
+        console.error('Erreur lors du chargement des tokens disponibles:', error);
+        setAvailableTokens([]);
+      }
+    };
+    
+    loadAvailableTokens();
+  }, [selectedStrategyPortfolioId]);
+
+  // Calculer les données d'investissement
+  useEffect(() => {
+    const calculateInvestmentData = async () => {
+      if (isStrategyVirtualWallet || !selectedStrategyToken || !selectedStrategyPortfolioId) {
+        // Pour wallet virtuel, utiliser les valeurs saisies
+        if (strategyQuantity && strategyAveragePrice) {
+          const qty = parseFloat(strategyQuantity);
+          const avgPrice = parseFloat(strategyAveragePrice);
+          const currentPrice = selectedStrategyToken?.quote?.USD?.price || avgPrice;
+          const currentValue = qty * currentPrice;
+          const invested = qty * avgPrice;
+          const pnl = currentValue - invested;
+          const pnlPercentage = invested > 0 ? (pnl / invested) * 100 : 0;
+
+          setInvestmentData({
+            numberOfTransactions: 1,
+            totalInvested: invested,
+            totalQuantity: qty,
+            averagePrice: avgPrice,
+            currentPrice,
+            currentPNL: pnl,
+            currentPNLPercentage: pnlPercentage,
+          });
+        } else {
+          setInvestmentData(null);
+        }
+        return;
+      }
+
+      try {
+        const allTransactionsResponse = await transactionsApi.getTransactions();
+        // TransactionSearchResponse a une propriété 'transactions' qui contient le tableau
+        const transactionsArray = Array.isArray(allTransactionsResponse?.transactions) 
+          ? allTransactionsResponse.transactions 
+          : [];
+        const portfolioTransactions = transactionsArray.filter(t => 
+          t.portfolioId === selectedStrategyPortfolioId &&
+          t.symbol?.toUpperCase() === selectedStrategyToken.symbol.toUpperCase()
+        );
+
+        const holdings = await portfoliosApi.getPortfolioHoldings(selectedStrategyPortfolioId);
+        const holding = holdings.find(h => 
+          h.token?.symbol?.toUpperCase() === selectedStrategyToken.symbol.toUpperCase()
+        );
+
+        const currentPrice = holding?.currentPrice || selectedStrategyToken.quote?.USD?.price;
+        const totalInvested = portfolioTransactions.reduce((sum, t) => sum + (t.amountInvested || 0), 0);
+        const totalQuantity = portfolioTransactions.reduce((sum, t) => sum + (t.quantity || 0), 0);
+        const averagePrice = totalQuantity > 0 ? totalInvested / totalQuantity : 0;
+        const currentValue = totalQuantity * (currentPrice || 0);
+        const pnl = currentValue - totalInvested;
+        const pnlPercentage = totalInvested > 0 ? (pnl / totalInvested) * 100 : 0;
+
+        setInvestmentData({
+          numberOfTransactions: portfolioTransactions.length,
+          totalInvested,
+          totalQuantity,
+          averagePrice,
+          currentPrice,
+          currentPNL: pnl,
+          currentPNLPercentage: pnlPercentage,
+        });
+      } catch (error) {
+        console.error('Erreur lors du calcul des données d\'investissement:', error);
+        setInvestmentData(null);
+      }
+    };
+
+    calculateInvestmentData();
+  }, [selectedStrategyPortfolioId, selectedStrategyToken, strategyQuantity, strategyAveragePrice, isStrategyVirtualWallet]);
+
+  // Gérer les étapes
+  const handleStrategyNextStep = () => {
+    if (strategyStep < 5) {
+      setStrategyStep(strategyStep + 1);
     }
   };
-  
+
+  const handleStrategyPreviousStep = () => {
+    if (strategyStep > 1) {
+      setStrategyStep(strategyStep - 1);
+    }
+  };
+
+  // Auto-remplir le prix moyen avec le prix actuel du token
+  const handleStrategyTokenSelect = (token: TokenSearchResult | null) => {
+    setSelectedStrategyToken(token);
+    if (token && token.quote?.USD?.price) {
+      setStrategyAveragePrice(token.quote.USD.price.toFixed(2));
+    }
+  };
+
   // Gérer les modifications des cibles
   const handleTargetChange = (index: number, field: keyof ProfitTarget, value: any) => {
     const newTargets = [...profitTargets];
     newTargets[index] = { ...newTargets[index], [field]: value };
     
-    // Si on modifie le sellPercentage, vérifier que la somme ne dépasse pas 100%
     if (field === 'sellPercentage') {
       const totalPercentage = newTargets.reduce((sum, target) => sum + target.sellPercentage, 0);
       if (totalPercentage > 100) {
-        // Ajuster la valeur pour ne pas dépasser 100% au total
         const otherTargetsTotal = newTargets.reduce((sum, target, idx) => 
           idx === index ? sum : sum + target.sellPercentage, 0
         );
@@ -224,28 +353,53 @@ export default function CreateStrategyPage() {
           ? `La somme des quantités à vendre ne peut pas dépasser 100%. Maximum pour cette cible: ${maxValue.toFixed(1)}%`
           : `The sum of quantities to sell cannot exceed 100%. Maximum for this target: ${maxValue.toFixed(1)}%`);
       } else {
-        setError(null); // Réinitialiser l'erreur si tout est OK
+        setError('');
       }
     }
     
     setProfitTargets(newTargets);
   };
-  
-  // Calculer les simulations et les informations de stratégie
-  const calculateSimulations = () => {
-    const qty = parseFloat(quantity);
-    const avgPrice = parseFloat(averagePrice);
+
+  // Fonction pour mettre à jour le pourcentage à partir du nombre de tokens
+  const handleTokensChange = (index: number, tokensValue: number) => {
+    const qty = parseFloat(strategyQuantity);
+    if (isNaN(qty) || qty <= 0) {
+      setError(language === 'fr' ? 'Veuillez d\'abord saisir une quantité de tokens' : 'Please enter a token quantity first');
+      return;
+    }
+    
+    const percentage = (tokensValue / qty) * 100;
+    const otherTargetsTotal = profitTargets.reduce((sum, target, idx) => 
+      idx === index ? sum : sum + target.sellPercentage, 0
+    );
+    const maxPercentage = Math.max(0, 100 - otherTargetsTotal);
+    const finalPercentage = Math.min(percentage, maxPercentage);
+    handleTargetChange(index, 'sellPercentage', finalPercentage);
+    
+    if (finalPercentage <= maxPercentage) {
+      setError('');
+    }
+  };
+
+  // Calculer les informations de stratégie pour chaque cible
+  const calculateStrategyInfo = () => {
+    const qty = parseFloat(strategyQuantity);
+    const avgPrice = parseFloat(strategyAveragePrice);
     
     if (isNaN(qty) || isNaN(avgPrice) || qty <= 0 || avgPrice <= 0) {
       return [];
     }
     
     let remainingTokens = qty;
-    const results: any[] = [];
+    const results: Array<{
+      tokensSold: number;
+      amountCollected: number;
+      remainingTokens: number;
+      remainingTokensValuation: number;
+      remainingBagValue: number;
+    }> = [];
     
     profitTargets.forEach((target) => {
-      const tokensToSell = (qty * target.sellPercentage) / 100;
-      
       let targetPrice = 0;
       if (target.targetType === 'percentage') {
         targetPrice = avgPrice * (1 + target.targetValue / 100);
@@ -253,65 +407,61 @@ export default function CreateStrategyPage() {
         targetPrice = target.targetValue;
       }
       
-      const profitRealized = tokensToSell * (targetPrice - avgPrice);
-      remainingTokens = remainingTokens - tokensToSell;
+      let tokensSold = 0;
+      if (target.sellQuantityType === 'tokens' && target.sellTokens > 0) {
+        tokensSold = Math.min(target.sellTokens, remainingTokens);
+      } else {
+        tokensSold = (qty * target.sellPercentage) / 100;
+        tokensSold = Math.min(tokensSold, remainingTokens);
+      }
       
-      // Valorisation des tokens restants au prix cible
+      const amountCollected = tokensSold * targetPrice;
+      remainingTokens = remainingTokens - tokensSold;
       const remainingTokensValuation = remainingTokens * targetPrice;
-      
-      // Valeur du bag restant au prix d'achat moyen
       const remainingBagValue = remainingTokens * avgPrice;
       
-      // Montant encaissé
-      const amountCollected = tokensToSell * targetPrice;
-      
       results.push({
-        targetPrice,
-        tokensToSell,
-        profitRealized,
+        tokensSold,
+        amountCollected,
         remainingTokens,
         remainingTokensValuation,
         remainingBagValue,
-        amountCollected,
       });
     });
     
     return results;
   };
-  
-  const simulations = calculateSimulations();
-  const totalInvested = parseFloat(quantity) * parseFloat(averagePrice) || 0;
-  const totalProfitRealized = simulations.reduce((sum, sim) => sum + sim.profitRealized, 0);
-  const totalReturnPercentage = totalInvested > 0 ? (totalProfitRealized / totalInvested) * 100 : 0;
-  
+
+  const strategyInfo = calculateStrategyInfo();
+
   // Sauvegarder la stratégie
-  const handleSaveStrategy = async () => {
+  const handleCreateStrategy = async () => {
     // Validation
     if (!strategyName.trim()) {
-      alert(language === 'fr' ? 'Veuillez entrer un nom pour la stratégie' : 'Please enter a strategy name');
+      setError(language === 'fr' ? 'Veuillez entrer un nom pour la stratégie' : 'Please enter a strategy name');
       return;
     }
-    if (!selectedToken) {
-      alert(language === 'fr' ? 'Veuillez sélectionner un token' : 'Please select a token');
+    if (!selectedStrategyToken) {
+      setError(language === 'fr' ? 'Veuillez sélectionner un token' : 'Please select a token');
       return;
     }
-    if (!quantity || parseFloat(quantity) <= 0) {
-      alert(language === 'fr' ? 'Veuillez entrer une quantité valide' : 'Please enter a valid quantity');
+    if (!strategyQuantity || parseFloat(strategyQuantity) <= 0) {
+      setError(language === 'fr' ? 'Veuillez entrer une quantité valide' : 'Please enter a valid quantity');
       return;
     }
-    if (!averagePrice || parseFloat(averagePrice) <= 0) {
-      alert(language === 'fr' ? 'Veuillez entrer un prix moyen valide' : 'Please enter a valid average price');
+    if (!strategyAveragePrice || parseFloat(strategyAveragePrice) <= 0) {
+      setError(language === 'fr' ? 'Veuillez entrer un prix moyen valide' : 'Please enter a valid average price');
       return;
     }
     
     // Validation de la quantité selon le type de wallet
-    if (!isVirtualWallet && selectedPortfolioId) {
-      const qty = parseFloat(quantity);
-      if (qty > availableQuantity) {
-        alert(
+    if (!isStrategyVirtualWallet && selectedStrategyPortfolioId) {
+      const qty = parseFloat(strategyQuantity);
+      if (qty > availableStrategyQuantity) {
+        setError(
           language === 'fr' 
-            ? `La quantité (${qty}) ne peut pas dépasser ce que vous possédez dans ce wallet (${availableQuantity})`
-            : `Quantity (${qty}) cannot exceed what you own in this wallet (${availableQuantity})`
+            ? `La quantité (${qty}) ne peut pas dépasser ce que vous possédez dans ce wallet (${availableStrategyQuantity})`
+            : `Quantity (${qty}) cannot exceed what you own in this wallet (${availableStrategyQuantity})`
         );
         return;
       }
@@ -320,7 +470,7 @@ export default function CreateStrategyPage() {
     // Validation : la somme des quantités à vendre ne doit pas dépasser 100%
     const totalSellPercentage = profitTargets.reduce((sum, target) => sum + target.sellPercentage, 0);
     if (totalSellPercentage > 100) {
-      alert(language === 'fr' 
+      setError(language === 'fr' 
         ? `La somme des quantités à vendre (${totalSellPercentage.toFixed(1)}%) ne peut pas dépasser 100%`
         : `The sum of quantities to sell (${totalSellPercentage.toFixed(1)}%) cannot exceed 100%`);
       return;
@@ -331,17 +481,15 @@ export default function CreateStrategyPage() {
     
     try {
       console.log('💾 Création de la stratégie...');
-      console.log('Type de wallet:', isVirtualWallet ? 'Virtuel' : 'Réel');
       
-      if (isVirtualWallet) {
-        // Stratégie théorique
-      const strategyDataBase = {
+      // Toujours créer une stratégie théorique (wallet virtuel)
+      const strategyData: CreateTheoreticalStrategyDto = {
         name: strategyName,
-        description: `${language === 'fr' ? 'Stratégie pour' : 'Strategy for'} ${selectedToken.symbol} - ${numberOfTargets} ${language === 'fr' ? 'cibles de profit' : 'profit targets'}`,
-        tokenSymbol: selectedToken.symbol,
-        tokenName: selectedToken.name,
-        quantity: parseFloat(quantity),
-        averagePrice: parseFloat(averagePrice),
+        description: `${language === 'fr' ? 'Stratégie pour' : 'Strategy for'} ${selectedStrategyToken.symbol} - ${numberOfTargets} ${language === 'fr' ? 'cibles de profit' : 'profit targets'}`,
+        tokenSymbol: selectedStrategyToken.symbol,
+        tokenName: selectedStrategyToken.name,
+        quantity: parseFloat(strategyQuantity),
+        averagePrice: parseFloat(strategyAveragePrice),
         profitTargets: profitTargets.map((target, index) => ({
           order: index + 1,
           targetType: target.targetType,
@@ -351,41 +499,16 @@ export default function CreateStrategyPage() {
         status: 'active' as const,
       };
       
-      console.log('📤 Données de la stratégie théorique:', strategyDataBase);
+      console.log('📤 Données de la stratégie théorique:', strategyData);
       
       if (isEditMode && editingStrategyId) {
-        const updateData: UpdateTheoreticalStrategyDto = strategyDataBase;
+        const updateData: UpdateTheoreticalStrategyDto = strategyData;
         const updatedStrategy = await portfoliosApi.updateTheoreticalStrategy(editingStrategyId, updateData);
         console.log('✅ Stratégie théorique modifiée:', updatedStrategy);
         alert(language === 'fr' ? 'Stratégie modifiée avec succès !' : 'Strategy updated successfully!');
       } else {
-        const createData: CreateTheoreticalStrategyDto = strategyDataBase;
-        const createdStrategy = await portfoliosApi.createTheoreticalStrategy(createData);
+        const createdStrategy = await portfoliosApi.createTheoreticalStrategy(strategyData);
         console.log('✅ Stratégie théorique créée:', createdStrategy);
-        alert(language === 'fr' ? 'Stratégie créée avec succès !' : 'Strategy created successfully!');
-      }
-      } else {
-        // Stratégie réelle - utiliser l'API /strategies
-        const strategyData = {
-          name: strategyName,
-          symbol: selectedToken.symbol,
-          tokenName: selectedToken.name,
-          cmcId: selectedToken.id || 0,
-          baseQuantity: parseFloat(quantity),
-          referencePrice: parseFloat(averagePrice),
-          steps: profitTargets.map((target): CreateStrategyStepDto => ({
-            targetType: target.targetType === 'percentage' ? TargetType.PERCENTAGE_OF_AVERAGE : TargetType.EXACT_PRICE,
-            targetValue: target.targetValue,
-            sellPercentage: target.sellPercentage,
-            notes: '',
-          })),
-          notes: `${language === 'fr' ? 'Stratégie pour' : 'Strategy for'} ${selectedToken.symbol} - ${numberOfTargets} ${language === 'fr' ? 'cibles de profit' : 'profit targets'}`,
-        };
-        
-        console.log('📤 Données de la stratégie réelle:', strategyData);
-        
-        const createdStrategy = await strategiesApi.createStrategy(strategyData);
-        console.log('✅ Stratégie réelle créée:', createdStrategy);
         alert(language === 'fr' ? 'Stratégie créée avec succès !' : 'Strategy created successfully!');
       }
       
@@ -415,628 +538,835 @@ export default function CreateStrategyPage() {
 
           <div className={`flex-1 p-3 md:p-6 overflow-x-hidden max-w-full ${isDarkMode ? 'bg-gray-900' : 'bg-gray-50'}`}>
             <div className="max-w-7xl mx-auto w-full">
-        {/* Header */}
+              {/* Header */}
               <div className="mb-4 md:mb-8">
                 <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-0 mb-3 md:mb-4">
-          <div>
+                  <div>
+                    <h1 className={`text-xl md:text-2xl font-bold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+                      {language === 'fr' ? 'Créez votre première stratégie' : 'Create your first strategy'}
+                    </h1>
                     <p className={`text-sm md:text-base mt-2 ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-              {isEditMode 
-                        ? (language === 'fr' ? 'Modifiez les paramètres de votre stratégie existante' : 'Modify your existing strategy settings')
-                        : (language === 'fr' ? 'Définissez vos cibles de profit théoriques pour n\'importe quel token' : 'Define your theoretical profit targets for any token')
-              }
-            </p>
-          </div>
+                      {language === 'fr' ? 'Définissez des cibles de profit théoriques pour optimiser vos gains' : 'Define theoretical profit targets to optimize your gains'}
+                    </p>
+                  </div>
                   <Button 
                     variant="outline" 
                     onClick={() => router.push('/strategies')} 
                     className="flex items-center gap-2 px-3 md:px-4 py-2 text-sm md:text-base w-full sm:w-auto"
                   >
-            <ArrowLeftIcon className="h-4 w-4" />
+                    <ArrowLeftIcon className="h-4 w-4" />
                     {language === 'fr' ? 'Retour' : 'Back'}
-          </Button>
+                  </Button>
                 </div>
-        </div>
+              </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-8 w-full max-w-full">
-          {/* Colonne gauche: Configuration */}
-          <div className="lg:col-span-2 space-y-4 md:space-y-6 w-full max-w-full">
-            {/* Informations de base */}
-                  <div className={`rounded-xl p-4 md:p-6 w-full max-w-full ${isDarkMode ? 'bg-gray-800' : 'bg-white border border-gray-200'}`}>
-                    <div className="mb-3 md:mb-4">
-                      <h2 className={`flex items-center gap-2 text-base md:text-xl font-semibold ${
-                        isDarkMode ? 'text-white' : 'text-gray-900'
-                      }`}>
-                        <ChartBarIcon className="h-4 w-4 md:h-5 md:w-5 text-purple-600" />
-                        {language === 'fr' ? 'Informations de la Stratégie' : 'Strategy Information'}
-                      </h2>
-                      <p className={`text-xs md:text-sm mt-1 ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-                        {language === 'fr' ? 'Définissez le nom et le token cible' : 'Define the name and target token'}
-                      </p>
-                    </div>
-                    <div className="space-y-3 md:space-y-4">
-                <div>
-                        <Label htmlFor="strategyName" className={isDarkMode ? 'text-gray-300' : 'text-gray-700'}>
-                          {language === 'fr' ? 'Nom de la stratégie *' : 'Strategy Name *'}
-                        </Label>
-                  <Input
-                    id="strategyName"
-                    type="text"
-                    value={strategyName}
-                    onChange={(e) => setStrategyName(e.target.value)}
-                          placeholder={language === 'fr' ? 'Ex: Stratégie BTC Conservative' : 'Ex: BTC Conservative Strategy'}
-                    required
-                          className={isDarkMode ? 'bg-gray-700 border-gray-600 text-white' : ''}
-                  />
+              {/* Error Message */}
+              {error && (
+                <div className={`mb-4 p-3 rounded-lg ${isDarkMode ? 'bg-red-900/20 border border-red-700/30' : 'bg-red-50 border border-red-200'}`}>
+                  <p className={`text-sm ${isDarkMode ? 'text-red-400' : 'text-red-600'}`}>{error}</p>
                 </div>
-                
-                <div>
-                        <Label htmlFor="portfolio" className={isDarkMode ? 'text-gray-300' : 'text-gray-700'}>
-                          {language === 'fr' ? 'Portfolio / Wallet *' : 'Portfolio / Wallet *'}
-                        </Label>
-                        <Select
-                          value={selectedPortfolioId}
-                          onValueChange={(value) => {
-                            setSelectedPortfolioId(value);
-                            // Réinitialiser la quantité quand on change de portfolio
-                            if (value !== 'virtual') {
-                              setQuantity('');
-                            }
-                          }}
-                        >
-                          <SelectTrigger className={isDarkMode ? 'bg-gray-700 border-gray-600 text-white' : ''}>
-                            <SelectValue placeholder={language === 'fr' ? 'Sélectionner un wallet' : 'Select a wallet'} />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {/* Portfolios réels */}
-                            {portfolios.filter(p => p && p.id && p.name).map((portfolio) => (
-                              <SelectItem key={portfolio.id} value={portfolio.id}>
-                                {portfolio.name}
-                              </SelectItem>
-                            ))}
-                            {/* Séparateur visuel */}
-                            <div className="px-3 py-2 text-xs font-semibold text-gray-500 border-t border-gray-200">
-                              {language === 'fr' ? 'Simulation' : 'Simulation'}
-                            </div>
-                            {/* Wallet virtuelle */}
-                            <SelectItem value="virtual">
-                              {language === 'fr' ? 'Wallet Virtuelle' : 'Virtual Wallet'}
-                            </SelectItem>
-                          </SelectContent>
-                        </Select>
-                        {!isVirtualWallet && availableQuantity > 0 && selectedToken && (
-                          <p className={`mt-1 text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-                            {language === 'fr' 
-                              ? `Quantité disponible: ${availableQuantity.toLocaleString()} ${selectedToken.symbol}`
-                              : `Available quantity: ${availableQuantity.toLocaleString()} ${selectedToken.symbol}`
-                            }
-                          </p>
-                        )}
-                      </div>
-                      
-                      <div>
-                        <Label htmlFor="token" className={isDarkMode ? 'text-gray-300' : 'text-gray-700'}>
-                          {language === 'fr' ? 'Token *' : 'Token *'}
-                        </Label>
-                  <TokenSearch
-                    onTokenSelect={handleTokenSelect}
-                    selectedToken={selectedToken}
-                  />
-                </div>
-                
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 md:gap-4">
-                  <div>
-                          <Label htmlFor="quantity" className={`text-xs md:text-sm ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-                            {language === 'fr' ? 'Quantité *' : 'Quantity *'}
-                            {!isVirtualWallet && availableQuantity > 0 && (
-                              <span className="text-xs text-gray-500 ml-2">
-                                (max: {availableQuantity.toLocaleString()})
-                              </span>
+              )}
+
+              <div className="space-y-4 md:space-y-6">
+                {/* Structure en deux colonnes */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-8">
+                  {/* Colonne gauche : Zone A - Inputs */}
+                  <div className="space-y-4 md:space-y-6">
+                    <Card className={`border ${isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}`}>
+                      <CardContent className="p-4 md:p-6 space-y-4">
+                        <h4 className={`text-sm md:text-base font-semibold mb-4 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+                          {language === 'fr' ? 'Paramétrage de la stratégie' : 'Strategy Settings'}
+                        </h4>
+                        
+                        {/* Étape 1 : Portfolio */}
+                        {strategyStep >= 1 && (
+                          <div className={strategyStep === 1 ? 'ring-2 ring-blue-200 rounded-lg p-2 -m-2' : ''}>
+                            <Label htmlFor="portfolio" className={`text-xs md:text-sm flex items-center gap-2 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                              1. {language === 'fr' ? 'Choisissez votre wallet' : 'Choose your wallet'}
+                              {strategyStep > 1 && (
+                                <span className={`text-xs font-medium ${isDarkMode ? 'text-green-400' : 'text-green-600'}`}>
+                                  ✓ {language === 'fr' ? 'Complété' : 'Completed'}
+                                </span>
+                              )}
+                            </Label>
+                            <Select
+                              value={selectedStrategyPortfolioId}
+                              onValueChange={(value) => {
+                                setSelectedStrategyPortfolioId(value);
+                                setSelectedStrategyToken(null);
+                                setStrategyQuantity('');
+                                setStrategyName('');
+                                setNumberOfTargets(0);
+                                setProfitTargets([]);
+                                if (value !== 'virtual' && value) {
+                                  setStrategyStep(2);
+                                }
+                              }}
+                            >
+                              <SelectTrigger className={`text-sm md:text-base ${isDarkMode ? 'bg-gray-700 border-gray-600 text-white' : ''}`}>
+                                <SelectValue placeholder={language === 'fr' ? 'Sélectionner un wallet' : 'Select a wallet'} />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {portfolios.filter(p => p && p.id && p.name).map((portfolio) => (
+                                  <SelectItem key={portfolio.id} value={portfolio.id}>
+                                    {portfolio.name}
+                                  </SelectItem>
+                                ))}
+                                <div className={`px-3 py-2 text-xs font-semibold ${isDarkMode ? 'text-gray-500 border-t border-gray-700' : 'text-gray-500 border-t border-gray-200'}`}>
+                                  {language === 'fr' ? 'Simulation' : 'Simulation'}
+                                </div>
+                                <div className={`px-3 py-2 text-sm ${isDarkMode ? 'text-gray-500 cursor-not-allowed opacity-50' : 'text-gray-400 cursor-not-allowed opacity-50'}`}>
+                                  {language === 'fr' ? 'Wallet Virtuelle' : 'Virtual Wallet'}
+                                </div>
+                              </SelectContent>
+                            </Select>
+                            {selectedStrategyPortfolioId && strategyStep === 1 && (
+                              <div className="mt-4 flex gap-2">
+                                <Button
+                                  type="button"
+                                  onClick={handleStrategyNextStep}
+                                  className="flex-1"
+                                >
+                                  {language === 'fr' ? 'Suivant' : 'Next'}
+                                </Button>
+                              </div>
                             )}
-                          </Label>
-                    <Input
-                      id="quantity"
-                      type="number"
-                      value={quantity}
-                            onChange={(e) => {
-                              const value = e.target.value;
-                              // Validation : si c'est un wallet réel, ne pas dépasser la quantité disponible
-                              if (!isVirtualWallet && availableQuantity > 0 && value) {
-                                const numValue = parseFloat(value);
-                                if (numValue > availableQuantity) {
-                                  // Ne pas mettre à jour si ça dépasse, mais afficher un message
-                                  setError(
-                                    language === 'fr'
-                                      ? `La quantité ne peut pas dépasser ${availableQuantity.toLocaleString()} ${selectedToken?.symbol || ''}`
-                                      : `Quantity cannot exceed ${availableQuantity.toLocaleString()} ${selectedToken?.symbol || ''}`
-                                  );
-                                  return;
-                                }
-                                setError(null);
-                              }
-                              setQuantity(value);
-                            }}
-                            placeholder={language === 'fr' ? 'Ex: 1.5' : 'Ex: 1.5'}
-                      step="0.00000001"
-                            max={!isVirtualWallet && availableQuantity > 0 ? availableQuantity : undefined}
-                      required
-                            className={isDarkMode ? 'bg-gray-700 border-gray-600 text-white' : ''}
-                          />
-                          {!isVirtualWallet && parseFloat(quantity) > availableQuantity && (
-                            <p className="mt-1 text-sm text-red-600">
-                              {language === 'fr'
-                                ? `Quantité supérieure à celle disponible (${availableQuantity.toLocaleString()})`
-                                : `Quantity exceeds available (${availableQuantity.toLocaleString()})`
-                              }
-                            </p>
-                          )}
-                  </div>
-                  <div>
-                          <Label htmlFor="averagePrice" className={isDarkMode ? 'text-gray-300' : 'text-gray-700'}>
-                            {language === 'fr' ? 'Prix moyen (USD) *' : 'Average Price (USD) *'}
-                          </Label>
-                    <Input
-                      id="averagePrice"
-                      type="number"
-                      value={averagePrice}
-                      onChange={(e) => setAveragePrice(e.target.value)}
-                            placeholder={language === 'fr' ? 'Ex: 45000' : 'Ex: 45000'}
-                      step="0.01"
-                      required
-                            className={isDarkMode ? 'bg-gray-700 border-gray-600 text-white' : ''}
-                          />
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Informations récapitulatives */}
-                  <div className={`rounded-xl p-4 md:p-6 mb-4 md:mb-6 w-full max-w-full ${isDarkMode ? 'bg-gray-800 border border-gray-700' : 'bg-gray-50 border border-gray-200'}`}>
-                    <div className="grid grid-cols-2 md:grid-cols-5 gap-3 md:gap-4 text-xs md:text-sm">
-                      <div>
-                        <p className={`mb-1 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-                          {language === 'fr' ? 'Portfolio' : 'Portfolio'}
-                        </p>
-                        <p className={`font-semibold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
-                          {isVirtualWallet 
-                            ? (language === 'fr' ? 'Wallet Virtuelle' : 'Virtual Wallet')
-                            : portfolios.find(p => p.id === selectedPortfolioId)?.name || '-'}
-                        </p>
-                      </div>
-                      <div>
-                        <p className={`mb-1 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-                          {language === 'fr' ? 'Token' : 'Token'}
-                        </p>
-                        <p className={`font-semibold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
-                          {selectedToken?.symbol || '-'}
-                        </p>
-                      </div>
-                      <div>
-                        <p className={`mb-1 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-                          {language === 'fr' ? 'Nombre de sorties' : 'Number of exits'}
-                        </p>
-                        <p className={`font-semibold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>{numberOfTargets}</p>
-                      </div>
-                      <div>
-                        <p className={`mb-1 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-                          {language === 'fr' ? 'Tokens détenus' : 'Tokens held'}
-                        </p>
-                        <p className={`font-semibold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
-                          {quantity ? parseFloat(quantity).toLocaleString() : '-'}
-                        </p>
-                      </div>
-                      <div>
-                        <p className={`mb-1 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-                          {language === 'fr' ? 'Prix moyen d\'achat' : 'Average purchase price'}
-                        </p>
-                        <p className={`font-semibold ${isDarkMode ? 'text-purple-400' : 'text-purple-600'}`}>
-                          {averagePrice ? `$${parseFloat(averagePrice).toLocaleString()}` : '-'}
-                        </p>
-                      </div>
-                    </div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4 pt-4 border-t border-gray-200">
-                      <div>
-                        <p className={`mb-1 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-                          {language === 'fr' ? 'Total investi' : 'Total invested'}
-                        </p>
-                        <p className={`text-lg font-bold ${isDarkMode ? 'text-green-400' : 'text-green-600'}`}>
-                          {quantity && averagePrice 
-                            ? formatCurrency(parseFloat(quantity) * parseFloat(averagePrice), '$', 2)
-                            : '$0.00'}
-                        </p>
-                      </div>
-                  </div>
-                </div>
-
-            {/* Configuration des cibles */}
-                  <div className={`rounded-xl p-4 md:p-6 w-full max-w-full ${isDarkMode ? 'bg-gray-800' : 'bg-white border border-gray-200'}`}>
-                    <div className="mb-3 md:mb-4">
-                      <h2 className={`flex items-center gap-2 text-base md:text-xl font-semibold ${
-                        isDarkMode ? 'text-white' : 'text-gray-900'
-                      }`}>
-                  <PencilIcon className="h-4 w-4 md:h-5 md:w-5 text-purple-600" />
-                        {language === 'fr' ? 'Cibles de Prise de Profit' : 'Profit Targets'}
-                      </h2>
-                      <p className={`text-xs md:text-sm mt-1 ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-                        {language === 'fr' ? 'Définissez vos points de sortie' : 'Define your exit points'}
-                      </p>
-                    </div>
-                    <div className="space-y-4 md:space-y-6">
-                <div>
-                        <Label htmlFor="numberOfTargets" className={isDarkMode ? 'text-gray-300' : 'text-gray-700'}>
-                          {language === 'fr' ? 'Nombre de sorties (1-10)' : 'Number of exits (1-10)'}
-                        </Label>
-                  <Input
-                    id="numberOfTargets"
-                    type="number"
-                    min="1"
-                    max="10"
-                    value={numberOfTargets}
-                    onChange={(e) => {
-                      const val = parseInt(e.target.value);
-                      if (!isNaN(val) && val >= 1 && val <= 10) {
-                        setNumberOfTargets(val);
-                      }
-                    }}
-                          className={`w-24 ${isDarkMode ? 'bg-gray-700 border-gray-600 text-white' : ''}`}
-                  />
-                </div>
-
-                {profitTargets.map((target, index) => (
-                        <div key={target.id} className={`border p-3 md:p-4 rounded-lg space-y-3 w-full max-w-full ${
-                          isDarkMode ? 'bg-gray-700 border-gray-600' : 'bg-gray-50'
-                        }`}>
-                          <h3 className={`text-sm md:text-base font-semibold ${
-                            isDarkMode ? 'text-white' : 'text-gray-900'
-                          }`}>
-                            {language === 'fr' ? 'Cible' : 'Target'} #{index + 1}
-                          </h3>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 md:gap-4">
-                      <div>
-                              <Label htmlFor={`targetType-${index}`} className={isDarkMode ? 'text-gray-300' : 'text-gray-700'}>
-                                {language === 'fr' ? 'Type' : 'Type'}
-                              </Label>
-                        <Select
-                          value={target.targetType}
-                                onValueChange={(value: string) => 
-                                  handleTargetChange(index, 'targetType', value as 'percentage' | 'price')
-                          }
-                        >
-                                <SelectTrigger className={isDarkMode ? 'bg-gray-700 border-gray-600' : ''}>
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                                  <SelectItem value="percentage">{language === 'fr' ? '% de profit' : '% profit'}</SelectItem>
-                                  <SelectItem value="price">{language === 'fr' ? 'Prix exact' : 'Exact price'}</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      <div>
-                              <Label htmlFor={`targetValue-${index}`} className={isDarkMode ? 'text-gray-300' : 'text-gray-700'}>
-                                {target.targetType === 'percentage' 
-                                  ? (language === 'fr' ? 'Pourcentage (%)' : 'Percentage (%)')
-                                  : (language === 'fr' ? 'Prix (USD)' : 'Price (USD)')
-                                }
-                        </Label>
-                        <Input
-                          id={`targetValue-${index}`}
-                          type="number"
-                          value={target.targetValue}
-                          onChange={(e) => 
-                            handleTargetChange(index, 'targetValue', parseFloat(e.target.value))
-                          }
-                          step="0.01"
-                                className={isDarkMode ? 'bg-gray-700 border-gray-600 text-white' : ''}
-                        />
-                      </div>
-                    </div>
-                    <div>
-                            <div className="flex items-center justify-between mb-2">
-                              <Label htmlFor={`sellPercentage-${index}`} className={isDarkMode ? 'text-gray-300' : 'text-gray-700'}>
-                                {language === 'fr' ? 'Quantité à vendre' : 'Quantity to sell'} (%)
-                      </Label>
-                              <span className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-                                {language === 'fr' ? 'Total' : 'Total'}: {profitTargets.reduce((sum, t) => sum + t.sellPercentage, 0).toFixed(1)}%
-                              </span>
-                            </div>
-                            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:gap-4">
-                              <div className="flex-1 relative">
-                                {/* Barre de fond grise */}
-                                <div className="absolute inset-0 flex items-center">
-                                  <div className={`w-full h-2 rounded-lg ${isDarkMode ? 'bg-gray-700' : 'bg-gray-200'}`} />
-                                </div>
-                                
-                                {/* Slider par-dessus avec fond transparent */}
-                                <div className="relative z-10">
-                                  <Slider
-                                    min={0}
-                                    max={100}
-                                    step={0.1}
-                                    value={[target.sellPercentage]}
-                                    onValueChange={(value) => {
-                                      const otherTargetsTotal = profitTargets.reduce((sum, t, idx) => 
-                                        idx === index ? sum : sum + t.sellPercentage, 0
-                                      );
-                                      const maxValue = Math.max(0, 100 - otherTargetsTotal);
-                                      handleTargetChange(index, 'sellPercentage', Math.min(value[0], maxValue));
-                                    }}
-                                    className="w-full slider-transparent"
-                                    style={{
-                                      background: 'transparent',
-                                    }}
-                                  />
-                                </div>
+                          </div>
+                        )}
+                        
+                        {/* Étape 2 : Token */}
+                        {strategyStep >= 2 && selectedStrategyPortfolioId && (
+                          <div className={strategyStep === 2 ? 'ring-2 ring-blue-200 rounded-lg p-2 -m-2' : ''}>
+                            <Label htmlFor="token" className={`text-xs md:text-sm flex items-center gap-2 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                              2. {language === 'fr' ? 'Choisissez un token' : 'Choose a token'}
+                              {strategyStep > 2 && (
+                                <span className={`text-xs font-medium ${isDarkMode ? 'text-green-400' : 'text-green-600'}`}>
+                                  ✓ {language === 'fr' ? 'Complété' : 'Completed'}
+                                </span>
+                              )}
+                            </Label>
+                            {availableTokens.length > 0 && !isStrategyVirtualWallet ? (
+                              <Select
+                                value={selectedStrategyToken?.symbol || ''}
+                                onValueChange={(value) => {
+                                  const token = availableTokens.find(t => t.symbol === value);
+                                  handleStrategyTokenSelect(token || null);
+                                }}
+                              >
+                                <SelectTrigger className={`text-sm md:text-base ${isDarkMode ? 'bg-gray-700 border-gray-600 text-white' : ''}`}>
+                                  <SelectValue placeholder={language === 'fr' ? 'Sélectionner un token' : 'Select a token'} />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {availableTokens.map((token) => (
+                                    <SelectItem key={token.symbol} value={token.symbol}>
+                                      {token.symbol} - {token.name}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            ) : (
+                              <TokenSearch
+                                onTokenSelect={handleStrategyTokenSelect}
+                                selectedToken={selectedStrategyToken}
+                              />
+                            )}
+                            {selectedStrategyToken && strategyStep === 2 && (
+                              <div className="mt-4 flex gap-2">
+                                <Button
+                                  type="button"
+                                  onClick={handleStrategyPreviousStep}
+                                  variant="outline"
+                                  className="flex-1"
+                                >
+                                  {language === 'fr' ? 'Précédent' : 'Previous'}
+                                </Button>
+                                <Button
+                                  type="button"
+                                  onClick={handleStrategyNextStep}
+                                  className="flex-1"
+                                >
+                                  {language === 'fr' ? 'Suivant' : 'Next'}
+                                </Button>
                               </div>
-                              <div className="w-full sm:w-24">
-                                <Input
-                                  id={`sellPercentage-${index}`}
-                                  type="number"
-                                  min={0}
-                                  max={(() => {
-                                    const otherTargetsTotal = profitTargets.reduce((sum, t, idx) => 
-                                      idx === index ? sum : sum + t.sellPercentage, 0
+                            )}
+                          </div>
+                        )}
+                        
+                        {/* Étape 3 : Quantité */}
+                        {strategyStep >= 3 && selectedStrategyToken && (
+                          <div className={strategyStep === 3 ? 'ring-2 ring-blue-200 rounded-lg p-2 -m-2' : ''}>
+                            <Label htmlFor="quantity" className={`text-xs md:text-sm flex items-center gap-2 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                              3. {language === 'fr' ? 'Quantité à appliquer à la stratégie' : 'Quantity to apply to strategy'}
+                              {strategyStep > 3 && (
+                                <span className={`text-xs font-medium ${isDarkMode ? 'text-green-400' : 'text-green-600'}`}>
+                                  ✓ {language === 'fr' ? 'Complété' : 'Completed'}
+                                </span>
+                              )}
+                            </Label>
+                            <Input
+                              id="quantity"
+                              type="number"
+                              value={strategyQuantity}
+                              onChange={(e) => {
+                                const value = e.target.value;
+                                if (!isStrategyVirtualWallet && availableStrategyQuantity > 0 && value) {
+                                  const numValue = parseFloat(value);
+                                  if (numValue > availableStrategyQuantity) {
+                                    setError(
+                                      language === 'fr'
+                                        ? `La quantité ne peut pas dépasser ${availableStrategyQuantity.toLocaleString(undefined, { maximumFractionDigits: 8 })} ${selectedStrategyToken?.symbol || ''}`
+                                        : `Quantity cannot exceed ${availableStrategyQuantity.toLocaleString(undefined, { maximumFractionDigits: 8 })} ${selectedStrategyToken?.symbol || ''}`
                                     );
-                                    return 100 - otherTargetsTotal;
-                                  })()}
-                                  step={0.1}
-                                  value={target.sellPercentage.toFixed(1)}
-                                  onChange={(e) => {
-                                    const value = parseFloat(e.target.value);
-                                    if (!isNaN(value) && value >= 0) {
-                                      // Vérifier que la somme ne dépasse pas 100%
-                                      const otherTargetsTotal = profitTargets.reduce((sum, t, idx) => 
-                                        idx === index ? sum : sum + t.sellPercentage, 0
-                                      );
-                                      const maxValue = Math.max(0, 100 - otherTargetsTotal);
-                                      handleTargetChange(index, 'sellPercentage', Math.min(value, maxValue));
-                                    }
-                                  }}
-                                  className={`${isDarkMode ? 'bg-gray-700 border-gray-600 text-white' : ''}`}
-                                />
-                              </div>
-                            </div>
-                            {profitTargets.reduce((sum, t) => sum + t.sellPercentage, 0) > 100 && (
-                              <p className={`mt-1 text-xs ${isDarkMode ? 'text-red-400' : 'text-red-600'}`}>
-                                {language === 'fr' ? 'La somme dépasse 100% !' : 'The sum exceeds 100%!'}
+                                    return;
+                                  }
+                                  setError('');
+                                }
+                                setStrategyQuantity(value);
+                              }}
+                              placeholder="Ex: 1.5"
+                              step="0.00000001"
+                              max={!isStrategyVirtualWallet && availableStrategyQuantity > 0 ? availableStrategyQuantity : undefined}
+                              required
+                              className={`text-sm md:text-base ${isDarkMode ? 'bg-gray-700 border-gray-600 text-white' : ''}`}
+                            />
+                            {!isStrategyVirtualWallet && availableStrategyQuantity > 0 && (
+                              <p className={`mt-1 text-xs md:text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                                {language === 'fr' ? 'Maximum disponible:' : 'Maximum available:'} {availableStrategyQuantity.toLocaleString(undefined, { maximumFractionDigits: 8 })} {selectedStrategyToken?.symbol || ''}
                               </p>
                             )}
+                            {!isStrategyVirtualWallet && parseFloat(strategyQuantity) > availableStrategyQuantity && (
+                              <p className={`mt-1 text-xs md:text-sm ${isDarkMode ? 'text-red-400' : 'text-red-600'}`}>
+                                {language === 'fr' 
+                                  ? `Quantité supérieure à celle disponible (${availableStrategyQuantity.toLocaleString(undefined, { maximumFractionDigits: 8 })})`
+                                  : `Quantity exceeds available (${availableStrategyQuantity.toLocaleString(undefined, { maximumFractionDigits: 8 })})`
+                                }
+                              </p>
+                            )}
+                            {strategyQuantity && strategyStep === 3 && (
+                              <div className="mt-4 flex gap-2">
+                                <Button
+                                  type="button"
+                                  onClick={handleStrategyPreviousStep}
+                                  variant="outline"
+                                  className="flex-1"
+                                >
+                                  {language === 'fr' ? 'Précédent' : 'Previous'}
+                                </Button>
+                                <Button
+                                  type="button"
+                                  onClick={handleStrategyNextStep}
+                                  className="flex-1"
+                                >
+                                  {language === 'fr' ? 'Suivant' : 'Next'}
+                                </Button>
+                              </div>
+                            )}
                           </div>
-                        </div>
-                      ))}
-                    </div>
+                        )}
+                        
+                        {/* Étape 4 : Nom de la stratégie */}
+                        {strategyStep >= 4 && strategyQuantity && (
+                          <div className={strategyStep === 4 ? 'ring-2 ring-blue-200 rounded-lg p-2 -m-2' : ''}>
+                            <Label htmlFor="strategyName" className={`text-xs md:text-sm flex items-center gap-2 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                              4. {language === 'fr' ? 'Nom de la stratégie' : 'Strategy name'}
+                              {strategyStep > 4 && (
+                                <span className={`text-xs font-medium ${isDarkMode ? 'text-green-400' : 'text-green-600'}`}>
+                                  ✓ {language === 'fr' ? 'Complété' : 'Completed'}
+                                </span>
+                              )}
+                            </Label>
+                            <Input
+                              id="strategyName"
+                              type="text"
+                              value={strategyName}
+                              onChange={(e) => setStrategyName(e.target.value)}
+                              placeholder={language === 'fr' ? 'Nom de la stratégie' : 'Strategy name'}
+                              className={`text-sm md:text-base ${isDarkMode ? 'bg-gray-700 border-gray-600 text-white' : ''}`}
+                            />
+                            {strategyName && strategyStep === 4 && (
+                              <div className="mt-4 flex gap-2">
+                                <Button
+                                  type="button"
+                                  onClick={handleStrategyPreviousStep}
+                                  variant="outline"
+                                  className="flex-1"
+                                >
+                                  {language === 'fr' ? 'Précédent' : 'Previous'}
+                                </Button>
+                                <Button
+                                  type="button"
+                                  onClick={handleStrategyNextStep}
+                                  className="flex-1"
+                                >
+                                  {language === 'fr' ? 'Suivant' : 'Next'}
+                                </Button>
+                              </div>
+                            )}
+                          </div>
+                        )}
+
+                        {/* Étape 5 : Nombre de sorties */}
+                        {strategyStep >= 5 && strategyName && (
+                          <div className={strategyStep === 5 ? 'ring-2 ring-blue-200 rounded-lg p-2 -m-2' : ''}>
+                            <Label htmlFor="numberOfTargets" className={`text-xs md:text-sm flex items-center gap-2 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                              5. {language === 'fr' ? 'Nombre de sorties' : 'Number of exits'}
+                              {strategyStep > 5 && (
+                                <span className={`text-xs font-medium ${isDarkMode ? 'text-green-400' : 'text-green-600'}`}>
+                                  ✓ {language === 'fr' ? 'Complété' : 'Completed'}
+                                </span>
+                              )}
+                            </Label>
+                            <Select
+                              value={numberOfTargets > 0 ? numberOfTargets.toString() : ''}
+                              onValueChange={(value) => {
+                                if (value === '') {
+                                  setNumberOfTargets(0);
+                                  return;
+                                }
+                                const val = parseInt(value);
+                                if (!isNaN(val) && val >= 1 && val <= 6) {
+                                  setNumberOfTargets(val);
+                                }
+                              }}
+                            >
+                              <SelectTrigger className={`text-sm md:text-base ${isDarkMode ? 'bg-gray-700 border-gray-600 text-white' : ''}`}>
+                                <SelectValue placeholder={language === 'fr' ? 'Sélectionner' : 'Select'} />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="1">1 {language === 'fr' ? 'sortie' : 'exit'}</SelectItem>
+                                <SelectItem value="2">2 {language === 'fr' ? 'sorties' : 'exits'}</SelectItem>
+                                <SelectItem value="3">3 {language === 'fr' ? 'sorties' : 'exits'}</SelectItem>
+                                <SelectItem value="4">4 {language === 'fr' ? 'sorties' : 'exits'}</SelectItem>
+                                <SelectItem value="5">5 {language === 'fr' ? 'sorties' : 'exits'}</SelectItem>
+                                <SelectItem value="6">6 {language === 'fr' ? 'sorties' : 'exits'}</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        )}
+                      </CardContent>
+                    </Card>
                   </div>
 
-                  {/* Barre de résumé en bas */}
-                  {simulations.length > 0 && quantity && averagePrice && (
-                    <div className={`mt-4 md:mt-6 rounded-xl p-4 md:p-6 w-full max-w-full ${isDarkMode ? 'bg-gray-800 border border-gray-700' : 'bg-white border-2 border-gray-200'}`}>
-                      <div className="grid grid-cols-2 md:grid-cols-5 gap-3 md:gap-4 items-center">
-                        <div>
-                          <p className={`text-xs mb-1 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-                            {language === 'fr' ? 'Investi' : 'Invested'}
-                          </p>
-                          <p className={`text-base md:text-lg font-bold ${isDarkMode ? 'text-green-400' : 'text-green-600'}`}>
-                            {formatCurrency(parseFloat(quantity) * parseFloat(averagePrice), '$', 2)}
-                          </p>
+                  {/* Colonne droite : Zone B - Données d'investissement */}
+                  <div className="space-y-4 md:space-y-6">
+                    <h4 className={`text-sm md:text-base font-semibold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+                      {language === 'fr' ? 'Vos données d\'investissement' : 'Your Investment Data'}
+                    </h4>
+                    
+                    <Card className={`border ${isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}`}>
+                      <CardContent className="p-4 md:p-6 space-y-3">
+                        <div className="flex justify-between items-center">
+                          <span className={`text-xs md:text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                            {language === 'fr' ? 'Nombre de saisies' : 'Number of entries'}
+                          </span>
+                          <span className={`text-sm md:text-base font-semibold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+                            {investmentData?.numberOfTransactions || (strategyQuantity && strategyAveragePrice ? 1 : 0)}
+                          </span>
                         </div>
-                        <div>
-                          <p className={`text-xs mb-1 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-                            {language === 'fr' ? 'Total encaissé' : 'Total cashed in'}
-                          </p>
-                          <p className={`text-base md:text-lg font-bold ${isDarkMode ? 'text-green-400' : 'text-green-600'}`}>
-                            {formatCurrency(
-                              simulations.reduce((sum, sim) => sum + sim.amountCollected, 0),
-                              '$',
-                              2
-                            )}
-                          </p>
+                        <div className="flex justify-between items-center">
+                          <span className={`text-xs md:text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                            {language === 'fr' ? 'Total investi' : 'Total invested'}
+                          </span>
+                          <span className={`text-sm md:text-base font-semibold ${isDarkMode ? 'text-green-400' : 'text-green-600'}`}>
+                            {investmentData 
+                              ? formatCurrency(investmentData.totalInvested, '$', 2)
+                              : (strategyQuantity && strategyAveragePrice 
+                                ? formatCurrency(parseFloat(strategyQuantity) * parseFloat(strategyAveragePrice), '$', 2)
+                                : '$0.00')}
+                          </span>
                         </div>
-                        <div>
-                          <p className={`text-xs mb-1 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-                            {language === 'fr' ? 'Résultat net' : 'Net result'}
-                          </p>
-                          <p className={`text-base md:text-lg font-bold ${isDarkMode ? 'text-green-400' : 'text-green-600'}`}>
-                            {formatCurrency(
-                              simulations.reduce((sum, sim) => sum + sim.amountCollected, 0) - 
-                              (parseFloat(quantity) * parseFloat(averagePrice)),
-                              '$',
-                              2
-                            )}
-                          </p>
+                        <div className="flex justify-between items-center">
+                          <span className={`text-xs md:text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                            {language === 'fr' ? 'Tokens détenus' : 'Tokens held'}
+                          </span>
+                          <span className={`text-sm md:text-base font-semibold ${isDarkMode ? 'text-orange-400' : 'text-orange-600'}`}>
+                            {investmentData?.totalQuantity || (strategyQuantity ? parseFloat(strategyQuantity).toLocaleString(undefined, { maximumFractionDigits: 8 }) : '0')}
+                          </span>
                         </div>
-                        <div>
-                          <p className={`text-xs mb-1 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-                            {language === 'fr' ? 'Rendement net' : 'Net yield'}
-                          </p>
-                          <p className={`text-base md:text-lg font-bold ${isDarkMode ? 'text-green-400' : 'text-green-600'}`}>
-                            {(((
-                              simulations.reduce((sum, sim) => sum + sim.amountCollected, 0) - 
-                              (parseFloat(quantity) * parseFloat(averagePrice))
-                            ) / (parseFloat(quantity) * parseFloat(averagePrice))) * 100).toFixed(1)}%
-                          </p>
+                        <div className="flex justify-between items-center">
+                          <span className={`text-xs md:text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                            {language === 'fr' ? 'Prix moyen d\'achat' : 'Average purchase price'}
+                          </span>
+                          <span className={`text-sm md:text-base font-semibold ${isDarkMode ? 'text-purple-400' : 'text-purple-600'}`}>
+                            {investmentData?.averagePrice 
+                              ? formatCurrency(investmentData.averagePrice, '$', 2)
+                              : (strategyAveragePrice 
+                                ? formatCurrency(parseFloat(strategyAveragePrice), '$', 2)
+                                : '$0.00')}
+                          </span>
                         </div>
-                        <div>
-                          <p className={`text-xs mb-1 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-                            {language === 'fr' ? 'Tokens restants' : 'Remaining tokens'}
-                          </p>
-                          <p className={`text-base md:text-lg font-bold ${isDarkMode ? 'text-orange-400' : 'text-orange-600'}`}>
-                            {simulations.length > 0 
-                              ? simulations[simulations.length - 1].remainingTokens.toFixed(6)
-                              : '0.000000'}
-                          </p>
-                        </div>
+                        {investmentData?.currentPNL !== undefined && (
+                          <>
+                            <div className={`flex justify-between items-center pt-2 border-t ${isDarkMode ? 'border-gray-700' : 'border-gray-200'}`}>
+                              <span className={`text-xs md:text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                                {language === 'fr' ? 'PNL actuel' : 'Current PNL'}
+                              </span>
+                              <span className={`text-sm md:text-base font-semibold ${investmentData.currentPNL >= 0 ? (isDarkMode ? 'text-green-400' : 'text-green-600') : (isDarkMode ? 'text-red-400' : 'text-red-600')}`}>
+                                {formatCurrency(investmentData.currentPNL, '$', 2)}
+                              </span>
+                            </div>
+                            <div className="flex justify-between items-center">
+                              <span className={`text-xs md:text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                                {language === 'fr' ? 'PNL %' : 'PNL %'}
+                              </span>
+                              <span className={`text-sm md:text-base font-semibold ${(investmentData.currentPNLPercentage ?? 0) >= 0 ? (isDarkMode ? 'text-green-400' : 'text-green-600') : (isDarkMode ? 'text-red-400' : 'text-red-600')}`}>
+                                {(investmentData.currentPNLPercentage ?? 0) >= 0 ? '+' : ''}{(investmentData.currentPNLPercentage ?? 0).toFixed(2)}%
+                              </span>
+                            </div>
+                          </>
+                        )}
+                        {selectedStrategyToken?.quote?.USD?.price && (
+                          <div className={`flex justify-between items-center pt-2 border-t ${isDarkMode ? 'border-gray-700' : 'border-gray-200'}`}>
+                            <span className={`text-xs md:text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                              {language === 'fr' ? 'Prix actuel' : 'Current price'}
+                            </span>
+                            <span className={`text-sm md:text-base font-semibold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+                              {formatCurrency(selectedStrategyToken.quote.USD.price, '$', 2)}
+                            </span>
+                          </div>
+                        )}
+                      </CardContent>
+                    </Card>
+                  </div>
+                </div>
+
+                {/* En-têtes des colonnes pour les paliers - affichés seulement si des sorties sont définies */}
+                {numberOfTargets > 0 && profitTargets.length > 0 && (
+                  <>
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-8 mb-4 md:mb-6 mt-6">
+                      <div>
+                        <h4 className={`text-sm md:text-base font-semibold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+                          {language === 'fr' ? 'Configuration des paliers' : 'Target Configuration'}
+                        </h4>
+                      </div>
+                      <div>
+                        <h4 className={`text-sm md:text-base font-semibold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+                          {language === 'fr' ? 'Projections' : 'Projections'}
+                        </h4>
                       </div>
                     </div>
-                  )}
-          </div>
 
-          {/* Colonne droite: Résumé et Simulation */}
-          <div className="lg:col-span-1 space-y-4 md:space-y-6 w-full max-w-full">
-            {selectedToken && quantity && averagePrice && (
-              <>
-                      <div className={`rounded-xl p-4 md:p-6 w-full max-w-full ${isDarkMode ? 'bg-gray-800' : 'bg-white border border-gray-200'}`}>
-                        <div className="mb-3 md:mb-4">
-                          <h2 className={`flex items-center gap-2 text-base md:text-xl font-semibold ${
-                            isDarkMode ? 'text-white' : 'text-gray-900'
-                          }`}>
-                            <InformationCircleIcon className="h-4 w-4 md:h-5 md:w-5 text-purple-600" />
-                            {language === 'fr' ? 'Données d\'investissement' : 'Investment Data'}
-                          </h2>
-                    </div>
-                        <div className="space-y-2 text-xs md:text-sm">
-                          <div className="flex justify-between">
-                            <span className={isDarkMode ? 'text-gray-400' : 'text-gray-500'}>
-                              {language === 'fr' ? 'Token:' : 'Token:'}
-                            </span>
-                            <span className={`font-medium ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
-                              {selectedToken.symbol}
-                            </span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span className={isDarkMode ? 'text-gray-400' : 'text-gray-500'}>
-                              {language === 'fr' ? 'Quantité:' : 'Quantity:'}
-                            </span>
-                            <span className={`font-medium ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
-                              {quantity}
-                            </span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span className={isDarkMode ? 'text-gray-400' : 'text-gray-500'}>
-                              {language === 'fr' ? 'Prix moyen:' : 'Avg Price:'}
-                            </span>
-                            <span className={`font-medium ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
-                              {formatCurrency(parseFloat(averagePrice))}
-                            </span>
-                          </div>
-                          <div className={`flex justify-between border-t pt-2 mt-2 ${
-                            isDarkMode ? 'border-gray-700' : 'border-gray-200'
-                          }`}>
-                            <span className={isDarkMode ? 'text-gray-400' : 'text-gray-500'}>
-                              {language === 'fr' ? 'Investi total:' : 'Total Invested:'}
-                            </span>
-                            <span className={`font-medium ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
-                              {formatCurrency(totalInvested)}
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className={`rounded-xl p-4 md:p-6 w-full max-w-full ${isDarkMode ? 'bg-gray-800' : 'bg-white border border-gray-200'}`}>
-                        <div className="mb-3 md:mb-4">
-                          <h2 className={`flex items-center gap-2 text-base md:text-xl font-semibold ${
-                            isDarkMode ? 'text-white' : 'text-gray-900'
-                          }`}>
-                            <ChartBarIcon className="h-4 w-4 md:h-5 md:w-5 text-green-600" />
-                            {language === 'fr' ? 'Informations de la stratégie' : 'Strategy Information'}
-                          </h2>
-                        </div>
-                        <div className="space-y-3 md:space-y-4">
-                          {profitTargets.map((target, index) => {
-                            const sim = simulations[index];
-                            if (!sim) return null;
-                            
-                            return (
-                              <Card key={index} className={`border w-full max-w-full ${
-                                isDarkMode ? 'bg-gray-700 border-gray-600' : 'bg-white border-gray-200'
-                              }`}>
-                                <CardContent className="p-3 md:p-4">
-                                  <div className="mb-2">
-                                    <h4 className={`text-sm md:text-base font-semibold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
-                                      {language === 'fr' ? 'Simulation' : 'Simulation'} #{index + 1}
-                                    </h4>
+                    {/* Cartes alignées par paire : Cible #1 avec Cible #1, etc. */}
+                    <div className="space-y-4 md:space-y-6">
+                      {profitTargets.slice(0, numberOfTargets).map((target, index) => {
+                        const info = strategyInfo[index];
+                        const qty = parseFloat(strategyQuantity);
+                        const avgPrice = parseFloat(strategyAveragePrice);
+                        
+                        // Calculer le prix cible
+                        let targetPrice = 0;
+                        if (target.targetType === 'percentage') {
+                          targetPrice = avgPrice * (1 + target.targetValue / 100);
+                        } else {
+                          targetPrice = target.targetValue;
+                        }
+                        
+                        return (
+                          <div key={target.id} className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-8 items-stretch">
+                            {/* Carte de gauche : Paramètres */}
+                            <div className={`border p-4 md:p-6 rounded-lg space-y-4 md:space-y-5 h-full flex flex-col ${
+                              isDarkMode ? 'bg-gray-700 border-gray-600' : 'bg-gray-50'
+                            }`}>
+                              <div className="flex items-center justify-between gap-2">
+                                <div className="flex items-center gap-2">
+                                  <div className={`w-8 h-8 rounded-full text-white flex items-center justify-center text-sm font-semibold ${
+                                    isDarkMode ? 'bg-blue-500' : 'bg-blue-600'
+                                  }`}>
+                                    {index + 1}
                                   </div>
-                                  <div className="space-y-2 text-xs md:text-sm">
-                                    <div className="flex justify-between">
-                                      <span className={isDarkMode ? 'text-gray-400' : 'text-gray-600'}>
-                                        {language === 'fr' ? 'Valorisation des tokens restants:' : 'Remaining tokens valuation:'}
-                                      </span>
-                                      <span className={`font-medium ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
-                                        {formatCurrency(sim.remainingTokensValuation, '$', 2)}
-                                      </span>
+                                  <h3 className={`text-sm md:text-base font-semibold ${isDarkMode ? 'text-blue-400' : 'text-blue-600'}`}>
+                                    {language === 'fr' ? 'Cible de sortie' : 'Exit Target'}
+                                  </h3>
+                                </div>
+                                {/* Toggle Switch */}
+                                <div className="relative inline-flex items-center">
+                                  <button
+                                    type="button"
+                                    onClick={() => handleTargetChange(index, 'targetType', target.targetType === 'percentage' ? 'price' : 'percentage')}
+                                    className={`
+                                      relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2
+                                      ${target.targetType === 'price' ? 'bg-blue-600' : (isDarkMode ? 'bg-gray-600' : 'bg-gray-300')}
+                                    `}
+                                  >
+                                    <span
+                                      className={`
+                                        inline-block h-4 w-4 transform rounded-full bg-white transition-transform
+                                        ${target.targetType === 'price' ? 'translate-x-6' : 'translate-x-1'}
+                                      `}
+                                    />
+                                  </button>
+                                </div>
+                              </div>
+                              
+                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 md:gap-4">
+                                <div>
+                                  <Label htmlFor={`targetValue-${index}`} className={`text-xs md:text-sm ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                                    {target.targetType === 'percentage' 
+                                      ? (language === 'fr' ? 'Pourcentage (%)' : 'Percentage (%)')
+                                      : (language === 'fr' ? 'Prix (USD)' : 'Price (USD)')
+                                    }
+                                  </Label>
+                                  {target.targetType === 'percentage' ? (
+                                    <div className="flex items-center gap-2">
+                                      <button
+                                        type="button"
+                                        onClick={() => {
+                                          const newValue = Math.max(0, target.targetValue - 10);
+                                          handleTargetChange(index, 'targetValue', newValue);
+                                        }}
+                                        className={`flex-shrink-0 w-10 h-10 flex items-center justify-center border rounded-lg transition-colors ${
+                                          isDarkMode 
+                                            ? 'border-gray-600 bg-gray-700 hover:bg-gray-600 text-white' 
+                                            : 'border-gray-300 bg-white hover:bg-gray-50 text-gray-600'
+                                        }`}
+                                      >
+                                        <span className="text-lg font-semibold">−</span>
+                                      </button>
+                                      <Input
+                                        id={`targetValue-${index}`}
+                                        type="number"
+                                        value={target.targetValue}
+                                        onChange={(e) => 
+                                          handleTargetChange(index, 'targetValue', parseFloat(e.target.value) || 0)
+                                        }
+                                        step="0.01"
+                                        className={`text-sm md:text-base flex-1 ${isDarkMode ? 'bg-gray-700 border-gray-600 text-white' : ''}`}
+                                      />
+                                      <button
+                                        type="button"
+                                        onClick={() => {
+                                          const newValue = target.targetValue + 10;
+                                          handleTargetChange(index, 'targetValue', newValue);
+                                        }}
+                                        className={`flex-shrink-0 w-10 h-10 flex items-center justify-center border rounded-lg transition-colors ${
+                                          isDarkMode 
+                                            ? 'border-gray-600 bg-gray-700 hover:bg-gray-600 text-white' 
+                                            : 'border-gray-300 bg-white hover:bg-gray-50 text-gray-600'
+                                        }`}
+                                      >
+                                        <span className="text-lg font-semibold">+</span>
+                                      </button>
                                     </div>
-                                    <div className="flex justify-between">
-                                      <span className={isDarkMode ? 'text-gray-400' : 'text-gray-600'}>
-                                        {language === 'fr' ? 'Montant encaissé:' : 'Amount collected:'}
-                                      </span>
-                                      <span className={`font-medium ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
-                                        {formatCurrency(sim.amountCollected, '$', 2)}
-                                      </span>
+                                  ) : (
+                                    <Input
+                                      id={`targetValue-${index}`}
+                                      type="number"
+                                      value={target.targetValue}
+                                      onChange={(e) => 
+                                        handleTargetChange(index, 'targetValue', parseFloat(e.target.value))
+                                      }
+                                      step="0.01"
+                                      className={`text-sm md:text-base ${isDarkMode ? 'bg-gray-700 border-gray-600 text-white' : ''}`}
+                                    />
+                                  )}
+                                  {target.targetType === 'percentage' && !isNaN(avgPrice) && avgPrice > 0 && (
+                                    <div className="mt-2">
+                                      <p className={`text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-500'} mb-1`}>
+                                        {language === 'fr' ? 'Pourcentage du prix moyen d\'achat' : 'Percentage of average purchase price'}
+                                      </p>
+                                      <div className="flex items-center gap-3">
+                                        <p className={`text-sm md:text-base font-semibold ${isDarkMode ? 'text-purple-400' : 'text-purple-600'} underline`}>
+                                          {target.targetValue > 0 ? `${100 + target.targetValue}%` : '100%'}
+                                        </p>
+                                        <p className={`text-sm md:text-base font-semibold ${isDarkMode ? 'text-purple-400' : 'text-purple-600'}`}>
+                                          {formatCurrency(targetPrice, '$', 6)}
+                                        </p>
+                                      </div>
                                     </div>
-                                    <div className="flex justify-between">
-                                      <span className={isDarkMode ? 'text-gray-400' : 'text-gray-600'}>
-                                        {language === 'fr' ? 'Valeur du bag restant:' : 'Remaining bag value:'}
-                                      </span>
-                                      <span className={`font-medium ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
-                                        {formatCurrency(sim.remainingBagValue, '$', 2)}
-                                      </span>
+                                  )}
+                                  {target.targetType === 'price' && (
+                                    <div className="mt-2">
+                                      <p className={`text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                                        {language === 'fr' ? 'Valeur exacte du token' : 'Exact token value'}
+                                      </p>
                                     </div>
-                                    <div className="flex justify-between">
-                                      <span className={isDarkMode ? 'text-gray-400' : 'text-gray-600'}>
-                                        {language === 'fr' ? 'Nombre de tokens restants:' : 'Number of remaining tokens:'}
-                                      </span>
-                                      <span className="font-medium text-orange-600">
-                                        {sim.remainingTokens.toFixed(6)}
-                                      </span>
+                                  )}
+                                  {info && (
+                                    <div className={`mt-3 pt-3 border-t ${isDarkMode ? 'border-gray-600' : 'border-gray-200'}`}>
+                                      <div className="flex justify-between items-center">
+                                        <span className={`text-xs md:text-sm font-medium ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                                          {language === 'fr' ? 'Nombre de tokens restants:' : 'Number of remaining tokens:'}
+                                        </span>
+                                        <span className={`text-sm md:text-base font-bold ${isDarkMode ? 'text-orange-400' : 'text-orange-600'}`}>
+                                          {info.remainingTokens.toFixed(8)}
+                                        </span>
+                                      </div>
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+
+                              {/* Quantité à vendre - Pourcentage et Tokens */}
+                              <div className="flex-grow flex flex-col justify-end">
+                                <Label htmlFor={`sellPercentage-${index}`} className={`text-xs md:text-sm mb-2 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                                  {language === 'fr' ? 'Quantité à vendre' : 'Quantity to sell'}
+                                </Label>
+                                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:gap-4">
+                                  <div className="flex-1 relative">
+                                    {/* Barre de fond grise */}
+                                    <div className="absolute inset-0 flex items-center">
+                                      <div className={`w-full h-2 rounded-lg ${isDarkMode ? 'bg-gray-600' : 'bg-gray-200'}`} />
+                                    </div>
+                                    
+                                    {/* Slider par-dessus avec fond transparent */}
+                                    <div className="relative z-10">
+                                      <Slider
+                                        id={`sellPercentage-${index}`}
+                                        min={0}
+                                        max={100}
+                                        step={0.1}
+                                        value={[target.sellPercentage]}
+                                        onValueChange={(value) => {
+                                          const otherTargetsTotal = profitTargets.reduce((sum, t, idx) => 
+                                            idx === index ? sum : sum + t.sellPercentage, 0
+                                          );
+                                          const maxValue = Math.max(0, 100 - otherTargetsTotal);
+                                          handleTargetChange(index, 'sellPercentage', Math.min(value[0], maxValue));
+                                        }}
+                                        className="w-full slider-transparent"
+                                        style={{
+                                          background: 'transparent',
+                                        }}
+                                      />
                                     </div>
                                   </div>
-                                </CardContent>
-                              </Card>
-                            );
-                          })}
+                                  <div className="w-full sm:w-32 flex items-center gap-2">
+                                    <Input
+                                      type="number"
+                                      min={0}
+                                      max={(() => {
+                                        const otherTargetsTotal = profitTargets.reduce((sum, t, idx) => 
+                                          idx === index ? sum : sum + t.sellPercentage, 0
+                                        );
+                                        return 100 - otherTargetsTotal;
+                                      })()}
+                                      step={0.1}
+                                      value={target.sellPercentage.toFixed(1)}
+                                      onChange={(e) => {
+                                        const value = parseFloat(e.target.value);
+                                        if (!isNaN(value) && value >= 0) {
+                                          const otherTargetsTotal = profitTargets.reduce((sum, t, idx) => 
+                                            idx === index ? sum : sum + t.sellPercentage, 0
+                                          );
+                                          const maxValue = Math.max(0, 100 - otherTargetsTotal);
+                                          handleTargetChange(index, 'sellPercentage', Math.min(value, maxValue));
+                                        }
+                                      }}
+                                      placeholder="0.0"
+                                      className={`text-xs md:text-sm ${isDarkMode ? 'bg-gray-700 border-gray-600 text-white' : ''}`}
+                                    />
+                                    <span className={`text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>%</span>
+                                  </div>
+                                  <div className="w-full sm:w-40 flex items-center gap-2">
+                                    <Input
+                                      type="number"
+                                      min={0}
+                                      step="0.00000001"
+                                      value={(() => {
+                                        const qty = parseFloat(strategyQuantity);
+                                        if (isNaN(qty) || qty <= 0 || target.sellPercentage <= 0) return '';
+                                        const tokensEquivalent = (qty * target.sellPercentage) / 100;
+                                        return tokensEquivalent > 0 ? tokensEquivalent.toFixed(8) : '0.00000000';
+                                      })()}
+                                      onChange={(e) => {
+                                        const value = parseFloat(e.target.value);
+                                        if (!isNaN(value) && value >= 0) {
+                                          handleTokensChange(index, value);
+                                        } else if (e.target.value === '') {
+                                          handleTargetChange(index, 'sellPercentage', 0);
+                                        }
+                                      }}
+                                      placeholder="0.00000000"
+                                      className={`text-xs md:text-sm ${isDarkMode ? 'bg-gray-700 border-gray-600 text-white' : ''}`}
+                                    />
+                                    <span className={`text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                                      {language === 'fr' ? 'tokens' : 'tokens'}
+                                    </span>
+                                  </div>
+                                </div>
+                                {profitTargets.reduce((sum, t) => sum + t.sellPercentage, 0) > 100 && (
+                                  <p className={`mt-1 text-xs ${isDarkMode ? 'text-red-400' : 'text-red-600'}`}>
+                                    {language === 'fr' ? 'La somme dépasse 100% !' : 'The sum exceeds 100%!'}
+                                  </p>
+                                )}
+                              </div>
+                            </div>
 
-                          <div className={`pt-3 md:pt-4 border-t space-y-2 ${
-                            isDarkMode ? 'border-gray-700' : 'border-gray-200'
-                          }`}>
-                            <h3 className={`text-sm md:text-base font-semibold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
-                              {language === 'fr' ? 'Résumé Global' : 'Global Summary'}
-                            </h3>
-                      <div className="space-y-1 text-xs md:text-sm">
-                        <div className="flex justify-between">
-                                <span className={isDarkMode ? 'text-gray-400' : 'text-gray-500'}>
-                                  {language === 'fr' ? 'Profit total:' : 'Total Profit:'}
-                                </span>
-                          <span className={`font-medium ${totalProfitRealized >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                            {formatCurrency(totalProfitRealized)}
-                          </span>
-                        </div>
-                        <div className="flex justify-between">
-                                <span className={isDarkMode ? 'text-gray-400' : 'text-gray-500'}>
-                                  {language === 'fr' ? 'Rendement:' : 'Return:'}
-                                </span>
-                          <span className={`font-medium ${totalReturnPercentage >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                            {formatPercentage(totalReturnPercentage)}
-                          </span>
-                        </div>
-                        <div className="flex justify-between">
-                                <span className={isDarkMode ? 'text-gray-400' : 'text-gray-500'}>
-                                  {language === 'fr' ? 'Tokens restants:' : 'Remaining Tokens:'}
-                                </span>
-                                <span className={`font-medium ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
-                            {simulations.length > 0 
-                              ? simulations[simulations.length - 1].remainingTokens.toFixed(4)
-                              : '0'
-                            }
-                          </span>
-                        </div>
+                            {/* Carte de droite : Informations calculées */}
+                            <Card className={`border h-full flex flex-col ${isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}`}>
+                              <CardContent className="p-4 md:p-6 flex flex-col h-full">
+                                <div className="mb-3">
+                                  <h4 className={`text-sm md:text-base font-semibold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+                                    {language === 'fr' ? 'Simulation' : 'Simulation'} #{index + 1}
+                                  </h4>
+                                </div>
+                                <div className="space-y-3 text-xs md:text-sm flex-grow flex flex-col justify-between">
+                                  <div className="flex justify-between items-center py-1">
+                                    <span className={isDarkMode ? 'text-gray-400' : 'text-gray-600'}>
+                                      {language === 'fr' ? 'Valorisation des tokens restants:' : 'Remaining tokens valuation:'}
+                                    </span>
+                                    <span className={`font-medium text-right ${isDarkMode ? 'text-green-400' : 'text-green-600'}`}>
+                                      {info ? formatCurrency(info.remainingTokensValuation, '$', 2) : '$0.00'}
+                                    </span>
+                                  </div>
+                                  <div className="flex justify-between items-center py-1">
+                                    <span className={isDarkMode ? 'text-gray-400' : 'text-gray-600'}>
+                                      {language === 'fr' ? 'Montant encaissé:' : 'Amount collected:'}
+                                    </span>
+                                    <span className={`font-medium text-right ${isDarkMode ? 'text-green-400' : 'text-green-600'}`}>
+                                      {info ? formatCurrency(info.amountCollected, '$', 2) : '$0.00'}
+                                    </span>
+                                  </div>
+                                  <div className="flex justify-between items-center py-1">
+                                    <span className={isDarkMode ? 'text-gray-400' : 'text-gray-600'}>
+                                      {language === 'fr' ? 'Valeur du bag restant:' : 'Remaining bag value:'}
+                                    </span>
+                                    <span className={`font-medium text-right ${isDarkMode ? 'text-green-400' : 'text-green-600'}`}>
+                                      {info ? formatCurrency(info.remainingBagValue, '$', 2) : '$0.00'}
+                                    </span>
+                                  </div>
+                                  <div className={`flex justify-between items-center py-1 border-t pt-3 mt-2 ${isDarkMode ? 'border-gray-700' : 'border-gray-200'}`}>
+                                    <span className={`font-medium ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                                      {language === 'fr' ? 'Nombre de tokens restants:' : 'Number of remaining tokens:'}
+                                    </span>
+                                    <span className={`font-bold text-lg text-right ${isDarkMode ? 'text-orange-400' : 'text-orange-600'}`}>
+                                      {info ? info.remainingTokens.toFixed(8) : '0.00000000'}
+                                    </span>
+                                  </div>
+                                </div>
+                              </CardContent>
+                            </Card>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </>
+                )}
+
+                {/* Barre de résumé en bas */}
+                {strategyInfo.length > 0 && strategyQuantity && strategyAveragePrice && (
+                  <div className={`mt-4 md:mt-8 rounded-xl p-4 md:p-6 w-full max-w-full ${
+                    isDarkMode ? 'bg-gray-800 border-2 border-gray-700' : 'bg-white border-2 border-gray-200'
+                  }`}>
+                    <div className="grid grid-cols-2 md:grid-cols-5 gap-3 md:gap-4 items-center">
+                      <div>
+                        <p className={`text-xs mb-1 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                          {language === 'fr' ? 'Investi' : 'Invested'}
+                        </p>
+                        <p className={`text-base md:text-lg font-bold ${isDarkMode ? 'text-green-400' : 'text-green-600'}`}>
+                          {formatCurrency(parseFloat(strategyQuantity) * parseFloat(strategyAveragePrice), '$', 2)}
+                        </p>
+                      </div>
+                      <div>
+                        <p className={`text-xs mb-1 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                          {language === 'fr' ? 'Total encaissé' : 'Total cashed in'}
+                        </p>
+                        <p className={`text-base md:text-lg font-bold ${isDarkMode ? 'text-green-400' : 'text-green-600'}`}>
+                          {formatCurrency(
+                            strategyInfo.reduce((sum, info) => sum + info.amountCollected, 0),
+                            '$',
+                            2
+                          )}
+                        </p>
+                      </div>
+                      <div>
+                        <p className={`text-xs mb-1 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                          {language === 'fr' ? 'Résultat net' : 'Net result'}
+                        </p>
+                        <p className={`text-base md:text-lg font-bold ${isDarkMode ? 'text-green-400' : 'text-green-600'}`}>
+                          {formatCurrency(
+                            strategyInfo.reduce((sum, info) => sum + info.amountCollected, 0) - 
+                            (parseFloat(strategyQuantity) * parseFloat(strategyAveragePrice)),
+                            '$',
+                            2
+                          )}
+                        </p>
+                      </div>
+                      <div>
+                        <p className={`text-xs mb-1 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                          {language === 'fr' ? 'Rendement net' : 'Net yield'}
+                        </p>
+                        <p className={`text-base md:text-lg font-bold ${isDarkMode ? 'text-green-400' : 'text-green-600'}`}>
+                          {(((
+                            strategyInfo.reduce((sum, info) => sum + info.amountCollected, 0) - 
+                            (parseFloat(strategyQuantity) * parseFloat(strategyAveragePrice))
+                          ) / (parseFloat(strategyQuantity) * parseFloat(strategyAveragePrice))) * 100).toFixed(1)}%
+                        </p>
+                      </div>
+                      <div>
+                        <p className={`text-xs mb-1 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                          {language === 'fr' ? 'Tokens restants' : 'Remaining tokens'}
+                        </p>
+                        <p className={`text-base md:text-lg font-bold ${isDarkMode ? 'text-orange-400' : 'text-orange-600'}`}>
+                          {strategyInfo.length > 0 
+                            ? strategyInfo[strategyInfo.length - 1].remainingTokens.toFixed(6)
+                            : '0.000000'}
+                        </p>
                       </div>
                     </div>
+                  </div>
+                )}
+
+                {/* Footer - Design amélioré avec plus d'espace */}
+                <div className={`mt-4 md:mt-8 pt-4 md:pt-8 border-t-2 rounded-xl p-4 md:p-6 -mx-4 md:-mx-0 w-full max-w-full overflow-x-hidden ${
+                  isDarkMode 
+                    ? 'border-gray-700 bg-gradient-to-r from-gray-800 to-gray-900' 
+                    : 'border-gray-200 bg-gradient-to-r from-gray-50 to-blue-50'
+                }`}>
+                  <div className="max-w-7xl mx-auto">
+                    <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4 md:gap-6">
+                      {/* Section informative à gauche */}
+                      <div className="flex-1 space-y-2 md:space-y-3 w-full">
+                        <div className="flex items-start gap-2 md:gap-3">
+                          <div className={`p-2 rounded-lg flex-shrink-0 ${isDarkMode ? 'bg-blue-900/30' : 'bg-blue-100'}`}>
+                            <ChartBarIcon className={`w-4 h-4 md:w-5 md:h-5 ${isDarkMode ? 'text-blue-400' : 'text-blue-600'}`} />
+                          </div>
+                          <div>
+                            <h4 className={`text-sm md:text-base font-semibold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+                              {language === 'fr' ? 'Stratégie optimisée pour vos gains' : 'Strategy optimized for your gains'}
+                            </h4>
+                            <p className={`text-xs md:text-sm mt-1 ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                              {language === 'fr' 
+                                ? 'Vos cibles de profit sont calculées en temps réel pour maximiser vos rendements'
+                                : 'Your profit targets are calculated in real-time to maximize your returns'}
+                            </p>
+                          </div>
                         </div>
                       </div>
-              </>
-            )}
-
-            <Button
-              onClick={handleSaveStrategy}
-              disabled={loading || !selectedToken || !quantity || !averagePrice || !strategyName}
-                    className="w-full bg-purple-600 hover:bg-purple-700 text-white px-4 md:px-6 py-2 md:py-3 text-sm md:text-base"
-            >
-              {loading 
-                      ? (isEditMode ? (language === 'fr' ? 'Modification...' : 'Updating...') : (language === 'fr' ? 'Création...' : 'Creating...'))
-                      : (isEditMode ? (language === 'fr' ? 'Modifier la stratégie' : 'Update Strategy') : (language === 'fr' ? 'Créer la stratégie' : 'Create Strategy'))
-              }
-            </Button>
+                      
+                      {/* Section bouton à droite */}
+                      <div className="flex-shrink-0 w-full lg:w-auto">
+                        <Button
+                          onClick={handleCreateStrategy}
+                          disabled={loading || !selectedStrategyToken || !strategyQuantity || !strategyAveragePrice || !strategyName || numberOfTargets === 0}
+                          className={`w-full lg:w-auto px-6 md:px-10 py-3 md:py-4 font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed text-sm md:text-base ${
+                            isDarkMode
+                              ? 'bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white'
+                              : 'bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white'
+                          }`}
+                        >
+                          {loading ? (
+                            <span className="flex items-center gap-2">
+                              <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                              </svg>
+                              {isEditMode ? (language === 'fr' ? 'Modification...' : 'Updating...') : (language === 'fr' ? 'Création...' : 'Creating...')}
+                            </span>
+                          ) : (
+                            <span className="flex items-center gap-2">
+                              <ChartBarIcon className="w-5 h-5" />
+                              {isEditMode ? (language === 'fr' ? 'Modifier la stratégie' : 'Update Strategy') : (language === 'fr' ? 'Créer la stratégie' : 'Create Strategy')}
+                            </span>
+                          )}
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
-        </div>
-      </div>
-    </div>
         </div>
       </div>
     </ProtectedRoute>
