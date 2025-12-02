@@ -175,7 +175,7 @@ export const TPAlertsConfig: React.FC<TPAlertsConfigProps> = ({
                       <button
                         onClick={() => {
                           const currentValue = tpAlert.beforeTPValue || -10;
-                          const newValue = Math.max(-50, currentValue - 1);
+                          const newValue = Math.max(-50, currentValue - 5);
                           handleUpdateTPAlert(tpAlert.id, {
                             beforeTP: {
                               enabled: true,
@@ -215,7 +215,7 @@ export const TPAlertsConfig: React.FC<TPAlertsConfigProps> = ({
                       <button
                         onClick={() => {
                           const currentValue = tpAlert.beforeTPValue || -10;
-                          const newValue = Math.min(0, currentValue + 1);
+                          const newValue = Math.min(0, currentValue + 5);
                           handleUpdateTPAlert(tpAlert.id, {
                             beforeTP: {
                               enabled: true,
