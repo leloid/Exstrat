@@ -144,6 +144,13 @@ export default function StrategiesPage() {
   // Combiner toutes les stratégies
   const allStrategies = [...realStrategies, ...theoreticalStrategies];
 
+  // Rediriger vers la page de création si aucune stratégie n'existe
+  useEffect(() => {
+    if (!isLoading && allStrategies.length === 0) {
+      router.push('/strategies/create');
+    }
+  }, [isLoading, allStrategies.length, router]);
+
   if (isLoading) {
     return (
       <ProtectedRoute>
@@ -201,40 +208,7 @@ export default function StrategiesPage() {
             </div>
 
             {/* Liste des stratégies */}
-            {allStrategies.length === 0 ? (
-              <div className={`rounded-xl p-12 text-center shadow-sm ${
-                isDarkMode ? 'bg-gray-800' : 'bg-white border border-gray-200'
-              }`}>
-                <div className={`w-16 h-16 rounded-full mx-auto mb-4 flex items-center justify-center ${
-                  isDarkMode ? 'bg-gray-700' : 'bg-purple-100'
-                }`}>
-                  <ChartBarIcon className={`h-8 w-8 ${isDarkMode ? 'text-gray-400' : 'text-purple-600'}`} />
-                </div>
-                <h3 className={`text-lg font-semibold mb-2 ${
-                  isDarkMode ? 'text-white' : 'text-gray-900'
-                }`}>
-                  {language === 'fr' 
-                    ? 'Aucune stratégie'
-                    : 'No strategies'
-                  }
-                </h3>
-                <p className={`text-sm mb-6 ${
-                  isDarkMode ? 'text-gray-400' : 'text-gray-600'
-                }`}>
-                  {language === 'fr' 
-                    ? 'Créez votre première stratégie pour automatiser vos prises de profit.'
-                    : 'Create your first strategy to automate your profit-taking.'
-                  }
-                </p>
-                <Button 
-                  onClick={handleCreateStrategy} 
-                  className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white shadow-lg hover:shadow-xl transition-all"
-                >
-                  <PlusIcon className="h-5 w-5 mr-2" />
-                  {language === 'fr' ? 'Créer ma première stratégie' : 'Create my first strategy'}
-                </Button>
-              </div>
-            ) : (
+            {allStrategies.length > 0 && (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 w-full max-w-full">
                 {allStrategies.map((strategy) => (
                   <div 
