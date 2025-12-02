@@ -15,7 +15,6 @@ import { Textarea } from '@/components/ui/Textarea';
 import { Badge } from '@/components/ui/Badge';
 import { TransactionForm } from '@/components/transactions/TransactionForm';
 import { TransactionList } from '@/components/transactions/TransactionList';
-import { ExchangeIntegration } from '@/components/transactions/ExchangeIntegration';
 import { TransactionResponse } from '@/types/transactions';
 import { 
   PlusIcon as Plus,
@@ -569,33 +568,72 @@ export default function InvestissementsPage() {
                     </Button>
                   </div>
                 ) : (
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    {portfolios.map((portfolio) => {
-                      const data = portfolioData[portfolio.id];
-                      if (!data) return null;
-                      
-                      return (
-                        <div
-                          key={portfolio.id}
-                          className={`rounded-xl p-6 transition-all duration-200 hover:shadow-xl ${
-                            isDarkMode ? 'bg-gray-800 hover:bg-gray-750' : 'bg-white border border-gray-200 hover:border-purple-300'
-                          }`}
-                        >
-                          {/* Header du portfolio */}
-                          <div className="flex items-start justify-between mb-4">
-                            <div className="flex items-start gap-3 flex-1 min-w-0">
-                              <div className={`w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 ${
+                  <div className={`rounded-xl overflow-hidden ${isDarkMode ? 'bg-gray-800' : 'bg-white border border-gray-200'} shadow-sm`}>
+                    {/* En-tête du tableau */}
+                    <div className={`grid grid-cols-12 gap-4 px-6 py-4 border-b ${
+                      isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-gray-50 border-gray-200'
+                    }`}>
+                      <div className="col-span-3">
+                        <span className={`text-xs font-semibold uppercase tracking-wide ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                          {language === 'fr' ? 'Portfolio' : 'Portfolio'}
+                        </span>
+                      </div>
+                      <div className="col-span-2 text-right">
+                        <span className={`text-xs font-semibold uppercase tracking-wide ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                          {language === 'fr' ? 'Valeur actuelle' : 'Current Value'}
+                        </span>
+                      </div>
+                      <div className="col-span-2 text-right">
+                        <span className={`text-xs font-semibold uppercase tracking-wide ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                          {language === 'fr' ? 'Investi' : 'Invested'}
+                        </span>
+                      </div>
+                      <div className="col-span-2 text-right">
+                        <span className={`text-xs font-semibold uppercase tracking-wide ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                          {language === 'fr' ? 'Gains/Pertes' : 'P/L'}
+                        </span>
+                      </div>
+                      <div className="col-span-2 text-right">
+                        <span className={`text-xs font-semibold uppercase tracking-wide ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                          {language === 'fr' ? 'Positions' : 'Positions'}
+                        </span>
+                      </div>
+                      <div className="col-span-1 text-center">
+                        <span className={`text-xs font-semibold uppercase tracking-wide ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                          {language === 'fr' ? 'Actions' : 'Actions'}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Lignes des portfolios */}
+                    <div className="divide-y divide-gray-200 dark:divide-gray-700">
+                      {portfolios.map((portfolio) => {
+                        const data = portfolioData[portfolio.id];
+                        if (!data) return null;
+                        
+                        return (
+                          <div
+                            key={portfolio.id}
+                            className={`grid grid-cols-12 gap-4 px-6 py-5 transition-all duration-200 hover:shadow-md ${
+                              isDarkMode 
+                                ? 'hover:bg-gray-750/50' 
+                                : 'hover:bg-gray-50'
+                            }`}
+                          >
+                            {/* Colonne Portfolio */}
+                            <div className="col-span-3 flex items-center gap-3 min-w-0">
+                              <div className={`w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 ${
                                 isDarkMode ? 'bg-gradient-to-br from-purple-600 to-blue-600' : 'bg-gradient-to-br from-purple-100 to-blue-100'
                               }`}>
-                                <Wallet className={`h-6 w-6 ${isDarkMode ? 'text-white' : 'text-purple-600'}`} />
+                                <Wallet className={`h-5 w-5 ${isDarkMode ? 'text-white' : 'text-purple-600'}`} />
                               </div>
                               <div className="flex-1 min-w-0">
-                                <div className="flex items-center gap-2 mb-1">
-                                  <h3 className={`text-lg font-bold truncate ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+                                <div className="flex items-center gap-2 mb-0.5">
+                                  <h3 className={`text-sm font-bold truncate ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
                                     {data.name}
                                   </h3>
                                   {data.isDefault && (
-                                    <Badge className={`text-xs px-2 py-0.5 ${
+                                    <Badge className={`text-xs px-1.5 py-0.5 ${
                                       isDarkMode ? 'bg-purple-600 text-white' : 'bg-purple-100 text-purple-700'
                                     }`}>
                                       {language === 'fr' ? 'Défaut' : 'Default'}
@@ -603,13 +641,58 @@ export default function InvestissementsPage() {
                                   )}
                                 </div>
                                 {data.description && (
-                                  <p className={`text-sm truncate ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                                  <p className={`text-xs truncate ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
                                     {data.description}
                                   </p>
                                 )}
                               </div>
                             </div>
-                            <div className="flex items-center gap-2 flex-shrink-0">
+
+                            {/* Colonne Valeur actuelle */}
+                            <div className="col-span-2 text-right flex flex-col justify-center">
+                              <div className={`text-base font-bold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+                                {formatCurrency(data.value)}
+                              </div>
+                            </div>
+
+                            {/* Colonne Investi */}
+                            <div className="col-span-2 text-right flex flex-col justify-center">
+                              <div className={`text-sm ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                                {formatCurrency(data.invested)}
+                              </div>
+                            </div>
+
+                            {/* Colonne Gains/Pertes */}
+                            <div className="col-span-2 text-right flex flex-col justify-center">
+                              <div className={`text-sm font-semibold flex items-center justify-end gap-1 ${
+                                data.pnl >= 0 ? 'text-green-500' : 'text-red-500'
+                              }`}>
+                                {data.pnl >= 0 ? (
+                                  <ArrowTrendingUpIcon className="h-4 w-4" />
+                                ) : (
+                                  <ArrowTrendingDownIcon className="h-4 w-4" />
+                                )}
+                                <span>{formatCurrency(data.pnl)}</span>
+                              </div>
+                              <div className={`text-xs mt-0.5 ${
+                                data.pnlPercentage >= 0 ? 'text-green-500' : 'text-red-500'
+                              }`}>
+                                {formatPercentage(data.pnlPercentage)}
+                              </div>
+                            </div>
+
+                            {/* Colonne Positions */}
+                            <div className="col-span-2 text-right flex flex-col justify-center">
+                              <div className={`text-sm font-semibold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+                                {data.holdingsCount}
+                              </div>
+                              <div className={`text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                                {new Set(data.holdings.map(h => h.token.symbol)).size} {language === 'fr' ? 'tokens' : 'tokens'}
+                              </div>
+                            </div>
+
+                            {/* Colonne Actions */}
+                            <div className="col-span-1 flex items-center justify-center gap-1">
                               <button
                                 onClick={() => startEdit(portfolio)}
                                 className={`p-2 rounded-lg transition-colors ${
@@ -617,173 +700,31 @@ export default function InvestissementsPage() {
                                     ? 'hover:bg-gray-700 text-gray-400 hover:text-white' 
                                     : 'hover:bg-gray-100 text-gray-600 hover:text-gray-900'
                                 }`}
+                                title={language === 'fr' ? 'Modifier' : 'Edit'}
                               >
                                 <Edit className="h-4 w-4" />
                               </button>
                               <button
                                 onClick={() => handleDeletePortfolio(portfolio.id)}
-                                className="p-2 rounded-lg transition-colors text-red-500 hover:bg-red-50 hover:text-red-700"
+                                className={`p-2 rounded-lg transition-colors ${
+                                  isDarkMode
+                                    ? 'text-red-400 hover:bg-red-900/20 hover:text-red-300'
+                                    : 'text-red-500 hover:bg-red-50 hover:text-red-700'
+                                }`}
+                                title={language === 'fr' ? 'Supprimer' : 'Delete'}
                               >
                                 <Delete className="h-4 w-4" />
                               </button>
                             </div>
                           </div>
-
-                          {/* Statistiques principales */}
-                          <div className="mb-4">
-                            <div className={`text-2xl font-bold mb-1 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
-                              {formatCurrency(data.value)}
-                            </div>
-                            <div className={`text-sm flex items-center gap-2 ${
-                              data.pnl >= 0 ? 'text-green-500' : 'text-red-500'
-                            }`}>
-                              {data.pnl >= 0 ? (
-                                <ArrowTrendingUpIcon className="h-4 w-4" />
-                              ) : (
-                                <ArrowTrendingDownIcon className="h-4 w-4" />
-                              )}
-                              <span>{formatCurrency(data.pnl)}</span>
-                              <span>({formatPercentage(data.pnlPercentage)})</span>
-                            </div>
-                          </div>
-
-                          {/* Barre de progression */}
-                          <div className="mb-4">
-                            <div className={`w-full h-2 rounded-full overflow-hidden ${
-                              isDarkMode ? 'bg-gray-700' : 'bg-gray-200'
-                            }`}>
-                              <div
-                                className={`h-full transition-all duration-500 ${
-                                  data.pnlPercentage >= 0 ? 'bg-gradient-to-r from-green-400 to-green-600' : 'bg-gradient-to-r from-red-400 to-red-600'
-                                }`}
-                                style={{ 
-                                  width: `${Math.min(Math.abs(data.pnlPercentage), 100)}%` 
-                                }}
-                              />
-                            </div>
-                          </div>
-
-                          {/* Détails */}
-                          <div className="grid grid-cols-3 gap-4 mb-4">
-                            <div>
-                              <div className={`text-xs mb-1 ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-                                {language === 'fr' ? 'Investi' : 'Invested'}
-                              </div>
-                              <div className={`text-sm font-semibold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
-                                {formatCurrency(data.invested)}
-                              </div>
-                            </div>
-                            <div>
-                              <div className={`text-xs mb-1 ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-                                {language === 'fr' ? 'Positions' : 'Positions'}
-                              </div>
-                              <div className={`text-sm font-semibold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
-                                {data.holdingsCount}
-                              </div>
-                            </div>
-                            <div>
-                              <div className={`text-xs mb-1 ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-                                {language === 'fr' ? 'Tokens' : 'Tokens'}
-                              </div>
-                              <div className={`text-sm font-semibold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
-                                {new Set(data.holdings.map(h => h.token.symbol)).size}
-                              </div>
-                            </div>
-                          </div>
-
-                          {/* Top Holdings */}
-                          {data.holdings.length > 0 && (
-                            <div>
-                              <div className="flex items-center justify-between mb-3">
-                                <h4 className={`text-sm font-semibold ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-                                  {language === 'fr' ? 'Top Holdings' : 'Top Holdings'}
-                                </h4>
-                              </div>
-                              <div className="space-y-2">
-                                {data.holdings
-                                  .sort((a, b) => (b.currentValue || 0) - (a.currentValue || 0))
-                                  .slice(0, 3)
-                                  .map((holding) => {
-                                    const percentage = data.value > 0 ? ((holding.currentValue || 0) / data.value) * 100 : 0;
-                                    return (
-                                      <div
-                                        key={holding.id}
-                                        className={`flex items-center justify-between p-3 rounded-lg ${
-                                          isDarkMode ? 'bg-gray-700' : 'bg-gray-50'
-                                        }`}
-                                      >
-                                        <div className="flex items-center gap-3 flex-1 min-w-0">
-                                          <div className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 ${
-                                            isDarkMode ? 'bg-gray-600' : 'bg-gradient-to-br from-purple-200 to-blue-200'
-                                          }`}>
-                                            <span className={`text-sm font-bold ${
-                                              isDarkMode ? 'text-white' : 'text-purple-700'
-                                            }`}>
-                                              {holding.token.symbol.charAt(0)}
-                                            </span>
-                                          </div>
-                                          <div className="flex-1 min-w-0">
-                                            <div className={`font-semibold truncate ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
-                                              {holding.token.symbol}
-                                            </div>
-                                            <div className={`text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-                                              {percentage.toFixed(1)}% • {holding.quantity.toFixed(4)}
-                                            </div>
-                                          </div>
-                                        </div>
-                                        <div className="text-right flex-shrink-0">
-                                          <div className={`font-semibold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
-                                            {formatCurrency(holding.currentValue || 0)}
-                                          </div>
-                                          <div className={`text-xs flex items-center gap-1 ${
-                                            (holding.profitLoss || 0) >= 0 ? 'text-green-500' : 'text-red-500'
-                                          }`}>
-                                            {(holding.profitLoss || 0) >= 0 ? (
-                                              <ArrowTrendingUpIcon className="h-3 w-3" />
-                                            ) : (
-                                              <ArrowTrendingDownIcon className="h-3 w-3" />
-                                            )}
-                                            {formatPercentage(holding.profitLossPercentage || 0)}
-                                          </div>
-                                        </div>
-                                      </div>
-                                    );
-                                  })}
-                              </div>
-                            </div>
-                          )}
-
-                          {/* Message si aucun holding */}
-                          {data.holdings.length === 0 && (
-                            <div className={`text-center py-6 rounded-lg ${
-                              isDarkMode ? 'bg-gray-700' : 'bg-gray-50'
-                            }`}>
-                              <p className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-                                {language === 'fr' ? 'Aucun holding pour le moment' : 'No holdings yet'}
-                              </p>
-                              <button
-                                onClick={() => setCurrentView('transactions')}
-                                className={`mt-2 text-sm font-medium ${
-                                  isDarkMode ? 'text-purple-400 hover:text-purple-300' : 'text-purple-600 hover:text-purple-700'
-                                }`}
-                              >
-                                {language === 'fr' ? 'Ajouter une transaction' : 'Add transaction'}
-                              </button>
-                            </div>
-                          )}
-                        </div>
-                      );
-                    })}
+                        );
+                      })}
+                    </div>
                   </div>
                 )}
               </>
             ) : (
               <>
-                {/* Intégration des exchanges */}
-                <div className="mb-6">
-                  <ExchangeIntegration isDarkMode={isDarkMode} language={language} />
-                </div>
-
                 {/* Modal de transaction */}
                 {showForm && (
                   <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 overflow-y-auto">
@@ -823,21 +764,61 @@ export default function InvestissementsPage() {
                   </div>
                 )}
 
-                {/* Liste des transactions */}
-                <div className={`rounded-xl p-6 ${isDarkMode ? 'bg-gray-800' : 'bg-white border border-gray-200'} shadow-sm`}>
-                  <div className="flex items-center justify-between mb-4">
-                    <h2 className={`text-lg md:text-xl font-semibold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
-                      {language === 'fr' ? 'Historique des Transactions' : 'Transaction History'}
-                    </h2>
+                {/* Liste des transactions - Tableau professionnel */}
+                <div className={`rounded-xl overflow-hidden ${isDarkMode ? 'bg-gray-800' : 'bg-white border border-gray-200'} shadow-sm`}>
+                  {/* En-tête du tableau */}
+                  <div className={`grid grid-cols-12 gap-4 px-6 py-4 border-b ${
+                    isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-gray-50 border-gray-200'
+                  }`}>
+                    <div className="col-span-2">
+                      <span className={`text-xs font-semibold uppercase tracking-wide ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                        {language === 'fr' ? 'Type' : 'Type'}
+                      </span>
+                    </div>
+                    <div className="col-span-2">
+                      <span className={`text-xs font-semibold uppercase tracking-wide ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                        {language === 'fr' ? 'Token' : 'Token'}
+                      </span>
+                    </div>
+                    <div className="col-span-2">
+                      <span className={`text-xs font-semibold uppercase tracking-wide ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                        {language === 'fr' ? 'Portfolio' : 'Portfolio'}
+                      </span>
+                    </div>
+                    <div className="col-span-2 text-right">
+                      <span className={`text-xs font-semibold uppercase tracking-wide ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                        {language === 'fr' ? 'Quantité' : 'Quantity'}
+                      </span>
+                    </div>
+                    <div className="col-span-2 text-right">
+                      <span className={`text-xs font-semibold uppercase tracking-wide ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                        {language === 'fr' ? 'Montant' : 'Amount'}
+                      </span>
+                    </div>
+                    <div className="col-span-1 text-right">
+                      <span className={`text-xs font-semibold uppercase tracking-wide ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                        {language === 'fr' ? 'Prix' : 'Price'}
+                      </span>
+                    </div>
+                    <div className="col-span-1 text-center">
+                      <span className={`text-xs font-semibold uppercase tracking-wide ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                        {language === 'fr' ? 'Actions' : 'Actions'}
+                      </span>
+                    </div>
                   </div>
-                  <TransactionList
-                    key={refreshKey}
-                    onAddTransaction={handleAddTransaction}
-                    onEditTransaction={handleEditTransaction}
-                    onTransactionDeleted={handleTransactionDeleted}
-                    isDarkMode={isDarkMode}
-                    language={language}
-                  />
+
+                  {/* Contenu du tableau via TransactionList */}
+                  <div className="divide-y divide-gray-200 dark:divide-gray-700">
+                    <TransactionList
+                      key={refreshKey}
+                      onAddTransaction={handleAddTransaction}
+                      onEditTransaction={handleEditTransaction}
+                      onTransactionDeleted={handleTransactionDeleted}
+                      isDarkMode={isDarkMode}
+                      language={language}
+                      displayMode="table"
+                    />
+                  </div>
                 </div>
               </>
             )}

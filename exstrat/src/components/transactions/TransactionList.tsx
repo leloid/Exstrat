@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/Button';
 import { TransactionResponse, TransactionSearchResponse } from '@/types/transactions';
 import { transactionsApi } from '@/lib/transactions-api';
+import { formatCurrency } from '@/lib/format';
 import { 
   PlusIcon, 
   PencilIcon, 
@@ -11,7 +12,9 @@ import {
   ArrowUpIcon,
   ArrowDownIcon,
   ArrowRightIcon,
-  ArrowLeftIcon
+  ArrowLeftIcon,
+  ChevronDownIcon,
+  ChevronRightIcon
 } from '@heroicons/react/24/outline';
 
 interface TransactionListProps {
@@ -20,6 +23,7 @@ interface TransactionListProps {
   onTransactionDeleted?: () => void;
   isDarkMode?: boolean;
   language?: 'fr' | 'en';
+  displayMode?: 'cards' | 'table';
 }
 
 export const TransactionList: React.FC<TransactionListProps> = ({ 
@@ -27,11 +31,13 @@ export const TransactionList: React.FC<TransactionListProps> = ({
   onEditTransaction,
   onTransactionDeleted,
   isDarkMode = true,
-  language = 'fr'
+  language = 'fr',
+  displayMode = 'cards'
 }) => {
   const [transactions, setTransactions] = useState<TransactionResponse[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
   const [pagination, setPagination] = useState({
     page: 1,
     limit: 20,
@@ -127,22 +133,22 @@ export const TransactionList: React.FC<TransactionListProps> = ({
   const getTransactionTypeColor = (type: string) => {
     if (isDarkMode) {
       switch (type) {
-        case 'BUY': return 'text-green-400 bg-green-900/30';
-        case 'SELL': return 'text-red-400 bg-red-900/30';
-        case 'TRANSFER_IN': return 'text-blue-400 bg-blue-900/30';
-        case 'TRANSFER_OUT': return 'text-orange-400 bg-orange-900/30';
-        case 'STAKING': return 'text-purple-400 bg-purple-900/30';
-        case 'REWARD': return 'text-yellow-400 bg-yellow-900/30';
+        case 'BUY': return 'text-green-400 bg-green-900/30 border-green-700/50';
+        case 'SELL': return 'text-red-400 bg-red-900/30 border-red-700/50';
+        case 'TRANSFER_IN': return 'text-blue-400 bg-blue-900/30 border-blue-700/50';
+        case 'TRANSFER_OUT': return 'text-orange-400 bg-orange-900/30 border-orange-700/50';
+        case 'STAKING': return 'text-purple-400 bg-purple-900/30 border-purple-700/50';
+        case 'REWARD': return 'text-yellow-400 bg-yellow-900/30 border-yellow-700/50';
         default: return 'text-gray-400 bg-gray-800';
       }
     } else {
       switch (type) {
-        case 'BUY': return 'text-green-600 bg-green-100';
-        case 'SELL': return 'text-red-600 bg-red-100';
-        case 'TRANSFER_IN': return 'text-blue-600 bg-blue-100';
-        case 'TRANSFER_OUT': return 'text-orange-600 bg-orange-100';
-        case 'STAKING': return 'text-purple-600 bg-purple-100';
-        case 'REWARD': return 'text-yellow-600 bg-yellow-100';
+        case 'BUY': return 'text-green-600 bg-green-100 border-green-200';
+        case 'SELL': return 'text-red-600 bg-red-100 border-red-200';
+        case 'TRANSFER_IN': return 'text-blue-600 bg-blue-100 border-blue-200';
+        case 'TRANSFER_OUT': return 'text-orange-600 bg-orange-100 border-orange-200';
+        case 'STAKING': return 'text-purple-600 bg-purple-100 border-purple-200';
+        case 'REWARD': return 'text-yellow-600 bg-yellow-100 border-yellow-200';
         default: return 'text-gray-600 bg-gray-100';
       }
     }
@@ -178,6 +184,363 @@ export const TransactionList: React.FC<TransactionListProps> = ({
     return acc;
   }, {} as Record<string, TransactionResponse[]>);
 
+  // Si displayMode est 'table', on retourne juste le contenu sans wrapper
+  if (displayMode === 'table') {
+    if (loading) {
+      return (
+        <div className="px-6 py-12 text-center">
+          <div className={`animate-spin rounded-full h-8 w-8 border-b-2 mx-auto mb-4 ${
+            isDarkMode ? 'border-purple-400' : 'border-purple-600'
+          }`}></div>
+          <span className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+            {language === 'fr' ? 'Chargement...' : 'Loading...'}
+          </span>
+        </div>
+      );
+    }
+
+    if (error) {
+      return (
+        <div className={`px-6 py-4 ${
+          isDarkMode ? 'bg-red-900/30 border-b border-red-800' : 'bg-red-50 border-b border-red-200'
+        }`}>
+          <p className={`text-sm ${isDarkMode ? 'text-red-400' : 'text-red-600'}`}>{error}</p>
+        </div>
+      );
+    }
+
+    if (transactions.length === 0) {
+      return (
+        <div className="px-6 py-12 text-center">
+          <p className={`mb-4 text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+            {language === 'fr' ? 'Aucune transaction trouvée' : 'No transactions found'}
+          </p>
+          {onAddTransaction && (
+            <button
+              onClick={onAddTransaction}
+              className={`inline-flex items-center px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                isDarkMode
+                  ? 'bg-purple-600 hover:bg-purple-700 text-white'
+                  : 'bg-purple-600 hover:bg-purple-700 text-white'
+              }`}
+            >
+              <PlusIcon className="h-4 w-4 mr-2" />
+              {language === 'fr' ? 'Créer votre première transaction' : 'Create your first transaction'}
+            </button>
+          )}
+        </div>
+      );
+    }
+
+    // Grouper les transactions par token et portfolio
+    const groupedTransactions = transactions.reduce((acc, transaction) => {
+      const key = `${transaction.symbol}_${transaction.portfolioId || 'no-portfolio'}`;
+      if (!acc[key]) {
+        acc[key] = {
+          symbol: transaction.symbol || '',
+          name: transaction.name || '',
+          portfolioId: transaction.portfolioId || null,
+          portfolioName: transaction.portfolio?.name || (language === 'fr' ? 'Sans portfolio' : 'No portfolio'),
+          transactions: [],
+          totalQuantity: 0,
+          totalAmount: 0,
+          averagePrice: 0,
+          types: new Set<string>(),
+        };
+      }
+      acc[key].transactions.push(transaction);
+      acc[key].totalQuantity += transaction.quantity || 0;
+      acc[key].totalAmount += transaction.amountInvested || 0;
+      acc[key].types.add(transaction.type);
+      return acc;
+    }, {} as Record<string, {
+      symbol: string;
+      name: string;
+      portfolioId: string | null;
+      portfolioName: string;
+      transactions: TransactionResponse[];
+      totalQuantity: number;
+      totalAmount: number;
+      averagePrice: number;
+      types: Set<string>;
+    }>);
+
+    // Calculer le prix moyen pour chaque groupe
+    Object.values(groupedTransactions).forEach(group => {
+      group.averagePrice = group.totalQuantity > 0 ? group.totalAmount / group.totalQuantity : 0;
+    });
+
+    const toggleGroup = (key: string) => {
+      setExpandedGroups(prev => {
+        const newSet = new Set(prev);
+        if (newSet.has(key)) {
+          newSet.delete(key);
+        } else {
+          newSet.add(key);
+        }
+        return newSet;
+      });
+    };
+
+    // Affichage en tableau avec regroupement
+    return (
+      <>
+        {Object.entries(groupedTransactions).map(([key, group]) => {
+          const isExpanded = expandedGroups.has(key);
+          const primaryType = group.transactions[0]?.type || 'BUY';
+          const transactionCount = group.transactions.length;
+
+          return (
+            <React.Fragment key={key}>
+              {/* Ligne principale du groupe */}
+              <div
+                className={`grid grid-cols-12 gap-4 px-6 py-4 transition-all duration-200 hover:shadow-md cursor-pointer ${
+                  isDarkMode 
+                    ? 'hover:bg-gray-750/50' 
+                    : 'hover:bg-gray-50'
+                }`}
+                onClick={() => toggleGroup(key)}
+              >
+                {/* Colonne Type */}
+                <div className="col-span-2 flex items-center gap-2 min-w-0">
+                  <div className="flex-shrink-0">
+                    {getTransactionIcon(primaryType)}
+                  </div>
+                  <span className={`inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium border ${getTransactionTypeColor(primaryType)}`}>
+                    {getTransactionTypeLabel(primaryType)}
+                  </span>
+                  {transactionCount > 1 && (
+                    <span className={`text-xs px-1.5 py-0.5 rounded ${isDarkMode ? 'bg-gray-700 text-gray-300' : 'bg-gray-200 text-gray-600'}`}>
+                      {transactionCount}
+                    </span>
+                  )}
+                </div>
+
+                {/* Colonne Token */}
+                <div className="col-span-2 flex items-center gap-2 min-w-0">
+                  <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${
+                    isDarkMode ? 'bg-gray-700' : 'bg-gradient-to-br from-purple-100 to-blue-100'
+                  }`}>
+                    <span className={`text-xs font-bold ${
+                      isDarkMode ? 'text-white' : 'text-purple-700'
+                    }`}>
+                      {group.symbol?.charAt(0) || '?'}
+                    </span>
+                  </div>
+                  <div className="min-w-0">
+                    <div className={`text-sm font-semibold truncate ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+                      {group.symbol}
+                    </div>
+                    {group.name && (
+                      <div className={`text-xs truncate ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                        {group.name}
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Colonne Portfolio */}
+                <div className="col-span-2 flex items-center min-w-0">
+                  <div className={`text-sm truncate ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                    {group.portfolioName}
+                  </div>
+                </div>
+
+                {/* Colonne Quantité */}
+                <div className="col-span-2 text-right flex flex-col justify-center">
+                  <div className={`text-sm font-semibold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+                    {group.totalQuantity.toLocaleString()}
+                  </div>
+                  <div className={`text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                    {group.symbol}
+                  </div>
+                </div>
+
+                {/* Colonne Montant */}
+                <div className="col-span-2 text-right flex flex-col justify-center">
+                  <div className={`text-sm font-semibold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+                    {formatCurrency(group.totalAmount)}
+                  </div>
+                </div>
+
+                {/* Colonne Prix */}
+                <div className="col-span-1 text-right flex flex-col justify-center">
+                  <div className={`text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                    {formatCurrency(group.averagePrice, '$', 2)}
+                  </div>
+                </div>
+
+                {/* Colonne Actions - Flèche pour développer */}
+                <div className="col-span-1 flex items-center justify-center gap-1">
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      toggleGroup(key);
+                    }}
+                    className={`p-2 rounded-lg transition-colors ${
+                      isDarkMode 
+                        ? 'hover:bg-gray-700 text-gray-400 hover:text-white' 
+                        : 'hover:bg-gray-100 text-gray-600 hover:text-gray-900'
+                    }`}
+                    title={isExpanded ? (language === 'fr' ? 'Réduire' : 'Collapse') : (language === 'fr' ? 'Développer' : 'Expand')}
+                  >
+                    {isExpanded ? (
+                      <ChevronDownIcon className="h-4 w-4" />
+                    ) : (
+                      <ChevronRightIcon className="h-4 w-4" />
+                    )}
+                  </button>
+                </div>
+              </div>
+
+              {/* Détails des transactions individuelles (quand développé) */}
+              {isExpanded && (
+                <div className={`${isDarkMode ? 'bg-gray-800/50' : 'bg-gray-50/50'}`}>
+                  {group.transactions.map((transaction, index) => (
+                    <div
+                      key={transaction.id}
+                      className={`grid grid-cols-12 gap-4 px-6 py-3 border-b last:border-b-0 ${
+                        isDarkMode ? 'border-gray-700' : 'border-gray-200'
+                      }`}
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      {/* Colonne Type */}
+                      <div className="col-span-2 flex items-center gap-2 min-w-0 pl-8">
+                        <div className="flex-shrink-0">
+                          {getTransactionIcon(transaction.type)}
+                        </div>
+                        <span className={`inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium border ${getTransactionTypeColor(transaction.type)}`}>
+                          {getTransactionTypeLabel(transaction.type)}
+                        </span>
+                      </div>
+
+                      {/* Colonne Token - Vide car c'est le même */}
+                      <div className="col-span-2 flex items-center min-w-0">
+                        <div className={`text-xs ${isDarkMode ? 'text-gray-500' : 'text-gray-500'}`}>
+                          {new Date(transaction.transactionDate).toLocaleDateString(language === 'fr' ? 'fr-FR' : 'en-US', {
+                            day: '2-digit',
+                            month: 'short',
+                            year: 'numeric'
+                          })}
+                        </div>
+                      </div>
+
+                      {/* Colonne Portfolio - Vide */}
+                      <div className="col-span-2"></div>
+
+                      {/* Colonne Quantité */}
+                      <div className="col-span-2 text-right flex flex-col justify-center">
+                        <div className={`text-sm ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                          {transaction.quantity?.toLocaleString() || '0'}
+                        </div>
+                        <div className={`text-xs ${isDarkMode ? 'text-gray-500' : 'text-gray-500'}`}>
+                          {transaction.symbol}
+                        </div>
+                      </div>
+
+                      {/* Colonne Montant */}
+                      <div className="col-span-2 text-right flex flex-col justify-center">
+                        <div className={`text-sm ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                          {formatCurrency(transaction.amountInvested || 0)}
+                        </div>
+                      </div>
+
+                      {/* Colonne Prix */}
+                      <div className="col-span-1 text-right flex flex-col justify-center">
+                        <div className={`text-xs ${isDarkMode ? 'text-gray-500' : 'text-gray-500'}`}>
+                          {transaction.averagePrice ? formatCurrency(transaction.averagePrice, '$', 2) : '-'}
+                        </div>
+                      </div>
+
+                      {/* Colonne Actions */}
+                      <div className="col-span-1 flex items-center justify-center gap-1">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onEditTransaction?.(transaction);
+                          }}
+                          className={`p-2 rounded-lg transition-colors ${
+                            isDarkMode 
+                              ? 'hover:bg-gray-700 text-gray-400 hover:text-white' 
+                              : 'hover:bg-gray-100 text-gray-600 hover:text-gray-900'
+                          }`}
+                          title={language === 'fr' ? 'Modifier' : 'Edit'}
+                        >
+                          <PencilIcon className="h-4 w-4" />
+                        </button>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDeleteTransaction(transaction.id);
+                          }}
+                          className={`p-2 rounded-lg transition-colors ${
+                            isDarkMode
+                              ? 'text-red-400 hover:bg-red-900/20 hover:text-red-300'
+                              : 'text-red-500 hover:bg-red-50 hover:text-red-700'
+                          }`}
+                          title={language === 'fr' ? 'Supprimer' : 'Delete'}
+                        >
+                          <TrashIcon className="h-4 w-4" />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </React.Fragment>
+          );
+        })}
+
+        {/* Pagination */}
+        {pagination.total > pagination.limit && (
+          <div className={`px-6 py-4 border-t flex flex-col sm:flex-row items-center justify-between gap-3 ${
+            isDarkMode ? 'border-gray-700' : 'border-gray-200'
+          }`}>
+            <div className={`text-xs text-center sm:text-left ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+              {language === 'fr' 
+                ? `Affichage de ${((pagination.page - 1) * pagination.limit) + 1} à ${Math.min(pagination.page * pagination.limit, pagination.total)} sur ${pagination.total} transactions`
+                : `Showing ${((pagination.page - 1) * pagination.limit) + 1} to ${Math.min(pagination.page * pagination.limit, pagination.total)} of ${pagination.total} transactions`
+              }
+            </div>
+            <div className="flex space-x-2">
+              <button
+                onClick={() => fetchTransactions(pagination.page - 1)}
+                disabled={pagination.page === 1}
+                className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+                  pagination.page === 1
+                    ? isDarkMode
+                      ? 'bg-gray-800 text-gray-600 cursor-not-allowed'
+                      : 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                    : isDarkMode
+                    ? 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                    : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50'
+                }`}
+              >
+                {language === 'fr' ? 'Précédent' : 'Previous'}
+              </button>
+              <button
+                onClick={() => fetchTransactions(pagination.page + 1)}
+                disabled={pagination.page * pagination.limit >= pagination.total}
+                className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+                  pagination.page * pagination.limit >= pagination.total
+                    ? isDarkMode
+                      ? 'bg-gray-800 text-gray-600 cursor-not-allowed'
+                      : 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                    : isDarkMode
+                    ? 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                    : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50'
+                }`}
+              >
+                {language === 'fr' ? 'Suivant' : 'Next'}
+              </button>
+            </div>
+          </div>
+        )}
+      </>
+    );
+  }
+
+  // Mode cards (affichage original)
   return (
     <div className={`rounded-xl p-3 md:p-6 w-full max-w-full overflow-x-hidden ${
       isDarkMode ? 'bg-gray-800' : 'bg-white border border-gray-200'
