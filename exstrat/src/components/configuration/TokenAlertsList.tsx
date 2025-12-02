@@ -78,13 +78,13 @@ export const TokenAlertsList: React.FC<TokenAlertsListProps> = ({
       setLoading(true);
 
       if (alertConfiguration) {
-        // Mettre à jour la configuration existante
+        // Activer cette configuration (le backend désactivera automatiquement les autres du même portfolio)
         const updated = await configurationApi.updateAlertConfiguration(alertConfiguration.id, {
           isActive: true,
         });
         onConfigurationUpdate(updated);
       } else {
-        // Créer une nouvelle configuration
+        // Créer une nouvelle configuration (elle sera automatiquement activée et les autres désactivées par le backend)
         const newConfig = await configurationApi.createAlertConfiguration({
           forecastId,
           notificationChannels: {
@@ -104,9 +104,9 @@ export const TokenAlertsList: React.FC<TokenAlertsListProps> = ({
 
   // Créer une alerte token avec ses TP
   const handleCreateTokenAlert = async (holding: Holding, strategy: TheoreticalStrategyResponse | null) => {
-    if (!alertConfiguration) {
-      // Créer d'abord la configuration si elle n'existe pas
-      await handleCreateOrUpdateConfiguration();
+    // Vérifier que la prévision est active
+    if (!alertConfiguration || !alertConfiguration.isActive) {
+      console.warn('La prévision doit être active pour configurer les alertes');
       return;
     }
 
@@ -214,10 +214,32 @@ export const TokenAlertsList: React.FC<TokenAlertsListProps> = ({
     );
   }
 
+  // Vérifier si la prévision est active
+  const isForecastActive = alertConfiguration?.isActive === true;
+
   return (
     <div className="space-y-4">
-      {/* Message informatif si pas de configuration */}
-      {!alertConfiguration && (
+      {/* Message d'avertissement si la prévision n'est pas active */}
+      {!isForecastActive && (
+        <div className={`p-4 rounded-lg border ${isDarkMode ? 'bg-yellow-900/20 border-yellow-700/30' : 'bg-yellow-50 border-yellow-200'}`}>
+          <div className="flex items-start gap-3">
+            <span className="text-xl">⚠️</span>
+            <div className="flex-1">
+              <p className={`font-medium mb-1 ${isDarkMode ? 'text-yellow-400' : 'text-yellow-700'}`}>
+                {language === 'fr' ? 'Prévision non active' : 'Forecast not active'}
+              </p>
+              <p className={`text-sm ${isDarkMode ? 'text-yellow-300' : 'text-yellow-600'}`}>
+                {language === 'fr'
+                  ? 'Vous devez d\'abord activer cette prévision en utilisant le bouton "Activer les alertes" ci-dessus avant de pouvoir configurer les alertes par token.'
+                  : 'You must first activate this forecast using the "Activate alerts" button above before you can configure token alerts.'}
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Message informatif si pas de configuration mais prévision active */}
+      {isForecastActive && !alertConfiguration && (
         <div className={`p-3 rounded-lg ${isDarkMode ? 'bg-blue-900/20 border border-blue-700/30' : 'bg-blue-50 border border-blue-200'}`}>
           <p className={`text-xs ${isDarkMode ? 'text-blue-400' : 'text-blue-700'}`}>
             {language === 'fr'
@@ -227,37 +249,48 @@ export const TokenAlertsList: React.FC<TokenAlertsListProps> = ({
         </div>
       )}
 
-      {/* Liste des tokens avec stratégies (A3) */}
-      <div className="space-y-3">
-        {tokensWithStrategies.map(({ holding, strategy }) => {
-          if (!strategy) return null;
-          
-          const tokenAlert = alertConfiguration?.tokenAlerts?.find(ta => ta.holdingId === holding.id);
-          const isExpanded = expandedTokens.has(holding.id);
+      {/* Liste des tokens avec stratégies (A3) - seulement si la prévision est active */}
+      {isForecastActive ? (
+        <div className="space-y-3">
+          {tokensWithStrategies.map(({ holding, strategy }) => {
+            if (!strategy) return null;
+            
+            const tokenAlert = alertConfiguration?.tokenAlerts?.find(ta => ta.holdingId === holding.id);
+            const isExpanded = expandedTokens.has(holding.id);
 
-          return (
-            <TokenAlertItem
-              key={holding.id}
-              holding={holding}
-              strategy={strategy}
-              tokenAlert={tokenAlert}
-              alertConfigurationId={alertConfiguration?.id}
-              isExpanded={isExpanded}
-              onToggleExpand={() => {
-                const newExpanded = new Set(expandedTokens);
-                if (isExpanded) {
-                  newExpanded.delete(holding.id);
-                } else {
-                  newExpanded.add(holding.id);
-                }
-                setExpandedTokens(newExpanded);
-              }}
-              onCreateAlert={() => handleCreateTokenAlert(holding, strategy)}
-              onConfigurationUpdate={onConfigurationUpdate}
-            />
-          );
-        })}
-      </div>
+            return (
+              <TokenAlertItem
+                key={holding.id}
+                holding={holding}
+                strategy={strategy}
+                tokenAlert={tokenAlert}
+                alertConfigurationId={alertConfiguration?.id}
+                isForecastActive={isForecastActive}
+                isExpanded={isExpanded}
+                onToggleExpand={() => {
+                  const newExpanded = new Set(expandedTokens);
+                  if (isExpanded) {
+                    newExpanded.delete(holding.id);
+                  } else {
+                    newExpanded.add(holding.id);
+                  }
+                  setExpandedTokens(newExpanded);
+                }}
+                onCreateAlert={() => handleCreateTokenAlert(holding, strategy)}
+                onConfigurationUpdate={onConfigurationUpdate}
+              />
+            );
+          })}
+        </div>
+      ) : (
+        <div className={`p-4 rounded-lg border ${isDarkMode ? 'bg-gray-700/50 border-gray-600' : 'bg-gray-50 border-gray-300'}`}>
+          <p className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+            {language === 'fr'
+              ? 'Les tokens seront affichés ici une fois la prévision activée.'
+              : 'Tokens will be displayed here once the forecast is activated.'}
+          </p>
+        </div>
+      )}
     </div>
   );
 };

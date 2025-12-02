@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useTheme } from '@/contexts/ThemeContext';
 import * as configurationApi from '@/lib/configuration-api';
 import { Holding } from '@/types/portfolio';
@@ -15,6 +15,7 @@ interface TokenAlertItemProps {
   strategy: TheoreticalStrategyResponse | null;
   tokenAlert: TokenAlert | undefined;
   alertConfigurationId: string | undefined;
+  isForecastActive: boolean; // Indique si la prévision est active
   isExpanded: boolean;
   onToggleExpand: () => void;
   onCreateAlert: () => void;
@@ -26,6 +27,7 @@ export const TokenAlertItem: React.FC<TokenAlertItemProps> = ({
   strategy,
   tokenAlert,
   alertConfigurationId,
+  isForecastActive,
   isExpanded,
   onToggleExpand,
   onCreateAlert,
@@ -33,12 +35,48 @@ export const TokenAlertItem: React.FC<TokenAlertItemProps> = ({
 }) => {
   const { isDarkMode, language } = useTheme();
   const [saving, setSaving] = useState(false);
+  const [isCreating, setIsCreating] = useState(false);
+  const hasAutoCreatedRef = useRef(false);
 
   if (!strategy) {
     return null;
   }
 
   const numberOfTargets = strategy.profitTargets.length;
+
+  // Créer automatiquement les alertes quand on développe si la prévision est active et qu'il n'y a pas encore d'alertes
+  useEffect(() => {
+    const autoCreateAlerts = async () => {
+      if (
+        isExpanded &&
+        isForecastActive &&
+        !tokenAlert &&
+        alertConfigurationId &&
+        !isCreating &&
+        !hasAutoCreatedRef.current
+      ) {
+        hasAutoCreatedRef.current = true;
+        setIsCreating(true);
+        try {
+          await onCreateAlert();
+        } catch (error) {
+          console.error('Erreur lors de la création automatique des alertes:', error);
+          hasAutoCreatedRef.current = false; // Réessayer si erreur
+        } finally {
+          setIsCreating(false);
+        }
+      }
+    };
+
+    autoCreateAlerts();
+  }, [isExpanded, isForecastActive, tokenAlert, alertConfigurationId, isCreating, onCreateAlert]);
+
+  // Réinitialiser le flag quand le tokenAlert est créé
+  useEffect(() => {
+    if (tokenAlert) {
+      hasAutoCreatedRef.current = false;
+    }
+  }, [tokenAlert]);
 
   return (
     <div className={`rounded-lg border ${isDarkMode ? 'bg-gray-700/50 border-gray-600' : 'bg-gray-50 border-gray-300'}`}>
@@ -85,7 +123,15 @@ export const TokenAlertItem: React.FC<TokenAlertItemProps> = ({
       {/* Contenu déplié - Configuration des TP */}
       {isExpanded && (
         <div className="border-t border-gray-300 dark:border-gray-600 p-4">
-          {tokenAlert && alertConfigurationId ? (
+          {!isForecastActive ? (
+            <div className={`p-4 rounded-lg ${isDarkMode ? 'bg-yellow-900/20 border border-yellow-700/30' : 'bg-yellow-50 border border-yellow-200'}`}>
+              <p className={`text-sm ${isDarkMode ? 'text-yellow-400' : 'text-yellow-700'}`}>
+                {language === 'fr'
+                  ? '⚠️ Vous devez d\'abord activer cette prévision pour configurer les alertes de ce token.'
+                  : '⚠️ You must first activate this forecast to configure alerts for this token.'}
+              </p>
+            </div>
+          ) : tokenAlert && alertConfigurationId ? (
             <TPAlertsConfig
               tokenAlert={tokenAlert}
               alertConfigurationId={alertConfigurationId}
@@ -93,26 +139,21 @@ export const TokenAlertItem: React.FC<TokenAlertItemProps> = ({
             />
           ) : (
             <div className="space-y-4">
-              <div className={`p-4 rounded-lg ${isDarkMode ? 'bg-blue-900/20 border border-blue-700/30' : 'bg-blue-50 border border-blue-200'}`}>
-                <p className={`text-sm mb-4 ${isDarkMode ? 'text-blue-400' : 'text-blue-700'}`}>
-                  {language === 'fr'
-                    ? '💡 Configurez les alertes pour ce token en cliquant sur le bouton "Configurer alertes". Les alertes seront créées avec les valeurs par défaut (-10% avant le TP, alerte à l\'atteinte du TP).'
-                    : '💡 Configure alerts for this token by clicking the "Configure alerts" button. Alerts will be created with default values (-10% before TP, alert when TP is reached).'}
-                </p>
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onCreateAlert();
-                  }}
-                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                    isDarkMode
-                      ? 'bg-purple-600 hover:bg-purple-700 text-white'
-                      : 'bg-purple-600 hover:bg-purple-700 text-white'
-                  }`}
-                >
-                  {language === 'fr' ? 'Configurer alertes' : 'Configure alerts'}
-                </button>
-              </div>
+              {isCreating ? (
+                <div className={`p-4 rounded-lg ${isDarkMode ? 'bg-blue-900/20 border border-blue-700/30' : 'bg-blue-50 border border-blue-200'}`}>
+                  <p className={`text-sm ${isDarkMode ? 'text-blue-400' : 'text-blue-700'}`}>
+                    {language === 'fr' ? '⏳ Création des alertes en cours...' : '⏳ Creating alerts...'}
+                  </p>
+                </div>
+              ) : (
+                <div className={`p-4 rounded-lg ${isDarkMode ? 'bg-blue-900/20 border border-blue-700/30' : 'bg-blue-50 border border-blue-200'}`}>
+                  <p className={`text-sm ${isDarkMode ? 'text-blue-400' : 'text-blue-700'}`}>
+                    {language === 'fr'
+                      ? '💡 Les alertes sont en cours de création avec les valeurs par défaut (-10% avant le TP, alerte à l\'atteinte du TP).'
+                      : '💡 Alerts are being created with default values (-10% before TP, alert when TP is reached).'}
+                  </p>
+                </div>
+              )}
               
               {/* Aperçu des TP qui seront créés */}
               <div>

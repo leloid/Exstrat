@@ -9,12 +9,14 @@ import { ChevronDownIcon, CheckIcon } from '@heroicons/react/24/outline';
 interface ForecastSelectorProps {
   forecasts: ForecastResponse[];
   selectedForecastId: string | null;
+  activeForecastId: string | null; // ID de la prévision avec configuration active
   onForecastSelect: (forecastId: string) => void;
 }
 
 export const ForecastSelector: React.FC<ForecastSelectorProps> = ({
   forecasts,
   selectedForecastId,
+  activeForecastId,
   onForecastSelect,
 }) => {
   const { isDarkMode, language } = useTheme();
@@ -91,6 +93,7 @@ export const ForecastSelector: React.FC<ForecastSelectorProps> = ({
             forecasts.map((forecast) => {
               const summary = forecast.summary || {};
               const isSelected = selectedForecastId === forecast.id;
+              const isActive = activeForecastId === forecast.id;
 
               return (
                 <button
@@ -120,6 +123,13 @@ export const ForecastSelector: React.FC<ForecastSelectorProps> = ({
                         </span>
                         {isSelected && (
                           <CheckIcon className={`h-4 w-4 ${isDarkMode ? 'text-purple-400' : 'text-purple-600'}`} />
+                        )}
+                        {isActive && (
+                          <span className={`px-2 py-0.5 text-xs rounded ${
+                            isDarkMode ? 'bg-green-900/30 text-green-400' : 'bg-green-100 text-green-700'
+                          }`}>
+                            {language === 'fr' ? 'Active' : 'Active'}
+                          </span>
                         )}
                       </div>
                       <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs">

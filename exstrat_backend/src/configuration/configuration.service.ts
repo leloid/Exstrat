@@ -46,6 +46,32 @@ export class ConfigurationService {
       throw new BadRequestException('Une configuration d\'alertes existe déjà pour cette prévision');
     }
 
+    // Si on active cette configuration, désactiver toutes les autres configurations du même portfolio
+    if (createDto.isActive !== false) {
+      // Récupérer toutes les prévisions du même portfolio
+      const forecastsInPortfolio = await this.prisma.forecast.findMany({
+        where: {
+          portfolioId: forecast.portfolioId,
+          userId,
+        },
+        select: { id: true },
+      });
+
+      const forecastIds = forecastsInPortfolio.map(f => f.id);
+
+      // Désactiver toutes les autres configurations actives du même portfolio
+      await this.prisma.alertConfiguration.updateMany({
+        where: {
+          userId,
+          forecastId: { in: forecastIds },
+          isActive: true,
+        },
+        data: {
+          isActive: false,
+        },
+      });
+    }
+
     // Créer la configuration avec les alertes token si fournies
     const configuration = await this.prisma.alertConfiguration.create({
       data: {
@@ -63,7 +89,8 @@ export class ConfigurationService {
                 tokenSymbol: tokenAlert.tokenSymbol,
                 strategyId: tokenAlert.strategyId,
                 numberOfTargets: tokenAlert.numberOfTargets,
-                isActive: tokenAlert.isActive ?? true,
+                // Si la configuration est active, activer toutes les alertes par défaut
+                isActive: (createDto.isActive !== false) ? (tokenAlert.isActive ?? true) : (tokenAlert.isActive ?? false),
                 tpAlerts: {
                   create: tokenAlert.tpAlerts.map((tpAlert) => ({
                     tpOrder: tpAlert.tpOrder,
@@ -75,7 +102,8 @@ export class ConfigurationService {
                     beforeTPValue: tpAlert.beforeTP.value ?? -10, // Défaut: -10%
                     beforeTPType: tpAlert.beforeTP.type ?? 'percentage',
                     tpReachedEnabled: tpAlert.tpReached.enabled,
-                    isActive: tpAlert.isActive ?? true,
+                    // Si la configuration est active, activer toutes les alertes TP par défaut
+                    isActive: (createDto.isActive !== false) ? (tpAlert.isActive ?? true) : (tpAlert.isActive ?? false),
                   })),
                 },
               })),
@@ -167,6 +195,72 @@ export class ConfigurationService {
 
     if (!existing) {
       throw new NotFoundException('Configuration d\'alertes non trouvée');
+    }
+
+    // Si on active cette configuration, désactiver toutes les autres configurations du même portfolio
+    if (updateDto.isActive === true) {
+      // Récupérer la prévision associée pour obtenir le portfolioId
+      const forecast = await this.prisma.forecast.findUnique({
+        where: { id: existing.forecastId },
+        select: { portfolioId: true },
+      });
+
+      if (forecast) {
+        // Récupérer toutes les prévisions du même portfolio
+        const forecastsInPortfolio = await this.prisma.forecast.findMany({
+          where: {
+            portfolioId: forecast.portfolioId,
+            userId,
+          },
+          select: { id: true },
+        });
+
+        const forecastIds = forecastsInPortfolio.map(f => f.id);
+
+        // Désactiver toutes les autres configurations actives du même portfolio (sauf celle qu'on est en train de mettre à jour)
+        await this.prisma.alertConfiguration.updateMany({
+          where: {
+            userId,
+            forecastId: { in: forecastIds },
+            id: { not: configurationId },
+            isActive: true,
+          },
+          data: {
+            isActive: false,
+          },
+        });
+      }
+
+      // Activer toutes les alertes (TokenAlert et TPAlert) de cette configuration
+      // Activer toutes les alertes token de cette configuration
+      await this.prisma.tokenAlert.updateMany({
+        where: {
+          alertConfigurationId: configurationId,
+        },
+        data: {
+          isActive: true,
+        },
+      });
+
+      // Activer toutes les alertes TP de cette configuration
+      const tokenAlerts = await this.prisma.tokenAlert.findMany({
+        where: {
+          alertConfigurationId: configurationId,
+        },
+        select: { id: true },
+      });
+
+      const tokenAlertIds = tokenAlerts.map(ta => ta.id);
+      if (tokenAlertIds.length > 0) {
+        await this.prisma.tPAlert.updateMany({
+          where: {
+            tokenAlertId: { in: tokenAlertIds },
+          },
+          data: {
+            isActive: true,
+          },
+        });
+      }
     }
 
     const updated = await this.prisma.alertConfiguration.update({
