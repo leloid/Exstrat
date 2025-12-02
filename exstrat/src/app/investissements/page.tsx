@@ -766,48 +766,7 @@ export default function InvestissementsPage() {
 
                 {/* Liste des transactions - Tableau professionnel */}
                 <div className={`rounded-xl overflow-hidden ${isDarkMode ? 'bg-gray-800' : 'bg-white border border-gray-200'} shadow-sm`}>
-                  {/* En-tête du tableau */}
-                  <div className={`grid grid-cols-12 gap-4 px-6 py-4 border-b ${
-                    isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-gray-50 border-gray-200'
-                  }`}>
-                    <div className="col-span-2">
-                      <span className={`text-xs font-semibold uppercase tracking-wide ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-                        {language === 'fr' ? 'Type' : 'Type'}
-                      </span>
-                    </div>
-                    <div className="col-span-2">
-                      <span className={`text-xs font-semibold uppercase tracking-wide ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-                        {language === 'fr' ? 'Token' : 'Token'}
-                      </span>
-                    </div>
-                    <div className="col-span-2">
-                      <span className={`text-xs font-semibold uppercase tracking-wide ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-                        {language === 'fr' ? 'Portfolio' : 'Portfolio'}
-                      </span>
-                    </div>
-                    <div className="col-span-2 text-right">
-                      <span className={`text-xs font-semibold uppercase tracking-wide ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-                        {language === 'fr' ? 'Quantité' : 'Quantity'}
-                      </span>
-                    </div>
-                    <div className="col-span-2 text-right">
-                      <span className={`text-xs font-semibold uppercase tracking-wide ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-                        {language === 'fr' ? 'Montant' : 'Amount'}
-                      </span>
-                    </div>
-                    <div className="col-span-1 text-right">
-                      <span className={`text-xs font-semibold uppercase tracking-wide ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-                        {language === 'fr' ? 'Prix' : 'Price'}
-                      </span>
-                    </div>
-                    <div className="col-span-1 text-center">
-                      <span className={`text-xs font-semibold uppercase tracking-wide ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-                        {language === 'fr' ? 'Actions' : 'Actions'}
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* Contenu du tableau via TransactionList */}
+                  {/* Contenu du tableau via TransactionList (inclut l'en-tête avec tri) */}
                   <div className="divide-y divide-gray-200 dark:divide-gray-700">
                     <TransactionList
                       key={refreshKey}

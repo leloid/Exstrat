@@ -207,192 +207,157 @@ export default function StrategiesPage() {
               </div>
             </div>
 
-            {/* Liste des stratégies */}
+            {/* Liste des stratégies - Tableau professionnel */}
             {allStrategies.length > 0 && (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 w-full max-w-full">
-                {allStrategies.map((strategy) => (
-                  <div 
-                    key={strategy.id} 
-                    className={`rounded-xl p-6 transition-all hover:shadow-xl w-full max-w-full ${
-                      isDarkMode ? 'bg-gray-800 hover:bg-gray-750' : 'bg-white border border-gray-200 hover:border-purple-300'
-                    } ${strategy.type === 'theoretical' ? 'ring-2 ring-purple-500/20' : ''} shadow-sm`}
-                  >
-                    {/* Header */}
-                    <div className="mb-4">
-                      <div className="flex items-start justify-between mb-3">
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2 mb-2">
-                            <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${
-                              isDarkMode ? 'bg-gradient-to-br from-purple-600 to-blue-600' : 'bg-gradient-to-br from-purple-100 to-blue-100'
-                            }`}>
-                              <ChartBarIcon className={`h-6 w-6 ${isDarkMode ? 'text-white' : 'text-purple-600'}`} />
-                            </div>
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-center gap-2 mb-1">
-                                <h3 className={`text-lg font-bold truncate ${
-                                  isDarkMode ? 'text-white' : 'text-gray-900'
-                                }`}>
-                                  {strategy.name}
-                                </h3>
-                                {strategy.type === 'theoretical' && (
-                                  <Badge className="bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400 text-xs flex-shrink-0">
-                                    {language === 'fr' ? 'Virtuel' : 'Virtual'}
-                                  </Badge>
-                                )}
-                              </div>
-                              <p className={`text-sm truncate ${
-                                isDarkMode ? 'text-gray-400' : 'text-gray-600'
-                              }`}>
-                                {strategy.portfolioName} • {strategy.tokenSymbol}
-                              </p>
-                            </div>
-                          </div>
-                        </div>
-                        <Badge 
-                          className={`flex-shrink-0 ${
-                            strategy.status === 'active' 
-                              ? (isDarkMode ? 'bg-green-900/30 text-green-400' : 'bg-green-100 text-green-800')
-                              : (isDarkMode ? 'bg-gray-700 text-gray-400' : 'bg-gray-100 text-gray-800')
-                          }`}
-                        >
-                          {strategy.status === 'active' 
-                            ? (language === 'fr' ? 'Active' : 'Active')
-                            : (language === 'fr' ? 'Inactive' : 'Inactive')
-                          }
-                        </Badge>
-                      </div>
-                    </div>
-
-                    {/* Statistiques */}
-                    <div className="space-y-3 mb-6">
-                      <div className={`rounded-lg p-3 ${isDarkMode ? 'bg-gray-700' : 'bg-gray-50'}`}>
-                        <div className="flex items-center justify-between mb-1">
-                          <span className={`text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-                            {language === 'fr' ? 'Token' : 'Token'}
-                          </span>
-                        </div>
-                        <span className={`text-sm font-bold ${
-                          isDarkMode ? 'text-white' : 'text-gray-900'
-                        }`}>
-                          {strategy.tokenSymbol}
-                        </span>
-                      </div>
-                      <div className={`rounded-lg p-3 ${isDarkMode ? 'bg-gray-700' : 'bg-gray-50'}`}>
-                        <div className="flex items-center justify-between mb-1">
-                          <span className={`text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-                            {language === 'fr' ? 'Nombre de sorties' : 'Exit Targets'}
-                          </span>
-                        </div>
-                        <span className={`text-sm font-bold ${
-                          isDarkMode ? 'text-white' : 'text-gray-900'
-                        }`}>
-                          {strategy.numberOfTargets}
-                        </span>
-                      </div>
-                      {/* Afficher les champs selon le type de stratégie */}
-                      {strategy.type === 'theoretical' ? (
-                        <>
-                          <div className={`rounded-lg p-3 ${isDarkMode ? 'bg-gray-700' : 'bg-gray-50'}`}>
-                            <div className="flex items-center justify-between mb-1">
-                              <span className={`text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-                                {language === 'fr' ? 'Investi' : 'Invested'}
-                              </span>
-                              <CurrencyDollarIcon className={`h-4 w-4 ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`} />
-                            </div>
-                            <span className={`text-sm font-bold ${
-                              isDarkMode ? 'text-white' : 'text-gray-900'
-                            }`}>
-                              {formatCurrency(strategy.totalInvested || 0)}
-                            </span>
-                          </div>
-                          <div className={`rounded-lg p-3 ${isDarkMode ? 'bg-gray-700' : 'bg-gray-50'}`}>
-                            <div className="flex items-center justify-between mb-1">
-                              <span className={`text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-                                {language === 'fr' ? 'Profit attendu' : 'Expected Profit'}
-                              </span>
-                              <ArrowTrendingUpIcon className="h-4 w-4 text-green-500" />
-                            </div>
-                            <span className="text-sm font-bold text-green-500">
-                              {formatCurrency(strategy.expectedProfit || 0)}
-                            </span>
-                          </div>
-                          <div className={`rounded-lg p-3 ${isDarkMode ? 'bg-gray-700' : 'bg-gray-50'}`}>
-                            <div className="flex items-center justify-between mb-1">
-                              <span className={`text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-                                {language === 'fr' ? 'Rendement' : 'Return'}
-                              </span>
-                              {(strategy.returnPercentage || 0) >= 0 ? (
-                                <ArrowTrendingUpIcon className="h-4 w-4 text-green-500" />
-                              ) : (
-                                <ArrowTrendingDownIcon className="h-4 w-4 text-red-500" />
-                              )}
-                            </div>
-                            <span className={`text-sm font-bold ${
-                              (strategy.returnPercentage || 0) >= 0 ? 'text-green-500' : 'text-red-500'
-                            }`}>
-                              {formatPercentage(strategy.returnPercentage || 0)}
-                            </span>
-                          </div>
-                        </>
-                      ) : (
-                        <>
-                          <div className={`rounded-lg p-3 ${isDarkMode ? 'bg-gray-700' : 'bg-gray-50'}`}>
-                            <div className="flex items-center justify-between mb-1">
-                              <span className={`text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-                                {language === 'fr' ? 'Quantité' : 'Quantity'}
-                              </span>
-                            </div>
-                            <span className={`text-sm font-bold ${
-                              isDarkMode ? 'text-white' : 'text-gray-900'
-                            }`}>
-                              {strategy.baseQuantity?.toLocaleString() || 0} {strategy.tokenSymbol}
-                            </span>
-                          </div>
-                          <div className={`rounded-lg p-3 ${isDarkMode ? 'bg-gray-700' : 'bg-gray-50'}`}>
-                            <div className="flex items-center justify-between mb-1">
-                              <span className={`text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-                                {language === 'fr' ? 'Prix de référence' : 'Reference Price'}
-                              </span>
-                              <CurrencyDollarIcon className={`h-4 w-4 ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`} />
-                            </div>
-                            <span className={`text-sm font-bold ${
-                              isDarkMode ? 'text-white' : 'text-gray-900'
-                            }`}>
-                              {formatCurrency(strategy.referencePrice || 0)}
-                            </span>
-                          </div>
-                        </>
-                      )}
-                    </div>
-
-                    {/* Actions */}
-                    <div className="flex gap-2 pt-4 border-t border-gray-700">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className={`flex-1 text-sm ${
-                          isDarkMode ? 'border-gray-600 text-gray-300 hover:bg-gray-700' : ''
-                        }`}
-                        onClick={() => handleEditStrategy(strategy.id, strategy.type)}
-                      >
-                        <PencilIcon className="h-4 w-4 mr-2" />
-                        <span className="hidden sm:inline">{language === 'fr' ? 'Modifier' : 'Edit'}</span>
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className={`p-2 ${
-                          isDarkMode 
-                            ? 'border-red-900 text-red-400 hover:bg-red-900/30' 
-                            : 'text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200'
-                        }`}
-                        onClick={() => handleDeleteStrategy(strategy.id, strategy.type)}
-                      >
-                        <TrashIcon className="h-4 w-4" />
-                      </Button>
-                    </div>
+              <div className={`rounded-xl overflow-hidden ${isDarkMode ? 'bg-gray-800' : 'bg-white border border-gray-200'} shadow-sm`}>
+                {/* En-tête du tableau */}
+                <div className={`grid grid-cols-12 gap-4 px-6 py-4 border-b ${
+                  isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-gray-50 border-gray-200'
+                }`}>
+                  <div className="col-span-4">
+                    <span className={`text-xs font-semibold uppercase tracking-wide ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                      {language === 'fr' ? 'Stratégie' : 'Strategy'}
+                    </span>
                   </div>
-                ))}
+                  <div className="col-span-1">
+                    <span className={`text-xs font-semibold uppercase tracking-wide ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                      {language === 'fr' ? 'Token' : 'Token'}
+                    </span>
+                  </div>
+                  <div className="col-span-1 text-center">
+                    <span className={`text-xs font-semibold uppercase tracking-wide ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                      {language === 'fr' ? 'Sorties' : 'Targets'}
+                    </span>
+                  </div>
+                  <div className="col-span-2 text-right">
+                    <span className={`text-xs font-semibold uppercase tracking-wide ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                      {language === 'fr' ? 'Investi / Quantité' : 'Invested / Qty'}
+                    </span>
+                  </div>
+                  <div className="col-span-2 text-right">
+                    <span className={`text-xs font-semibold uppercase tracking-wide ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                      {language === 'fr' ? 'Profit / Prix réf.' : 'Profit / Ref. Price'}
+                    </span>
+                  </div>
+                  <div className="col-span-2 text-center">
+                    <span className={`text-xs font-semibold uppercase tracking-wide ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                      {language === 'fr' ? 'Actions' : 'Actions'}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Lignes des stratégies */}
+                <div className="divide-y divide-gray-200 dark:divide-gray-700">
+                  {allStrategies.map((strategy) => (
+                    <div
+                      key={strategy.id}
+                      className={`grid grid-cols-12 gap-4 px-6 py-4 transition-all duration-200 hover:shadow-md ${
+                        isDarkMode 
+                          ? 'hover:bg-gray-750/50' 
+                          : 'hover:bg-gray-50'
+                      }`}
+                    >
+                      {/* Colonne Stratégie */}
+                      <div className="col-span-4 flex items-center gap-3 min-w-0">
+                        <div className={`w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 ${
+                          isDarkMode ? 'bg-gradient-to-br from-purple-600 to-blue-600' : 'bg-gradient-to-br from-purple-100 to-blue-100'
+                        }`}>
+                          <ChartBarIcon className={`h-5 w-5 ${isDarkMode ? 'text-white' : 'text-purple-600'}`} />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className={`text-sm font-bold truncate ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+                            {strategy.name}
+                          </div>
+                          <div className={`text-xs truncate ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                            {strategy.tokenName || strategy.tokenSymbol}
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Colonne Token */}
+                      <div className="col-span-1 flex items-center">
+                        <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${
+                          isDarkMode ? 'bg-gray-700' : 'bg-gradient-to-br from-purple-100 to-blue-100'
+                        }`}>
+                          <span className={`text-xs font-bold ${
+                            isDarkMode ? 'text-white' : 'text-purple-700'
+                          }`}>
+                            {strategy.tokenSymbol?.charAt(0) || '?'}
+                          </span>
+                        </div>
+                        <div className={`ml-2 text-sm font-semibold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+                          {strategy.tokenSymbol}
+                        </div>
+                      </div>
+
+                      {/* Colonne Sorties */}
+                      <div className="col-span-1 text-center flex flex-col justify-center">
+                        <div className={`text-sm font-semibold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+                          {strategy.numberOfTargets}
+                        </div>
+                      </div>
+
+                      {/* Colonne Investi / Quantité */}
+                      <div className="col-span-2 text-right flex flex-col justify-center">
+                        {strategy.type === 'theoretical' ? (
+                          <div className={`text-sm font-semibold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+                            {formatCurrency(strategy.totalInvested || 0)}
+                          </div>
+                        ) : (
+                          <div className={`text-sm font-semibold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+                            {strategy.baseQuantity?.toLocaleString() || 0} {strategy.tokenSymbol}
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Colonne Profit / Prix réf. */}
+                      <div className="col-span-2 text-right flex flex-col justify-center">
+                        {strategy.type === 'theoretical' ? (
+                          <div className={`text-sm font-semibold flex items-center justify-end gap-1 ${
+                            (strategy.expectedProfit || 0) >= 0 ? 'text-green-500' : 'text-red-500'
+                          }`}>
+                            {(strategy.expectedProfit || 0) >= 0 ? (
+                              <ArrowTrendingUpIcon className="h-4 w-4" />
+                            ) : (
+                              <ArrowTrendingDownIcon className="h-4 w-4" />
+                            )}
+                            <span>{formatCurrency(strategy.expectedProfit || 0)}</span>
+                          </div>
+                        ) : (
+                          <div className={`text-sm ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                            {formatCurrency(strategy.referencePrice || 0)}
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Colonne Actions */}
+                      <div className="col-span-2 flex items-center justify-center gap-1">
+                        <button
+                          onClick={() => handleEditStrategy(strategy.id, strategy.type)}
+                          className={`p-2 rounded-lg transition-colors ${
+                            isDarkMode 
+                              ? 'hover:bg-gray-700 text-gray-400 hover:text-white' 
+                              : 'hover:bg-gray-100 text-gray-600 hover:text-gray-900'
+                          }`}
+                          title={language === 'fr' ? 'Modifier' : 'Edit'}
+                        >
+                          <PencilIcon className="h-4 w-4" />
+                        </button>
+                        <button
+                          onClick={() => handleDeleteStrategy(strategy.id, strategy.type)}
+                          className={`p-2 rounded-lg transition-colors ${
+                            isDarkMode
+                              ? 'text-red-400 hover:bg-red-900/20 hover:text-red-300'
+                              : 'text-red-500 hover:bg-red-50 hover:text-red-700'
+                          }`}
+                          title={language === 'fr' ? 'Supprimer' : 'Delete'}
+                        >
+                          <TrashIcon className="h-4 w-4" />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </div>
             )}
           </div>

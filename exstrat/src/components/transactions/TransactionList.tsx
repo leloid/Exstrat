@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Button } from '@/components/ui/Button';
 import { TransactionResponse, TransactionSearchResponse } from '@/types/transactions';
 import { transactionsApi } from '@/lib/transactions-api';
@@ -14,7 +14,8 @@ import {
   ArrowRightIcon,
   ArrowLeftIcon,
   ChevronDownIcon,
-  ChevronRightIcon
+  ChevronRightIcon,
+  ChevronUpIcon
 } from '@heroicons/react/24/outline';
 
 interface TransactionListProps {
@@ -38,6 +39,8 @@ export const TransactionList: React.FC<TransactionListProps> = ({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
+  const [sortField, setSortField] = useState<'symbol' | 'quantity' | 'amount' | 'price' | 'date' | null>(null);
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
   const [pagination, setPagination] = useState({
     page: 1,
     limit: 20,
@@ -75,6 +78,72 @@ export const TransactionList: React.FC<TransactionListProps> = ({
   useEffect(() => {
     fetchTransactions();
   }, []);
+
+  // Fonction de tri
+  const handleSort = (field: 'symbol' | 'quantity' | 'amount' | 'price' | 'date') => {
+    if (sortField === field) {
+      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortField(field);
+      setSortDirection('desc');
+    }
+  };
+
+  // Composant pour l'icône de tri
+  const SortIcon = ({ field }: { field: 'symbol' | 'quantity' | 'amount' | 'price' | 'date' }) => {
+    if (sortField !== field) {
+      return <ChevronUpIcon className={`h-3.5 w-3.5 ${isDarkMode ? 'text-gray-500' : 'text-gray-400'}`} />;
+    }
+    return sortDirection === 'asc' 
+      ? <ChevronUpIcon className={`h-3.5 w-3.5 ${isDarkMode ? 'text-blue-400' : 'text-blue-600'}`} />
+      : <ChevronDownIcon className={`h-3.5 w-3.5 ${isDarkMode ? 'text-blue-400' : 'text-blue-600'}`} />;
+  };
+
+  // Trier les transactions avant de les regrouper
+  // IMPORTANT: Tous les hooks doivent être appelés avant les retours conditionnels
+  const sortedTransactions = useMemo(() => {
+    if (!sortField) return transactions;
+    
+    const sorted = [...transactions];
+    sorted.sort((a, b) => {
+      let aValue: any;
+      let bValue: any;
+
+      switch (sortField) {
+        case 'symbol':
+          aValue = (a.symbol || '').toLowerCase();
+          bValue = (b.symbol || '').toLowerCase();
+          return sortDirection === 'asc' 
+            ? aValue.localeCompare(bValue)
+            : bValue.localeCompare(aValue);
+        
+        case 'quantity':
+          aValue = a.quantity || 0;
+          bValue = b.quantity || 0;
+          return sortDirection === 'asc' ? aValue - bValue : bValue - aValue;
+        
+        case 'amount':
+          aValue = a.amountInvested || 0;
+          bValue = b.amountInvested || 0;
+          return sortDirection === 'asc' ? aValue - bValue : bValue - aValue;
+        
+        case 'price':
+          aValue = a.averagePrice || 0;
+          bValue = b.averagePrice || 0;
+          return sortDirection === 'asc' ? aValue - bValue : bValue - aValue;
+        
+        case 'date':
+          aValue = new Date(a.transactionDate).getTime();
+          bValue = new Date(b.transactionDate).getTime();
+          return sortDirection === 'asc' ? aValue - bValue : bValue - aValue;
+        
+        default:
+          return 0;
+      }
+    });
+    
+    return sorted;
+  }, [transactions, sortField, sortDirection]);
 
   const handleDeleteTransaction = async (id: string) => {
     if (!confirm('Êtes-vous sûr de vouloir supprimer cette transaction ?')) {
@@ -232,37 +301,37 @@ export const TransactionList: React.FC<TransactionListProps> = ({
       );
     }
 
-    // Grouper les transactions par token et portfolio
-    const groupedTransactions = transactions.reduce((acc, transaction) => {
-      const key = `${transaction.symbol}_${transaction.portfolioId || 'no-portfolio'}`;
+    // Grouper les transactions par token uniquement
+    const groupedTransactions = sortedTransactions.reduce((acc, transaction) => {
+      const key = transaction.symbol || 'UNKNOWN';
       if (!acc[key]) {
         acc[key] = {
           symbol: transaction.symbol || '',
           name: transaction.name || '',
-          portfolioId: transaction.portfolioId || null,
-          portfolioName: transaction.portfolio?.name || (language === 'fr' ? 'Sans portfolio' : 'No portfolio'),
           transactions: [],
           totalQuantity: 0,
           totalAmount: 0,
           averagePrice: 0,
           types: new Set<string>(),
+          portfolios: new Set<string>(),
         };
       }
       acc[key].transactions.push(transaction);
       acc[key].totalQuantity += transaction.quantity || 0;
       acc[key].totalAmount += transaction.amountInvested || 0;
       acc[key].types.add(transaction.type);
+      const portfolioName = transaction.portfolio?.name || transaction.portfolioId || (language === 'fr' ? 'Sans portfolio' : 'No portfolio');
+      acc[key].portfolios.add(portfolioName);
       return acc;
     }, {} as Record<string, {
       symbol: string;
       name: string;
-      portfolioId: string | null;
-      portfolioName: string;
       transactions: TransactionResponse[];
       totalQuantity: number;
       totalAmount: number;
       averagePrice: number;
       types: Set<string>;
+      portfolios: Set<string>;
     }>);
 
     // Calculer le prix moyen pour chaque groupe
@@ -285,6 +354,63 @@ export const TransactionList: React.FC<TransactionListProps> = ({
     // Affichage en tableau avec regroupement
     return (
       <>
+        {/* En-tête du tableau avec tri */}
+        <div className={`grid grid-cols-12 gap-4 px-6 py-4 border-b ${
+          isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-gray-50 border-gray-200'
+        }`}>
+          <div className="col-span-2">
+            <span className={`text-xs font-semibold uppercase tracking-wide ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+              {language === 'fr' ? 'Type' : 'Type'}
+            </span>
+          </div>
+          <div 
+            className="col-span-2 flex items-center gap-1 cursor-pointer hover:opacity-80 transition-opacity"
+            onClick={() => handleSort('symbol')}
+          >
+            <span className={`text-xs font-semibold uppercase tracking-wide ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+              {language === 'fr' ? 'Token' : 'Token'}
+            </span>
+            <SortIcon field="symbol" />
+          </div>
+          <div className="col-span-2">
+            <span className={`text-xs font-semibold uppercase tracking-wide ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+              {language === 'fr' ? 'Portfolio' : 'Portfolio'}
+            </span>
+          </div>
+          <div 
+            className="col-span-2 text-right flex items-center justify-end gap-1 cursor-pointer hover:opacity-80 transition-opacity"
+            onClick={() => handleSort('quantity')}
+          >
+            <span className={`text-xs font-semibold uppercase tracking-wide ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+              {language === 'fr' ? 'Quantité' : 'Quantity'}
+            </span>
+            <SortIcon field="quantity" />
+          </div>
+          <div 
+            className="col-span-2 text-right flex items-center justify-end gap-1 cursor-pointer hover:opacity-80 transition-opacity"
+            onClick={() => handleSort('amount')}
+          >
+            <span className={`text-xs font-semibold uppercase tracking-wide ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+              {language === 'fr' ? 'Montant' : 'Amount'}
+            </span>
+            <SortIcon field="amount" />
+          </div>
+          <div 
+            className="col-span-1 text-right flex items-center justify-end gap-1 cursor-pointer hover:opacity-80 transition-opacity"
+            onClick={() => handleSort('price')}
+          >
+            <span className={`text-xs font-semibold uppercase tracking-wide ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+              {language === 'fr' ? 'Prix' : 'Price'}
+            </span>
+            <SortIcon field="price" />
+          </div>
+          <div className="col-span-1 text-center">
+            <span className={`text-xs font-semibold uppercase tracking-wide ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+              {language === 'fr' ? 'Actions' : 'Actions'}
+            </span>
+          </div>
+        </div>
+
         {Object.entries(groupedTransactions).map(([key, group]) => {
           const isExpanded = expandedGroups.has(key);
           const primaryType = group.transactions[0]?.type || 'BUY';
@@ -339,10 +465,10 @@ export const TransactionList: React.FC<TransactionListProps> = ({
                   </div>
                 </div>
 
-                {/* Colonne Portfolio */}
+                {/* Colonne Portfolio - Afficher tous les portfolios */}
                 <div className="col-span-2 flex items-center min-w-0">
                   <div className={`text-sm truncate ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-                    {group.portfolioName}
+                    {Array.from(group.portfolios).join(', ')}
                   </div>
                 </div>
 
@@ -414,7 +540,7 @@ export const TransactionList: React.FC<TransactionListProps> = ({
                         </span>
                       </div>
 
-                      {/* Colonne Token - Vide car c'est le même */}
+                      {/* Colonne Token - Date */}
                       <div className="col-span-2 flex items-center min-w-0">
                         <div className={`text-xs ${isDarkMode ? 'text-gray-500' : 'text-gray-500'}`}>
                           {new Date(transaction.transactionDate).toLocaleDateString(language === 'fr' ? 'fr-FR' : 'en-US', {
@@ -425,8 +551,12 @@ export const TransactionList: React.FC<TransactionListProps> = ({
                         </div>
                       </div>
 
-                      {/* Colonne Portfolio - Vide */}
-                      <div className="col-span-2"></div>
+                      {/* Colonne Portfolio - Nom du portfolio pour cette transaction */}
+                      <div className="col-span-2 flex items-center min-w-0">
+                        <div className={`text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                          {transaction.portfolio?.name || transaction.portfolioId || (language === 'fr' ? 'Sans portfolio' : 'No portfolio')}
+                        </div>
+                      </div>
 
                       {/* Colonne Quantité */}
                       <div className="col-span-2 text-right flex flex-col justify-center">

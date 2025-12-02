@@ -224,88 +224,88 @@ export const TokenStrategyDetails: React.FC<TokenStrategyDetailsProps> = ({
   };
 
   return (
-    <div className={`rounded-lg p-4 md:p-6 ${
+    <div className={`rounded-lg p-3 ${
       isDarkMode 
         ? 'bg-gray-800/95 backdrop-blur-sm border border-gray-700/50 shadow-xl' 
         : 'bg-white border border-gray-200/80 shadow-lg'
     }`}>
-      {/* En-tête amélioré */}
-      <div className="flex items-center justify-between mb-6 pb-4 border-b border-gray-200 dark:border-gray-700">
-        <div className="flex items-center gap-3">
-          <div className={`w-12 h-12 rounded-full bg-gradient-to-br from-purple-500 to-blue-500 flex items-center justify-center text-white font-bold text-base shadow-lg flex-shrink-0`}>
+      {/* En-tête compact */}
+      <div className="flex items-center justify-between mb-3 pb-3 border-b border-gray-200 dark:border-gray-700">
+        <div className="flex items-center gap-2">
+          <div className={`w-8 h-8 rounded-lg bg-gradient-to-br from-purple-500 to-blue-500 flex items-center justify-center text-white font-bold text-xs shadow-md flex-shrink-0`}>
             {holding.token.symbol.charAt(0)}
           </div>
           <div>
-            <h3 className={`text-lg font-bold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+            <h3 className={`text-sm font-bold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
               {holding.token.symbol}
             </h3>
-            <p className={`text-xs mt-0.5 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+            <p className={`text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
               {strategy.name}
             </p>
           </div>
         </div>
         <button
           onClick={onClose}
-          className={`p-2 rounded-lg transition-all duration-200 ${
+          className={`p-1.5 rounded-lg transition-all duration-200 ${
             isDarkMode 
               ? 'text-gray-400 hover:text-white hover:bg-gray-700/50' 
               : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100'
           }`}
         >
-          <XMarkIcon className="h-5 w-5" />
+          <XMarkIcon className="h-4 w-4" />
         </button>
       </div>
 
-      {/* Statistiques principales */}
-      <div className={`grid grid-cols-2 gap-4 mb-6 p-4 rounded-xl ${
+      {/* Statistiques principales compactes */}
+      <div className={`grid grid-cols-2 gap-2 mb-3 p-2.5 rounded-lg ${
         isDarkMode ? 'bg-gray-700/30' : 'bg-gradient-to-br from-blue-50 to-purple-50'
       }`}>
         <div>
-          <p className={`text-xs mb-1 ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+          <p className={`text-xs mb-0.5 ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
             {language === 'fr' ? 'Progression' : 'Progress'}
           </p>
-          <p className={`text-2xl font-bold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+          <p className={`text-lg font-bold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
             {Math.round(completionPercentage)}%
           </p>
         </div>
         <div>
-          <p className={`text-xs mb-1 ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+          <p className={`text-xs mb-0.5 ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
             {language === 'fr' ? 'Valeur projetée' : 'Projected Value'}
           </p>
-          <p className={`text-2xl font-bold ${isDarkMode ? 'text-green-400' : 'text-green-600'}`}>
+          <p className={`text-lg font-bold ${isDarkMode ? 'text-green-400' : 'text-green-600'}`}>
             {formatCurrency(projectedValue, '€', 0)}
           </p>
         </div>
       </div>
 
-      {/* Barre de progression améliorée */}
-      <div className="mb-6">
-        <div className="flex items-center justify-between mb-3">
-          <div className="flex items-center gap-2">
+      {/* Barre de progression compacte */}
+      <div className="mb-3">
+        <div className="flex items-center justify-between mb-1.5">
+          <div className="flex items-center gap-1.5">
             {Array.from({ length: totalTP }).map((_, i) => (
               <div
                 key={i}
-                className={`w-3 h-3 rounded-full transition-all duration-300 ${
+                className={`w-2 h-2 rounded-full transition-all duration-300 ${
                   i < tpReached
-                    ? 'bg-green-500 shadow-lg shadow-green-500/50'
+                    ? 'bg-green-500 shadow-md shadow-green-500/50'
                     : isDarkMode
-                    ? 'bg-gray-600 border-2 border-gray-500'
-                    : 'bg-gray-300 border-2 border-gray-200'
+                    ? 'bg-gray-600 border border-gray-500'
+                    : 'bg-gray-300 border border-gray-200'
                 }`}
               />
             ))}
           </div>
-          <div className={`text-xs font-semibold ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-            {tpReached}/{totalTP} {language === 'fr' ? 'TP atteints' : 'TP reached'}
+          <div className={`text-xs font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+            {tpReached}/{totalTP} {language === 'fr' ? 'TP' : 'TP'}
           </div>
         </div>
         <div className="relative">
-          <div className={`w-full h-3 rounded-full overflow-hidden ${
+          <div className={`w-full h-2 rounded-full overflow-hidden ${
             isDarkMode ? 'bg-gray-700' : 'bg-gray-200'
           }`}>
             <div
-              className={`h-full bg-gradient-to-r from-green-500 to-emerald-500 transition-all duration-500 shadow-lg ${
-                completionPercentage > 0 ? 'shadow-green-500/30' : ''
+              className={`h-full bg-gradient-to-r from-green-500 to-emerald-500 transition-all duration-500 ${
+                completionPercentage > 0 ? 'shadow-md shadow-green-500/30' : ''
               }`}
               style={{ width: `${completionPercentage}%` }}
             />
@@ -313,14 +313,14 @@ export const TokenStrategyDetails: React.FC<TokenStrategyDetailsProps> = ({
         </div>
       </div>
 
-      {/* Section des paliers de prise de profit améliorée */}
-      <div>
-        <h4 className={`text-xs font-bold uppercase tracking-wider mb-4 ${
+      {/* Section des paliers de prise de profit compacte */}
+      <div className="mb-3">
+        <h4 className={`text-xs font-bold uppercase tracking-wider mb-2 ${
           isDarkMode ? 'text-gray-300' : 'text-gray-700'
         }`}>
-          {language === 'fr' ? 'Paliers de prise de profit' : 'Take Profit Levels'}
+          {language === 'fr' ? 'Paliers TP' : 'TP Levels'}
         </h4>
-        <div className="space-y-3">
+        <div className="space-y-1.5 max-h-48 overflow-y-auto">
           {strategy.profitTargets.map((tp, index) => {
             const tpAlert = tpAlerts.find(ta => ta.tpOrder === tp.order);
             const targetPrice = tp.targetType === 'percentage'
@@ -333,61 +333,52 @@ export const TokenStrategyDetails: React.FC<TokenStrategyDetailsProps> = ({
             return (
               <div
                 key={tp.order}
-                className={`p-4 rounded-xl border-2 transition-all duration-200 ${
+                className={`p-2 rounded-lg border transition-all duration-200 ${
                   isReached
                     ? isDarkMode
-                      ? 'bg-green-500/10 border-green-500/30 shadow-lg shadow-green-500/10'
-                      : 'bg-green-50 border-green-200 shadow-md'
+                      ? 'bg-green-500/10 border-green-500/30'
+                      : 'bg-green-50 border-green-200'
                     : isDarkMode
-                    ? 'bg-gray-700/30 border-gray-600/50 hover:border-gray-500'
-                    : 'bg-gray-50 border-gray-200 hover:border-gray-300'
+                    ? 'bg-gray-700/30 border-gray-600/50'
+                    : 'bg-gray-50 border-gray-200'
                 }`}
               >
-                <div className="flex items-start justify-between gap-4">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-3 mb-2">
-                      <div className={`w-8 h-8 rounded-lg flex items-center justify-center font-bold text-sm ${
-                        isReached
-                          ? 'bg-green-500 text-white shadow-md'
-                          : isDarkMode
-                          ? 'bg-gray-600 text-gray-300'
-                          : 'bg-gray-200 text-gray-700'
-                      }`}>
-                        {tp.order}
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-2 flex-1 min-w-0">
+                    <div className={`w-5 h-5 rounded flex items-center justify-center font-bold text-xs flex-shrink-0 ${
+                      isReached
+                        ? 'bg-green-500 text-white'
+                        : isDarkMode
+                        ? 'bg-gray-600 text-gray-300'
+                        : 'bg-gray-200 text-gray-700'
+                    }`}>
+                      {tp.order}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className={`font-semibold text-xs truncate ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+                        {formatCurrency(targetPrice, '€', 2)}
                       </div>
-                      <div>
-                        <div className={`font-bold text-sm ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
-                          {language === 'fr' ? 'Prix cible' : 'Target Price'}: {formatCurrency(targetPrice, '€', 2)}
-                        </div>
-                        <div className={`text-xs mt-0.5 ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-                          {formatPercentage(tp.sellPercentage)} {language === 'fr' ? 'vendu' : 'sold'} • {formatCurrency((tpAlert?.projectedAmount || 0), '€', 0)} {language === 'fr' ? 'encaissé' : 'collected'}
-                        </div>
+                      <div className={`text-xs truncate ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                        {formatPercentage(tp.sellPercentage)} • {formatCurrency((tpAlert?.projectedAmount || 0), '€', 0)}
                       </div>
                     </div>
-                    {!isReached && (
-                      <div className={`mt-2 text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-                        {language === 'fr' 
-                          ? `${formatPercentage(remainingPercentage)} restant pour atteindre ce palier`
-                          : `${formatPercentage(remainingPercentage)} remaining to reach this level`}
-                      </div>
-                    )}
                   </div>
                   <div className="flex-shrink-0">
                     {isReached ? (
-                      <div className={`px-3 py-1.5 rounded-lg font-semibold text-xs ${
+                      <div className={`px-2 py-0.5 rounded text-xs font-medium ${
                         isDarkMode
-                          ? 'bg-green-500/20 text-green-400 border border-green-500/30'
-                          : 'bg-green-100 text-green-700 border border-green-300'
+                          ? 'bg-green-500/20 text-green-400'
+                          : 'bg-green-100 text-green-700'
                       }`}>
-                        ✓ {language === 'fr' ? 'Atteint' : 'Reached'}
+                        ✓
                       </div>
                     ) : (
-                      <div className={`px-3 py-1.5 rounded-lg font-semibold text-xs ${
+                      <div className={`px-2 py-0.5 rounded text-xs font-medium ${
                         isDarkMode
-                          ? 'bg-gray-600/50 text-gray-400 border border-gray-500/30'
-                          : 'bg-gray-100 text-gray-600 border border-gray-300'
+                          ? 'bg-gray-600/50 text-gray-400'
+                          : 'bg-gray-100 text-gray-600'
                       }`}>
-                        {formatPercentage(remainingPercentage)} {language === 'fr' ? 'restant' : 'left'}
+                        {formatPercentage(remainingPercentage)}
                       </div>
                     )}
                   </div>
@@ -398,17 +389,17 @@ export const TokenStrategyDetails: React.FC<TokenStrategyDetailsProps> = ({
         </div>
       </div>
 
-      {/* Graphique du cours du token */}
+      {/* Graphique du cours du token compact */}
       {priceChartData.length > 0 && (
-        <div className="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
-          <h4 className={`text-xs font-bold uppercase tracking-wider mb-4 ${
+        <div className="mt-3 pt-3 border-t border-gray-200 dark:border-gray-700">
+          <h4 className={`text-xs font-bold uppercase tracking-wider mb-2 ${
             isDarkMode ? 'text-gray-300' : 'text-gray-700'
           }`}>
-            {language === 'fr' ? `Cours ${holding.token.symbol}` : `${holding.token.symbol} Price Chart`}
+            {language === 'fr' ? `Cours ${holding.token.symbol}` : `${holding.token.symbol} Price`}
           </h4>
-          <div className="h-64">
+          <div className="h-40">
             <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={priceChartData} margin={{ top: 5, right: 10, left: 0, bottom: 5 }}>
+              <AreaChart data={priceChartData} margin={{ top: 5, right: 5, left: 0, bottom: 5 }}>
                 <defs>
                   <linearGradient id="colorPrice" x1="0" y1="0" x2="0" y2="1">
                     <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3}/>
@@ -418,7 +409,7 @@ export const TokenStrategyDetails: React.FC<TokenStrategyDetailsProps> = ({
                 <CartesianGrid 
                   strokeDasharray="3 3" 
                   stroke={isDarkMode ? '#374151' : '#e5e7eb'} 
-                  opacity={0.5}
+                  opacity={0.4}
                   vertical={false}
                 />
                 <XAxis
@@ -426,7 +417,7 @@ export const TokenStrategyDetails: React.FC<TokenStrategyDetailsProps> = ({
                   stroke={isDarkMode ? '#6b7280' : '#9ca3af'}
                   tick={{ 
                     fill: isDarkMode ? '#9ca3af' : '#6b7280',
-                    fontSize: 11,
+                    fontSize: 9,
                     fontWeight: 500
                   }}
                   tickLine={{ stroke: isDarkMode ? '#4b5563' : '#d1d5db' }}
@@ -435,12 +426,13 @@ export const TokenStrategyDetails: React.FC<TokenStrategyDetailsProps> = ({
                     const date = new Date(value);
                     return date.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' });
                   }}
+                  height={30}
                 />
                 <YAxis
                   stroke={isDarkMode ? '#6b7280' : '#9ca3af'}
                   tick={{ 
                     fill: isDarkMode ? '#9ca3af' : '#6b7280',
-                    fontSize: 11,
+                    fontSize: 9,
                     fontWeight: 500
                   }}
                   tickLine={{ stroke: isDarkMode ? '#4b5563' : '#d1d5db' }}
@@ -450,14 +442,14 @@ export const TokenStrategyDetails: React.FC<TokenStrategyDetailsProps> = ({
                     if (value >= 1000) return `€${(value / 1000).toFixed(1)}k`;
                     return `€${value.toFixed(0)}`;
                   }}
-                  width={60}
+                  width={50}
                 />
                 <Tooltip content={<CustomTooltip />} />
                 <Area
                   type="monotone"
                   dataKey="price"
                   stroke="#3b82f6"
-                  strokeWidth={2}
+                  strokeWidth={1.5}
                   fill="url(#colorPrice)"
                   animationDuration={300}
                 />
@@ -465,12 +457,12 @@ export const TokenStrategyDetails: React.FC<TokenStrategyDetailsProps> = ({
                   type="monotone"
                   dataKey="price"
                   stroke="#3b82f6"
-                  strokeWidth={2}
+                  strokeWidth={1.5}
                   dot={false}
                   activeDot={{ 
-                    r: 5, 
+                    r: 4, 
                     fill: '#3b82f6',
-                    strokeWidth: 2,
+                    strokeWidth: 1.5,
                     stroke: isDarkMode ? '#1e293b' : '#ffffff'
                   }}
                   animationDuration={300}
@@ -478,16 +470,16 @@ export const TokenStrategyDetails: React.FC<TokenStrategyDetailsProps> = ({
               </AreaChart>
             </ResponsiveContainer>
           </div>
-          <div className={`mt-3 flex items-center justify-between text-xs ${
+          <div className={`mt-2 flex items-center justify-between text-xs ${
             isDarkMode ? 'text-gray-400' : 'text-gray-500'
           }`}>
             <span>
-              {language === 'fr' ? 'Prix actuel' : 'Current price'}: <span className={`font-semibold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+              {language === 'fr' ? 'Actuel' : 'Current'}: <span className={`font-semibold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
                 {formatCurrency(currentPrice, '€', 2)}
               </span>
             </span>
             <span>
-              {language === 'fr' ? 'Prix moyen d\'achat' : 'Average purchase price'}: <span className={`font-semibold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+              {language === 'fr' ? 'Moyen' : 'Avg'}: <span className={`font-semibold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
                 {formatCurrency(holding.averagePrice, '€', 2)}
               </span>
             </span>
