@@ -13,7 +13,7 @@ import { BlocB_EvolutionPortfolio } from '@/components/dashboard/BlocB_Evolution
 import { BlocC_TableauTokens } from '@/components/dashboard/BlocC_TableauTokens';
 import { BlocD_VisualisationsCompact } from '@/components/dashboard/BlocD_VisualisationsCompact';
 import { BlocD_HistogrammeValorisation } from '@/components/dashboard/BlocD_HistogrammeValorisation';
-import { BlocE_StrategiesPrevisions } from '@/components/dashboard/BlocE_StrategiesPrevisions';
+import { TokenStrategyDetails } from '@/components/dashboard/TokenStrategyDetails';
 import { Holding } from '@/types/portfolio';
 import * as portfoliosApi from '@/lib/portfolios-api';
 import type { ForecastResponse } from '@/lib/portfolios-api';
@@ -37,7 +37,7 @@ export default function DashboardPage() {
   } = usePortfolio();
   const { isDarkMode, language } = useTheme();
   const [activeTab, setActiveTab] = useState('dashboard');
-  const [showStrategies, setShowStrategies] = useState(false);
+  const [selectedToken, setSelectedToken] = useState<Holding | null>(null);
   const [forecasts, setForecasts] = useState<ForecastResponse[]>([]);
   const [isGlobalView, setIsGlobalView] = useState(false);
   const [globalHoldings, setGlobalHoldings] = useState<Holding[]>([]);
@@ -140,9 +140,6 @@ export default function DashboardPage() {
         try {
           const data = await portfoliosApi.getForecasts();
           setForecasts(data);
-          if (data.length > 0) {
-            setShowStrategies(true);
-          }
         } catch (error) {
           console.error('Erreur lors du chargement des prévisions:', error);
         }
@@ -155,11 +152,6 @@ export default function DashboardPage() {
         const data = await portfoliosApi.getForecasts();
         const portfolioForecasts = data.filter(f => f.portfolioId === currentPortfolio.id);
         setForecasts(portfolioForecasts);
-        
-        // Afficher automatiquement le bloc E s'il y a des prévisions
-        if (portfolioForecasts.length > 0) {
-          setShowStrategies(true);
-        }
       } catch (error) {
         console.error('Erreur lors du chargement des prévisions:', error);
       }
@@ -236,9 +228,7 @@ export default function DashboardPage() {
 
   // Gérer le clic sur un token dans le tableau
   const handleTokenClick = (holding: Holding) => {
-    if (showStrategies) {
-      return;
-    }
+    setSelectedToken(holding);
   };
 
   if (portfoliosLoading) {
@@ -371,66 +361,35 @@ export default function DashboardPage() {
                     {/* Graphique Gains/Pertes ou Valorisation - juste en dessous du graphique d'évolution */}
                     <div className="mt-3">
                       <BlocD_HistogrammeValorisation holdings={displayHoldings} compact={true} />
-                    </div>
+                  </div>
                     
                     {/* Tableau des tokens - collé juste en dessous sans espace */}
                     <div className="-mt-3">
                       <BlocC_TableauTokens
                         holdings={displayHoldings}
+                        portfolioId={isGlobalView ? undefined : currentPortfolio?.id}
                         onTokenClick={handleTokenClick}
                       />
               </div>
 
-                    {/* Bloc E - Stratégies & Prévisions - collé juste en dessous du tableau */}
-                    {showStrategies && (isGlobalView || currentPortfolio) && (
-                      <div className="-mt-3">
-                        <BlocE_StrategiesPrevisions
-                          portfolioId={isGlobalView ? undefined : currentPortfolio?.id}
-                          holdings={displayHoldings}
-                          onClose={() => setShowStrategies(false)}
-                        />
-                </div>
-                    )}
                   </div>
 
-                  {/* Colonne droite : Visualisations */}
+                  {/* Colonne droite : Visualisations + Détails de stratégie */}
                   <div className="xl:col-span-4 space-y-3">
                     {/* Visualisations compactes */}
                     <BlocD_VisualisationsCompact holdings={displayHoldings} />
+                    
+                    {/* Détails de la stratégie du token sélectionné */}
+                    {selectedToken && (
+                      <TokenStrategyDetails
+                        holding={selectedToken}
+                        portfolioId={isGlobalView ? undefined : currentPortfolio?.id}
+                        onClose={() => setSelectedToken(null)}
+                      />
+                    )}
                 </div>
               </div>
 
-                {/* Bouton pour afficher le bloc E si pas encore affiché */}
-                {forecasts.length > 0 && !showStrategies && (
-                  <div className="text-center pt-2">
-                  <button
-                      onClick={() => setShowStrategies(true)}
-                      className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
-                      isDarkMode 
-                          ? 'bg-purple-600 hover:bg-purple-700 text-white'
-                          : 'bg-purple-600 hover:bg-purple-700 text-white'
-                    }`}
-                  >
-                      {language === 'fr' ? 'Afficher les Stratégies & Prévisions' : 'Show Strategies & Forecasts'}
-                  </button>
-                  </div>
-                )}
-
-                {/* Bouton pour afficher le bloc E */}
-                {forecasts.length > 0 && !showStrategies && (
-                  <div className="text-center pt-2">
-                  <button
-                      onClick={() => setShowStrategies(true)}
-                      className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
-                      isDarkMode 
-                          ? 'bg-purple-600 hover:bg-purple-700 text-white'
-                          : 'bg-purple-600 hover:bg-purple-700 text-white'
-                      }`}
-                    >
-                      {language === 'fr' ? 'Afficher les Stratégies & Prévisions' : 'Show Strategies & Forecasts'}
-                  </button>
-                </div>
-                )}
               </div>
             )}
           </div>

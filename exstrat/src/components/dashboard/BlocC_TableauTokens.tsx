@@ -1,23 +1,101 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { ArrowUpIcon, ArrowDownIcon, ChevronUpIcon, ChevronDownIcon } from '@heroicons/react/24/outline';
 import { formatCurrency, formatPercentage, formatQuantity } from '@/lib/format';
 import { useTheme } from '@/contexts/ThemeContext';
 import { Holding } from '@/types/portfolio';
+import * as configurationApi from '@/lib/configuration-api';
+import { getTheoreticalStrategies } from '@/lib/portfolios-api';
+import { AlertConfiguration } from '@/types/configuration';
+import { TheoreticalStrategyResponse } from '@/types/strategies';
 
 interface BlocCProps {
   holdings: Holding[];
+  portfolioId?: string; // ID du portfolio pour charger les alertes
   onTokenClick?: (holding: Holding) => void;
 }
 
-type SortField = 'symbol' | 'quantity' | 'investedAmount' | 'currentValue' | 'pnl' | 'pnlPercentage';
+interface TokenAlertInfo {
+  strategyName: string | null;
+  tpProgress: string; // Format "2/4"
+}
+
+type SortField = 'symbol' | 'quantity' | 'investedAmount' | 'currentValue' | 'pnl' | 'pnlPercentage' | 'strategy' | 'tpProgress';
 type SortDirection = 'asc' | 'desc';
 
-export const BlocC_TableauTokens: React.FC<BlocCProps> = ({ holdings, onTokenClick }) => {
+export const BlocC_TableauTokens: React.FC<BlocCProps> = ({ holdings, portfolioId, onTokenClick }) => {
   const { isDarkMode, language } = useTheme();
   const [sortField, setSortField] = useState<SortField>('currentValue');
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
+  const [alertConfigurations, setAlertConfigurations] = useState<AlertConfiguration[]>([]);
+  const [strategiesMap, setStrategiesMap] = useState<Map<string, TheoreticalStrategyResponse>>(new Map());
+  const [loadingAlerts, setLoadingAlerts] = useState(false);
+
+  // Charger les configurations d'alertes actives et les stratégies
+  useEffect(() => {
+    const loadAlertData = async () => {
+      if (!portfolioId) return;
+
+      try {
+        setLoadingAlerts(true);
+        
+        // Charger toutes les configurations d'alertes
+        const allConfigs = await configurationApi.getAlertConfigurations();
+        // Filtrer pour ne garder que les configurations actives
+        const activeConfigs = allConfigs.filter(config => config.isActive);
+        setAlertConfigurations(activeConfigs);
+
+        // Charger toutes les stratégies théoriques
+        const allStrategies = await getTheoreticalStrategies();
+        const strategiesById = new Map<string, TheoreticalStrategyResponse>();
+        allStrategies.forEach(strategy => {
+          strategiesById.set(strategy.id, strategy);
+        });
+        setStrategiesMap(strategiesById);
+      } catch (error) {
+        console.error('Erreur lors du chargement des alertes:', error);
+      } finally {
+        setLoadingAlerts(false);
+      }
+    };
+
+    loadAlertData();
+  }, [portfolioId]);
+
+  // Fonction pour obtenir les informations d'alerte pour un holding
+  const getTokenAlertInfo = (holding: Holding): TokenAlertInfo => {
+    // Chercher une configuration active qui contient une alerte pour ce token
+    for (const config of alertConfigurations) {
+      const tokenAlert = config.tokenAlerts?.find(ta => ta.holdingId === holding.id);
+      
+      if (tokenAlert && tokenAlert.isActive) {
+        // Trouver le nom de la stratégie
+        let strategyName: string | null = null;
+        if (tokenAlert.strategyId) {
+          const strategy = strategiesMap.get(tokenAlert.strategyId);
+          strategyName = strategy?.name || null;
+        }
+
+        // Compter les TP atteints (on considère qu'un TP est atteint si le prix actuel >= targetPrice)
+        const currentPrice = holding.currentPrice || holding.averagePrice || 0;
+        const tpReached = tokenAlert.tpAlerts?.filter(tp => 
+          tp.isActive && currentPrice >= tp.targetPrice
+        ).length || 0;
+        const totalTP = tokenAlert.numberOfTargets || tokenAlert.tpAlerts?.length || 0;
+
+        return {
+          strategyName,
+          tpProgress: `${tpReached}/${totalTP}`,
+        };
+      }
+    }
+
+    return {
+      strategyName: null,
+      tpProgress: '-',
+    };
+  };
 
   // Calculer les valeurs pour chaque holding
   const holdingsWithCalculations = useMemo(() => {
@@ -67,6 +145,14 @@ export const BlocC_TableauTokens: React.FC<BlocCProps> = ({ holdings, onTokenCli
         case 'pnlPercentage':
           aValue = a.pnlPercentage || 0;
           bValue = b.pnlPercentage || 0;
+          break;
+        case 'strategy':
+          aValue = getTokenAlertInfo(a).strategyName || '';
+          bValue = getTokenAlertInfo(b).strategyName || '';
+          break;
+        case 'tpProgress':
+          aValue = getTokenAlertInfo(a).tpProgress;
+          bValue = getTokenAlertInfo(b).tpProgress;
           break;
         default:
           return 0;
@@ -204,11 +290,34 @@ export const BlocC_TableauTokens: React.FC<BlocCProps> = ({ holdings, onTokenCli
                   <SortIcon field="pnlPercentage" />
                 </div>
               </th>
+              <th
+                className="text-left py-3 px-4 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                onClick={() => handleSort('strategy')}
+              >
+                <div className="flex items-center gap-2">
+                  <span className={`text-sm font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                    {language === 'fr' ? 'Stratégie active' : 'Active Strategy'}
+                  </span>
+                  <SortIcon field="strategy" />
+                </div>
+              </th>
+              <th
+                className="text-center py-3 px-4 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                onClick={() => handleSort('tpProgress')}
+              >
+                <div className="flex items-center justify-center gap-2">
+                  <span className={`text-sm font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                    {language === 'fr' ? 'TP' : 'TP'}
+                  </span>
+                  <SortIcon field="tpProgress" />
+                </div>
+              </th>
             </tr>
           </thead>
           <tbody>
             {sortedHoldings.map((holding) => {
               const isPositive = (holding.pnl || 0) >= 0;
+              const alertInfo = getTokenAlertInfo(holding);
               return (
                 <tr
                   key={holding.id}
@@ -266,6 +375,20 @@ export const BlocC_TableauTokens: React.FC<BlocCProps> = ({ holdings, onTokenCli
                       isPositive ? 'text-green-500' : 'text-red-500'
                     }`}>
                       {formatPercentage(holding.pnlPercentage || 0)}
+                    </span>
+                  </td>
+                  <td className="text-left py-4 px-4">
+                    <span className={`text-sm ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                      {alertInfo.strategyName || '-'}
+                    </span>
+                  </td>
+                  <td className="text-center py-4 px-4">
+                    <span className={`text-sm font-medium ${
+                      alertInfo.tpProgress !== '-' 
+                        ? (isDarkMode ? 'text-blue-400' : 'text-blue-600')
+                        : (isDarkMode ? 'text-gray-500' : 'text-gray-400')
+                    }`}>
+                      {alertInfo.tpProgress}
                     </span>
                   </td>
                 </tr>
