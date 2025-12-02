@@ -1,3 +1,88 @@
-.5 Module Réglages
+3.4 Module Configuration
+3.4.1 Rôle et objectif
+Le module Configuration intervient après la création des stratégies et des prévisions.
+Dans sa version V1, il sert à activer et personnaliser les alertes. La gestion des ordres (liée à la connexion aux exchanges) est planifiée pour une V2, mais l’interface doit d’ores et déjà anticiper cette évolution.
+L’utilisateur doit pouvoir :
+•	sélectionner un wallet ;
+•	consulter les prévisions associées ;
+•	activer les alertes liées à une prévision ;
+•	configurer précisément ces alertes (par token, par palier, avant/seuil atteint) ;
+•	choisir le canal de notification (email, push mobile) ;
+•	se préparer à l’activation des ordres (V2+).
+L’expérience doit rester simple, claire et cohérente avec la logique “outil professionnel” des modules Stratégies et Prévisions.
+3.4.2 Structure générale (V1)
+Le module est divisé en deux sous-onglets :
+1.	Alertes (V1 – fonctionnel)
+Permet d’activer et de personnaliser les alertes liées aux prévisions.
+2.	Ordres / Exécution (placeholder pour V2)
+Préfigurera la gestion semi-automatique des ordres de vente. L’UI doit être prête mais ce sous-onglet restera inactif en V1.
+3.4.3 Sous-onglet A – Alertes (V1)
+A1 – Sélection du wallet
+•	Menu déroulant listant les wallets.
+•	Une fois sélectionné, afficher les prévisions existantes pour ce wallet.
+A2 – Sélection de la prévision
+•	Afficher, pour chaque prévision : nom, total investi, total encaissé projeté, profit projeté, rendement.
+•	Bouton “Configurer les alertes” : l’utilisateur choisit la prévision sur laquelle activer les alertes.
+•	Bien que plusieurs prévisions puissent être activées, la plupart des utilisateurs choisiront leur scénario principal.
+A3 – Configuration des alertes par token
+•	Après sélection de la prévision, liste des tokens avec :
+o	nom du token ;
+o	stratégie associée ;
+o	nombre de TP ;
+o	bouton “Configurer alertes”.
+•	Un clic affiche les TP dans un panneau spécifique.
+A4 – Configuration des alertes par TP
+Pour chaque TP (TP1, TP2, TP3…) :
+•	Données affichées : seuil de prix, quantité à vendre, montant encaissé projeté, valeur restante après la vente.
+•	Alertes possibles (V1) :
+o	Avant le TP – générée par défaut à -10 % sous le seuil (modifiable via boutons +/- ou champ manuel).
+o	Atteinte du TP – déclenchée lorsque le prix atteint le seuil (activable/désactivable).
+•	Personnalisation :
+o	activer/désactiver chaque alerte ;
+o	modifier la valeur exacte ou le pourcentage ;
+o	activer/désactiver toutes les alertes du token.
+Objectif : offrir un workflow clair et flexible pour les utilisateurs avancés.
+A5 – Choix des canaux de notification
+•	Email – activé par défaut ; facile à gérer côté serveur.
+•	Notifications push – nécessite l’application mobile ; un message d’invitation à télécharger l’app doit être prévu si l’option est activée.
 
-Pas besoin de réinventer la roue pour cette partie. Créer un design cohérent de l’identité d’exStrat toujours dans la même philosophie que pour les autres modules. La V1 etant gratuite, a part les réglage de base du user il n’y pas encore de tab « subscription », « exchanges / wallet connectés », on peut s’en tenir à quelque chose de vraiment simple juste pour changer les paramètre classique d’un compte utilisateur.
+3.4.4 Sous-onglet B – Ordres (V2, structure à anticiper)
+Même si ce sous-onglet ne sera pas actif en V1, l’interface doit être prête à accueillir :
+•	Sélection du wallet et de la prévision active.
+•	Affichage des comptes connectés (exchanges / wallets externes).
+•	Association (mapping) des tokens aux comptes.
+•	Activation des ordres “semi-automatiques” : exStrat pré-remplit les transactions et l’utilisateur les valide manuellement (ex. « Envoyer vers Binance / Coinbase / Ledger Live »).
+•	Avertissement important : si l’utilisateur modifie une stratégie utilisée dans une prévision active, un message doit indiquer que les alertes ou ordres associés seront impactés.
+
+3.4.5 Recommandations UX/UI
+Même si aucune version précédente n’existe, voici des orientations possibles :
+1.	Interface en panneaux (accordion)
+o	Panneau 1 : prévisions du wallet ;
+o	Panneau 2 : token 1 ;
+o	Panneau 3 : token 2 ; etc.
+→ vue compacte et lisible.
+2.	Dual layout (desktop-first)
+o	Colonne gauche : navigation (wallet → prévision → token).
+o	Colonne droite : contenu (alertes par TP, réglages).
+3.	Automatisation + personnalisation
+o	Par défaut : alertes proposées intelligemment (–10 %, TP atteint).
+o	Optionnel : personnalisation via boutons +/ , slider, saisie manuelle.
+4.	Codes couleurs pro
+o	Alerte “avant TP” : jaune/orangé.
+o	Alerte “TP atteint” : vert.
+o	Erreurs/conflits : rouge sobre.
+→ ambiance trading pro, sans effets “grand public”.
+5.	Cohérence avec Stratégies et Prévisions
+o	Afficher les TP exactement comme dans le module Stratégies.
+o	Résultats globaux cohérents avec le module Prévisions.
+o	Aucun changement d’UX inutile.
+
+3.4.6 Synthèse
+Pour le module Configuration, nous attendons du designer qu’il propose une solution :
+•	clairement séparée entre alertes (V1) et ordres (V2) ;
+•	facile à naviguer (wallet → prévision → token → TP) ;
+•	dotée de réglages intelligents par défaut, mais offrant des options avancées ;
+•	permettant de choisir le canal de notification ;
+•	prête à l’intégration future des ordres semi-automatiques ;
+•	intégrant la logique de warning lorsque des modifications impactent des alertes ou des ordres.
+L’objectif final est de faire de Configuration un véritable centre de contrôle, reliant les stratégies, leurs projections et l’exécution, tout en restant ergonomique et professionnel.
