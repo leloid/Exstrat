@@ -43,6 +43,10 @@ const ConfigIcon = ({ isDark }: { isDark: boolean }) => (
   <AdjustmentsHorizontalIcon className={`w-6 h-6 ${isDark ? 'text-white' : 'text-gray-700'}`} />
 );
 
+const ConfigurationIcon = ({ isDark }: { isDark: boolean }) => (
+  <Cog6ToothIcon className={`w-6 h-6 ${isDark ? 'text-white' : 'text-gray-700'}`} />
+);
+
 interface SidebarProps {
   activeTab: string;
   onTabChange: (tab: string) => void;
@@ -61,6 +65,7 @@ export default function Sidebar({ activeTab, onTabChange, isDarkMode = true }: S
     { id: 'investissements', name: 'Investissements', href: '/investissements', icon: PortfolioIcon },
     { id: 'strategies', name: 'Stratégies', href: '/strategies', icon: StrategyIcon },
     { id: 'config', name: 'Prévisions', href: '/prevision', icon: ConfigIcon },
+    { id: 'configuration', name: 'Configuration', href: '/configuration', icon: ConfigurationIcon },
   ];
 
   const [isExpanded, setIsExpanded] = useState(false);
