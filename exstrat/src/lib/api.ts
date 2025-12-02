@@ -59,6 +59,15 @@ api.interceptors.response.use(
       throw new Error('Impossible de se connecter au serveur. Vérifiez que le backend est démarré.');
     }
     
+    if (error.response?.status === 429) {
+      console.error('Rate limit exceeded - Too many requests');
+      const retryAfter = error.response.headers['retry-after'];
+      const message = retryAfter 
+        ? `Trop de requêtes. Veuillez réessayer dans ${retryAfter} secondes.`
+        : 'Trop de requêtes. Veuillez patienter quelques instants avant de réessayer.';
+      throw new Error(message);
+    }
+    
     if (error.response?.status === 502 || error.response?.status === 503 || error.response?.status === 504) {
       console.error('Gateway error - Backend might be down or unreachable');
       throw new Error('Le serveur backend n\'est pas accessible. Veuillez vérifier que le serveur est démarré.');

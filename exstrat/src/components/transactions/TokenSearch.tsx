@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { MagnifyingGlassIcon } from '@heroicons/react/24/outline';
 import { TokenSearchResult } from '@/types/transactions';
 import { transactionsApi } from '@/lib/transactions-api';
@@ -11,34 +11,73 @@ interface TokenSearchProps {
   selectedToken?: TokenSearchResult | null;
 }
 
+// Cache simple pour éviter les requêtes répétées
+const searchCache = new Map<string, { data: TokenSearchResult[]; timestamp: number }>();
+const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
+
 export const TokenSearch: React.FC<TokenSearchProps> = ({ onTokenSelect, selectedToken }) => {
   const [query, setQuery] = useState('');
   const [tokens, setTokens] = useState<TokenSearchResult[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showResults, setShowResults] = useState(false);
+  const [rateLimited, setRateLimited] = useState(false);
+  const debounceTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const lastSearchRef = useRef<string>('');
 
   const searchTokens = async (searchQuery: string) => {
     if (!searchQuery.trim()) {
       setTokens([]);
       setShowResults(false);
+      setError(null);
+      return;
+    }
+
+    // Vérifier le cache
+    const cacheKey = searchQuery.trim().toLowerCase();
+    const cached = searchCache.get(cacheKey);
+    if (cached && Date.now() - cached.timestamp < CACHE_DURATION) {
+      setTokens(cached.data);
+      setShowResults(true);
+      setError(null);
+      setLoading(false);
+      return;
+    }
+
+    // Éviter les recherches identiques consécutives
+    if (lastSearchRef.current === cacheKey) {
       return;
     }
 
     setLoading(true);
     setError(null);
+    setRateLimited(false);
+    lastSearchRef.current = cacheKey;
 
     try {
       const results = await transactionsApi.searchTokens(searchQuery.trim());
       setTokens(results);
       setShowResults(true);
       setError(null);
+      setRateLimited(false);
+      
+      // Mettre en cache les résultats
+      searchCache.set(cacheKey, { data: results, timestamp: Date.now() });
     } catch (err: unknown) {
       console.error('Erreur recherche tokens:', err);
       // Gérer les différentes erreurs
       let errorMessage = 'Erreur lors de la recherche de tokens';
       const error = err as { response?: { status?: number; data?: { message?: string } }; message?: string };
-      if (error.response?.status === 502 || error.response?.status === 503 || error.response?.status === 504) {
+      
+      if (error.response?.status === 429) {
+        errorMessage = 'Trop de requêtes. Veuillez patienter quelques instants avant de réessayer.';
+        setRateLimited(true);
+        // Réessayer après 5 secondes
+        setTimeout(() => {
+          setRateLimited(false);
+          setError(null);
+        }, 5000);
+      } else if (error.response?.status === 502 || error.response?.status === 503 || error.response?.status === 504) {
         errorMessage = 'Le serveur backend n\'est pas accessible. Veuillez vérifier que le serveur est démarré.';
       } else if (error.response?.status === 500) {
         errorMessage = 'Erreur interne du serveur. Veuillez réessayer plus tard.';
@@ -59,12 +98,20 @@ export const TokenSearch: React.FC<TokenSearchProps> = ({ onTokenSelect, selecte
     const value = e.target.value;
     setQuery(value);
     
-    // Debounce la recherche
-    const timeoutId = setTimeout(() => {
+    // Annuler le debounce précédent
+    if (debounceTimeoutRef.current) {
+      clearTimeout(debounceTimeoutRef.current);
+    }
+    
+    // Si rate limited, ne pas faire de recherche
+    if (rateLimited) {
+      return;
+    }
+    
+    // Debounce la recherche (augmenté à 500ms pour réduire les requêtes)
+    debounceTimeoutRef.current = setTimeout(() => {
       searchTokens(value);
-    }, 300);
-
-    return () => clearTimeout(timeoutId);
+    }, 500);
   };
 
   const handleTokenSelect = (token: TokenSearchResult) => {
@@ -77,8 +124,23 @@ export const TokenSearch: React.FC<TokenSearchProps> = ({ onTokenSelect, selecte
     setQuery('');
     setTokens([]);
     setShowResults(false);
+    setError(null);
+    setRateLimited(false);
+    lastSearchRef.current = '';
+    if (debounceTimeoutRef.current) {
+      clearTimeout(debounceTimeoutRef.current);
+    }
     onTokenSelect(null);
   };
+
+  // Nettoyer le timeout au démontage
+  useEffect(() => {
+    return () => {
+      if (debounceTimeoutRef.current) {
+        clearTimeout(debounceTimeoutRef.current);
+      }
+    };
+  }, []);
 
   return (
     <div className="relative">
@@ -119,8 +181,17 @@ export const TokenSearch: React.FC<TokenSearchProps> = ({ onTokenSelect, selecte
           )}
 
           {error && (
-            <div className="px-4 py-2 text-red-600 text-center">
-              {error}
+            <div className={`px-4 py-3 text-center rounded-md ${
+              rateLimited 
+                ? 'bg-yellow-50 border border-yellow-200 text-yellow-800' 
+                : 'bg-red-50 border border-red-200 text-red-600'
+            }`}>
+              <div className="font-medium text-sm">{error}</div>
+              {rateLimited && (
+                <div className="text-xs mt-1 text-yellow-700">
+                  Attendez quelques secondes avant de réessayer...
+                </div>
+              )}
             </div>
           )}
 

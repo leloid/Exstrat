@@ -184,18 +184,29 @@ export const BlocC_TableauTokens: React.FC<BlocCProps> = ({ holdings, portfolioI
 
   const SortIcon = ({ field }: { field: SortField }) => {
     if (sortField !== field) {
-      return <ChevronUpIcon className="h-4 w-4 opacity-30" />;
+      return <ChevronUpIcon className={`h-3.5 w-3.5 ${isDarkMode ? 'text-gray-500' : 'text-gray-400'}`} />;
     }
     return sortDirection === 'asc' 
-      ? <ChevronUpIcon className="h-4 w-4" />
-      : <ChevronDownIcon className="h-4 w-4" />;
+      ? <ChevronUpIcon className={`h-3.5 w-3.5 ${isDarkMode ? 'text-blue-400' : 'text-blue-600'}`} />
+      : <ChevronDownIcon className={`h-3.5 w-3.5 ${isDarkMode ? 'text-blue-400' : 'text-blue-600'}`} />;
   };
 
   const getTokenLogo = (symbol: string) => {
     // Pour l'instant, on affiche juste les initiales
     // Plus tard, on pourra charger les logos depuis les assets
+    const colors = [
+      'from-blue-500 to-cyan-500',
+      'from-purple-500 to-pink-500',
+      'from-green-500 to-emerald-500',
+      'from-orange-500 to-red-500',
+      'from-indigo-500 to-blue-500',
+      'from-pink-500 to-rose-500',
+      'from-yellow-500 to-orange-500',
+      'from-teal-500 to-cyan-500',
+    ];
+    const colorIndex = symbol.charCodeAt(0) % colors.length;
     return (
-      <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center text-white font-bold text-sm">
+      <div className={`w-8 h-8 rounded-full bg-gradient-to-br ${colors[colorIndex]} flex items-center justify-center text-white font-bold text-xs shadow-sm flex-shrink-0`}>
         {symbol.charAt(0)}
       </div>
     );
@@ -215,98 +226,115 @@ export const BlocC_TableauTokens: React.FC<BlocCProps> = ({ holdings, portfolioI
   }
 
   return (
-    <div className={`rounded-none p-3 ${isDarkMode ? 'bg-gray-800 border border-t-0 border-b-0 border-gray-700' : 'bg-white border border-t-0 border-b-0 border-gray-200'}`}>
-      <h2 className={`text-sm font-semibold mb-3 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
-        {language === 'fr' ? 'Tableau des tokens' : 'Tokens Table'}
-      </h2>
+    <div className={`rounded-b-lg p-4 md:p-6 ${
+      isDarkMode 
+        ? 'bg-gray-800/95 backdrop-blur-sm border border-t-0 border-gray-700/50' 
+        : 'bg-white border border-t-0 border-gray-200/80 shadow-sm'
+    }`}>
+      {/* Header amélioré */}
+      <div className="mb-4">
+        <h2 className={`text-base md:text-lg font-bold mb-1 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+          {language === 'fr' ? 'Tableau des tokens' : 'Tokens Table'}
+        </h2>
+        <p className={`text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+          {language === 'fr' 
+            ? `${holdings.length} ${holdings.length > 1 ? 'tokens' : 'token'} dans votre portefeuille`
+            : `${holdings.length} ${holdings.length > 1 ? 'tokens' : 'token'} in your portfolio`
+          }
+        </p>
+      </div>
 
       <div className="overflow-x-auto">
-        <table className="w-full">
+        <table className="w-full table-auto">
           <thead>
-            <tr className={`border-b-2 ${isDarkMode ? 'border-gray-700/50' : 'border-gray-200'}`}>
+            <tr className={`${
+              isDarkMode 
+                ? 'bg-gray-700/30 border-b border-gray-700/50' 
+                : 'bg-gray-50/80 border-b border-gray-200'
+            }`}>
               <th
-                className="text-left py-2 px-2 text-xs font-medium cursor-pointer transition-colors"
+                className="text-left py-2 px-2 text-xs font-bold uppercase tracking-wider cursor-pointer transition-colors hover:opacity-80"
                 onClick={() => handleSort('symbol')}
               >
-                <div className="flex items-center gap-2">
-                  <span className={`text-sm font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                <div className="flex items-center gap-1.5">
+                  <span className={`${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
                     {language === 'fr' ? 'Token' : 'Token'}
                   </span>
                   <SortIcon field="symbol" />
                 </div>
               </th>
               <th
-                className="text-right py-3 px-4 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                className="text-right py-2 px-2 text-xs font-bold uppercase tracking-wider cursor-pointer transition-colors hover:opacity-80"
                 onClick={() => handleSort('quantity')}
               >
-                <div className="flex items-center justify-end gap-2">
-                  <span className={`text-sm font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-                    {language === 'fr' ? 'Quantité' : 'Quantity'}
+                <div className="flex items-center justify-end gap-1.5">
+                  <span className={`${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                    {language === 'fr' ? 'Qté' : 'Qty'}
                   </span>
                   <SortIcon field="quantity" />
                 </div>
               </th>
               <th
-                className="text-right py-3 px-4 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                className="text-right py-2 px-2 text-xs font-bold uppercase tracking-wider cursor-pointer transition-colors hover:opacity-80"
                 onClick={() => handleSort('investedAmount')}
               >
-                <div className="flex items-center justify-end gap-2">
-                  <span className={`text-sm font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-                    {language === 'fr' ? 'Montant investi' : 'Invested'}
+                <div className="flex items-center justify-end gap-1.5">
+                  <span className={`${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                    {language === 'fr' ? 'Investi' : 'Invested'}
                   </span>
                   <SortIcon field="investedAmount" />
                 </div>
               </th>
               <th
-                className="text-right py-3 px-4 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                className="text-right py-2 px-2 text-xs font-bold uppercase tracking-wider cursor-pointer transition-colors hover:opacity-80"
                 onClick={() => handleSort('currentValue')}
               >
-                <div className="flex items-center justify-end gap-2">
-                  <span className={`text-sm font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-                    {language === 'fr' ? 'Valeur actuelle' : 'Current Value'}
+                <div className="flex items-center justify-end gap-1.5">
+                  <span className={`${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                    {language === 'fr' ? 'Actuel' : 'Current'}
                   </span>
                   <SortIcon field="currentValue" />
                 </div>
               </th>
               <th
-                className="text-right py-3 px-4 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                className="text-right py-2 px-2 text-xs font-bold uppercase tracking-wider cursor-pointer transition-colors hover:opacity-80"
                 onClick={() => handleSort('pnl')}
               >
-                <div className="flex items-center justify-end gap-2">
-                  <span className={`text-sm font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-                    {language === 'fr' ? 'Gains / Pertes' : 'P/L'}
+                <div className="flex items-center justify-end gap-1.5">
+                  <span className={`${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                    {language === 'fr' ? 'G/P' : 'P/L'}
                   </span>
                   <SortIcon field="pnl" />
                 </div>
               </th>
               <th
-                className="text-right py-3 px-4 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                className="text-right py-2 px-2 text-xs font-bold uppercase tracking-wider cursor-pointer transition-colors hover:opacity-80"
                 onClick={() => handleSort('pnlPercentage')}
               >
-                <div className="flex items-center justify-end gap-2">
-                  <span className={`text-sm font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-                    {language === 'fr' ? 'G/P %' : 'P/L %'}
+                <div className="flex items-center justify-end gap-1.5">
+                  <span className={`${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                    {language === 'fr' ? '%' : '%'}
                   </span>
                   <SortIcon field="pnlPercentage" />
                 </div>
               </th>
               <th
-                className="text-left py-3 px-4 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                className="text-left py-2 px-2 text-xs font-bold uppercase tracking-wider cursor-pointer transition-colors hover:opacity-80"
                 onClick={() => handleSort('strategy')}
               >
-                <div className="flex items-center gap-2">
-                  <span className={`text-sm font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-                    {language === 'fr' ? 'Stratégie active' : 'Active Strategy'}
+                <div className="flex items-center gap-1.5">
+                  <span className={`${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                    {language === 'fr' ? 'Strat' : 'Strat'}
                   </span>
                   <SortIcon field="strategy" />
                 </div>
               </th>
               <th
-                className="text-center py-3 px-4 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                className="text-center py-2 px-2 text-xs font-bold uppercase tracking-wider cursor-pointer transition-colors hover:opacity-80"
                 onClick={() => handleSort('tpProgress')}
               >
-                <div className="flex items-center justify-center gap-2">
-                  <span className={`text-sm font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                <div className="flex items-center justify-center gap-1.5">
+                  <span className={`${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
                     {language === 'fr' ? 'TP' : 'TP'}
                   </span>
                   <SortIcon field="tpProgress" />
@@ -314,82 +342,111 @@ export const BlocC_TableauTokens: React.FC<BlocCProps> = ({ holdings, portfolioI
               </th>
             </tr>
           </thead>
-          <tbody>
-            {sortedHoldings.map((holding) => {
+          <tbody className={`divide-y ${
+            isDarkMode ? 'divide-gray-700/30' : 'divide-gray-200/50'
+          }`}>
+            {sortedHoldings.map((holding, index) => {
               const isPositive = (holding.pnl || 0) >= 0;
               const alertInfo = getTokenAlertInfo(holding);
               return (
                 <tr
                   key={holding.id}
                   onClick={() => onTokenClick?.(holding)}
-                  className={`border-b cursor-pointer transition-all duration-150 ${
+                  className={`cursor-pointer transition-all duration-200 ${
                     isDarkMode 
-                      ? 'border-gray-700/30 hover:bg-gray-700/50 hover:shadow-sm' 
-                      : 'border-gray-200/50 hover:bg-gray-50/80 hover:shadow-sm'
+                      ? 'hover:bg-gray-700/40 hover:shadow-lg' 
+                      : 'hover:bg-gray-50/90 hover:shadow-md'
+                  } ${index % 2 === 0 
+                    ? (isDarkMode ? 'bg-gray-800/30' : 'bg-white') 
+                    : (isDarkMode ? 'bg-gray-800/50' : 'bg-gray-50/30')
                   }`}
                 >
-                  <td className="py-2 px-2 text-sm">
-                    <div className="flex items-center gap-3">
-                      {getTokenLogo(holding.token.symbol)}
-                      <div>
-                        <div className={`font-semibold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+                  <td className="py-2.5 px-2 whitespace-nowrap">
+                    <div className="flex items-center gap-2">
+                      <div className="flex-shrink-0">
+                        {getTokenLogo(holding.token.symbol)}
+                      </div>
+                      <div className="min-w-0">
+                        <div className={`font-bold text-xs ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
                           {holding.token.symbol}
                         </div>
-                        <div className={`text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                        <div className={`text-xs mt-0.5 truncate max-w-[80px] ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
                           {holding.token.name}
                         </div>
                       </div>
                     </div>
                   </td>
-                  <td className="text-right py-4 px-4">
-                    <span className={`${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+                  <td className="py-2.5 px-2 whitespace-nowrap text-right">
+                    <span className={`text-xs font-medium ${isDarkMode ? 'text-gray-200' : 'text-gray-900'}`}>
                       {formatQuantity(holding.quantity)}
                     </span>
                   </td>
-                  <td className="text-right py-4 px-4">
-                    <span className={`${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
-                      {formatCurrency(holding.investedAmount)}
+                  <td className="py-2.5 px-2 whitespace-nowrap text-right">
+                    <span className={`text-xs font-semibold ${isDarkMode ? 'text-gray-200' : 'text-gray-900'}`}>
+                      {formatCurrency(holding.investedAmount, '€', 0)}
                     </span>
                   </td>
-                  <td className="text-right py-4 px-4">
-                    <span className={`${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
-                      {formatCurrency(holding.currentValue || 0)}
+                  <td className="py-2.5 px-2 whitespace-nowrap text-right">
+                    <span className={`text-xs font-semibold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+                      {formatCurrency(holding.currentValue || 0, '€', 0)}
                     </span>
                   </td>
-                  <td className="text-right py-4 px-4">
+                  <td className="py-2.5 px-2 whitespace-nowrap text-right">
                     <div className={`flex items-center justify-end gap-1 ${
                       isPositive ? 'text-green-500' : 'text-red-500'
                     }`}>
                       {isPositive ? (
-                        <ArrowUpIcon className="h-4 w-4" />
+                        <ArrowUpIcon className="h-3.5 w-3.5 flex-shrink-0" />
                       ) : (
-                        <ArrowDownIcon className="h-4 w-4" />
+                        <ArrowDownIcon className="h-3.5 w-3.5 flex-shrink-0" />
                       )}
-                      <span className="font-medium">
-                        {formatCurrency(holding.pnl || 0)}
+                      <span className="font-bold text-xs">
+                        {isPositive ? '+' : ''}{formatCurrency(holding.pnl || 0, '€', 0)}
                       </span>
                     </div>
                   </td>
-                  <td className="text-right py-4 px-4">
-                    <span className={`font-medium ${
-                      isPositive ? 'text-green-500' : 'text-red-500'
+                  <td className="py-2.5 px-2 whitespace-nowrap text-right">
+                    <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-xs font-bold ${
+                      isPositive
+                        ? isDarkMode
+                          ? 'bg-green-500/20 text-green-400'
+                          : 'bg-green-50 text-green-600'
+                        : isDarkMode
+                        ? 'bg-red-500/20 text-red-400'
+                        : 'bg-red-50 text-red-600'
                     }`}>
-                      {formatPercentage(holding.pnlPercentage || 0)}
+                      {isPositive ? '+' : ''}{formatPercentage(holding.pnlPercentage || 0)}
                     </span>
                   </td>
-                  <td className="text-left py-4 px-4">
-                    <span className={`text-sm ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-                      {alertInfo.strategyName || '-'}
-                    </span>
+                  <td className="py-2.5 px-2 whitespace-nowrap text-left">
+                    {alertInfo.strategyName ? (
+                      <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-xs font-semibold truncate max-w-[100px] ${
+                        isDarkMode
+                          ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30'
+                          : 'bg-blue-50 text-blue-700 border border-blue-200'
+                      }`} title={alertInfo.strategyName}>
+                        {alertInfo.strategyName}
+                      </span>
+                    ) : (
+                      <span className={`text-xs ${isDarkMode ? 'text-gray-500' : 'text-gray-400'}`}>
+                        -
+                      </span>
+                    )}
                   </td>
-                  <td className="text-center py-4 px-4">
-                    <span className={`text-sm font-medium ${
-                      alertInfo.tpProgress !== '-' 
-                        ? (isDarkMode ? 'text-blue-400' : 'text-blue-600')
-                        : (isDarkMode ? 'text-gray-500' : 'text-gray-400')
-                    }`}>
-                      {alertInfo.tpProgress}
-                    </span>
+                  <td className="py-2.5 px-2 whitespace-nowrap text-center">
+                    {alertInfo.tpProgress !== '-' ? (
+                      <span className={`inline-flex items-center justify-center px-1.5 py-0.5 rounded text-xs font-bold ${
+                        isDarkMode
+                          ? 'bg-purple-500/20 text-purple-400 border border-purple-500/30'
+                          : 'bg-purple-50 text-purple-700 border border-purple-200'
+                      }`}>
+                        {alertInfo.tpProgress}
+                      </span>
+                    ) : (
+                      <span className={`text-xs ${isDarkMode ? 'text-gray-500' : 'text-gray-400'}`}>
+                        -
+                      </span>
+                    )}
                   </td>
                 </tr>
               );
