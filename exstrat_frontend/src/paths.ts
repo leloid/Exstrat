@@ -5,6 +5,7 @@ export const paths = {
 	pricing: "/pricing",
 	auth: {
 		signIn: "/auth/sign-in",
+		signUp: "/auth/sign-up",
 		signOut: "/auth/sign-out",
 		custom: {
 			signIn: "/auth/custom/sign-in",
