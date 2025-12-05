@@ -15,6 +15,7 @@ import { SettingsButton } from "@/components/core/settings/settings-button";
 import { SettingsProvider } from "@/components/core/settings/settings-context";
 import { ThemeProvider } from "@/components/core/theme-provider";
 import { Toaster } from "@/components/core/toaster";
+import { AuthProvider } from "@/contexts/AuthContext";
 
 export const metadata = { title: appConfig.name } satisfies Metadata;
 
@@ -23,8 +24,6 @@ export const viewport = {
 	initialScale: 1,
 	themeColor: appConfig.themeColor,
 } satisfies Viewport;
-
-const AuthProvider: React.FC<React.PropsWithChildren> = React.Fragment;
 
 interface LayoutProps {
 	children: React.ReactNode;

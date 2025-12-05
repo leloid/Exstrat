@@ -31,7 +31,6 @@ import { usePopover } from "@/hooks/use-popover";
 import { Dropdown } from "@/components/core/dropdown/dropdown";
 import { DropdownPopover } from "@/components/core/dropdown/dropdown-popover";
 import { DropdownTrigger } from "@/components/core/dropdown/dropdown-trigger";
-import { Logo } from "@/components/core/logo";
 import { SearchDialog } from "@/components/dashboard/layout/search-dialog";
 import type { ColorScheme } from "@/styles/theme/types";
 
@@ -99,7 +98,12 @@ export function MainNav({ color = "evident", items = [] }: MainNavProps): React.
 							<ListIcon color="var(--NavItem-icon-color)" />
 						</IconButton>
 						<Box component={RouterLink} href={paths.home} sx={{ display: { xs: "none", md: "inline-block" } }}>
-							<Logo color={logoColor} height={32} width={122} />
+							<Box
+								component="img"
+								src="/logo_large_dark_theme.svg"
+								alt="ExStrat"
+								sx={{ height: "auto", maxWidth: "200px", width: "auto" }}
+							/>
 						</Box>
 						<Box sx={{ display: { xs: "none", md: "block" } }}>
 							<WorkspacesSwitch />

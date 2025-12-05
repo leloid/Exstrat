@@ -14,7 +14,6 @@ import type { NavItemConfig } from "@/types/nav";
 import type { DashboardNavColor } from "@/types/settings";
 import { paths } from "@/paths";
 import { isNavItemActive } from "@/lib/is-nav-item-active";
-import { Logo } from "@/components/core/logo";
 import type { ColorScheme } from "@/styles/theme/types";
 
 import { icons } from "../nav-icons";
@@ -59,7 +58,12 @@ export function SideNav({ color = "evident", items = [] }: SideNavProps): React.
 			<Stack spacing={2} sx={{ p: 2 }}>
 				<div>
 					<Box component={RouterLink} href={paths.home} sx={{ display: "inline-flex" }}>
-						<Logo color={logoColor} height={32} width={122} />
+						<Box
+							component="img"
+							src="/logo_large_dark_theme.svg"
+							alt="ExStrat"
+							sx={{ height: "auto", maxWidth: "200px", width: "auto" }}
+						/>
 					</Box>
 				</div>
 				<WorkspacesSwitch />

@@ -15,7 +15,6 @@ import { CaretRightIcon } from "@phosphor-icons/react/dist/ssr/CaretRight";
 import type { NavItemConfig } from "@/types/nav";
 import { paths } from "@/paths";
 import { isNavItemActive } from "@/lib/is-nav-item-active";
-import { Logo } from "@/components/core/logo";
 
 import { icons } from "./nav-icons";
 import { WorkspacesSwitch } from "./workspaces-switch";
@@ -69,7 +68,12 @@ export function MobileNav({ items = [], open, onClose }: MobileNavProps): React.
 			<Stack spacing={2} sx={{ p: 2 }}>
 				<div>
 					<Box component={RouterLink} href={paths.home} sx={{ display: "inline-flex" }}>
-						<Logo color="light" height={32} width={122} />
+						<Box
+							component="img"
+							src="/logo_large_dark_theme.svg"
+							alt="ExStrat"
+							sx={{ height: "auto", maxWidth: "200px", width: "auto" }}
+						/>
 					</Box>
 				</div>
 				<WorkspacesSwitch />

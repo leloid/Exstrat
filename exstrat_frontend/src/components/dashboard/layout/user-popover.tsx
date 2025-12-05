@@ -25,7 +25,7 @@ const user = {
 } as const;
 
 function SignOutButton(): React.JSX.Element {
-	let signOutUrl: string = paths.home;
+	let signOutUrl: string = paths.auth.signOut;
 
 	if (appConfig.authStrategy === AuthStrategy.AUTH0) {
 		signOutUrl = paths.auth.auth0.signOut;
@@ -40,7 +40,7 @@ function SignOutButton(): React.JSX.Element {
 	}
 
 	if (appConfig.authStrategy === AuthStrategy.CUSTOM) {
-		signOutUrl = paths.auth.custom.signOut;
+		signOutUrl = paths.auth.signOut;
 	}
 
 	if (appConfig.authStrategy === AuthStrategy.SUPABASE) {
