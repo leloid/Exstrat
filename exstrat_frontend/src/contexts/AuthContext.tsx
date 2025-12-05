@@ -88,17 +88,17 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
 			// Messages d'erreur spécifiques selon le code de statut
 			if (axiosError.response?.status === 401) {
-				throw new Error("Email ou mot de passe incorrect");
+				throw new Error("Incorrect email or password");
 			} else if (axiosError.response?.status === 404) {
-				throw new Error("Utilisateur non trouvé");
+				throw new Error("User not found");
 			} else if (axiosError.response?.status === 400) {
-				throw new Error(axiosError.response.data?.message || "Données invalides");
+				throw new Error(axiosError.response.data?.message || "Invalid data");
 			} else if (axiosError.response?.status === 500) {
-				throw new Error("Erreur serveur. Veuillez réessayer plus tard.");
+				throw new Error("Server error. Please try again later.");
 			} else if (axiosError.message) {
 				throw new Error(axiosError.message);
 			} else {
-				throw new Error(axiosError.response?.data?.message || "Erreur de connexion. Veuillez réessayer.");
+				throw new Error(axiosError.response?.data?.message || "Connection error. Please try again.");
 			}
 		}
 	};
@@ -117,15 +117,15 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
 			// Messages d'erreur spécifiques selon le code de statut
 			if (axiosError.response?.status === 409) {
-				throw new Error("Un compte existe déjà avec cet email");
+				throw new Error("An account already exists with this email");
 			} else if (axiosError.response?.status === 400) {
-				throw new Error(axiosError.response.data?.message || "Données invalides");
+				throw new Error(axiosError.response.data?.message || "Invalid data");
 			} else if (axiosError.response?.status === 500) {
-				throw new Error("Erreur serveur. Veuillez réessayer plus tard.");
+				throw new Error("Server error. Please try again later.");
 			} else if (axiosError.message) {
 				throw new Error(axiosError.message);
 			} else {
-				throw new Error(axiosError.response?.data?.message || "Erreur d'inscription. Veuillez réessayer.");
+				throw new Error(axiosError.response?.data?.message || "Sign up error. Please try again.");
 			}
 		}
 	};

@@ -12,19 +12,26 @@ import { useAuth } from "@/contexts/AuthContext";
 
 export default function Page(): React.JSX.Element {
 	const router = useRouter();
-	const { signOut, isAuthenticated } = useAuth();
+	const { signOut } = useAuth();
+	const [hasSignedOut, setHasSignedOut] = React.useState(false);
 
 	React.useEffect(() => {
 		const handleSignOut = async () => {
-			if (isAuthenticated) {
+			if (hasSignedOut) return;
+
+			setHasSignedOut(true);
+			try {
 				await signOut();
+			} catch (error) {
+				console.error("Erreur lors de la déconnexion:", error);
+			} finally {
+				// Rediriger vers la page de connexion après déconnexion
+				router.push(paths.auth.signIn);
 			}
-			// Rediriger vers la page de connexion après déconnexion
-			router.push(paths.auth.signIn);
 		};
 
 		handleSignOut();
-	}, [isAuthenticated, signOut, router]);
+	}, [hasSignedOut, signOut, router]);
 
 	return (
 		<Box

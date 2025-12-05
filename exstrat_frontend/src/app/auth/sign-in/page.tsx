@@ -50,7 +50,7 @@ export default function Page(): React.JSX.Element {
 			router.push(paths.dashboard.overview);
 		} catch (err: unknown) {
 			const error = err as Error | { message?: string };
-			const errorMessage = error instanceof Error ? error.message : error.message || "Une erreur est survenue lors de la connexion";
+			const errorMessage = error instanceof Error ? error.message : error.message || "An error occurred during sign in";
 			setError(errorMessage);
 		} finally {
 			setIsLoading(false);
@@ -74,13 +74,13 @@ export default function Page(): React.JSX.Element {
 					<CardHeader
 						subheader={
 							<Typography color="text.secondary" variant="body2">
-								Vous n&apos;avez pas de compte ?{" "}
+								Don&apos;t have an account?{" "}
 								<Link component={RouterLink} href={paths.auth.signUp} variant="subtitle2">
-									S&apos;inscrire
+									Sign up
 								</Link>
 							</Typography>
 						}
-						title="Se connecter"
+						title="Sign in"
 					/>
 					<CardContent>
 						<form onSubmit={handleSubmit(onSubmit)}>
@@ -92,17 +92,17 @@ export default function Page(): React.JSX.Element {
 								)}
 								<Stack spacing={2}>
 									<FormControl error={!!errors.email}>
-										<InputLabel>Adresse email</InputLabel>
+										<InputLabel>Email address</InputLabel>
 										<OutlinedInput
 											{...register("email", {
-												required: "L'email est requis",
+												required: "Email is required",
 												pattern: {
 													value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
-													message: "Format d'email invalide",
+													message: "Invalid email format",
 												},
 											})}
 											type="email"
-											label="Adresse email"
+											label="Email address"
 										/>
 										{errors.email && (
 											<Typography variant="caption" color="error" sx={{ mt: 0.5 }}>
@@ -111,17 +111,17 @@ export default function Page(): React.JSX.Element {
 										)}
 									</FormControl>
 									<FormControl error={!!errors.password}>
-										<InputLabel>Mot de passe</InputLabel>
+										<InputLabel>Password</InputLabel>
 										<OutlinedInput
 											{...register("password", {
-												required: "Le mot de passe est requis",
+												required: "Password is required",
 												minLength: {
 													value: 8,
-													message: "Le mot de passe doit contenir au moins 8 caractères",
+													message: "Password must contain at least 8 characters",
 												},
 											})}
 											type="password"
-											label="Mot de passe"
+											label="Password"
 										/>
 										{errors.password && (
 											<Typography variant="caption" color="error" sx={{ mt: 0.5 }}>
@@ -130,12 +130,12 @@ export default function Page(): React.JSX.Element {
 										)}
 									</FormControl>
 									<Button type="submit" variant="contained" disabled={isLoading} fullWidth>
-										{isLoading ? "Connexion..." : "Se connecter"}
+										{isLoading ? "Signing in..." : "Sign in"}
 									</Button>
 								</Stack>
 								<div>
 									<Link component={RouterLink} href="#" variant="subtitle2">
-										Mot de passe oublié ?
+										Forgot password?
 									</Link>
 								</div>
 							</Stack>

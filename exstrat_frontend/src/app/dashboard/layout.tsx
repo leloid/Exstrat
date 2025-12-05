@@ -6,6 +6,7 @@ import { dashboardConfig } from "@/config/dashboard";
 import { useSettings } from "@/components/core/settings/settings-context";
 import { HorizontalLayout } from "@/components/dashboard/layout/horizontal/horizontal-layout";
 import { VerticalLayout } from "@/components/dashboard/layout/vertical/vertical-layout";
+import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 
 interface LayoutProps {
 	children: React.ReactNode;
@@ -16,9 +17,9 @@ export default function Layout(props: LayoutProps): React.JSX.Element {
 
 	const layout = settings.dashboardLayout ?? dashboardConfig.layout;
 
-	if (layout === "horizontal") {
-		return <HorizontalLayout {...props} />;
-	}
-
-	return <VerticalLayout {...props} />;
+	return (
+		<ProtectedRoute>
+			{layout === "horizontal" ? <HorizontalLayout {...props} /> : <VerticalLayout {...props} />}
+		</ProtectedRoute>
+	);
 }

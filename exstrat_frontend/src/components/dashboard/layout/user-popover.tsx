@@ -1,7 +1,8 @@
 "use client";
 
-import type * as React from "react";
+import * as React from "react";
 import RouterLink from "next/link";
+import { useRouter } from "next/navigation";
 import Box from "@mui/material/Box";
 import Divider from "@mui/material/Divider";
 import List from "@mui/material/List";
@@ -16,6 +17,7 @@ import { UserIcon } from "@phosphor-icons/react/dist/ssr/User";
 import { appConfig } from "@/config/app";
 import { paths } from "@/paths";
 import { AuthStrategy } from "@/lib/auth-strategy";
+import { useAuth } from "@/contexts/AuthContext";
 
 const user = {
 	id: "USR-000",
@@ -24,32 +26,65 @@ const user = {
 	email: "sofia@devias.io",
 } as const;
 
-function SignOutButton(): React.JSX.Element {
-	let signOutUrl: string = paths.auth.signOut;
+function SignOutButton({ onClose }: { onClose?: () => void }): React.JSX.Element {
+	const router = useRouter();
+	const { signOut } = useAuth();
+	const [isLoading, setIsLoading] = React.useState(false);
 
-	if (appConfig.authStrategy === AuthStrategy.AUTH0) {
-		signOutUrl = paths.auth.auth0.signOut;
-	}
+	const handleSignOut = async () => {
+		if (isLoading) return;
+		
+		setIsLoading(true);
+		onClose?.();
 
-	if (appConfig.authStrategy === AuthStrategy.CLERK) {
-		signOutUrl = paths.auth.clerk.signOut;
-	}
+		try {
+			await signOut();
+			// Utiliser replace pour éviter que l'utilisateur puisse revenir en arrière
+			router.replace(paths.auth.signIn);
+		} catch (error) {
+			console.error("Erreur lors de la déconnexion:", error);
+			// Rediriger quand même vers la page de connexion
+			router.replace(paths.auth.signIn);
+		} finally {
+			setIsLoading(false);
+		}
+	};
 
-	if (appConfig.authStrategy === AuthStrategy.COGNITO) {
-		signOutUrl = paths.auth.cognito.signOut;
-	}
+	// Pour les autres stratégies d'auth, utiliser l'ancien comportement
+	if (
+		appConfig.authStrategy === AuthStrategy.AUTH0 ||
+		appConfig.authStrategy === AuthStrategy.CLERK ||
+		appConfig.authStrategy === AuthStrategy.COGNITO ||
+		appConfig.authStrategy === AuthStrategy.SUPABASE
+	) {
+		let signOutUrl: string = paths.auth.signOut;
 
-	if (appConfig.authStrategy === AuthStrategy.CUSTOM) {
-		signOutUrl = paths.auth.signOut;
-	}
+		if (appConfig.authStrategy === AuthStrategy.AUTH0) {
+			signOutUrl = paths.auth.auth0.signOut;
+		}
 
-	if (appConfig.authStrategy === AuthStrategy.SUPABASE) {
-		signOutUrl = paths.auth.supabase.signOut;
+		if (appConfig.authStrategy === AuthStrategy.CLERK) {
+			signOutUrl = paths.auth.clerk.signOut;
+		}
+
+		if (appConfig.authStrategy === AuthStrategy.COGNITO) {
+			signOutUrl = paths.auth.cognito.signOut;
+		}
+
+		if (appConfig.authStrategy === AuthStrategy.SUPABASE) {
+			signOutUrl = paths.auth.supabase.signOut;
+		}
+
+		return (
+			<MenuItem component="a" href={signOutUrl} sx={{ justifyContent: "center" }}>
+				Sign out
+			</MenuItem>
+		);
 	}
 
 	return (
-		<MenuItem component="a" href={signOutUrl} sx={{ justifyContent: "center" }}>
-			Sign out
+		<MenuItem onClick={handleSignOut} disabled={isLoading} sx={{ justifyContent: "center" }}>
+			{isLoading ? "Déconnexion..." : "Sign out"}
 		</MenuItem>
 	);
 }
@@ -99,7 +134,7 @@ export function UserPopover({ anchorEl, onClose, open }: UserPopoverProps): Reac
 			</List>
 			<Divider />
 			<Box sx={{ p: 1 }}>
-				<SignOutButton />
+				<SignOutButton onClose={onClose} />
 			</Box>
 		</Popover>
 	);

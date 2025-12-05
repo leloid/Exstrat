@@ -26,18 +26,18 @@ import type { SignUpData } from "@/types/auth";
 
 const signUpSchema = z
 	.object({
-		email: z.string().min(1, "L'email est requis").email("Format d'email invalide"),
+		email: z.string().min(1, "Email is required").email("Invalid email format"),
 		password: z
 			.string()
-			.min(8, "Le mot de passe doit contenir au moins 8 caractères")
+			.min(8, "Password must contain at least 8 characters")
 			.regex(
 				/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]/,
-				"Le mot de passe doit contenir au moins une minuscule, une majuscule, un chiffre et un caractère spécial"
+				"Password must contain at least one lowercase letter, one uppercase letter, one number, and one special character"
 			),
-		confirmPassword: z.string().min(1, "La confirmation du mot de passe est requise"),
+		confirmPassword: z.string().min(1, "Password confirmation is required"),
 	})
 	.refine((data) => data.password === data.confirmPassword, {
-		message: "Les mots de passe ne correspondent pas",
+		message: "Passwords do not match",
 		path: ["confirmPassword"],
 	});
 
@@ -77,7 +77,7 @@ export default function Page(): React.JSX.Element {
 			router.push(paths.dashboard.overview);
 		} catch (err: unknown) {
 			const error = err as Error | { message?: string };
-			const errorMessage = error instanceof Error ? error.message : error.message || "Une erreur est survenue lors de l'inscription";
+			const errorMessage = error instanceof Error ? error.message : error.message || "An error occurred during sign up";
 			setError(errorMessage);
 		} finally {
 			setIsLoading(false);
@@ -101,13 +101,13 @@ export default function Page(): React.JSX.Element {
 					<CardHeader
 						subheader={
 							<Typography color="text.secondary" variant="body2">
-								Vous avez déjà un compte ?{" "}
+								Already have an account?{" "}
 								<Link component={RouterLink} href={paths.auth.signIn} variant="subtitle2">
-									Se connecter
+									Sign in
 								</Link>
 							</Typography>
 						}
-						title="Créer un compte"
+						title="Sign up"
 					/>
 					<CardContent>
 						<form onSubmit={handleSubmit(onSubmit)}>
@@ -119,11 +119,11 @@ export default function Page(): React.JSX.Element {
 								)}
 								<Stack spacing={2}>
 									<FormControl error={!!errors.email}>
-										<InputLabel>Adresse email</InputLabel>
+										<InputLabel>Email address</InputLabel>
 										<OutlinedInput
 											{...register("email")}
 											type="email"
-											label="Adresse email"
+											label="Email address"
 										/>
 										{errors.email && (
 											<Typography variant="caption" color="error" sx={{ mt: 0.5 }}>
@@ -132,11 +132,11 @@ export default function Page(): React.JSX.Element {
 										)}
 									</FormControl>
 									<FormControl error={!!errors.password}>
-										<InputLabel>Mot de passe</InputLabel>
+										<InputLabel>Password</InputLabel>
 										<OutlinedInput
 											{...register("password")}
 											type="password"
-											label="Mot de passe"
+											label="Password"
 										/>
 										{errors.password && (
 											<Typography variant="caption" color="error" sx={{ mt: 0.5 }}>
@@ -145,11 +145,11 @@ export default function Page(): React.JSX.Element {
 										)}
 									</FormControl>
 									<FormControl error={!!errors.confirmPassword}>
-										<InputLabel>Confirmer le mot de passe</InputLabel>
+										<InputLabel>Confirm password</InputLabel>
 										<OutlinedInput
 											{...register("confirmPassword")}
 											type="password"
-											label="Confirmer le mot de passe"
+											label="Confirm password"
 										/>
 										{errors.confirmPassword && (
 											<Typography variant="caption" color="error" sx={{ mt: 0.5 }}>
@@ -158,7 +158,7 @@ export default function Page(): React.JSX.Element {
 										)}
 									</FormControl>
 									<Button type="submit" variant="contained" disabled={isLoading} fullWidth>
-										{isLoading ? "Création du compte..." : "Créer un compte"}
+										{isLoading ? "Creating account..." : "Create account"}
 									</Button>
 								</Stack>
 							</Stack>
