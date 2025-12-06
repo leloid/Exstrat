@@ -71,6 +71,53 @@ interface PortfolioData {
 	holdingsCount: number;
 }
 
+// Helper function to get token logo URL from multiple sources with fallback
+const getTokenLogoUrl = (symbol: string, cmcId: number | undefined): string | null => {
+	const symbolLower = symbol.toLowerCase();
+	
+	// Priority 1: CoinMarketCap (if cmcId is available and valid) - most reliable
+	if (cmcId && cmcId > 0) {
+		return `https://s2.coinmarketcap.com/static/img/coins/64x64/${cmcId}.png`;
+	}
+	
+	// Priority 2: Mapping of common tokens to CoinMarketCap IDs
+	// This is a fallback when cmcId is not available but we know the symbol
+	const commonTokenIds: Record<string, number> = {
+		btc: 1,        // Bitcoin
+		eth: 1027,     // Ethereum
+		usdt: 825,     // Tether
+		bnb: 1839,     // Binance Coin
+		sol: 4128,     // Solana
+		usdc: 3408,    // USD Coin
+		xrp: 52,       // Ripple
+		ada: 2010,     // Cardano
+		doge: 5,       // Dogecoin
+		matic: 4713,   // Polygon (MATIC)
+		dot: 6636,     // Polkadot
+		avax: 5805,    // Avalanche
+		shib: 11939,   // Shiba Inu
+		ltc: 2,        // Litecoin
+		link: 1975,    // Chainlink
+		trx: 1958,     // TRON
+		atom: 3794,    // Cosmos
+		etc: 1321,     // Ethereum Classic
+		xlm: 512,      // Stellar
+		algo: 4030,    // Algorand
+		vet: 3077,     // VeChain
+		fil: 5488,     // Filecoin
+		icp: 8916,     // Internet Computer
+		uni: 12504,    // Uniswap
+	};
+	
+	if (commonTokenIds[symbolLower]) {
+		return `https://s2.coinmarketcap.com/static/img/coins/64x64/${commonTokenIds[symbolLower]}.png`;
+	}
+	
+	// Priority 3: Try using a simple CDN service that works with symbols
+	// Using cryptologos.cc which provides logos for many cryptocurrencies
+	return `https://cryptologos.cc/logos/${symbolLower}-${symbolLower}-logo.png`;
+};
+
 export default function Page(): React.JSX.Element {
 	const {
 		portfolios,
@@ -1215,10 +1262,26 @@ export default function Page(): React.JSX.Element {
 												</Typography>
 											</TableCell>
 											<TableCell>
-												<Typography variant="subtitle2">{transaction.symbol}</Typography>
-												<Typography color="text.secondary" variant="caption">
-													{transaction.name}
-												</Typography>
+												<Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
+													<Avatar
+														src={getTokenLogoUrl(transaction.symbol, transaction.cmcId) || undefined}
+														alt={transaction.symbol}
+														sx={{
+															width: 24,
+															height: 24,
+															fontSize: "0.625rem",
+															bgcolor: "var(--mui-palette-primary-main)",
+														}}
+													>
+														{transaction.symbol.charAt(0)}
+													</Avatar>
+													<Stack spacing={0}>
+														<Typography variant="subtitle2">{transaction.symbol}</Typography>
+														<Typography color="text.secondary" variant="caption">
+															{transaction.name}
+														</Typography>
+													</Stack>
+												</Stack>
 											</TableCell>
 											<TableCell align="right">
 												<Chip
