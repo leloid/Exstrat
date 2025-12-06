@@ -27,8 +27,13 @@ import TableBody from "@mui/material/TableBody";
 import TableCell from "@mui/material/TableCell";
 import TableHead from "@mui/material/TableHead";
 import TableRow from "@mui/material/TableRow";
+import TablePagination from "@mui/material/TablePagination";
+import TableSortLabel from "@mui/material/TableSortLabel";
 import TextField from "@mui/material/TextField";
 import Typography from "@mui/material/Typography";
+import InputAdornment from "@mui/material/InputAdornment";
+import OutlinedInput from "@mui/material/OutlinedInput";
+import { MagnifyingGlassIcon } from "@phosphor-icons/react/dist/ssr/MagnifyingGlass";
 import { PencilIcon } from "@phosphor-icons/react/dist/ssr/Pencil";
 import { PlusIcon } from "@phosphor-icons/react/dist/ssr/Plus";
 import { TrashIcon } from "@phosphor-icons/react/dist/ssr/Trash";
@@ -78,6 +83,7 @@ export default function Page(): React.JSX.Element {
 		description: "",
 		isDefault: false,
 	});
+	const [portfolioName, setPortfolioName] = React.useState("");
 
 	// Transaction states
 	const [transactions, setTransactions] = React.useState<TransactionResponse[]>([]);
@@ -103,6 +109,20 @@ export default function Page(): React.JSX.Element {
 		portfolioId: "",
 	});
 	const [transactionError, setTransactionError] = React.useState<string | null>(null);
+
+	// Search and pagination states for wallets
+	const [walletSearchQuery, setWalletSearchQuery] = React.useState("");
+	const [walletPage, setWalletPage] = React.useState(0);
+	const walletRowsPerPage = 5;
+	const [walletOrderBy, setWalletOrderBy] = React.useState<keyof PortfolioData | "">("");
+	const [walletOrder, setWalletOrder] = React.useState<"asc" | "desc">("asc");
+
+	// Search and pagination states for transactions
+	const [transactionSearchQuery, setTransactionSearchQuery] = React.useState("");
+	const [transactionPage, setTransactionPage] = React.useState(0);
+	const transactionRowsPerPage = 5;
+	const [transactionOrderBy, setTransactionOrderBy] = React.useState<string>("");
+	const [transactionOrder, setTransactionOrder] = React.useState<"asc" | "desc">("asc");
 
 	// Load portfolio data
 	React.useEffect(() => {
@@ -183,6 +203,158 @@ export default function Page(): React.JSX.Element {
 		loadTransactions();
 	}, []);
 
+	// Filtered, sorted and paginated wallets
+	const filteredWallets = React.useMemo(() => {
+		if (!walletSearchQuery.trim()) {
+			return portfolios;
+		}
+		const query = walletSearchQuery.toLowerCase();
+		return portfolios.filter((portfolio) => {
+			const data = portfolioData[portfolio.id];
+			if (!data) return false;
+			return (
+				data.name.toLowerCase().includes(query) ||
+				(data.description?.toLowerCase().includes(query) ?? false)
+			);
+		});
+	}, [portfolios, portfolioData, walletSearchQuery]);
+
+	const sortedWallets = React.useMemo(() => {
+		if (!walletOrderBy) {
+			return filteredWallets;
+		}
+
+		return [...filteredWallets].sort((a, b) => {
+			const dataA = portfolioData[a.id];
+			const dataB = portfolioData[b.id];
+			if (!dataA || !dataB) return 0;
+
+			let aValue: number | string = "";
+			let bValue: number | string = "";
+
+			switch (walletOrderBy) {
+				case "name":
+					aValue = dataA.name.toLowerCase();
+					bValue = dataB.name.toLowerCase();
+					break;
+				case "value":
+					aValue = dataA.value;
+					bValue = dataB.value;
+					break;
+				case "invested":
+					aValue = dataA.invested;
+					bValue = dataB.invested;
+					break;
+				case "pnl":
+					aValue = dataA.pnl;
+					bValue = dataB.pnl;
+					break;
+				case "holdingsCount":
+					aValue = dataA.holdingsCount;
+					bValue = dataB.holdingsCount;
+					break;
+				default:
+					return 0;
+			}
+
+			if (typeof aValue === "string" && typeof bValue === "string") {
+				return walletOrder === "asc"
+					? aValue.localeCompare(bValue)
+					: bValue.localeCompare(aValue);
+			}
+
+			if (typeof aValue === "number" && typeof bValue === "number") {
+				return walletOrder === "asc" ? aValue - bValue : bValue - aValue;
+			}
+
+			return 0;
+		});
+	}, [filteredWallets, portfolioData, walletOrderBy, walletOrder]);
+
+	const paginatedWallets = React.useMemo(() => {
+		const start = walletPage * walletRowsPerPage;
+		return sortedWallets.slice(start, start + walletRowsPerPage);
+	}, [sortedWallets, walletPage, walletRowsPerPage]);
+
+	// Filtered, sorted and paginated transactions
+	const filteredTransactions = React.useMemo(() => {
+		if (!transactionSearchQuery.trim()) {
+			return transactions;
+		}
+		const query = transactionSearchQuery.toLowerCase();
+		return transactions.filter(
+			(transaction) =>
+				transaction.symbol.toLowerCase().includes(query) ||
+				transaction.name.toLowerCase().includes(query) ||
+				transaction.portfolio?.name.toLowerCase().includes(query)
+		);
+	}, [transactions, transactionSearchQuery]);
+
+	const sortedTransactions = React.useMemo(() => {
+		if (!transactionOrderBy) {
+			return filteredTransactions;
+		}
+
+		return [...filteredTransactions].sort((a, b) => {
+			let aValue: number | string = "";
+			let bValue: number | string = "";
+
+			switch (transactionOrderBy) {
+				case "date":
+					aValue = new Date(a.transactionDate).getTime();
+					bValue = new Date(b.transactionDate).getTime();
+					break;
+				case "symbol":
+					aValue = a.symbol.toLowerCase();
+					bValue = b.symbol.toLowerCase();
+					break;
+				case "name":
+					aValue = a.name.toLowerCase();
+					bValue = b.name.toLowerCase();
+					break;
+				case "type":
+					aValue = a.type;
+					bValue = b.type;
+					break;
+				case "quantity":
+					aValue = a.quantity;
+					bValue = b.quantity;
+					break;
+				case "averagePrice":
+					aValue = a.averagePrice;
+					bValue = b.averagePrice;
+					break;
+				case "amountInvested":
+					aValue = a.amountInvested;
+					bValue = b.amountInvested;
+					break;
+				case "wallet":
+					aValue = a.portfolio?.name?.toLowerCase() || "";
+					bValue = b.portfolio?.name?.toLowerCase() || "";
+					break;
+				default:
+					return 0;
+			}
+
+			if (typeof aValue === "string" && typeof bValue === "string") {
+				return transactionOrder === "asc"
+					? aValue.localeCompare(bValue)
+					: bValue.localeCompare(aValue);
+			}
+
+			if (typeof aValue === "number" && typeof bValue === "number") {
+				return transactionOrder === "asc" ? aValue - bValue : bValue - aValue;
+			}
+
+			return 0;
+		});
+	}, [filteredTransactions, transactionOrderBy, transactionOrder]);
+
+	const paginatedTransactions = React.useMemo(() => {
+		const start = transactionPage * transactionRowsPerPage;
+		return sortedTransactions.slice(start, start + transactionRowsPerPage);
+	}, [sortedTransactions, transactionPage, transactionRowsPerPage]);
+
 	// Calculate global stats
 	const globalStats = React.useMemo(() => {
 		const portfolioStats = Object.values(portfolioData);
@@ -202,9 +374,13 @@ export default function Page(): React.JSX.Element {
 
 	// Portfolio handlers
 	const handleCreatePortfolio = async () => {
+		if (!portfolioName.trim()) {
+			return;
+		}
 		try {
-			await createPortfolio(portfolioFormData);
+			await createPortfolio({ name: portfolioName.trim(), description: "", isDefault: false });
 			setShowPortfolioDialog(false);
+			setPortfolioName("");
 			setPortfolioFormData({ name: "", description: "", isDefault: false });
 			await refreshPortfolios();
 		} catch (error) {
@@ -226,7 +402,7 @@ export default function Page(): React.JSX.Element {
 	};
 
 	const handleDeletePortfolio = async (portfolioId: string) => {
-		if (window.confirm("Are you sure you want to delete this portfolio?")) {
+		if (window.confirm("Are you sure you want to delete this wallet?")) {
 			try {
 				await deletePortfolio(portfolioId);
 				await refreshPortfolios();
@@ -425,9 +601,9 @@ export default function Page(): React.JSX.Element {
 				{/* Header */}
 				<Stack direction={{ xs: "column", sm: "row" }} spacing={3} sx={{ alignItems: "flex-start" }}>
 					<Box sx={{ flex: "1 1 auto" }}>
-						<Typography variant="h4">Investissements</Typography>
+						<Typography variant="h4">Investments</Typography>
 						<Typography color="text.secondary" variant="body1">
-							Manage your portfolios and transactions
+							Manage your wallets and transactions
 						</Typography>
 					</Box>
 					<Stack direction="row" spacing={2}>
@@ -466,99 +642,222 @@ export default function Page(): React.JSX.Element {
 					</Stack>
 				</Stack>
 
-				{/* Global Stats */}
-				<Grid container spacing={3}>
-					<Grid size={{ xs: 12, sm: 6, md: 3 }}>
-						<Card>
-							<CardContent>
+				{/* Global Stats - Analytics Style */}
+				<Card>
+					<Box
+						sx={{
+							display: "grid",
+							gap: 2,
+							gridTemplateColumns: { xs: "1fr", md: "repeat(2, 1fr)", lg: "repeat(4, 1fr)" },
+							p: 3,
+						}}
+					>
+						<Stack
+							spacing={1}
+							sx={{
+								borderRight: { xs: "none", md: "1px solid var(--mui-palette-divider)" },
+								borderBottom: { xs: "1px solid var(--mui-palette-divider)", md: "none" },
+								pb: { xs: 2, md: 0 },
+							}}
+						>
+							<Typography color="text.secondary">Total Value</Typography>
+							<Typography variant="h3">{formatCurrency(globalStats.totalValue, "$", 2)}</Typography>
+						</Stack>
+						<Stack
+							spacing={1}
+							sx={{
+								borderRight: { xs: "none", lg: "1px solid var(--mui-palette-divider)" },
+								borderBottom: { xs: "1px solid var(--mui-palette-divider)", md: "none" },
+								pb: { xs: 2, md: 0 },
+							}}
+						>
+							<Typography color="text.secondary">Total Invested</Typography>
+							<Typography variant="h3">{formatCurrency(globalStats.totalInvested, "$", 2)}</Typography>
+						</Stack>
+						<Stack
+							spacing={1}
+							sx={{
+								borderRight: { xs: "none", md: "1px solid var(--mui-palette-divider)" },
+								borderBottom: { xs: "1px solid var(--mui-palette-divider)", md: "none" },
+								pb: { xs: 2, md: 0 },
+							}}
+						>
+							<Typography color="text.secondary">Profit / Loss</Typography>
+							<Typography
+								color={globalStats.totalPNL >= 0 ? "success.main" : "error.main"}
+								variant="h3"
+							>
+								{formatCurrency(globalStats.totalPNL, "$", 2)}
+							</Typography>
+							<Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
+								{globalStats.totalPNL >= 0 ? (
+									<TrendUpIcon color="var(--mui-palette-success-main)" fontSize="var(--icon-fontSize-md)" />
+								) : (
+									<TrendDownIcon color="var(--mui-palette-error-main)" fontSize="var(--icon-fontSize-md)" />
+								)}
 								<Typography color="text.secondary" variant="body2">
-									Total Value
+									<Typography
+										color={globalStats.totalPNLPercentage >= 0 ? "success.main" : "error.main"}
+										component="span"
+										variant="subtitle2"
+									>
+										{formatPercentage(globalStats.totalPNLPercentage)}
+									</Typography>{" "}
+									return
 								</Typography>
-								<Typography variant="h5">{formatCurrency(globalStats.totalValue, "$", 2)}</Typography>
-							</CardContent>
-						</Card>
-					</Grid>
-					<Grid size={{ xs: 12, sm: 6, md: 3 }}>
-						<Card>
-							<CardContent>
-								<Typography color="text.secondary" variant="body2">
-									Total Invested
-								</Typography>
-								<Typography variant="h5">{formatCurrency(globalStats.totalInvested, "$", 2)}</Typography>
-							</CardContent>
-						</Card>
-					</Grid>
-					<Grid size={{ xs: 12, sm: 6, md: 3 }}>
-						<Card>
-							<CardContent>
-								<Typography color="text.secondary" variant="body2">
-									Profit / Loss
-								</Typography>
-								<Typography
-									color={globalStats.totalPNL >= 0 ? "success.main" : "error.main"}
-									variant="h5"
-								>
-									{formatCurrency(globalStats.totalPNL, "$", 2)}
-								</Typography>
-								<Typography
-									color={globalStats.totalPNLPercentage >= 0 ? "success.main" : "error.main"}
-									variant="body2"
-								>
-									{formatPercentage(globalStats.totalPNLPercentage)}
-								</Typography>
-							</CardContent>
-						</Card>
-					</Grid>
-					<Grid size={{ xs: 12, sm: 6, md: 3 }}>
-						<Card>
-							<CardContent>
-								<Typography color="text.secondary" variant="body2">
-									Total Holdings
-								</Typography>
-								<Typography variant="h5">{globalStats.totalHoldings}</Typography>
-							</CardContent>
-						</Card>
-					</Grid>
-				</Grid>
+							</Stack>
+						</Stack>
+						<Stack spacing={1}>
+							<Typography color="text.secondary">Total Holdings</Typography>
+							<Typography variant="h3">{globalStats.totalHoldings}</Typography>
+						</Stack>
+					</Box>
+				</Card>
 
-				{/* Portfolios Section */}
+				{/* Wallets Section */}
 				<Card>
 					<CardContent>
-						<Stack direction="row" spacing={2} sx={{ alignItems: "center", mb: 3 }}>
-							<WalletIcon fontSize="var(--icon-fontSize-lg)" />
-							<Typography variant="h6">Portfolios</Typography>
+						<Stack direction="row" spacing={2} sx={{ alignItems: "center", justifyContent: "space-between", mb: 3 }}>
+							<Stack direction="row" spacing={2} sx={{ alignItems: "center" }}>
+								<WalletIcon fontSize="var(--icon-fontSize-lg)" />
+								<Typography variant="h6">Wallets</Typography>
+							</Stack>
+							<OutlinedInput
+								onChange={(e) => {
+									setWalletSearchQuery(e.target.value);
+									setWalletPage(0); // Reset to first page on search
+								}}
+								placeholder="Search wallets..."
+								size="small"
+								startAdornment={
+									<InputAdornment position="start">
+										<MagnifyingGlassIcon fontSize="var(--icon-fontSize-md)" />
+									</InputAdornment>
+								}
+								sx={{ maxWidth: "300px" }}
+								value={walletSearchQuery}
+							/>
 						</Stack>
 						{portfolios.length === 0 ? (
 							<Box sx={{ py: 8, textAlign: "center" }}>
 								<Typography color="text.secondary" variant="body1" sx={{ mb: 2 }}>
-									No portfolios yet. Create your first portfolio to get started.
+									No wallets yet. Create your first wallet to get started.
 								</Typography>
 								<Button
 									onClick={() => {
 										setEditingPortfolioId(null);
+										setPortfolioName("");
 										setPortfolioFormData({ name: "", description: "", isDefault: false });
 										setShowPortfolioDialog(true);
 									}}
 									startIcon={<PlusIcon />}
 									variant="contained"
 								>
-									Create Portfolio
+									Create Wallet
 								</Button>
+							</Box>
+						) : filteredWallets.length === 0 ? (
+							<Box sx={{ py: 8, textAlign: "center" }}>
+								<Typography color="text.secondary" variant="body1">
+									No wallets found matching "{walletSearchQuery}"
+								</Typography>
 							</Box>
 						) : (
 							<Table>
 								<TableHead>
 									<TableRow>
-										<TableCell>Portfolio</TableCell>
-										<TableCell align="right">Current Value</TableCell>
-										<TableCell align="right">Invested</TableCell>
-										<TableCell align="right">P&L</TableCell>
-										<TableCell align="right">Positions</TableCell>
+										<TableCell>
+											<TableSortLabel
+												active={walletOrderBy === "name"}
+												direction={walletOrderBy === "name" ? walletOrder : "asc"}
+												onClick={() => {
+													if (walletOrderBy === "name") {
+														// If already sorting by this column, toggle direction
+														setWalletOrder(walletOrder === "asc" ? "desc" : "asc");
+													} else {
+														// If sorting by another column, start with ascending
+														setWalletOrder("asc");
+														setWalletOrderBy("name");
+													}
+													setWalletPage(0);
+												}}
+											>
+												Wallet
+											</TableSortLabel>
+										</TableCell>
+										<TableCell align="right">
+											<TableSortLabel
+												active={walletOrderBy === "value"}
+												direction={walletOrderBy === "value" ? walletOrder : "asc"}
+												onClick={() => {
+													if (walletOrderBy === "value") {
+														setWalletOrder(walletOrder === "asc" ? "desc" : "asc");
+													} else {
+														setWalletOrder("asc");
+														setWalletOrderBy("value");
+													}
+													setWalletPage(0);
+												}}
+											>
+												Current Value
+											</TableSortLabel>
+										</TableCell>
+										<TableCell align="right">
+											<TableSortLabel
+												active={walletOrderBy === "invested"}
+												direction={walletOrderBy === "invested" ? walletOrder : "asc"}
+												onClick={() => {
+													if (walletOrderBy === "invested") {
+														setWalletOrder(walletOrder === "asc" ? "desc" : "asc");
+													} else {
+														setWalletOrder("asc");
+														setWalletOrderBy("invested");
+													}
+													setWalletPage(0);
+												}}
+											>
+												Invested
+											</TableSortLabel>
+										</TableCell>
+										<TableCell align="right">
+											<TableSortLabel
+												active={walletOrderBy === "pnl"}
+												direction={walletOrderBy === "pnl" ? walletOrder : "asc"}
+												onClick={() => {
+													if (walletOrderBy === "pnl") {
+														setWalletOrder(walletOrder === "asc" ? "desc" : "asc");
+													} else {
+														setWalletOrder("asc");
+														setWalletOrderBy("pnl");
+													}
+													setWalletPage(0);
+												}}
+											>
+												P&L
+											</TableSortLabel>
+										</TableCell>
+										<TableCell align="right">
+											<TableSortLabel
+												active={walletOrderBy === "holdingsCount"}
+												direction={walletOrderBy === "holdingsCount" ? walletOrder : "asc"}
+												onClick={() => {
+													if (walletOrderBy === "holdingsCount") {
+														setWalletOrder(walletOrder === "asc" ? "desc" : "asc");
+													} else {
+														setWalletOrder("asc");
+														setWalletOrderBy("holdingsCount");
+													}
+													setWalletPage(0);
+												}}
+											>
+												Positions
+											</TableSortLabel>
+										</TableCell>
 										<TableCell align="right">Actions</TableCell>
 									</TableRow>
 								</TableHead>
 								<TableBody>
-									{portfolios.map((portfolio) => {
+									{paginatedWallets.map((portfolio) => {
 										const data = portfolioData[portfolio.id];
 										if (!data) return null;
 
@@ -643,15 +942,44 @@ export default function Page(): React.JSX.Element {
 								</TableBody>
 							</Table>
 						)}
+						{sortedWallets.length > 0 && (
+							<TablePagination
+								component="div"
+								count={sortedWallets.length}
+								onPageChange={(_, newPage) => setWalletPage(newPage)}
+								onRowsPerPageChange={() => {}} // Fixed at 5
+								page={walletPage}
+								rowsPerPage={walletRowsPerPage}
+								rowsPerPageOptions={[]}
+								labelRowsPerPage=""
+							/>
+						)}
 					</CardContent>
 				</Card>
 
 				{/* Transactions Section */}
 				<Card>
 					<CardContent>
-						<Stack direction="row" spacing={2} sx={{ alignItems: "center", mb: 3 }}>
-							<PlusIcon fontSize="var(--icon-fontSize-lg)" />
-							<Typography variant="h6">Transactions</Typography>
+						<Stack direction="row" spacing={2} sx={{ alignItems: "center", justifyContent: "space-between", mb: 3 }}>
+							<Stack direction="row" spacing={2} sx={{ alignItems: "center" }}>
+								<PlusIcon fontSize="var(--icon-fontSize-lg)" />
+								<Typography variant="h6">Transactions</Typography>
+							</Stack>
+							<OutlinedInput
+								onChange={(e) => {
+									setTransactionSearchQuery(e.target.value);
+									setTransactionPage(0); // Reset to first page on search
+								}}
+								placeholder="Search transactions..."
+								size="small"
+								startAdornment={
+									<InputAdornment position="start">
+										<MagnifyingGlassIcon fontSize="var(--icon-fontSize-md)" />
+									</InputAdornment>
+								}
+								sx={{ maxWidth: "300px" }}
+								value={transactionSearchQuery}
+							/>
 						</Stack>
 						{loadingTransactions ? (
 							<Box sx={{ py: 8, textAlign: "center" }}>
@@ -684,22 +1012,140 @@ export default function Page(): React.JSX.Element {
 									Add Transaction
 								</Button>
 							</Box>
+						) : filteredTransactions.length === 0 ? (
+							<Box sx={{ py: 8, textAlign: "center" }}>
+								<Typography color="text.secondary" variant="body1">
+									No transactions found matching "{transactionSearchQuery}"
+								</Typography>
+							</Box>
 						) : (
 							<Table>
 								<TableHead>
 									<TableRow>
-										<TableCell>Date</TableCell>
-										<TableCell>Token</TableCell>
-										<TableCell align="right">Type</TableCell>
-										<TableCell align="right">Quantity</TableCell>
-										<TableCell align="right">Price</TableCell>
-										<TableCell align="right">Amount</TableCell>
-										<TableCell align="right">Portfolio</TableCell>
+										<TableCell>
+											<TableSortLabel
+												active={transactionOrderBy === "date"}
+												direction={transactionOrderBy === "date" ? transactionOrder : "asc"}
+												onClick={() => {
+													if (transactionOrderBy === "date") {
+														setTransactionOrder(transactionOrder === "asc" ? "desc" : "asc");
+													} else {
+														setTransactionOrder("asc");
+														setTransactionOrderBy("date");
+													}
+													setTransactionPage(0);
+												}}
+											>
+												Date
+											</TableSortLabel>
+										</TableCell>
+										<TableCell>
+											<TableSortLabel
+												active={transactionOrderBy === "symbol"}
+												direction={transactionOrderBy === "symbol" ? transactionOrder : "asc"}
+												onClick={() => {
+													if (transactionOrderBy === "symbol") {
+														setTransactionOrder(transactionOrder === "asc" ? "desc" : "asc");
+													} else {
+														setTransactionOrder("asc");
+														setTransactionOrderBy("symbol");
+													}
+													setTransactionPage(0);
+												}}
+											>
+												Token
+											</TableSortLabel>
+										</TableCell>
+										<TableCell align="right">
+											<TableSortLabel
+												active={transactionOrderBy === "type"}
+												direction={transactionOrderBy === "type" ? transactionOrder : "asc"}
+												onClick={() => {
+													if (transactionOrderBy === "type") {
+														setTransactionOrder(transactionOrder === "asc" ? "desc" : "asc");
+													} else {
+														setTransactionOrder("asc");
+														setTransactionOrderBy("type");
+													}
+													setTransactionPage(0);
+												}}
+											>
+												Type
+											</TableSortLabel>
+										</TableCell>
+										<TableCell align="right">
+											<TableSortLabel
+												active={transactionOrderBy === "quantity"}
+												direction={transactionOrderBy === "quantity" ? transactionOrder : "asc"}
+												onClick={() => {
+													if (transactionOrderBy === "quantity") {
+														setTransactionOrder(transactionOrder === "asc" ? "desc" : "asc");
+													} else {
+														setTransactionOrder("asc");
+														setTransactionOrderBy("quantity");
+													}
+													setTransactionPage(0);
+												}}
+											>
+												Quantity
+											</TableSortLabel>
+										</TableCell>
+										<TableCell align="right">
+											<TableSortLabel
+												active={transactionOrderBy === "averagePrice"}
+												direction={transactionOrderBy === "averagePrice" ? transactionOrder : "asc"}
+												onClick={() => {
+													if (transactionOrderBy === "averagePrice") {
+														setTransactionOrder(transactionOrder === "asc" ? "desc" : "asc");
+													} else {
+														setTransactionOrder("asc");
+														setTransactionOrderBy("averagePrice");
+													}
+													setTransactionPage(0);
+												}}
+											>
+												Price
+											</TableSortLabel>
+										</TableCell>
+										<TableCell align="right">
+											<TableSortLabel
+												active={transactionOrderBy === "amountInvested"}
+												direction={transactionOrderBy === "amountInvested" ? transactionOrder : "asc"}
+												onClick={() => {
+													if (transactionOrderBy === "amountInvested") {
+														setTransactionOrder(transactionOrder === "asc" ? "desc" : "asc");
+													} else {
+														setTransactionOrder("asc");
+														setTransactionOrderBy("amountInvested");
+													}
+													setTransactionPage(0);
+												}}
+											>
+												Amount
+											</TableSortLabel>
+										</TableCell>
+										<TableCell align="right">
+											<TableSortLabel
+												active={transactionOrderBy === "wallet"}
+												direction={transactionOrderBy === "wallet" ? transactionOrder : "asc"}
+												onClick={() => {
+													if (transactionOrderBy === "wallet") {
+														setTransactionOrder(transactionOrder === "asc" ? "desc" : "asc");
+													} else {
+														setTransactionOrder("asc");
+														setTransactionOrderBy("wallet");
+													}
+													setTransactionPage(0);
+												}}
+											>
+												Wallet
+											</TableSortLabel>
+										</TableCell>
 										<TableCell align="right">Actions</TableCell>
 									</TableRow>
 								</TableHead>
 								<TableBody>
-									{transactions.map((transaction) => (
+									{paginatedTransactions.map((transaction) => (
 										<TableRow key={transaction.id} hover>
 											<TableCell>
 												<Typography variant="body2">
@@ -750,18 +1196,31 @@ export default function Page(): React.JSX.Element {
 								</TableBody>
 							</Table>
 						)}
+						{sortedTransactions.length > 0 && (
+							<TablePagination
+								component="div"
+								count={sortedTransactions.length}
+								onPageChange={(_, newPage) => setTransactionPage(newPage)}
+								onRowsPerPageChange={() => {}} // Fixed at 5
+								page={transactionPage}
+								rowsPerPage={transactionRowsPerPage}
+								rowsPerPageOptions={[]}
+								labelRowsPerPage=""
+							/>
+						)}
 					</CardContent>
 				</Card>
 			</Stack>
 
-			{/* Portfolio Dialog */}
+			{/* Wallet Dialog */}
 			<Dialog fullWidth maxWidth="sm" onClose={() => setShowPortfolioDialog(false)} open={showPortfolioDialog}>
 				<DialogTitle>
-					{editingPortfolioId ? "Edit Portfolio" : "Create Portfolio"}
+					{editingPortfolioId ? "Edit Wallet" : "Create Wallet"}
 					<IconButton
 						onClick={() => {
 							setShowPortfolioDialog(false);
 							setEditingPortfolioId(null);
+							setPortfolioName("");
 							setPortfolioFormData({ name: "", description: "", isDefault: false });
 						}}
 						sx={{ position: "absolute", right: 8, top: 8 }}
@@ -771,35 +1230,64 @@ export default function Page(): React.JSX.Element {
 				</DialogTitle>
 				<DialogContent>
 					<Stack spacing={3} sx={{ mt: 1 }}>
-						<TextField
-							fullWidth
-							label="Name"
-							onChange={(e) => setPortfolioFormData({ ...portfolioFormData, name: e.target.value })}
-							required
-							value={portfolioFormData.name}
-						/>
-						<TextField
-							fullWidth
-							label="Description"
-							multiline
-							onChange={(e) => setPortfolioFormData({ ...portfolioFormData, description: e.target.value })}
-							rows={3}
-							value={portfolioFormData.description || ""}
-						/>
-						<FormControlLabel
-							control={
-								<Switch
-									checked={portfolioFormData.isDefault || false}
-									onChange={(e) => setPortfolioFormData({ ...portfolioFormData, isDefault: e.target.checked })}
+						{editingPortfolioId ? (
+							<>
+								<TextField
+									fullWidth
+									label="Name"
+									onChange={(e) => setPortfolioFormData({ ...portfolioFormData, name: e.target.value })}
+									required
+									value={portfolioFormData.name}
 								/>
-							}
-							label="Default Portfolio"
-						/>
+								<TextField
+									fullWidth
+									label="Description"
+									multiline
+									onChange={(e) => setPortfolioFormData({ ...portfolioFormData, description: e.target.value })}
+									rows={3}
+									value={portfolioFormData.description || ""}
+								/>
+								<FormControlLabel
+									control={
+										<Switch
+											checked={portfolioFormData.isDefault || false}
+											onChange={(e) => setPortfolioFormData({ ...portfolioFormData, isDefault: e.target.checked })}
+										/>
+									}
+									label="Default Wallet"
+								/>
+							</>
+						) : (
+							<TextField
+								autoFocus
+								fullWidth
+								label="Wallet Name"
+								onChange={(e) => setPortfolioName(e.target.value)}
+								onKeyDown={(e) => {
+									if (e.key === "Enter" && portfolioName.trim()) {
+										handleCreatePortfolio();
+									}
+								}}
+								placeholder="Enter wallet name"
+								required
+								value={portfolioName}
+							/>
+						)}
 					</Stack>
 				</DialogContent>
 				<DialogActions>
-					<Button onClick={() => setShowPortfolioDialog(false)}>Cancel</Button>
 					<Button
+						onClick={() => {
+							setShowPortfolioDialog(false);
+							setEditingPortfolioId(null);
+							setPortfolioName("");
+							setPortfolioFormData({ name: "", description: "", isDefault: false });
+						}}
+					>
+						Cancel
+					</Button>
+					<Button
+						disabled={editingPortfolioId ? !portfolioFormData.name.trim() : !portfolioName.trim()}
 						onClick={editingPortfolioId ? handleUpdatePortfolio : handleCreatePortfolio}
 						variant="contained"
 					>
@@ -849,9 +1337,9 @@ export default function Page(): React.JSX.Element {
 							helperText={!selectedToken ? "Please select a token" : undefined}
 						/>
 						<FormControl fullWidth required>
-							<InputLabel>Portfolio</InputLabel>
+							<InputLabel>Wallet</InputLabel>
 							<Select
-								label="Portfolio"
+								label="Wallet"
 								onChange={(e) => setTransactionFormData({ ...transactionFormData, portfolioId: e.target.value })}
 								value={transactionFormData.portfolioId || ""}
 							>

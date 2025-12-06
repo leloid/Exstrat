@@ -24,10 +24,10 @@ export const dashboardConfig = {
 			items: [{ key: "overview", title: "Overview", href: paths.dashboard.overview, icon: "house" }],
 		},
 		{
-			key: "portfolio",
-			title: "Portfolio",
+			key: "wallet",
+			title: "Wallet",
 			items: [
-				{ key: "investissements", title: "Investissements", href: paths.dashboard.investissements, icon: "shopping-bag-open" },
+				{ key: "investissements", title: "Investments", href: paths.dashboard.investissements, icon: "shopping-bag-open" },
 			],
 		},
 		{
