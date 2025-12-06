@@ -127,14 +127,14 @@ export default function Page(): React.JSX.Element {
 	// Search and pagination states for wallets
 	const [walletSearchQuery, setWalletSearchQuery] = React.useState("");
 	const [walletPage, setWalletPage] = React.useState(0);
-	const walletRowsPerPage = 5;
+	const [walletRowsPerPage, setWalletRowsPerPage] = React.useState(5);
 	const [walletOrderBy, setWalletOrderBy] = React.useState<keyof PortfolioData | "">("");
 	const [walletOrder, setWalletOrder] = React.useState<"asc" | "desc">("asc");
 
 	// Search and pagination states for transactions
 	const [transactionSearchQuery, setTransactionSearchQuery] = React.useState("");
 	const [transactionPage, setTransactionPage] = React.useState(0);
-	const transactionRowsPerPage = 5;
+	const [transactionRowsPerPage, setTransactionRowsPerPage] = React.useState(5);
 	const [transactionOrderBy, setTransactionOrderBy] = React.useState<string>("");
 	const [transactionOrder, setTransactionOrder] = React.useState<"asc" | "desc">("asc");
 
@@ -1006,11 +1006,14 @@ export default function Page(): React.JSX.Element {
 								component="div"
 								count={sortedWallets.length}
 								onPageChange={(_, newPage) => setWalletPage(newPage)}
-								onRowsPerPageChange={() => {}} // Fixed at 5
+								onRowsPerPageChange={(e) => {
+									setWalletRowsPerPage(parseInt(e.target.value, 10));
+									setWalletPage(0);
+								}}
 								page={walletPage}
 								rowsPerPage={walletRowsPerPage}
-								rowsPerPageOptions={[]}
-								labelRowsPerPage=""
+								rowsPerPageOptions={[5, 10, 25, 50]}
+								labelRowsPerPage="Rows per page:"
 							/>
 						)}
 					</CardContent>
@@ -1260,11 +1263,14 @@ export default function Page(): React.JSX.Element {
 								component="div"
 								count={sortedTransactions.length}
 								onPageChange={(_, newPage) => setTransactionPage(newPage)}
-								onRowsPerPageChange={() => {}} // Fixed at 5
+								onRowsPerPageChange={(e) => {
+									setTransactionRowsPerPage(parseInt(e.target.value, 10));
+									setTransactionPage(0);
+								}}
 								page={transactionPage}
 								rowsPerPage={transactionRowsPerPage}
-								rowsPerPageOptions={[]}
-								labelRowsPerPage=""
+								rowsPerPageOptions={[5, 10, 25, 50]}
+								labelRowsPerPage="Rows per page:"
 							/>
 						)}
 					</CardContent>

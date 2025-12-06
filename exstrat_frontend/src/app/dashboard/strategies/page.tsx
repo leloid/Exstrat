@@ -34,6 +34,7 @@ import TableBody from "@mui/material/TableBody";
 import TableCell from "@mui/material/TableCell";
 import TableHead from "@mui/material/TableHead";
 import TableRow from "@mui/material/TableRow";
+import TablePagination from "@mui/material/TablePagination";
 import Tooltip from "@mui/material/Tooltip";
 import Avatar from "@mui/material/Avatar";
 
@@ -53,6 +54,10 @@ function StrategiesPageContent(): React.JSX.Element {
 	const [showCreateModal, setShowCreateModal] = React.useState(false);
 	const [isSubmitting, setIsSubmitting] = React.useState(false);
 	const [tokenPrices, setTokenPrices] = React.useState<Map<string, number>>(new Map());
+	
+	// Pagination states
+	const [page, setPage] = React.useState(0);
+	const [rowsPerPage, setRowsPerPage] = React.useState(10);
 
 	// Load strategies
 	React.useEffect(() => {
@@ -155,6 +160,18 @@ function StrategiesPageContent(): React.JSX.Element {
 
 		return result;
 	}, [strategies, searchQuery, statusFilter]);
+
+	// Paginated strategies
+	const paginatedStrategies = React.useMemo(() => {
+		const start = page * rowsPerPage;
+		const end = start + rowsPerPage;
+		return filteredStrategies.slice(start, end);
+	}, [filteredStrategies, page, rowsPerPage]);
+
+	// Reset page when search or filter changes
+	React.useEffect(() => {
+		setPage(0);
+	}, [searchQuery, statusFilter]);
 
 	// Status counts
 	const statusCounts = React.useMemo(() => {
@@ -321,10 +338,25 @@ function StrategiesPageContent(): React.JSX.Element {
 							<StrategiesTable
 								onDelete={handleDeleteStrategy}
 								onEdit={handleEditStrategy}
-								rows={filteredStrategies}
+								rows={paginatedStrategies}
 								tokenPrices={tokenPrices}
 							/>
 						</Box>
+						{filteredStrategies.length > 0 && (
+							<TablePagination
+								component="div"
+								count={filteredStrategies.length}
+								onPageChange={(_, newPage) => setPage(newPage)}
+								onRowsPerPageChange={(e) => {
+									setRowsPerPage(parseInt(e.target.value, 10));
+									setPage(0);
+								}}
+								page={page}
+								rowsPerPage={rowsPerPage}
+								rowsPerPageOptions={[5, 10, 25, 50]}
+								labelRowsPerPage="Rows per page:"
+							/>
+						)}
 					</Card>
 				)}
 			</Stack>
