@@ -21,6 +21,8 @@ import { TrashIcon } from "@phosphor-icons/react/dist/ssr/Trash";
 import { XIcon } from "@phosphor-icons/react/dist/ssr/X";
 
 import { strategiesApi } from "@/lib/strategies-api";
+import { getPortfolios, getPortfolioHoldings } from "@/lib/portfolios-api";
+import { transactionsApi } from "@/lib/transactions-api";
 import { formatCurrency, formatPercentage } from "@/lib/format";
 import type { StrategyResponse, StrategyStatus } from "@/types/strategies";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
@@ -33,6 +35,7 @@ import TableCell from "@mui/material/TableCell";
 import TableHead from "@mui/material/TableHead";
 import TableRow from "@mui/material/TableRow";
 import Tooltip from "@mui/material/Tooltip";
+import Avatar from "@mui/material/Avatar";
 
 export default function Page(): React.JSX.Element {
 	return (
@@ -49,11 +52,19 @@ function StrategiesPageContent(): React.JSX.Element {
 	const [statusFilter, setStatusFilter] = React.useState<StrategyStatus | "all">("paused");
 	const [showCreateModal, setShowCreateModal] = React.useState(false);
 	const [isSubmitting, setIsSubmitting] = React.useState(false);
+	const [tokenPrices, setTokenPrices] = React.useState<Map<string, number>>(new Map());
 
 	// Load strategies
 	React.useEffect(() => {
 		loadStrategies();
 	}, []);
+
+	// Load current prices for all tokens
+	React.useEffect(() => {
+		if (strategies.length > 0) {
+			loadTokenPrices();
+		}
+	}, [strategies]);
 
 	const loadStrategies = async () => {
 		try {
@@ -64,6 +75,58 @@ function StrategiesPageContent(): React.JSX.Element {
 			console.error("Error loading strategies:", error);
 		} finally {
 			setIsLoading(false);
+		}
+	};
+
+	const loadTokenPrices = async () => {
+		try {
+			const pricesMap = new Map<string, number>();
+
+			// Get unique symbols from strategies
+			const uniqueSymbols = Array.from(new Set(strategies.map((s) => s.symbol.toUpperCase())));
+
+			if (uniqueSymbols.length === 0) {
+				setTokenPrices(pricesMap);
+				return;
+			}
+
+			// Try to get prices from holdings first (more accurate)
+			try {
+				const portfolios = await getPortfolios();
+				for (const portfolio of portfolios) {
+					try {
+						const holdings = await getPortfolioHoldings(portfolio.id);
+						holdings.forEach((holding) => {
+							const symbol = holding.token.symbol.toUpperCase();
+							if (uniqueSymbols.includes(symbol) && holding.currentPrice && holding.currentPrice > 0) {
+								pricesMap.set(symbol, holding.currentPrice);
+							}
+						});
+					} catch (error) {
+						console.error(`Error loading holdings for portfolio ${portfolio.id}:`, error);
+					}
+				}
+			} catch (error) {
+				console.error("Error loading portfolios for prices:", error);
+			}
+
+			// For tokens not found in holdings, try to get from token search API
+			for (const symbol of uniqueSymbols) {
+				if (!pricesMap.has(symbol)) {
+					try {
+						const tokens = await transactionsApi.searchTokens(symbol);
+						if (tokens.length > 0 && tokens[0].quote?.USD?.price) {
+							pricesMap.set(symbol, tokens[0].quote.USD.price);
+						}
+					} catch (error) {
+						console.error(`Error loading price for ${symbol}:`, error);
+					}
+				}
+			}
+
+			setTokenPrices(pricesMap);
+		} catch (error) {
+			console.error("Error loading token prices:", error);
 		}
 	};
 
@@ -259,6 +322,7 @@ function StrategiesPageContent(): React.JSX.Element {
 								onDelete={handleDeleteStrategy}
 								onEdit={handleEditStrategy}
 								rows={filteredStrategies}
+								tokenPrices={tokenPrices}
 							/>
 						</Box>
 					</Card>
@@ -275,9 +339,57 @@ interface StrategiesTableProps {
 	rows: StrategyResponse[];
 	onEdit: (strategy: StrategyResponse) => void;
 	onDelete: (strategyId: string) => void;
+	tokenPrices: Map<string, number>;
 }
 
-function StrategiesTable({ rows, onEdit, onDelete }: StrategiesTableProps): React.JSX.Element {
+function StrategiesTable({ rows, onEdit, onDelete, tokenPrices }: StrategiesTableProps): React.JSX.Element {
+	// Helper function to get token logo URL from multiple sources with fallback
+	const getTokenLogoUrl = (symbol: string, cmcId: number | undefined): string | null => {
+		const symbolLower = symbol.toLowerCase();
+		
+		// Priority 1: CoinMarketCap (if cmcId is available and valid) - most reliable
+		if (cmcId && cmcId > 0) {
+			return `https://s2.coinmarketcap.com/static/img/coins/64x64/${cmcId}.png`;
+		}
+		
+		// Priority 2: Mapping of common tokens to CoinMarketCap IDs
+		// This is a fallback when cmcId is not available but we know the symbol
+		const commonTokenIds: Record<string, number> = {
+			btc: 1,        // Bitcoin
+			eth: 1027,     // Ethereum
+			usdt: 825,     // Tether
+			bnb: 1839,     // Binance Coin
+			sol: 4128,     // Solana
+			usdc: 3408,    // USD Coin
+			xrp: 52,       // Ripple
+			ada: 2010,     // Cardano
+			doge: 5,       // Dogecoin
+			matic: 4713,   // Polygon (MATIC)
+			dot: 6636,     // Polkadot
+			avax: 5805,    // Avalanche
+			shib: 11939,   // Shiba Inu
+			ltc: 2,        // Litecoin
+			link: 1975,    // Chainlink
+			trx: 1958,     // TRON
+			atom: 3794,    // Cosmos
+			etc: 1321,     // Ethereum Classic
+			xlm: 512,      // Stellar
+			algo: 4030,    // Algorand
+			vet: 3077,     // VeChain
+			fil: 5488,     // Filecoin
+			icp: 8916,     // Internet Computer
+			uni: 12504,    // Uniswap
+		};
+		
+		if (commonTokenIds[symbolLower]) {
+			return `https://s2.coinmarketcap.com/static/img/coins/64x64/${commonTokenIds[symbolLower]}.png`;
+		}
+		
+		// Priority 3: Try using a simple CDN service that works with symbols
+		// Using cryptologos.cc which provides logos for many cryptocurrencies
+		return `https://cryptologos.cc/logos/${symbolLower}-${symbolLower}-logo.png`;
+	};
+
 	return (
 		<Table>
 			<TableHead>
@@ -317,9 +429,8 @@ function StrategiesTable({ rows, onEdit, onDelete }: StrategiesTableProps): Reac
 					const totalInvested = row.baseQuantity * row.referencePrice;
 					const numberOfTargets = row.steps?.length || 0;
 					const totalSellPercentage = row.steps?.reduce((sum, step) => sum + step.sellPercentage, 0) || 0;
-					// Calculate profit (simplified - would need current price for real calculation)
-					// For now, using reference price as placeholder
-					const currentPrice = row.referencePrice; // TODO: Get actual current price from API
+					// Get current price from tokenPrices map, fallback to referencePrice if not available
+					const currentPrice = tokenPrices.get(row.symbol.toUpperCase()) || row.referencePrice;
 					const currentValue = row.baseQuantity * currentPrice;
 					const profitUSD = currentValue - totalInvested;
 					const profitPercentage = totalInvested > 0 ? (profitUSD / totalInvested) * 100 : 0;
@@ -330,9 +441,27 @@ function StrategiesTable({ rows, onEdit, onDelete }: StrategiesTableProps): Reac
 					const averagePrice = row.referencePrice;
 					const currentPNL = profitUSD;
 					const currentPNLPercentage = profitPercentage;
-					const totalCashedIn = 0; // Would need to calculate from completed steps
-					const netResult = currentPNL;
-					const remainingTokens = tokensHeld; // Would need to calculate from remaining quantity
+					
+					// Calculate projections for all steps (same logic as in create modal)
+					let remainingTokens = tokensHeld;
+					let totalCashedIn = 0;
+					
+					if (row.steps && row.steps.length > 0) {
+						// For each step, calculate tokens to sell and amount collected
+						row.steps.forEach((step) => {
+							// Calculate tokens to sell based on sellPercentage
+							const tokensToSell = (tokensHeld * step.sellPercentage) / 100;
+							const amountCollected = tokensToSell * step.targetPrice;
+							totalCashedIn += amountCollected;
+							remainingTokens -= tokensToSell;
+						});
+					}
+					
+					// Ensure remainingTokens is not negative
+					remainingTokens = Math.max(0, remainingTokens);
+					
+					// Net result = Total cashed in - Invested (same as in create modal)
+					const netResult = totalCashedIn - totalInvested;
 
 					const tooltipContent = (
 						<Box sx={{ p: 1.5, maxWidth: "300px" }}>
@@ -453,7 +582,7 @@ function StrategiesTable({ rows, onEdit, onDelete }: StrategiesTableProps): Reac
 							placement="right"
 							title={tooltipContent}
 						>
-							<TableRow hover>
+							<TableRow>
 								<TableCell>
 									<Stack spacing={0.25}>
 										<Typography variant="subtitle2" sx={{ fontSize: "0.875rem", lineHeight: 1.3 }}>
@@ -470,9 +599,23 @@ function StrategiesTable({ rows, onEdit, onDelete }: StrategiesTableProps): Reac
 								</Typography>
 							</TableCell>
 							<TableCell>
-								<Typography variant="body2" sx={{ fontSize: "0.875rem", whiteSpace: "nowrap" }}>
-									{row.baseQuantity.toLocaleString(undefined, { maximumFractionDigits: 6 })} {row.symbol}
-								</Typography>
+								<Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
+									<Avatar
+										src={getTokenLogoUrl(row.symbol, row.cmcId) || undefined}
+										alt={row.symbol}
+										sx={{
+											width: 20,
+											height: 20,
+											fontSize: "0.625rem",
+											bgcolor: "var(--mui-palette-primary-main)",
+										}}
+									>
+										{row.symbol.charAt(0)}
+									</Avatar>
+									<Typography variant="body2" sx={{ fontSize: "0.875rem", whiteSpace: "nowrap" }}>
+										{row.baseQuantity.toLocaleString(undefined, { maximumFractionDigits: 6 })} {row.symbol}
+									</Typography>
+								</Stack>
 							</TableCell>
 							<TableCell>
 								<Typography

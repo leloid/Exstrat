@@ -43,6 +43,7 @@ import { ChartPieIcon } from "@phosphor-icons/react/dist/ssr/ChartPie";
 
 import { strategiesApi } from "@/lib/strategies-api";
 import * as portfoliosApi from "@/lib/portfolios-api";
+import { transactionsApi } from "@/lib/transactions-api";
 import { formatCurrency, formatPercentage } from "@/lib/format";
 import type { CreateStrategyDto, TargetType } from "@/types/strategies";
 import { StrategyStatus } from "@/types/strategies";
@@ -191,7 +192,7 @@ export function CreateStrategyModal({ onClose, onSuccess, open }: CreateStrategy
 	// Load investment data when token and quantity are set
 	React.useEffect(() => {
 		const loadInvestmentData = async () => {
-			if (!selectedToken || !strategyQuantity || !strategyAveragePrice || isVirtualWallet) {
+			if (!selectedToken || !strategyQuantity || !strategyAveragePrice) {
 				setInvestmentData(null);
 				return;
 			}
@@ -199,13 +200,19 @@ export function CreateStrategyModal({ onClose, onSuccess, open }: CreateStrategy
 			try {
 				const qty = parseFloat(strategyQuantity);
 				const avgPrice = parseFloat(strategyAveragePrice);
-				const currentPrice = selectedToken.quote?.USD?.price || 0;
 
-				if (qty > 0 && avgPrice > 0) {
+				if (qty <= 0 || avgPrice <= 0) {
+					setInvestmentData(null);
+					return;
+				}
+
+				// For virtual wallet, use simple calculation
+				if (isVirtualWallet) {
+					const currentPrice = selectedToken.quote?.USD?.price || avgPrice;
 					const totalInvested = qty * avgPrice;
 					const currentValue = qty * currentPrice;
 					const currentPNL = currentValue - totalInvested;
-					const currentPNLPercentage = (currentPNL / totalInvested) * 100;
+					const currentPNLPercentage = totalInvested > 0 ? (currentPNL / totalInvested) * 100 : 0;
 
 					setInvestmentData({
 						numberOfTransactions: 1,
@@ -216,14 +223,57 @@ export function CreateStrategyModal({ onClose, onSuccess, open }: CreateStrategy
 						currentPNL,
 						currentPNLPercentage,
 					});
+					return;
 				}
+
+				// For real wallet, calculate from actual transactions
+				if (!selectedPortfolioId) {
+					setInvestmentData(null);
+					return;
+				}
+
+				// Get transactions for this token in the selected portfolio
+				const allTransactionsResponse = await transactionsApi.getTransactions();
+				const transactionsArray = Array.isArray(allTransactionsResponse?.transactions)
+					? allTransactionsResponse.transactions
+					: [];
+				const portfolioTransactions = transactionsArray.filter(
+					(t) =>
+						t.portfolioId === selectedPortfolioId &&
+						t.symbol?.toUpperCase() === selectedToken.symbol.toUpperCase()
+				);
+
+				// Get holding to get current price
+				const holdings = await portfoliosApi.getPortfolioHoldings(selectedPortfolioId);
+				const holding = holdings.find(
+					(h) => h.token?.symbol?.toUpperCase() === selectedToken.symbol.toUpperCase()
+				);
+
+				const currentPrice = holding?.currentPrice || selectedToken.quote?.USD?.price || avgPrice;
+				const totalInvested = portfolioTransactions.reduce((sum, t) => sum + (t.amountInvested || 0), 0);
+				const totalQuantity = portfolioTransactions.reduce((sum, t) => sum + (t.quantity || 0), 0);
+				const averagePrice = totalQuantity > 0 ? totalInvested / totalQuantity : avgPrice;
+				const currentValue = qty * currentPrice;
+				const currentPNL = currentValue - totalInvested;
+				const currentPNLPercentage = totalInvested > 0 ? (currentPNL / totalInvested) * 100 : 0;
+
+				setInvestmentData({
+					numberOfTransactions: portfolioTransactions.length || 1,
+					totalInvested: totalInvested || qty * avgPrice,
+					totalQuantity: totalQuantity || qty,
+					averagePrice: averagePrice || avgPrice,
+					currentPrice,
+					currentPNL,
+					currentPNLPercentage,
+				});
 			} catch (error) {
 				console.error("Error loading investment data:", error);
+				setInvestmentData(null);
 			}
 		};
 
 		loadInvestmentData();
-	}, [selectedToken, strategyQuantity, strategyAveragePrice, isVirtualWallet]);
+	}, [selectedToken, strategyQuantity, strategyAveragePrice, isVirtualWallet, selectedPortfolioId]);
 
 	// Initialize profit targets when number changes
 	React.useEffect(() => {
