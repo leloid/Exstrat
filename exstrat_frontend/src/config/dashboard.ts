@@ -24,14 +24,32 @@ export const dashboardConfig = {
 			items: [{ key: "overview", title: "Overview", href: paths.dashboard.overview, icon: "house" }],
 		},
 		{
-			key: "misc",
-			title: "Misc",
+			key: "portfolio",
+			title: "Portfolio",
 			items: [
-				{ key: "blank", title: "Blank", href: paths.dashboard.blank, icon: "file-dashed" },
 				{ key: "investissements", title: "Investissements", href: paths.dashboard.investissements, icon: "shopping-bag-open" },
+			],
+		},
+		{
+			key: "trading",
+			title: "Trading",
+			items: [
 				{ key: "strategies", title: "Strategies", href: paths.dashboard.strategies, icon: "chart-pie" },
 				{ key: "prevision", title: "Prevision", href: paths.dashboard.prevision, icon: "calendar-check" },
+			],
+		},
+		{
+			key: "settings",
+			title: "Settings",
+			items: [
 				{ key: "configuration", title: "Configuration", href: paths.dashboard.configuration, icon: "gear" },
+			],
+		},
+		{
+			key: "help",
+			title: "Help",
+			items: [
+				{ key: "getting-started", title: "Getting Started", href: paths.dashboard.gettingStarted, icon: "graduation-cap" },
 			],
 		},
 	],
