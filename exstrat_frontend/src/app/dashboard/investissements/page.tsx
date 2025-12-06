@@ -1205,7 +1205,7 @@ export default function Page(): React.JSX.Element {
 								</TableHead>
 								<TableBody>
 									{paginatedTransactions.map((transaction) => (
-										<TableRow key={transaction.id} hover>
+										<TableRow key={transaction.id}>
 											<TableCell>
 												<Typography variant="body2">
 													{new Date(transaction.transactionDate).toLocaleDateString()}
