@@ -2,7 +2,6 @@
 
 import * as React from "react";
 import RouterLink from "next/link";
-import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
@@ -11,46 +10,44 @@ import CardContent from "@mui/material/CardContent";
 import CardHeader from "@mui/material/CardHeader";
 import FormControl from "@mui/material/FormControl";
 import InputLabel from "@mui/material/InputLabel";
-import Link from "@mui/material/Link";
 import OutlinedInput from "@mui/material/OutlinedInput";
 import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
 import Alert from "@mui/material/Alert";
-import { appConfig } from "@/config/app";
+
 import { paths } from "@/paths";
 import { CenteredLayout } from "@/components/auth/centered-layout";
-import { useAuth } from "@/contexts/AuthContext";
-import type { SignInData } from "@/types/auth";
+
+interface ResetPasswordForm {
+	email: string;
+}
 
 export default function Page(): React.JSX.Element {
-	const router = useRouter();
-	const { signIn, isAuthenticated } = useAuth();
-	const [error, setError] = React.useState<string>("");
 	const [isLoading, setIsLoading] = React.useState(false);
+	const [success, setSuccess] = React.useState(false);
+	const [error, setError] = React.useState<string>("");
 
 	const {
 		register,
 		handleSubmit,
 		formState: { errors },
-	} = useForm<SignInData>();
+	} = useForm<ResetPasswordForm>();
 
-	// Rediriger si déjà connecté
-	React.useEffect(() => {
-		if (isAuthenticated) {
-			router.push(paths.dashboard.overview);
-		}
-	}, [isAuthenticated, router]);
-
-	const onSubmit = async (data: SignInData) => {
+	const onSubmit = async (data: ResetPasswordForm) => {
 		setIsLoading(true);
 		setError("");
+		setSuccess(false);
 
 		try {
-			await signIn(data);
-			router.push(paths.dashboard.overview);
+			// TODO: Implémenter l'appel API pour réinitialiser le mot de passe
+			// await api.post("/auth/reset-password", { email: data.email });
+			
+			// Simulation pour l'instant
+			await new Promise((resolve) => setTimeout(resolve, 1000));
+			setSuccess(true);
 		} catch (err: unknown) {
 			const error = err as Error | { message?: string };
-			const errorMessage = error instanceof Error ? error.message : error.message || "An error occurred during sign in";
+			const errorMessage = error instanceof Error ? error.message : error.message || "An error occurred. Please try again.";
 			setError(errorMessage);
 		} finally {
 			setIsLoading(false);
@@ -71,26 +68,25 @@ export default function Page(): React.JSX.Element {
 					</Box>
 				</div>
 				<Card>
-					<CardHeader
-						subheader={
-							<Typography color="text.secondary" variant="body2">
-								Don&apos;t have an account?{" "}
-								<Link component={RouterLink} href={paths.auth.signUp} variant="subtitle2">
-									Sign up
-								</Link>
-							</Typography>
-						}
-						title="Sign in"
-					/>
+					<CardHeader title="Reset password" />
 					<CardContent>
-						<form onSubmit={handleSubmit(onSubmit)}>
+						{success ? (
 							<Stack spacing={2}>
-								{error && (
-									<Alert severity="error" onClose={() => setError("")}>
-										{error}
-									</Alert>
-								)}
+								<Alert severity="success">
+									If an account exists with this email address, you will receive a password recovery link.
+								</Alert>
+								<Button component={RouterLink} href={paths.auth.signIn} variant="contained" fullWidth>
+									Back to sign in
+								</Button>
+							</Stack>
+						) : (
+							<form onSubmit={handleSubmit(onSubmit)}>
 								<Stack spacing={2}>
+									{error && (
+										<Alert severity="error" onClose={() => setError("")}>
+											{error}
+										</Alert>
+									)}
 									<FormControl error={!!errors.email}>
 										<InputLabel>Email address</InputLabel>
 										<OutlinedInput
@@ -110,36 +106,22 @@ export default function Page(): React.JSX.Element {
 											</Typography>
 										)}
 									</FormControl>
-									<FormControl error={!!errors.password}>
-										<InputLabel>Password</InputLabel>
-										<OutlinedInput
-											{...register("password", {
-												required: "Password is required",
-												minLength: {
-													value: 8,
-													message: "Password must contain at least 8 characters",
-												},
-											})}
-											type="password"
-											label="Password"
-										/>
-										{errors.password && (
-											<Typography variant="caption" color="error" sx={{ mt: 0.5 }}>
-												{errors.password.message}
-											</Typography>
-										)}
-									</FormControl>
 									<Button type="submit" variant="contained" disabled={isLoading} fullWidth>
-										{isLoading ? "Signing in..." : "Sign in"}
+										{isLoading ? "Sending..." : "Send recovery link"}
 									</Button>
+									<div>
+										<Typography variant="body2" color="text.secondary" align="center">
+											Remember your password?{" "}
+											<RouterLink href={paths.auth.signIn} style={{ textDecoration: "none" }}>
+												<Typography component="span" variant="subtitle2" color="primary">
+													Sign in
+												</Typography>
+											</RouterLink>
+										</Typography>
+									</div>
 								</Stack>
-								<div>
-									<Link component={RouterLink} href={paths.auth.resetPassword} variant="subtitle2">
-										Forgot password?
-									</Link>
-								</div>
-							</Stack>
-						</form>
+							</form>
+						)}
 					</CardContent>
 				</Card>
 			</Stack>
