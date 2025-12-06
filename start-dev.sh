@@ -5,10 +5,14 @@
 
 echo "🚀 Démarrage d'ExStrat..."
 
+# Configuration des ports
+BACKEND_PORT=3000
+FRONTEND_PORT=3001
+
 # Fonction pour tuer les processus sur les ports
 kill_ports() {
-    echo "🧹 Nettoyage des ports 3000 et 3001..."
-    lsof -ti:3000,3001 | xargs kill -9 2>/dev/null || true
+    echo "🧹 Nettoyage des ports $BACKEND_PORT et $FRONTEND_PORT..."
+    lsof -ti:$BACKEND_PORT,$FRONTEND_PORT | xargs kill -9 2>/dev/null || true
     pkill -f "nest start" 2>/dev/null || true
     pkill -f "next dev" 2>/dev/null || true
     sleep 2
@@ -29,14 +33,18 @@ check_port() {
 kill_ports
 
 # Vérifier que les ports sont libres
-if ! check_port 3000 || ! check_port 3001; then
+if ! check_port $BACKEND_PORT || ! check_port $FRONTEND_PORT; then
     echo "❌ Impossible de libérer les ports. Arrêt du script."
     exit 1
 fi
 
 # Démarrer le backend
-echo "🔧 Démarrage du backend (port 3000)..."
+echo "🔧 Démarrage du backend (port $BACKEND_PORT)..."
 cd exstrat_backend
+if [ ! -d "node_modules" ]; then
+    echo "📦 Installation des dépendances du backend..."
+    npm install
+fi
 npm run start:dev &
 BACKEND_PID=$!
 
@@ -45,18 +53,23 @@ echo "⏳ Attente du démarrage du backend..."
 sleep 8
 
 # Vérifier que le backend fonctionne
-if curl -s http://localhost:3000/health > /dev/null; then
+if curl -s http://localhost:$BACKEND_PORT/health > /dev/null; then
     echo "✅ Backend démarré avec succès"
 else
     echo "❌ Erreur: Backend n'a pas démarré correctement"
+    echo "💡 Vérifiez que le backend est correctement configuré et que la base de données est accessible"
     kill $BACKEND_PID 2>/dev/null || true
     exit 1
 fi
 
-# Démarrer le frontend
-echo "🎨 Démarrage du frontend (port 3001)..."
-cd ../exstrat
-npm run dev &
+# Démarrer le nouveau frontend
+echo "🎨 Démarrage du nouveau frontend (port $FRONTEND_PORT)..."
+cd ../exstrat_frontend
+if [ ! -d "node_modules" ]; then
+    echo "📦 Installation des dépendances du frontend..."
+    npm install
+fi
+PORT=$FRONTEND_PORT npm run dev &
 FRONTEND_PID=$!
 
 # Attendre que le frontend démarre
@@ -64,7 +77,7 @@ echo "⏳ Attente du démarrage du frontend..."
 sleep 5
 
 # Vérifier que le frontend fonctionne
-if curl -s http://localhost:3001 > /dev/null; then
+if curl -s http://localhost:$FRONTEND_PORT > /dev/null; then
     echo "✅ Frontend démarré avec succès"
 else
     echo "❌ Erreur: Frontend n'a pas démarré correctement"
@@ -74,9 +87,9 @@ fi
 
 echo ""
 echo "🎉 ExStrat est maintenant démarré !"
-echo "📱 Frontend: http://localhost:3001"
-echo "🔧 Backend API: http://localhost:3000"
-echo "📚 Swagger: http://localhost:3000/api"
+echo "📱 Frontend (nouveau): http://localhost:$FRONTEND_PORT"
+echo "🔧 Backend API: http://localhost:$BACKEND_PORT"
+echo "📚 Swagger: http://localhost:$BACKEND_PORT/api"
 echo ""
 echo "Pour arrêter les serveurs, appuyez sur Ctrl+C"
 

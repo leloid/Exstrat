@@ -70,7 +70,10 @@ api.interceptors.response.use(
 
 		if (error.response?.status === 502 || error.response?.status === 503 || error.response?.status === 504) {
 			console.error("Gateway error - Backend might be down or unreachable");
-			throw new Error("Le serveur backend n'est pas accessible. Veuillez vérifier que le serveur est démarré.");
+			const apiUrl = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:3000";
+			throw new Error(
+				`Backend server is not accessible at ${apiUrl}. Please ensure the backend is running on port 3000.`
+			);
 		}
 
 		// Ne pas essayer de rafraîchir le token pour les endpoints d'authentification (login/signup)
