@@ -26,7 +26,13 @@ export const dashboardConfig = {
 		{
 			key: "misc",
 			title: "Misc",
-			items: [{ key: "blank", title: "Blank", href: paths.dashboard.blank, icon: "file-dashed" }],
+			items: [
+				{ key: "blank", title: "Blank", href: paths.dashboard.blank, icon: "file-dashed" },
+				{ key: "investissements", title: "Investissements", href: paths.dashboard.investissements, icon: "shopping-bag-open" },
+				{ key: "strategies", title: "Strategies", href: paths.dashboard.strategies, icon: "chart-pie" },
+				{ key: "prevision", title: "Prevision", href: paths.dashboard.prevision, icon: "calendar-check" },
+				{ key: "configuration", title: "Configuration", href: paths.dashboard.configuration, icon: "gear" },
+			],
 		},
 	],
 } satisfies DashboardConfig;

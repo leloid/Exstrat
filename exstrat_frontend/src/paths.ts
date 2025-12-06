@@ -53,6 +53,10 @@ export const paths = {
 	},
 	dashboard: {
 		overview: "/dashboard",
+		investissements: "/dashboard/investissements",
+		strategies: "/dashboard/strategies",
+		prevision: "/dashboard/prevision",
+		configuration: "/dashboard/configuration",
 		settings: {
 			account: "/dashboard/settings/account",
 			billing: "/dashboard/settings/billing",

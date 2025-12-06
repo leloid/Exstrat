@@ -1,32 +1,273 @@
-import type * as React from "react";
-import type { Metadata } from "next";
+"use client";
+
+import * as React from "react";
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
+import CircularProgress from "@mui/material/CircularProgress";
+import FormControl from "@mui/material/FormControl";
 import Grid from "@mui/material/Grid";
+import MenuItem from "@mui/material/MenuItem";
+import Select from "@mui/material/Select";
 import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
-import { ArrowRightIcon } from "@phosphor-icons/react/dist/ssr/ArrowRight";
-import { BriefcaseIcon } from "@phosphor-icons/react/dist/ssr/Briefcase";
-import { FileCodeIcon } from "@phosphor-icons/react/dist/ssr/FileCode";
-import { InfoIcon } from "@phosphor-icons/react/dist/ssr/Info";
-import { ListChecksIcon } from "@phosphor-icons/react/dist/ssr/ListChecks";
 import { PlusIcon } from "@phosphor-icons/react/dist/ssr/Plus";
-import { UsersIcon } from "@phosphor-icons/react/dist/ssr/Users";
-import { WarningIcon } from "@phosphor-icons/react/dist/ssr/Warning";
 
 import { appConfig } from "@/config/app";
-import { dayjs } from "@/lib/dayjs";
-import { AppChat } from "@/components/dashboard/overview/app-chat";
-import { AppLimits } from "@/components/dashboard/overview/app-limits";
-import { AppUsage } from "@/components/dashboard/overview/app-usage";
-import { Events } from "@/components/dashboard/overview/events";
-import { HelperWidget } from "@/components/dashboard/overview/helper-widget";
-import { Subscriptions } from "@/components/dashboard/overview/subscriptions";
-import { Summary } from "@/components/dashboard/overview/summary";
+import { usePortfolio } from "@/contexts/PortfolioContext";
+import { PortfolioSummary } from "@/components/dashboard/portfolio/portfolio-summary";
+import { TokenCard } from "@/components/dashboard/portfolio/token-card";
+import { PortfolioEvolutionChart } from "@/components/dashboard/portfolio/portfolio-evolution-chart";
+import { HoldingsTable } from "@/components/dashboard/portfolio/holdings-table";
+import type { Holding } from "@/types/portfolio";
+import * as portfoliosApi from "@/lib/portfolios-api";
 
-export const metadata = { title: `Overview | Dashboard | ${appConfig.name}` } satisfies Metadata;
+interface EvolutionDataPoint {
+	date: string;
+	valeurBrute: number;
+	valeurNette: number;
+	investi: number;
+}
 
 export default function Page(): React.JSX.Element {
+	const {
+		portfolios,
+		currentPortfolio,
+		holdings,
+		isLoading: portfoliosLoading,
+		selectPortfolio,
+	} = usePortfolio();
+	const [isGlobalView, setIsGlobalView] = React.useState(false);
+	const [globalHoldings, setGlobalHoldings] = React.useState<Holding[]>([]);
+	const [loadingGlobal, setLoadingGlobal] = React.useState(false);
+	const [selectedToken, setSelectedToken] = React.useState<Holding | null>(null);
+
+	// Load global holdings when in global view
+	React.useEffect(() => {
+		const loadGlobalHoldings = async () => {
+			if (!isGlobalView || portfoliosLoading || portfolios.length === 0) {
+				if (!isGlobalView) {
+					setGlobalHoldings([]);
+				}
+				return;
+			}
+
+			if (loadingGlobal) {
+				return;
+			}
+
+			setLoadingGlobal(true);
+			try {
+				const allHoldings: Holding[] = [];
+
+				for (const portfolio of portfolios) {
+					try {
+						const portfolioHoldings = await portfoliosApi.getPortfolioHoldings(portfolio.id);
+						allHoldings.push(...portfolioHoldings);
+					} catch (error) {
+						console.error(`Error loading holdings for ${portfolio.name}:`, error);
+					}
+				}
+
+				// Aggregate holdings by token
+				const holdingsMap = new Map<string, Holding>();
+
+				allHoldings.forEach((holding) => {
+					const tokenId = holding.token.id;
+					const existing = holdingsMap.get(tokenId);
+
+					if (existing) {
+						const totalQuantity = existing.quantity + holding.quantity;
+						const totalInvested = existing.investedAmount + holding.investedAmount;
+						const weightedAveragePrice = totalInvested / totalQuantity;
+						const currentPrice = holding.currentPrice || existing.currentPrice || holding.averagePrice;
+						const currentValue = currentPrice * totalQuantity;
+
+						holdingsMap.set(tokenId, {
+							...existing,
+							quantity: totalQuantity,
+							investedAmount: totalInvested,
+							averagePrice: weightedAveragePrice,
+							currentPrice: currentPrice,
+							currentValue: currentValue,
+							profitLoss: currentValue - totalInvested,
+							profitLossPercentage:
+								totalInvested > 0 ? ((currentValue - totalInvested) / totalInvested) * 100 : 0,
+						});
+					} else {
+						const currentPrice = holding.currentPrice || holding.averagePrice;
+						const currentValue = currentPrice * holding.quantity;
+						holdingsMap.set(tokenId, {
+							...holding,
+							currentPrice: currentPrice,
+							currentValue: currentValue,
+							profitLoss: currentValue - holding.investedAmount,
+							profitLossPercentage:
+								holding.investedAmount > 0
+									? ((currentValue - holding.investedAmount) / holding.investedAmount) * 100
+									: 0,
+						});
+					}
+				});
+
+				setGlobalHoldings(Array.from(holdingsMap.values()));
+			} catch (error) {
+				console.error("Error loading global holdings:", error);
+				setGlobalHoldings([]);
+			} finally {
+				setLoadingGlobal(false);
+			}
+		};
+
+		loadGlobalHoldings();
+	}, [isGlobalView, portfolios, portfoliosLoading, loadingGlobal]);
+
+	// Determine which holdings to display
+	const displayHoldings = React.useMemo(() => {
+		return isGlobalView ? globalHoldings : holdings;
+	}, [isGlobalView, globalHoldings, holdings]);
+
+	// Calculate portfolio statistics
+	const portfolioStats = React.useMemo(() => {
+		const holdingsToUse = displayHoldings;
+
+		if (!holdingsToUse || holdingsToUse.length === 0) {
+			return {
+				capitalInvesti: 0,
+				valeurActuelle: 0,
+				pnlAbsolu: 0,
+				pnlRelatif: 0,
+			};
+		}
+
+		const capitalInvesti = holdingsToUse.reduce((sum, h) => sum + (h.investedAmount || 0), 0);
+		const valeurActuelle = holdingsToUse.reduce((sum, h) => {
+			const currentValue = h.currentValue || (h.currentPrice || h.averagePrice) * h.quantity;
+			return sum + currentValue;
+		}, 0);
+		const pnlAbsolu = valeurActuelle - capitalInvesti;
+		const pnlRelatif = capitalInvesti > 0 ? (pnlAbsolu / capitalInvesti) * 100 : 0;
+
+		return {
+			capitalInvesti,
+			valeurActuelle,
+			pnlAbsolu,
+			pnlRelatif,
+		};
+	}, [displayHoldings]);
+
+	// Generate evolution data (simulated - replace with real historical data)
+	const evolutionData = React.useMemo<EvolutionDataPoint[]>(() => {
+		if (!displayHoldings || displayHoldings.length === 0) return [];
+
+		const now = new Date();
+		const data: EvolutionDataPoint[] = [];
+		const days = 30;
+
+		const currentInvested = portfolioStats.capitalInvesti;
+		const currentValue = portfolioStats.valeurActuelle;
+
+		for (let i = days; i >= 0; i--) {
+			const date = new Date(now);
+			date.setDate(date.getDate() - i);
+
+			const progress = i / days;
+			const simulatedInvested = currentInvested * (0.7 + 0.3 * progress);
+			const simulatedValue = simulatedInvested * (1 + (portfolioStats.pnlRelatif / 100) * progress);
+
+			data.push({
+				date: date.toISOString(),
+				valeurBrute: simulatedValue,
+				valeurNette: simulatedValue - simulatedInvested,
+				investi: simulatedInvested,
+			});
+		}
+
+		return data;
+	}, [displayHoldings, portfolioStats]);
+
+	// Get top 3 holdings for token cards
+	const topHoldings = React.useMemo(() => {
+		return [...displayHoldings]
+			.sort((a, b) => {
+				const valueA = a.currentValue || (a.currentPrice || a.averagePrice) * a.quantity;
+				const valueB = b.currentValue || (b.currentPrice || b.averagePrice) * b.quantity;
+				return valueB - valueA;
+			})
+			.slice(0, 3);
+	}, [displayHoldings]);
+
+	// Generate chart data for token cards (simulated)
+	const generateChartData = React.useCallback(() => {
+		return Array.from({ length: 30 }, () => Math.floor(Math.random() * 100) + 50);
+	}, []);
+
+	if (portfoliosLoading || loadingGlobal) {
+		return (
+			<Box
+				sx={{
+					alignItems: "center",
+					display: "flex",
+					flexDirection: "column",
+					justifyContent: "center",
+					minHeight: "400px",
+				}}
+			>
+				<CircularProgress />
+				<Typography color="text.secondary" sx={{ mt: 2 }} variant="body2">
+					Loading portfolio data...
+				</Typography>
+			</Box>
+		);
+	}
+
+	if (!isGlobalView && !currentPortfolio) {
+		return (
+			<Box
+				sx={{
+					maxWidth: "var(--Content-maxWidth)",
+					m: "var(--Content-margin)",
+					p: "var(--Content-padding)",
+					width: "var(--Content-width)",
+				}}
+			>
+				<Stack spacing={4}>
+					<Box sx={{ py: 8, textAlign: "center" }}>
+						<Typography color="text.secondary" variant="body1" sx={{ mb: 2 }}>
+							No portfolio selected. Please create a portfolio or select one.
+						</Typography>
+						<Button variant="contained">Manage Portfolios</Button>
+					</Box>
+				</Stack>
+			</Box>
+		);
+	}
+
+	if (displayHoldings.length === 0) {
+		return (
+			<Box
+				sx={{
+					maxWidth: "var(--Content-maxWidth)",
+					m: "var(--Content-margin)",
+					p: "var(--Content-padding)",
+					width: "var(--Content-width)",
+				}}
+			>
+				<Stack spacing={4}>
+					<Box sx={{ py: 8, textAlign: "center" }}>
+						<Typography color="text.secondary" variant="body1" sx={{ mb: 2 }}>
+							{isGlobalView
+								? "No investments found in your portfolios. Add transactions to get started."
+								: "This portfolio contains no tokens. Add transactions to get started."}
+						</Typography>
+						<Button startIcon={<PlusIcon />} variant="contained">
+							Add Transaction
+						</Button>
+					</Box>
+				</Stack>
+			</Box>
+		);
+	}
+
 	return (
 		<Box
 			sx={{
@@ -37,252 +278,84 @@ export default function Page(): React.JSX.Element {
 			}}
 		>
 			<Stack spacing={4}>
+				{/* Header */}
 				<Stack direction={{ xs: "column", sm: "row" }} spacing={3} sx={{ alignItems: "flex-start" }}>
 					<Box sx={{ flex: "1 1 auto" }}>
-						<Typography variant="h4">Overview</Typography>
+						<Typography variant="h4">Dashboard</Typography>
 					</Box>
-					<div>
+					<Stack direction="row" spacing={2} sx={{ alignItems: "center" }}>
+						{portfolios.length > 0 && (
+							<FormControl size="small" sx={{ minWidth: 200 }}>
+								<Select
+									value={isGlobalView ? "global" : currentPortfolio?.id || ""}
+									onChange={(e) => {
+										if (e.target.value === "global") {
+											setIsGlobalView(true);
+										} else {
+											setIsGlobalView(false);
+											selectPortfolio(e.target.value);
+										}
+									}}
+								>
+									<MenuItem value="global">🌐 Global (All Portfolios)</MenuItem>
+									{portfolios.map((portfolio) => (
+										<MenuItem key={portfolio.id} value={portfolio.id}>
+											{portfolio.name}
+											{portfolio.isDefault && " (default)"}
+										</MenuItem>
+									))}
+								</Select>
+							</FormControl>
+						)}
 						<Button startIcon={<PlusIcon />} variant="contained">
-							Dashboard
+							Add Transaction
 						</Button>
-					</div>
+					</Stack>
 				</Stack>
+
+				{/* Portfolio Summary */}
+				<PortfolioSummary
+					capitalInvesti={portfolioStats.capitalInvesti}
+					valeurActuelle={portfolioStats.valeurActuelle}
+					pnlAbsolu={portfolioStats.pnlAbsolu}
+					pnlRelatif={portfolioStats.pnlRelatif}
+				/>
+
+				{/* Top Token Cards */}
+				{topHoldings.length > 0 && (
+					<Box
+						sx={{
+							display: "grid",
+							gap: 3,
+							gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr", lg: "repeat(3, 1fr)" },
+						}}
+					>
+						{topHoldings.map((holding) => (
+							<TokenCard key={holding.id} holding={holding} data={generateChartData()} />
+						))}
+					</Box>
+				)}
+
+				{/* Main Content Grid */}
 				<Grid container spacing={4}>
+					{/* Portfolio Evolution Chart */}
 					<Grid
 						size={{
-							md: 4,
+							lg: 8,
 							xs: 12,
 						}}
 					>
-						<Summary amount={31} diff={15} icon={ListChecksIcon} title="Tickets" trend="up" />
+						<PortfolioEvolutionChart data={evolutionData} />
 					</Grid>
+
+					{/* Holdings Table */}
 					<Grid
 						size={{
-							md: 4,
+							lg: 4,
 							xs: 12,
 						}}
 					>
-						<Summary amount={240} diff={5} icon={UsersIcon} title="Sign ups" trend="down" />
-					</Grid>
-					<Grid
-						size={{
-							md: 4,
-							xs: 12,
-						}}
-					>
-						<Summary amount={21} diff={12} icon={WarningIcon} title="Open issues" trend="up" />
-					</Grid>
-					<Grid
-						size={{
-							md: 8,
-							xs: 12,
-						}}
-					>
-						<AppUsage
-							data={[
-								{ name: "Jan", v1: 36, v2: 19 },
-								{ name: "Feb", v1: 45, v2: 23 },
-								{ name: "Mar", v1: 26, v2: 12 },
-								{ name: "Apr", v1: 39, v2: 20 },
-								{ name: "May", v1: 26, v2: 12 },
-								{ name: "Jun", v1: 42, v2: 31 },
-								{ name: "Jul", v1: 38, v2: 19 },
-								{ name: "Aug", v1: 39, v2: 20 },
-								{ name: "Sep", v1: 37, v2: 18 },
-								{ name: "Oct", v1: 41, v2: 22 },
-								{ name: "Nov", v1: 45, v2: 24 },
-								{ name: "Dec", v1: 23, v2: 17 },
-							]}
-						/>
-					</Grid>
-					<Grid
-						size={{
-							md: 4,
-							xs: 12,
-						}}
-					>
-						<Subscriptions
-							subscriptions={[
-								{
-									id: "supabase",
-									title: "Supabase",
-									icon: "/assets/company-avatar-5.png",
-									costs: "$599",
-									billingCycle: "year",
-									status: "paid",
-								},
-								{
-									id: "vercel",
-									title: "Vercel",
-									icon: "/assets/company-avatar-4.png",
-									costs: "$20",
-									billingCycle: "month",
-									status: "expiring",
-								},
-								{
-									id: "auth0",
-									title: "Auth0",
-									icon: "/assets/company-avatar-3.png",
-									costs: "$20-80",
-									billingCycle: "month",
-									status: "canceled",
-								},
-								{
-									id: "google_cloud",
-									title: "Google Cloud",
-									icon: "/assets/company-avatar-2.png",
-									costs: "$100-200",
-									billingCycle: "month",
-									status: "paid",
-								},
-								{
-									id: "stripe",
-									title: "Stripe",
-									icon: "/assets/company-avatar-1.png",
-									costs: "$70",
-									billingCycle: "month",
-									status: "paid",
-								},
-							]}
-						/>
-					</Grid>
-					<Grid
-						size={{
-							md: 4,
-							xs: 12,
-						}}
-					>
-						<AppChat
-							messages={[
-								{
-									id: "MSG-001",
-									content: "Hello, we spoke earlier on the phone",
-									author: { name: "Alcides Antonio", avatar: "/assets/avatar-10.png", status: "online" },
-									createdAt: dayjs().subtract(2, "minute").toDate(),
-								},
-								{
-									id: "MSG-002",
-									content: "Is the job still available?",
-									author: { name: "Marcus Finn", avatar: "/assets/avatar-9.png", status: "offline" },
-									createdAt: dayjs().subtract(56, "minute").toDate(),
-								},
-								{
-									id: "MSG-003",
-									content: "What is a screening task? I'd like to",
-									author: { name: "Carson Darrin", avatar: "/assets/avatar-3.png", status: "online" },
-									createdAt: dayjs().subtract(3, "hour").subtract(23, "minute").toDate(),
-								},
-								{
-									id: "MSG-004",
-									content: "Still waiting for feedback",
-									author: { name: "Fran Perez", avatar: "/assets/avatar-5.png", status: "online" },
-									createdAt: dayjs().subtract(8, "hour").subtract(6, "minute").toDate(),
-								},
-								{
-									id: "MSG-005",
-									content: "Need more information about campaigns",
-									author: { name: "Jie Yan", avatar: "/assets/avatar-8.png", status: "offline" },
-									createdAt: dayjs().subtract(10, "hour").subtract(18, "minute").toDate(),
-								},
-							]}
-						/>
-					</Grid>
-					<Grid
-						size={{
-							md: 4,
-							xs: 12,
-						}}
-					>
-						<Events
-							events={[
-								{
-									id: "EV-004",
-									title: "Meeting with partners",
-									description: "17:00 to 18:00",
-									createdAt: dayjs().add(1, "day").toDate(),
-								},
-								{
-									id: "EV-003",
-									title: "Interview with Jonas",
-									description: "15:30 to 16:45",
-									createdAt: dayjs().add(4, "day").toDate(),
-								},
-								{
-									id: "EV-002",
-									title: "Doctor's appointment",
-									description: "12:30 to 15:30",
-									createdAt: dayjs().add(4, "day").toDate(),
-								},
-								{
-									id: "EV-001",
-									title: "Weekly meeting",
-									description: "09:00 to 09:30",
-									createdAt: dayjs().add(7, "day").toDate(),
-								},
-							]}
-						/>
-					</Grid>
-					<Grid
-						size={{
-							md: 4,
-							xs: 12,
-						}}
-					>
-						<AppLimits usage={80} />
-					</Grid>
-					<Grid
-						size={{
-							md: 4,
-							xs: 12,
-						}}
-					>
-						<HelperWidget
-							action={
-								<Button color="secondary" endIcon={<ArrowRightIcon />} size="small">
-									Search jobs
-								</Button>
-							}
-							description="Search for jobs that match your skills and apply to them directly."
-							icon={BriefcaseIcon}
-							label="Jobs"
-							title="Find your dream job"
-						/>
-					</Grid>
-					<Grid
-						size={{
-							md: 4,
-							xs: 12,
-						}}
-					>
-						<HelperWidget
-							action={
-								<Button color="secondary" endIcon={<ArrowRightIcon />} size="small">
-									Help center
-								</Button>
-							}
-							description="Find answers to your questions and get in touch with our team."
-							icon={InfoIcon}
-							label="Help center"
-							title="Need help figuring things out?"
-						/>
-					</Grid>
-					<Grid
-						size={{
-							md: 4,
-							xs: 12,
-						}}
-					>
-						<HelperWidget
-							action={
-								<Button color="secondary" endIcon={<ArrowRightIcon />} size="small">
-									Documentation
-								</Button>
-							}
-							description="Learn how to get started with our product and make the most of it."
-							icon={FileCodeIcon}
-							label="Documentation"
-							title="Explore documentation"
-						/>
+						<HoldingsTable holdings={displayHoldings} onTokenClick={setSelectedToken} />
 					</Grid>
 				</Grid>
 			</Stack>
