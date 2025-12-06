@@ -45,6 +45,7 @@ import { strategiesApi } from "@/lib/strategies-api";
 import * as portfoliosApi from "@/lib/portfolios-api";
 import { formatCurrency, formatPercentage } from "@/lib/format";
 import type { CreateStrategyDto, TargetType } from "@/types/strategies";
+import { StrategyStatus } from "@/types/strategies";
 import { TokenSearch } from "@/components/transactions/token-search";
 import type { TokenSearchResult } from "@/types/transactions";
 import type { Portfolio, Holding } from "@/types/portfolio";
@@ -347,6 +348,7 @@ export function CreateStrategyModal({ onClose, onSuccess, open }: CreateStrategy
 					notes: "",
 				})),
 				notes: "",
+				status: StrategyStatus.PAUSED, // Create strategy as paused (desactive) by default
 			};
 
 			await strategiesApi.createStrategy(strategyData);

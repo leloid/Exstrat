@@ -7,7 +7,7 @@ import Card from "@mui/material/Card";
 import CardContent from "@mui/material/CardContent";
 import Chip from "@mui/material/Chip";
 import CircularProgress from "@mui/material/CircularProgress";
-import Grid from "@mui/material/Grid";
+import Divider from "@mui/material/Divider";
 import IconButton from "@mui/material/IconButton";
 import InputAdornment from "@mui/material/InputAdornment";
 import OutlinedInput from "@mui/material/OutlinedInput";
@@ -20,12 +20,19 @@ import { PencilIcon } from "@phosphor-icons/react/dist/ssr/Pencil";
 import { TrashIcon } from "@phosphor-icons/react/dist/ssr/Trash";
 import { XIcon } from "@phosphor-icons/react/dist/ssr/X";
 
-
 import { strategiesApi } from "@/lib/strategies-api";
 import { formatCurrency, formatPercentage } from "@/lib/format";
 import type { StrategyResponse, StrategyStatus } from "@/types/strategies";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import { CreateStrategyModal } from "./create-strategy-modal";
+import { DataTable } from "@/components/core/data-table";
+import type { ColumnDef } from "@/components/core/data-table";
+import Table from "@mui/material/Table";
+import TableBody from "@mui/material/TableBody";
+import TableCell from "@mui/material/TableCell";
+import TableHead from "@mui/material/TableHead";
+import TableRow from "@mui/material/TableRow";
+import Tooltip from "@mui/material/Tooltip";
 
 export default function Page(): React.JSX.Element {
 	return (
@@ -186,21 +193,18 @@ function StrategiesPageContent(): React.JSX.Element {
 							/>
 							<Stack direction="row" spacing={1}>
 								<Chip
-									clickable
 									color={statusFilter === "all" ? "primary" : "default"}
 									label={`All (${statusCounts.all})`}
 									onClick={() => setStatusFilter("all")}
 									variant={statusFilter === "all" ? "filled" : "outlined"}
 								/>
 								<Chip
-									clickable
 									color={statusFilter === "active" ? "primary" : "default"}
 									label={`Active (${statusCounts.active})`}
 									onClick={() => setStatusFilter("active")}
 									variant={statusFilter === "active" ? "filled" : "outlined"}
 								/>
 								<Chip
-									clickable
 									color={statusFilter === "paused" ? "primary" : "default"}
 									label={`Desactive (${statusCounts.desactive})`}
 									onClick={() => setStatusFilter("paused")}
@@ -211,7 +215,7 @@ function StrategiesPageContent(): React.JSX.Element {
 					</CardContent>
 				</Card>
 
-				{/* Strategies Grid */}
+				{/* Strategies Table */}
 				{filteredStrategies.length === 0 ? (
 					<Card>
 						<CardContent sx={{ py: 8, textAlign: "center" }}>
@@ -248,17 +252,16 @@ function StrategiesPageContent(): React.JSX.Element {
 						</CardContent>
 					</Card>
 				) : (
-					<Grid container spacing={3}>
-						{filteredStrategies.map((strategy) => (
-							<Grid key={strategy.id} size={{ xs: 12, sm: 6, md: 4 }}>
-								<StrategyCard
-									strategy={strategy}
-									onDelete={handleDeleteStrategy}
-									onEdit={handleEditStrategy}
-								/>
-							</Grid>
-						))}
-					</Grid>
+					<Card>
+						<Divider />
+						<Box sx={{ overflowX: "auto" }}>
+							<StrategiesTable
+								onDelete={handleDeleteStrategy}
+								onEdit={handleEditStrategy}
+								rows={filteredStrategies}
+							/>
+						</Box>
+					</Card>
 				)}
 			</Stack>
 
@@ -268,107 +271,273 @@ function StrategiesPageContent(): React.JSX.Element {
 	);
 }
 
-interface StrategyCardProps {
-	strategy: StrategyResponse;
-	onEdit?: (strategy: StrategyResponse) => void;
-	onDelete?: (strategyId: string) => void;
+interface StrategiesTableProps {
+	rows: StrategyResponse[];
+	onEdit: (strategy: StrategyResponse) => void;
+	onDelete: (strategyId: string) => void;
 }
 
-function StrategyCard({ strategy, onEdit, onDelete }: StrategyCardProps): React.JSX.Element {
-	const getStatusColor = (status: StrategyStatus): "success" | "warning" | "default" => {
-		switch (status) {
-			case "active":
-				return "success";
-			case "paused":
-				return "warning";
-			case "completed":
-				return "default";
-			default:
-				return "default";
-		}
-	};
-
-	const getStatusLabel = (status: StrategyStatus): string => {
-		switch (status) {
-			case "active":
-				return "Active";
-			case "paused":
-				return "Paused";
-			case "completed":
-				return "Completed";
-			default:
-				return status;
-		}
-	};
-
-	const totalSteps = strategy.steps?.length || 0;
-	const completedSteps = strategy.steps?.filter((step) => step.state === "done").length || 0;
-	const totalSellPercentage = strategy.steps?.reduce((sum, step) => sum + step.sellPercentage, 0) || 0;
-
+function StrategiesTable({ rows, onEdit, onDelete }: StrategiesTableProps): React.JSX.Element {
 	return (
-		<Card
-			sx={{
-				display: "flex",
-				flexDirection: "column",
-				height: "100%",
-				transition: "box-shadow 200ms cubic-bezier(0.4, 0, 0.2, 1) 0ms",
-				"&:hover": { boxShadow: "var(--mui-shadows-16)" },
-			}}
-		>
-			<CardContent sx={{ display: "flex", flex: "1 1 auto", flexDirection: "column", p: 3 }}>
-				<Stack spacing={2} sx={{ flex: "1 1 auto" }}>
-					{/* Header */}
-					<Stack direction="row" spacing={2} sx={{ alignItems: "flex-start", justifyContent: "space-between" }}>
-						<Stack spacing={0.5} sx={{ flex: "1 1 auto" }}>
-							<Typography variant="h6">{strategy.name}</Typography>
-							<Typography color="text.secondary" variant="body2">
-								{strategy.symbol} - {strategy.tokenName}
-							</Typography>
-						</Stack>
-						<Chip color={getStatusColor(strategy.status)} label={getStatusLabel(strategy.status)} size="small" />
-					</Stack>
+		<Table>
+			<TableHead>
+				{/* Group Headers */}
+				<TableRow>
+					<TableCell rowSpan={2} sx={{ width: "200px", minWidth: "180px" }}>
+						Strategy
+					</TableCell>
+					<TableCell colSpan={2} sx={{ textAlign: "center", borderBottom: "1px solid var(--mui-palette-divider)" }}>
+						<Typography variant="overline" sx={{ fontWeight: 600, letterSpacing: "0.1em", fontSize: "0.7rem" }}>
+							INVESTED
+						</Typography>
+					</TableCell>
+					<TableCell colSpan={2} sx={{ textAlign: "center", borderBottom: "1px solid var(--mui-palette-divider)" }}>
+						<Typography variant="overline" sx={{ fontWeight: 600, letterSpacing: "0.1em", fontSize: "0.7rem" }}>
+							PROFIT
+						</Typography>
+					</TableCell>
+					<TableCell rowSpan={2} sx={{ width: "80px", minWidth: "70px" }}>
+						Targets
+					</TableCell>
+					<TableCell rowSpan={2} sx={{ width: "100px", minWidth: "90px" }}>
+						Total Sell %
+					</TableCell>
+					<TableCell rowSpan={2} sx={{ width: "100px", minWidth: "90px" }} />
+				</TableRow>
+				{/* Column Headers */}
+				<TableRow>
+					<TableCell sx={{ width: "120px", minWidth: "110px", fontSize: "0.875rem" }}>Total Invested</TableCell>
+					<TableCell sx={{ width: "130px", minWidth: "120px", fontSize: "0.875rem" }}>QTY</TableCell>
+					<TableCell sx={{ width: "120px", minWidth: "110px", fontSize: "0.875rem" }}>Profit(USD)</TableCell>
+					<TableCell sx={{ width: "120px", minWidth: "110px", fontSize: "0.875rem" }}>Profit(%)</TableCell>
+				</TableRow>
+			</TableHead>
+			<TableBody>
+				{rows.map((row) => {
+					const totalInvested = row.baseQuantity * row.referencePrice;
+					const numberOfTargets = row.steps?.length || 0;
+					const totalSellPercentage = row.steps?.reduce((sum, step) => sum + step.sellPercentage, 0) || 0;
+					// Calculate profit (simplified - would need current price for real calculation)
+					// For now, using reference price as placeholder
+					const currentPrice = row.referencePrice; // TODO: Get actual current price from API
+					const currentValue = row.baseQuantity * currentPrice;
+					const profitUSD = currentValue - totalInvested;
+					const profitPercentage = totalInvested > 0 ? (profitUSD / totalInvested) * 100 : 0;
 
-					{/* Stats */}
-					<Stack spacing={1}>
-						<Stack direction="row" spacing={2} sx={{ justifyContent: "space-between" }}>
-							<Typography color="text.secondary" variant="body2">
-								Base Quantity
-							</Typography>
-							<Typography variant="body2">{strategy.baseQuantity}</Typography>
-						</Stack>
-						<Stack direction="row" spacing={2} sx={{ justifyContent: "space-between" }}>
-							<Typography color="text.secondary" variant="body2">
-								Reference Price
-							</Typography>
-							<Typography variant="body2">{formatCurrency(strategy.referencePrice, "$", 2)}</Typography>
-						</Stack>
-						<Stack direction="row" spacing={2} sx={{ justifyContent: "space-between" }}>
-							<Typography color="text.secondary" variant="body2">
-								Steps
-							</Typography>
-							<Typography variant="body2">
-								{completedSteps}/{totalSteps} completed
-							</Typography>
-						</Stack>
-						<Stack direction="row" spacing={2} sx={{ justifyContent: "space-between" }}>
-							<Typography color="text.secondary" variant="body2">
-								Total Sell %
-							</Typography>
-							<Typography variant="body2">{formatPercentage(totalSellPercentage)}</Typography>
-						</Stack>
-					</Stack>
-				</Stack>
+					// Calculate additional info for tooltip
+					const numberOfEntries = 1; // Could be calculated from transactions
+					const tokensHeld = row.baseQuantity;
+					const averagePrice = row.referencePrice;
+					const currentPNL = profitUSD;
+					const currentPNLPercentage = profitPercentage;
+					const totalCashedIn = 0; // Would need to calculate from completed steps
+					const netResult = currentPNL;
+					const remainingTokens = tokensHeld; // Would need to calculate from remaining quantity
 
-				{/* Actions */}
-				<Stack direction="row" spacing={1} sx={{ justifyContent: "flex-end", mt: 2, pt: 2, borderTop: "1px solid var(--mui-palette-divider)" }}>
-					<IconButton onClick={() => onEdit?.(strategy)} size="small">
-						<PencilIcon fontSize="var(--icon-fontSize-sm)" />
-					</IconButton>
-					<IconButton color="error" onClick={() => onDelete?.(strategy.id)} size="small">
-						<TrashIcon fontSize="var(--icon-fontSize-sm)" />
-					</IconButton>
-				</Stack>
-			</CardContent>
-		</Card>
+					const tooltipContent = (
+						<Box sx={{ p: 1.5, maxWidth: "300px" }}>
+							<Stack spacing={1.5}>
+								<Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 0.5 }}>
+									Strategy Details
+								</Typography>
+								<Divider />
+								<Stack spacing={1}>
+									<Stack direction="row" spacing={2} sx={{ justifyContent: "space-between" }}>
+										<Typography color="text.secondary" variant="body2">
+											Number of entries:
+										</Typography>
+										<Typography variant="body2">{numberOfEntries}</Typography>
+									</Stack>
+									<Stack direction="row" spacing={2} sx={{ justifyContent: "space-between" }}>
+										<Typography color="text.secondary" variant="body2">
+											Total invested:
+										</Typography>
+										<Typography variant="body2" sx={{ color: "success.main" }}>
+											{formatCurrency(totalInvested, "$", 2)}
+										</Typography>
+									</Stack>
+									<Stack direction="row" spacing={2} sx={{ justifyContent: "space-between" }}>
+										<Typography color="text.secondary" variant="body2">
+											Tokens held:
+										</Typography>
+										<Typography variant="body2" sx={{ color: "warning.main" }}>
+											{tokensHeld.toLocaleString(undefined, { maximumFractionDigits: 8 })}
+										</Typography>
+									</Stack>
+									<Stack direction="row" spacing={2} sx={{ justifyContent: "space-between" }}>
+										<Typography color="text.secondary" variant="body2">
+											Average purchase price:
+										</Typography>
+										<Typography variant="body2" sx={{ color: "primary.main" }}>
+											{formatCurrency(averagePrice, "$", 2)}
+										</Typography>
+									</Stack>
+									<Divider />
+									<Stack direction="row" spacing={2} sx={{ justifyContent: "space-between" }}>
+										<Typography color="text.secondary" variant="body2">
+											Current PNL:
+										</Typography>
+										<Typography
+											variant="body2"
+											sx={{ color: currentPNL >= 0 ? "success.main" : "error.main" }}
+										>
+											{formatCurrency(currentPNL, "$", 2)}
+										</Typography>
+									</Stack>
+									<Stack direction="row" spacing={2} sx={{ justifyContent: "space-between" }}>
+										<Typography color="text.secondary" variant="body2">
+											PNL %:
+										</Typography>
+										<Typography
+											variant="body2"
+											sx={{ color: currentPNLPercentage >= 0 ? "success.main" : "error.main" }}
+										>
+											{formatPercentage(currentPNLPercentage)}
+										</Typography>
+									</Stack>
+									<Divider />
+									<Typography variant="subtitle2" sx={{ fontWeight: 600, mt: 0.5 }}>
+										Summary
+									</Typography>
+									<Stack direction="row" spacing={2} sx={{ justifyContent: "space-between" }}>
+										<Typography color="text.secondary" variant="body2">
+											Invested:
+										</Typography>
+										<Typography variant="body2" sx={{ color: "success.main" }}>
+											{formatCurrency(totalInvested, "$", 2)}
+										</Typography>
+									</Stack>
+									<Stack direction="row" spacing={2} sx={{ justifyContent: "space-between" }}>
+										<Typography color="text.secondary" variant="body2">
+											Total cashed in:
+										</Typography>
+										<Typography variant="body2" sx={{ color: "success.main" }}>
+											{formatCurrency(totalCashedIn, "$", 2)}
+										</Typography>
+									</Stack>
+									<Stack direction="row" spacing={2} sx={{ justifyContent: "space-between" }}>
+										<Typography color="text.secondary" variant="body2">
+											Net result:
+										</Typography>
+										<Typography variant="body2" sx={{ color: netResult >= 0 ? "success.main" : "error.main" }}>
+											{formatCurrency(netResult, "$", 2)}
+										</Typography>
+									</Stack>
+									<Stack direction="row" spacing={2} sx={{ justifyContent: "space-between" }}>
+										<Typography color="text.secondary" variant="body2">
+											Remaining tokens:
+										</Typography>
+										<Typography variant="body2" sx={{ color: "warning.main" }}>
+											{remainingTokens.toLocaleString(undefined, { maximumFractionDigits: 8 })}
+										</Typography>
+									</Stack>
+								</Stack>
+							</Stack>
+						</Box>
+					);
+
+					return (
+						<Tooltip
+							key={row.id}
+							arrow
+							componentsProps={{
+								tooltip: {
+									sx: {
+										bgcolor: "var(--mui-palette-background-paper)",
+										border: "1px solid var(--mui-palette-divider)",
+										boxShadow: "var(--mui-shadows-16)",
+										maxWidth: "none",
+									},
+								},
+							}}
+							placement="right"
+							title={tooltipContent}
+						>
+							<TableRow hover>
+								<TableCell>
+									<Stack spacing={0.25}>
+										<Typography variant="subtitle2" sx={{ fontSize: "0.875rem", lineHeight: 1.3 }}>
+											{row.name}
+										</Typography>
+										<Typography color="text.secondary" variant="body2" sx={{ fontSize: "0.75rem", lineHeight: 1.2 }}>
+											{row.symbol} - {row.tokenName}
+										</Typography>
+									</Stack>
+								</TableCell>
+							<TableCell>
+								<Typography variant="body2" sx={{ fontSize: "0.875rem", whiteSpace: "nowrap" }}>
+									{formatCurrency(totalInvested, "$", 2)}
+								</Typography>
+							</TableCell>
+							<TableCell>
+								<Typography variant="body2" sx={{ fontSize: "0.875rem", whiteSpace: "nowrap" }}>
+									{row.baseQuantity.toLocaleString(undefined, { maximumFractionDigits: 6 })} {row.symbol}
+								</Typography>
+							</TableCell>
+							<TableCell>
+								<Typography
+									variant="body2"
+									sx={{
+										color: profitUSD >= 0 ? "success.main" : "error.main",
+										fontSize: "0.875rem",
+										whiteSpace: "nowrap",
+									}}
+								>
+									{formatCurrency(profitUSD, "$", 2)}
+								</Typography>
+							</TableCell>
+							<TableCell>
+								<Typography
+									variant="body2"
+									sx={{
+										color: profitPercentage >= 0 ? "success.main" : "error.main",
+										fontSize: "0.875rem",
+										whiteSpace: "nowrap",
+									}}
+								>
+									{formatPercentage(profitPercentage)}
+								</Typography>
+							</TableCell>
+							<TableCell>
+								<Typography variant="body2" sx={{ fontSize: "0.875rem" }}>
+									{numberOfTargets}
+								</Typography>
+							</TableCell>
+							<TableCell>
+								<Typography variant="body2" sx={{ fontSize: "0.875rem", whiteSpace: "nowrap" }}>
+									{formatPercentage(totalSellPercentage)}
+								</Typography>
+							</TableCell>
+							<TableCell align="right">
+								<Box sx={{ display: "flex", justifyContent: "flex-end", gap: 0.5 }}>
+									<IconButton
+										onClick={(e) => {
+											e.stopPropagation();
+											onEdit(row);
+										}}
+										size="small"
+										sx={{ padding: "4px" }}
+									>
+										<PencilIcon fontSize="var(--icon-fontSize-sm)" />
+									</IconButton>
+									<IconButton
+										color="error"
+										onClick={(e) => {
+											e.stopPropagation();
+											onDelete(row.id);
+										}}
+										size="small"
+										sx={{ padding: "4px" }}
+									>
+										<TrashIcon fontSize="var(--icon-fontSize-sm)" />
+									</IconButton>
+								</Box>
+							</TableCell>
+							</TableRow>
+						</Tooltip>
+					);
+				})}
+			</TableBody>
+		</Table>
 	);
 }

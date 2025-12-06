@@ -68,7 +68,7 @@ export class StrategiesService {
         asset: createStrategyDto.symbol,
         baseQty: new Decimal(createStrategyDto.baseQuantity),
         refPrice: new Decimal(createStrategyDto.referencePrice),
-        status: StrategyStatus.ACTIVE,
+        status: createStrategyDto.status || StrategyStatus.PAUSED, // Default to PAUSED if not provided
         steps: {
           create: createStrategyDto.steps.map(step => {
             let targetPrice: Decimal;

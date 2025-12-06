@@ -46,6 +46,7 @@ export interface CreateStrategyDto {
 	referencePrice: number;
 	steps: CreateStrategyStepDto[];
 	notes?: string;
+	status?: StrategyStatus;
 }
 
 export interface UpdateStrategyDto {

@@ -129,6 +129,15 @@ export class CreateStrategyDto {
   @IsOptional()
   @IsString()
   notes?: string;
+
+  @ApiPropertyOptional({ 
+    description: 'Statut de la stratégie (par défaut: paused)',
+    example: 'paused',
+    enum: StrategyStatus
+  })
+  @IsOptional()
+  @IsEnum(StrategyStatus)
+  status?: StrategyStatus;
 }
 
 export class UpdateStrategyDto {
