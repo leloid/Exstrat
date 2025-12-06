@@ -7,11 +7,18 @@ import Card from "@mui/material/Card";
 import CardContent from "@mui/material/CardContent";
 import Chip from "@mui/material/Chip";
 import CircularProgress from "@mui/material/CircularProgress";
+import Avatar from "@mui/material/Avatar";
 import Dialog from "@mui/material/Dialog";
 import DialogActions from "@mui/material/DialogActions";
 import DialogContent from "@mui/material/DialogContent";
 import DialogTitle from "@mui/material/DialogTitle";
+import Paper from "@mui/material/Paper";
 import Divider from "@mui/material/Divider";
+import List from "@mui/material/List";
+import ListItem from "@mui/material/ListItem";
+import ListItemAvatar from "@mui/material/ListItemAvatar";
+import ListItemText from "@mui/material/ListItemText";
+import CardHeader from "@mui/material/CardHeader";
 import FormControl from "@mui/material/FormControl";
 import FormControlLabel from "@mui/material/FormControlLabel";
 import FormLabel from "@mui/material/FormLabel";
@@ -40,6 +47,7 @@ import { TrashIcon } from "@phosphor-icons/react/dist/ssr/Trash";
 import { TrendDownIcon } from "@phosphor-icons/react/dist/ssr/TrendDown";
 import { TrendUpIcon } from "@phosphor-icons/react/dist/ssr/TrendUp";
 import { WalletIcon } from "@phosphor-icons/react/dist/ssr/Wallet";
+import { WarningIcon } from "@phosphor-icons/react/dist/ssr/Warning";
 import { XIcon } from "@phosphor-icons/react/dist/ssr/X";
 
 import { usePortfolio } from "@/contexts/PortfolioContext";
@@ -78,6 +86,12 @@ export default function Page(): React.JSX.Element {
 	const [loadingPortfolios, setLoadingPortfolios] = React.useState(false);
 	const [showPortfolioDialog, setShowPortfolioDialog] = React.useState(false);
 	const [editingPortfolioId, setEditingPortfolioId] = React.useState<string | null>(null);
+	const [showDeleteWalletModal, setShowDeleteWalletModal] = React.useState(false);
+	const [walletToDelete, setWalletToDelete] = React.useState<string | null>(null);
+	const [showDeleteTransactionModal, setShowDeleteTransactionModal] = React.useState(false);
+	const [transactionToDelete, setTransactionToDelete] = React.useState<string | null>(null);
+	const [showWalletDetailsModal, setShowWalletDetailsModal] = React.useState(false);
+	const [selectedWalletId, setSelectedWalletId] = React.useState<string | null>(null);
 	const [portfolioFormData, setPortfolioFormData] = React.useState<CreatePortfolioDto>({
 		name: "",
 		description: "",
@@ -402,13 +416,19 @@ export default function Page(): React.JSX.Element {
 	};
 
 	const handleDeletePortfolio = async (portfolioId: string) => {
-		if (window.confirm("Are you sure you want to delete this wallet?")) {
-			try {
-				await deletePortfolio(portfolioId);
-				await refreshPortfolios();
-			} catch (error) {
-				console.error("Error deleting portfolio:", error);
-			}
+		setWalletToDelete(portfolioId);
+		setShowDeleteWalletModal(true);
+	};
+
+	const confirmDeleteWallet = async () => {
+		if (!walletToDelete) return;
+		try {
+			await deletePortfolio(walletToDelete);
+			await refreshPortfolios();
+			setShowDeleteWalletModal(false);
+			setWalletToDelete(null);
+		} catch (error) {
+			console.error("Error deleting portfolio:", error);
 		}
 	};
 
@@ -421,6 +441,23 @@ export default function Page(): React.JSX.Element {
 		});
 		setShowPortfolioDialog(true);
 	};
+
+	const openWalletDetails = (portfolioId: string) => {
+		setSelectedWalletId(portfolioId);
+		setShowWalletDetailsModal(true);
+	};
+
+	// Get wallet transactions
+	const walletTransactions = React.useMemo(() => {
+		if (!selectedWalletId) return [];
+		return transactions.filter((transaction) => transaction.portfolioId === selectedWalletId);
+	}, [transactions, selectedWalletId]);
+
+	// Get selected wallet data
+	const selectedWalletData = React.useMemo(() => {
+		if (!selectedWalletId) return null;
+		return portfolioData[selectedWalletId] || null;
+	}, [portfolioData, selectedWalletId]);
 
 	// Calculate average price automatically
 	React.useEffect(() => {
@@ -557,15 +594,23 @@ export default function Page(): React.JSX.Element {
 	};
 
 	const handleDeleteTransaction = async (transactionId: string) => {
-		if (window.confirm("Are you sure you want to delete this transaction?")) {
-			try {
-				await transactionsApi.deleteTransaction(transactionId);
-				const response = await transactionsApi.getTransactions({ limit: 100 });
-				setTransactions(response.transactions);
-				await refreshPortfolios();
-			} catch (error) {
-				console.error("Error deleting transaction:", error);
-			}
+		setTransactionToDelete(transactionId);
+		setShowDeleteTransactionModal(true);
+	};
+
+	const confirmDeleteTransaction = async () => {
+		if (!transactionToDelete) return;
+		try {
+			await transactionsApi.deleteTransaction(transactionToDelete);
+			// Reload transactions
+			const response = await transactionsApi.getTransactions({ limit: 100 });
+			setTransactions(response.transactions);
+			// Reload portfolios
+			await refreshPortfolios();
+			setShowDeleteTransactionModal(false);
+			setTransactionToDelete(null);
+		} catch (error) {
+			console.error("Error deleting transaction:", error);
 		}
 	};
 
@@ -862,7 +907,12 @@ export default function Page(): React.JSX.Element {
 										if (!data) return null;
 
 										return (
-											<TableRow key={portfolio.id} hover>
+											<TableRow
+												key={portfolio.id}
+												hover
+												onClick={() => openWalletDetails(portfolio.id)}
+												sx={{ cursor: "pointer" }}
+											>
 												<TableCell>
 													<Stack direction="row" spacing={2} sx={{ alignItems: "center" }}>
 														<Box
@@ -924,12 +974,21 @@ export default function Page(): React.JSX.Element {
 												</TableCell>
 												<TableCell align="right">
 													<Stack direction="row" spacing={1} sx={{ justifyContent: "flex-end" }}>
-														<IconButton onClick={() => openEditPortfolio(data)} size="small">
+														<IconButton
+															onClick={(e) => {
+																e.stopPropagation();
+																openEditPortfolio(data);
+															}}
+															size="small"
+														>
 															<PencilIcon fontSize="var(--icon-fontSize-sm)" />
 														</IconButton>
 														<IconButton
 															color="error"
-															onClick={() => handleDeletePortfolio(portfolio.id)}
+															onClick={(e) => {
+																e.stopPropagation();
+																handleDeletePortfolio(portfolio.id);
+															}}
 															size="small"
 														>
 															<TrashIcon fontSize="var(--icon-fontSize-sm)" />
@@ -1418,6 +1477,250 @@ export default function Page(): React.JSX.Element {
 						{editingTransaction ? "Update" : "Create"}
 					</Button>
 				</DialogActions>
+			</Dialog>
+
+			{/* Delete Wallet Confirmation Modal */}
+			<Dialog
+				fullWidth
+				maxWidth="sm"
+				onClose={() => {
+					setShowDeleteWalletModal(false);
+					setWalletToDelete(null);
+				}}
+				open={showDeleteWalletModal}
+			>
+				<DialogContent>
+					<Paper sx={{ border: "1px solid var(--mui-palette-divider)", boxShadow: "var(--mui-shadows-16)", p: 0 }}>
+						<Stack direction="row" spacing={2} sx={{ display: "flex", p: 3 }}>
+							<Avatar sx={{ bgcolor: "var(--mui-palette-error-50)", color: "var(--mui-palette-error-main)" }}>
+								<WarningIcon fontSize="var(--icon-fontSize-lg)" />
+							</Avatar>
+							<Stack spacing={3} sx={{ flex: 1 }}>
+								<Stack spacing={1}>
+									<Typography variant="h5">Delete Wallet</Typography>
+									<Typography color="text.secondary" variant="body2">
+										Are you sure you want to delete this wallet? All transactions associated with this wallet will be
+										permanently removed. This action cannot be undone.
+									</Typography>
+								</Stack>
+								<Stack direction="row" spacing={2} sx={{ justifyContent: "flex-end" }}>
+									<Button
+										color="secondary"
+										onClick={() => {
+											setShowDeleteWalletModal(false);
+											setWalletToDelete(null);
+										}}
+									>
+										Cancel
+									</Button>
+									<Button color="error" onClick={confirmDeleteWallet} variant="contained">
+										Delete
+									</Button>
+								</Stack>
+							</Stack>
+						</Stack>
+					</Paper>
+				</DialogContent>
+			</Dialog>
+
+			{/* Delete Transaction Confirmation Modal */}
+			<Dialog
+				fullWidth
+				maxWidth="sm"
+				onClose={() => {
+					setShowDeleteTransactionModal(false);
+					setTransactionToDelete(null);
+				}}
+				open={showDeleteTransactionModal}
+			>
+				<DialogContent>
+					<Paper sx={{ border: "1px solid var(--mui-palette-divider)", boxShadow: "var(--mui-shadows-16)", p: 0 }}>
+						<Stack direction="row" spacing={2} sx={{ display: "flex", p: 3 }}>
+							<Avatar sx={{ bgcolor: "var(--mui-palette-error-50)", color: "var(--mui-palette-error-main)" }}>
+								<WarningIcon fontSize="var(--icon-fontSize-lg)" />
+							</Avatar>
+							<Stack spacing={3} sx={{ flex: 1 }}>
+								<Stack spacing={1}>
+									<Typography variant="h5">Delete Transaction</Typography>
+									<Typography color="text.secondary" variant="body2">
+										Are you sure you want to delete this transaction? This action cannot be undone and will affect your
+										portfolio calculations.
+									</Typography>
+								</Stack>
+								<Stack direction="row" spacing={2} sx={{ justifyContent: "flex-end" }}>
+									<Button
+										color="secondary"
+										onClick={() => {
+											setShowDeleteTransactionModal(false);
+											setTransactionToDelete(null);
+										}}
+									>
+										Cancel
+									</Button>
+									<Button color="error" onClick={confirmDeleteTransaction} variant="contained">
+										Delete
+									</Button>
+								</Stack>
+							</Stack>
+						</Stack>
+					</Paper>
+				</DialogContent>
+			</Dialog>
+
+			{/* Wallet Details Modal */}
+			<Dialog
+				fullWidth
+				maxWidth="md"
+				onClose={() => {
+					setShowWalletDetailsModal(false);
+					setSelectedWalletId(null);
+				}}
+				open={showWalletDetailsModal}
+			>
+				<DialogContent sx={{ p: 0 }}>
+					{selectedWalletData && (
+						<Card>
+							<CardHeader
+								avatar={
+									<Avatar
+										sx={{
+											bgcolor: "var(--mui-palette-primary-main)",
+											color: "var(--mui-palette-primary-contrastText)",
+										}}
+									>
+										<WalletIcon fontSize="var(--icon-fontSize-lg)" />
+									</Avatar>
+								}
+								action={
+									<IconButton
+										onClick={() => {
+											setShowWalletDetailsModal(false);
+											setSelectedWalletId(null);
+										}}
+									>
+										<XIcon />
+									</IconButton>
+								}
+								title={selectedWalletData.name}
+								subheader={selectedWalletData.description || "Wallet details"}
+							/>
+							<Divider />
+							{/* Wallet Statistics */}
+							<Box sx={{ display: "flex" }}>
+								<Box sx={{ flex: "1 1 auto", p: 3, textAlign: "center" }}>
+									<Typography variant="h5">{formatCurrency(selectedWalletData.value, "$", 2)}</Typography>
+									<Typography color="text.secondary" component="h4" variant="overline">
+										Current Value
+									</Typography>
+								</Box>
+								<Divider orientation="vertical" flexItem />
+								<Box sx={{ flex: "1 1 auto", p: 3, textAlign: "center" }}>
+									<Typography variant="h5">{formatCurrency(selectedWalletData.invested, "$", 2)}</Typography>
+									<Typography color="text.secondary" component="h4" variant="overline">
+										Invested
+									</Typography>
+								</Box>
+								<Divider orientation="vertical" flexItem />
+								<Box sx={{ flex: "1 1 auto", p: 3, textAlign: "center" }}>
+									<Typography
+										color={selectedWalletData.pnl >= 0 ? "success.main" : "error.main"}
+										variant="h5"
+									>
+										{formatCurrency(selectedWalletData.pnl, "$", 2)}
+									</Typography>
+									<Typography color="text.secondary" component="h4" variant="overline">
+										P&L
+									</Typography>
+								</Box>
+								<Divider orientation="vertical" flexItem />
+								<Box sx={{ flex: "1 1 auto", p: 3, textAlign: "center" }}>
+									<Typography variant="h5">{selectedWalletData.holdingsCount}</Typography>
+									<Typography color="text.secondary" component="h4" variant="overline">
+										Positions
+									</Typography>
+								</Box>
+							</Box>
+							<Divider />
+							{/* Transactions List */}
+							<Box>
+								<Box sx={{ px: 3, py: 2 }}>
+									<Typography variant="h6">Transactions</Typography>
+									<Typography color="text.secondary" variant="body2">
+										{walletTransactions.length} transaction{walletTransactions.length !== 1 ? "s" : ""} found
+									</Typography>
+								</Box>
+								{walletTransactions.length === 0 ? (
+									<Box sx={{ p: 3, textAlign: "center" }}>
+										<Typography color="text.secondary" variant="body2">
+											No transactions found for this wallet
+										</Typography>
+									</Box>
+								) : (
+									<List disablePadding sx={{ "& .MuiListItem-root": { py: 2 } }}>
+										{walletTransactions.map((transaction, index) => (
+											<ListItem divider={index < walletTransactions.length - 1} key={transaction.id}>
+												<ListItemAvatar>
+													<Avatar
+														sx={{
+															bgcolor:
+																transaction.type === "BUY"
+																	? "var(--mui-palette-success-50)"
+																	: "var(--mui-palette-error-50)",
+															color:
+																transaction.type === "BUY"
+																	? "var(--mui-palette-success-main)"
+																	: "var(--mui-palette-error-main)",
+														}}
+													>
+														{transaction.type === "BUY" ? (
+															<TrendUpIcon fontSize="var(--icon-fontSize-md)" />
+														) : (
+															<TrendDownIcon fontSize="var(--icon-fontSize-md)" />
+														)}
+													</Avatar>
+												</ListItemAvatar>
+												<ListItemText
+													disableTypography
+													primary={
+														<Typography variant="subtitle2">
+															{transaction.symbol} - {transaction.name}
+														</Typography>
+													}
+													secondary={
+														<Typography color="text.secondary" variant="body2">
+															{new Date(transaction.transactionDate).toLocaleDateString("en-US", {
+																year: "numeric",
+																month: "short",
+																day: "numeric",
+															})}{" "}
+															• {transaction.type}
+														</Typography>
+													}
+												/>
+												<Box sx={{ textAlign: "right" }}>
+													<Typography
+														color={
+															transaction.type === "BUY"
+																? "var(--mui-palette-success-main)"
+																: "var(--mui-palette-error-main)"
+														}
+														sx={{ whiteSpace: "nowrap" }}
+														variant="subtitle2"
+													>
+														{transaction.type === "BUY" ? "+" : "-"} {transaction.quantity} {transaction.symbol}
+													</Typography>
+													<Typography color="text.secondary" variant="body2">
+														{formatCurrency(transaction.amountInvested, "$", 2)}
+													</Typography>
+												</Box>
+											</ListItem>
+										))}
+									</List>
+								)}
+							</Box>
+						</Card>
+					)}
+				</DialogContent>
 			</Dialog>
 		</Box>
 	);
