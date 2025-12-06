@@ -16,6 +16,7 @@ import { SettingsProvider } from "@/components/core/settings/settings-context";
 import { ThemeProvider } from "@/components/core/theme-provider";
 import { Toaster } from "@/components/core/toaster";
 import { AuthProvider } from "@/contexts/AuthContext";
+import { PortfolioProvider } from "@/contexts/PortfolioContext";
 
 export const metadata = { title: appConfig.name } satisfies Metadata;
 
@@ -39,8 +40,9 @@ export default async function Layout({ children }: LayoutProps): Promise<React.J
 			<body>
 				<InitColorSchemeScript attribute="class" />
 				<AuthProvider>
-					<Analytics>
-						<LocalizationProvider>
+					<PortfolioProvider>
+						<Analytics>
+							<LocalizationProvider>
 							<SettingsProvider settings={settings}>
 								<I18nProvider lng={language}>
 									<EmotionCacheProvider options={{ key: "mui" }}>
@@ -54,8 +56,9 @@ export default async function Layout({ children }: LayoutProps): Promise<React.J
 									</EmotionCacheProvider>
 								</I18nProvider>
 							</SettingsProvider>
-						</LocalizationProvider>
-					</Analytics>
+							</LocalizationProvider>
+						</Analytics>
+					</PortfolioProvider>
 				</AuthProvider>
 			</body>
 		</html>
