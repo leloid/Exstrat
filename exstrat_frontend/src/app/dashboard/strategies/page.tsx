@@ -375,6 +375,9 @@ interface StrategiesTableProps {
 }
 
 function StrategiesTable({ rows, onEdit, onDelete, tokenPrices }: StrategiesTableProps): React.JSX.Element {
+	// State to track mouse position for tooltip (per row)
+	const [mousePosition, setMousePosition] = React.useState<{ x: number; y: number; rowId: string } | null>(null);
+
 	// Helper function to get token logo URL from multiple sources with fallback
 	const getTokenLogoUrl = (symbol: string, cmcId: number | undefined): string | null => {
 		const symbolLower = symbol.toLowerCase();
@@ -601,6 +604,7 @@ function StrategiesTable({ rows, onEdit, onDelete, tokenPrices }: StrategiesTabl
 						<Tooltip
 							key={row.id}
 							arrow
+							disableHoverListener // Disabled for now - keep code for future use
 							componentsProps={{
 								tooltip: {
 									sx: {
@@ -611,10 +615,49 @@ function StrategiesTable({ rows, onEdit, onDelete, tokenPrices }: StrategiesTabl
 									},
 								},
 							}}
+							PopperProps={{
+								modifiers: [
+									{
+										name: "offset",
+										options: {
+											offset: [10, 10], // Offset from cursor
+										},
+									},
+									{
+										name: "computeStyles",
+										options: {
+											gpuAcceleration: false,
+											adaptive: false,
+										},
+									},
+								],
+								anchorEl: mousePosition && mousePosition.rowId === row.id
+									? {
+											getBoundingClientRect: () => ({
+												width: 0,
+												height: 0,
+												top: mousePosition.y,
+												left: mousePosition.x,
+												bottom: mousePosition.y,
+												right: mousePosition.x,
+												x: mousePosition.x,
+												y: mousePosition.y,
+												toJSON: () => {},
+											}),
+										}
+									: undefined,
+							}}
 							placement="right"
 							title={tooltipContent}
 						>
-							<TableRow>
+							<TableRow
+								onMouseMove={(e) => {
+									setMousePosition({ x: e.clientX, y: e.clientY, rowId: row.id });
+								}}
+								onMouseLeave={() => {
+									setMousePosition(null);
+								}}
+							>
 								<TableCell>
 									<Stack spacing={0.25}>
 										<Typography variant="subtitle2" sx={{ fontSize: "0.875rem", lineHeight: 1.3 }}>
