@@ -24,9 +24,10 @@ import { getTokenLogoUrl } from "@/lib/utils";
 import type { Holding } from "@/types/portfolio";
 import * as configurationApi from "@/lib/configuration-api";
 import { getForecasts, getTheoreticalStrategies } from "@/lib/portfolios-api";
+import { strategiesApi } from "@/lib/strategies-api";
 import type { ForecastResponse } from "@/types/portfolio";
 import type { AlertConfiguration } from "@/types/configuration";
-import type { TheoreticalStrategyResponse } from "@/types/strategies";
+import type { TheoreticalStrategyResponse, StrategyResponse } from "@/types/strategies";
 
 export interface TokenStrategySidebarProps {
 	open: boolean;
@@ -48,7 +49,7 @@ export function TokenStrategySidebar({
 
 	React.useEffect(() => {
 		const loadData = async () => {
-			if (!holding || !portfolioId) {
+			if (!holding) {
 				setForecast(null);
 				setStrategy(null);
 				setAlertConfiguration(null);
@@ -58,9 +59,11 @@ export function TokenStrategySidebar({
 			try {
 				setLoading(true);
 
+				// Load all active alert configurations (even without portfolioId for global view)
 				const allConfigs = await configurationApi.getAlertConfigurations();
 				const activeConfigs = allConfigs.filter((config) => config.isActive);
 
+				// Find configuration with token alert for this holding
 				const configWithToken = activeConfigs.find((config) =>
 					config.tokenAlerts?.some((ta) => ta.holdingId === holding.id && ta.isActive)
 				);
@@ -74,6 +77,7 @@ export function TokenStrategySidebar({
 
 				setAlertConfiguration(configWithToken);
 
+				// Load forecast
 				const allForecasts = await getForecasts();
 				const forecastData = allForecasts.find((f) => f.id === configWithToken.forecastId);
 
@@ -84,9 +88,46 @@ export function TokenStrategySidebar({
 				}
 				setForecast(forecastData);
 
+				// Find strategy from token alert
 				const tokenAlert = configWithToken.tokenAlerts?.find((ta) => ta.holdingId === holding.id);
 				if (tokenAlert?.strategyId) {
-					const allStrategies = await getTheoreticalStrategies();
+					// Load both theoretical and real strategies
+					const [theoreticalStrategies, realStrategiesData] = await Promise.all([
+						getTheoreticalStrategies(),
+						strategiesApi.getStrategies({}),
+					]);
+
+					// Convert real strategies to theoretical format
+					const convertedStrategies: TheoreticalStrategyResponse[] = (realStrategiesData.strategies || []).map(
+						(strategy: StrategyResponse) => {
+							const profitTargets = strategy.steps.map((step, index) => ({
+								order: index + 1,
+								targetType: (step.targetType === "exact_price" ? "price" : "percentage") as "percentage" | "price",
+								targetValue: step.targetValue,
+								sellPercentage: step.sellPercentage,
+								notes: step.notes,
+							}));
+
+							return {
+								id: strategy.id,
+								userId: strategy.userId,
+								name: strategy.name,
+								tokenSymbol: strategy.symbol,
+								tokenName: strategy.tokenName,
+								quantity: strategy.baseQuantity,
+								averagePrice: strategy.referencePrice,
+								profitTargets,
+								status:
+									strategy.status === "active" ? "active" : strategy.status === "paused" ? "paused" : "completed",
+								createdAt: strategy.createdAt,
+								updatedAt: strategy.updatedAt,
+								numberOfTargets: strategy.steps.length,
+							} as TheoreticalStrategyResponse;
+						}
+					);
+
+					// Combine all strategies
+					const allStrategies = [...(theoreticalStrategies || []), ...convertedStrategies];
 					const strategyData = allStrategies.find((s) => s.id === tokenAlert.strategyId);
 					setStrategy(strategyData || null);
 				} else {
@@ -311,6 +352,11 @@ export function TokenStrategySidebar({
 											? holding.averagePrice * (1 + tp.targetValue / 100)
 											: tp.targetValue;
 									const isReached = currentPrice >= targetPrice;
+									
+									// Calculate percentage gain from average price
+									const percentageGain = holding.averagePrice > 0 
+										? ((targetPrice - holding.averagePrice) / holding.averagePrice) * 100 
+										: 0;
 
 									return (
 										<Card
@@ -323,30 +369,42 @@ export function TokenStrategySidebar({
 										>
 											<CardContent sx={{ p: 2, "&:last-child": { pb: 2 } }}>
 												<Stack direction="row" spacing={2} sx={{ alignItems: "center", justifyContent: "space-between" }}>
-													<Stack direction="row" spacing={1.5} sx={{ alignItems: "center", flex: 1 }}>
+													<Stack direction="row" spacing={1.5} sx={{ alignItems: "center", flex: 1, minWidth: 0 }}>
 														<Avatar
 															sx={{
-																width: 24,
-																height: 24,
+																width: 32,
+																height: 32,
 																bgcolor: isReached ? "success.main" : "divider",
-																fontSize: "0.75rem",
+																fontSize: "0.875rem",
+																fontWeight: 600,
+																flexShrink: 0,
 															}}
 														>
 															{tp.order}
 														</Avatar>
 														<Box sx={{ flex: 1, minWidth: 0 }}>
-															<Typography variant="body2" sx={{ fontWeight: 600 }}>
+															<Typography variant="body2" sx={{ fontWeight: 600, mb: 0.5 }}>
 																{formatCurrency(targetPrice, "$", 2)}
 															</Typography>
-															<Typography variant="caption" color="text.secondary">
-																{formatPercentage(tp.sellPercentage)} • {formatCurrency(tpAlert?.projectedAmount || 0, "$", 0)}
+															<Typography variant="caption" color="text.secondary" sx={{ display: "block" }}>
+																{formatPercentage(percentageGain)} • {formatCurrency(tpAlert?.projectedAmount || 0, "$", 0)}
 															</Typography>
 														</Box>
 													</Stack>
 													{isReached ? (
-														<Chip icon={<CheckIcon />} label="Reached" color="success" size="small" />
+														<Chip 
+															icon={<CheckIcon />} 
+															label="Reached" 
+															color="success" 
+															size="small"
+															sx={{ flexShrink: 0 }}
+														/>
 													) : (
-														<Chip label="Pending" size="small" />
+														<Chip 
+															label="Pending" 
+															size="small"
+															sx={{ flexShrink: 0 }}
+														/>
 													)}
 												</Stack>
 											</CardContent>
