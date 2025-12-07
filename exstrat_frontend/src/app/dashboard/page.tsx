@@ -14,19 +14,13 @@ import { useRouter } from "next/navigation";
 
 import { usePortfolio } from "@/contexts/PortfolioContext";
 import { QuickStats } from "@/components/dashboard/portfolio/quick-stats";
-import { TokenCard } from "@/components/dashboard/portfolio/token-card";
-import { PortfolioEvolutionChart } from "@/components/dashboard/portfolio/portfolio-evolution-chart";
-import { HoldingsTable } from "@/components/dashboard/portfolio/holdings-table";
+import { GainsLossesChart } from "@/components/dashboard/portfolio/gains-losses-chart";
+import { TokenDistribution } from "@/components/dashboard/portfolio/token-distribution";
+import { TokensTable } from "@/components/dashboard/portfolio/tokens-table";
+import { TokenStrategySidebar } from "@/components/dashboard/portfolio/token-strategy-sidebar";
 import type { Holding } from "@/types/portfolio";
 import * as portfoliosApi from "@/lib/portfolios-api";
-import { TokenDistribution } from "@/components/dashboard/portfolio/token-distribution";
 
-interface EvolutionDataPoint {
-	date: string;
-	valeurBrute: number;
-	valeurNette: number;
-	investi: number;
-}
 
 export default function Page(): React.JSX.Element {
 	const router = useRouter();
@@ -156,51 +150,7 @@ export default function Page(): React.JSX.Element {
 		};
 	}, [displayHoldings]);
 
-	// Generate evolution data (simulated - replace with real historical data)
-	const evolutionData = React.useMemo<EvolutionDataPoint[]>(() => {
-		if (!displayHoldings || displayHoldings.length === 0) return [];
 
-		const now = new Date();
-		const data: EvolutionDataPoint[] = [];
-		const days = 30;
-
-		const currentInvested = portfolioStats.capitalInvesti;
-		const currentValue = portfolioStats.valeurActuelle;
-
-		for (let i = days; i >= 0; i--) {
-			const date = new Date(now);
-			date.setDate(date.getDate() - i);
-
-			const progress = i / days;
-			const simulatedInvested = currentInvested * (0.7 + 0.3 * progress);
-			const simulatedValue = simulatedInvested * (1 + (portfolioStats.pnlRelatif / 100) * progress);
-
-			data.push({
-				date: date.toISOString(),
-				valeurBrute: simulatedValue,
-				valeurNette: simulatedValue - simulatedInvested,
-				investi: simulatedInvested,
-			});
-		}
-
-		return data;
-	}, [displayHoldings, portfolioStats]);
-
-	// Get top 3 holdings for token cards
-	const topHoldings = React.useMemo(() => {
-		return [...displayHoldings]
-			.sort((a, b) => {
-				const valueA = a.currentValue || (a.currentPrice || a.averagePrice) * a.quantity;
-				const valueB = b.currentValue || (b.currentPrice || b.averagePrice) * b.quantity;
-				return valueB - valueA;
-			})
-			.slice(0, 3);
-	}, [displayHoldings]);
-
-	// Generate chart data for token cards (simulated)
-	const generateChartData = React.useCallback(() => {
-		return Array.from({ length: 30 }, () => Math.floor(Math.random() * 100) + 50);
-	}, []);
 
 	if (portfoliosLoading || loadingGlobal) {
 		return (
@@ -281,7 +231,7 @@ export default function Page(): React.JSX.Element {
 				{/* Header */}
 				<Stack direction={{ xs: "column", sm: "row" }} spacing={3} sx={{ alignItems: "flex-start" }}>
 					<Box sx={{ flex: "1 1 auto" }}>
-						<Typography variant="h4">Dashboard</Typography>
+						<Typography variant="h4">Overview</Typography>
 						<Typography color="text.secondary" variant="body2" sx={{ mt: 0.5 }}>
 							Overview of your portfolio performance
 						</Typography>
@@ -319,46 +269,31 @@ export default function Page(): React.JSX.Element {
 					pnlRelatif={portfolioStats.pnlRelatif}
 				/>
 
-				{/* Top Token Cards */}
-				{topHoldings.length > 0 && (
-					<Box
-						sx={{
-							display: "grid",
-							gap: 3,
-							gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr", lg: "repeat(3, 1fr)" },
-						}}
-					>
-						{topHoldings.map((holding) => (
-							<TokenCard key={holding.id} holding={holding} data={generateChartData()} />
-						))}
-					</Box>
-				)}
-
-				{/* Main Content Grid */}
-				<Grid container spacing={4}>
-					{/* Portfolio Evolution Chart */}
-					<Grid
-						size={{
-							lg: 8,
-							xs: 12,
-						}}
-					>
-						<PortfolioEvolutionChart data={evolutionData} />
+				{/* Gains and Losses Chart and Token Distribution */}
+				<Grid container spacing={3}>
+					<Grid size={{ xs: 12, lg: 8 }}>
+						<GainsLossesChart holdings={displayHoldings} />
 					</Grid>
-
-					{/* Token Distribution */}
-					<Grid
-						size={{
-							lg: 4,
-							xs: 12,
-						}}
-					>
+					<Grid size={{ xs: 12, lg: 4 }}>
 						<TokenDistribution holdings={displayHoldings} />
 					</Grid>
 				</Grid>
 
-				{/* Holdings Table */}
-				<HoldingsTable holdings={displayHoldings} onTokenClick={setSelectedToken} />
+				{/* Tokens Table */}
+				<TokensTable
+					holdings={displayHoldings}
+					portfolioId={isGlobalView ? undefined : currentPortfolio?.id}
+					onTokenClick={setSelectedToken}
+				/>
+
+				{/* Token Strategy Sidebar */}
+				<TokenStrategySidebar
+					open={selectedToken !== null}
+					onClose={() => setSelectedToken(null)}
+					holding={selectedToken}
+					portfolioId={isGlobalView ? undefined : currentPortfolio?.id}
+				/>
+
 			</Stack>
 		</Box>
 	);

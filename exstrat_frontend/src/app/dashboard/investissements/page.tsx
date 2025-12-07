@@ -1103,7 +1103,10 @@ export default function Page(): React.JSX.Element {
 															<Typography sx={{ flex: "1 1 auto" }} variant="subtitle2">
 																{entry.name}
 															</Typography>
-															<Typography color="text.secondary" variant="body2">
+															<Typography color="text.secondary" variant="body2" sx={{ minWidth: "80px", textAlign: "right" }}>
+																{entry.quantity.toLocaleString(undefined, { maximumFractionDigits: 8 })}
+															</Typography>
+															<Typography color="text.secondary" variant="body2" sx={{ minWidth: "90px", textAlign: "right" }}>
 																{formatCompactCurrency(entry.value, "$", 2)}
 															</Typography>
 														</Stack>
@@ -1126,7 +1129,13 @@ export default function Page(): React.JSX.Element {
 															<Typography color="text.secondary" sx={{ flex: "1 1 auto" }} variant="subtitle2">
 																+{allTokenData.length - 4} more tokens
 															</Typography>
-															<Typography color="text.secondary" variant="body2">
+															<Typography color="text.secondary" variant="body2" sx={{ minWidth: "80px", textAlign: "right" }}>
+																{allTokenData
+																	.slice(4)
+																	.reduce((sum, token) => sum + token.quantity, 0)
+																	.toLocaleString(undefined, { maximumFractionDigits: 8 })}
+															</Typography>
+															<Typography color="text.secondary" variant="body2" sx={{ minWidth: "90px", textAlign: "right" }}>
 																{formatCompactCurrency(
 																	allTokenData
 																		.slice(4)
