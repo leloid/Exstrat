@@ -229,7 +229,7 @@ export function ConfigurationAlertsTab(): React.JSX.Element {
 
 				const tokenAlert = {
 					holdingId: holding.id,
-					tokenSymbol: holding.token?.symbol || holding.symbol || "",
+					tokenSymbol: holding.token?.symbol || "",
 					strategyId: strategy.id,
 					numberOfTargets: strategy.profitTargets.length,
 					tpAlerts,

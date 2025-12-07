@@ -9,7 +9,7 @@ import type { TokenAlert, AlertConfiguration } from "@/types/configuration";
 import type { TheoreticalStrategyResponse } from "@/types/strategies";
 
 interface TokenAlertItemProps {
-	holding: any;
+	holding: { id: string; token?: { symbol?: string; name?: string } };
 	strategy: TheoreticalStrategyResponse | null;
 	tokenAlert: TokenAlert | undefined;
 	alertConfigurationId: string | undefined;
@@ -21,7 +21,7 @@ export function TokenAlertItem({
 	holding,
 	strategy,
 	tokenAlert,
-	isForecastActive,
+	isForecastActive: _isForecastActive,
 	onClick,
 }: TokenAlertItemProps): React.JSX.Element {
 	if (!strategy) {
@@ -60,11 +60,11 @@ export function TokenAlertItem({
 				{/* Token Info - Compact */}
 				<Stack direction="row" spacing={1.5} sx={{ alignItems: "center", flex: 1, minWidth: 0 }}>
 					<Typography variant="body2" sx={{ fontWeight: 600, minWidth: "60px" }}>
-						{holding.token?.symbol || holding.symbol}
+						{holding.token?.symbol || ""}
 					</Typography>
 					<Box sx={{ flex: 1, minWidth: 0 }}>
 						<Typography variant="caption" color="text.secondary" noWrap>
-							{holding.token?.name || holding.tokenName}
+							{holding.token?.name || ""}
 						</Typography>
 					</Box>
 					<Typography variant="caption" color="text.secondary" sx={{ minWidth: "80px" }}>

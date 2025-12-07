@@ -146,10 +146,10 @@ export function TokenAlertsModal({
 					<Stack spacing={0.5}>
 						<Stack direction="row" spacing={1.5} sx={{ alignItems: "center" }}>
 							<Typography variant="h6" sx={{ fontWeight: 600 }}>
-								{holding.token?.symbol || holding.symbol}
+								{holding.token?.symbol || ""}
 							</Typography>
 							<Typography variant="body2" color="text.secondary">
-								{holding.token?.name || holding.tokenName}
+								{holding.token?.name || ""}
 							</Typography>
 							{tokenAlert && (
 								<Chip

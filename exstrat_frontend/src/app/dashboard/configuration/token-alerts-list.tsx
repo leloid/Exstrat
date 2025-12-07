@@ -156,7 +156,7 @@ export function TokenAlertsList({
 
 			const tokenAlert: CreateTokenAlertDto = {
 				holdingId: holding.id,
-				tokenSymbol: holding.token?.symbol || holding.symbol || "",
+				tokenSymbol: holding.token?.symbol || "",
 				strategyId: strategy.id,
 				numberOfTargets: strategy.profitTargets.length,
 				tpAlerts,
@@ -224,7 +224,7 @@ export function TokenAlertsList({
 				appliedStrategies[holding.id] || appliedStrategies[holding.token?.id] || appliedStrategies[holding.token?.symbol];
 			const hasStrategy = strategyId && strategyId !== "none" && strategiesMap.has(strategyId);
 			console.log(
-				`🔍 Holding ${holding.token?.symbol || holding.symbol} (id: ${holding.id}): strategyId = ${strategyId}, hasStrategy = ${hasStrategy}`
+				`🔍 Holding ${holding.token?.symbol || ""} (id: ${holding.id}): strategyId = ${strategyId}, hasStrategy = ${hasStrategy}`
 			);
 			return hasStrategy;
 		})
