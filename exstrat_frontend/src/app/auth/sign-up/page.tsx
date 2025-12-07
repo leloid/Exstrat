@@ -90,9 +90,9 @@ export default function Page(): React.JSX.Element {
 					<Box component={RouterLink} href={paths.home} sx={{ display: "inline-block", fontSize: 0 }}>
 						<Box
 							component="img"
-							src="/Full_logo.svg"
+							src="/logo_large_dark_theme.svg"
 							alt="ExStrat"
-							sx={{ height: "auto", maxWidth: "200px", width: "auto" }}
+							sx={{ height: "auto", maxWidth: "300px", width: "auto" }}
 						/>
 					</Box>
 				</div>
