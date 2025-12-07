@@ -35,6 +35,10 @@ export default function Page(): React.JSX.Element {
 	const [globalHoldings, setGlobalHoldings] = React.useState<Holding[]>([]);
 	const [loadingGlobal, setLoadingGlobal] = React.useState(false);
 	const [selectedToken, setSelectedToken] = React.useState<Holding | null>(null);
+	const loadingRef = React.useRef(false);
+
+	// Stabilize portfolio IDs to avoid unnecessary reloads
+	const portfoliosIds = React.useMemo(() => portfolios.map((p) => p.id).join(","), [portfolios]);
 
 	// Load global holdings when in global view
 	React.useEffect(() => {
@@ -46,10 +50,12 @@ export default function Page(): React.JSX.Element {
 				return;
 			}
 
-			if (loadingGlobal) {
+			// Prevent multiple simultaneous loads
+			if (loadingRef.current) {
 				return;
 			}
 
+			loadingRef.current = true;
 			setLoadingGlobal(true);
 			try {
 				const allHoldings: Holding[] = [];
@@ -110,11 +116,12 @@ export default function Page(): React.JSX.Element {
 				setGlobalHoldings([]);
 			} finally {
 				setLoadingGlobal(false);
+				loadingRef.current = false;
 			}
 		};
 
 		loadGlobalHoldings();
-	}, [isGlobalView, portfolios, portfoliosLoading, loadingGlobal]);
+	}, [isGlobalView, portfoliosIds, portfoliosLoading]);
 
 	// Determine which holdings to display
 	const displayHoldings = React.useMemo(() => {

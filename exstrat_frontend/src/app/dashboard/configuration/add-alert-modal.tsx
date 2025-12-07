@@ -20,10 +20,13 @@ import Typography from "@mui/material/Typography";
 import IconButton from "@mui/material/IconButton";
 import { XIcon } from "@phosphor-icons/react/dist/ssr/X";
 import { usePortfolio } from "@/contexts/PortfolioContext";
-import { getForecasts, getForecastById } from "@/lib/portfolios-api";
+import { getForecasts, getForecastById, getPortfolioHoldings } from "@/lib/portfolios-api";
+import { getTheoreticalStrategies } from "@/lib/portfolios-api";
+import { strategiesApi } from "@/lib/strategies-api";
 import * as configurationApi from "@/lib/configuration-api";
 import type { ForecastResponse } from "@/types/portfolio";
-import type { AlertConfiguration } from "@/types/configuration";
+import type { AlertConfiguration, CreateTokenAlertDto, CreateTPAlertDto } from "@/types/configuration";
+import type { TheoreticalStrategyResponse, StrategyResponse } from "@/types/strategies";
 import { WalletSelector } from "./wallet-selector";
 import { ForecastSelector } from "./forecast-selector";
 import { NotificationChannelsConfig } from "./notification-channels-config";
@@ -132,6 +135,139 @@ export function AddAlertModal({ open, onClose, onSuccess, existingConfig }: AddA
 		await doActivateForecast(forecastId);
 	};
 
+	const createAlertsForAllTokens = async (config: AlertConfiguration, forecastId: string) => {
+		if (!selectedPortfolioId) {
+			console.error("No portfolio selected");
+			return;
+		}
+
+		try {
+			// Load forecast to get applied strategies
+			const forecastData = await getForecastById(forecastId);
+			const appliedStrategies = forecastData.appliedStrategies || {};
+
+			if (Object.keys(appliedStrategies).length === 0) {
+				console.log("⚠️ No strategies applied to this forecast");
+				return;
+			}
+
+			// Load holdings
+			const holdings = await getPortfolioHoldings(selectedPortfolioId);
+
+			// Load both theoretical and real strategies
+			const [theoreticalData, realStrategiesData] = await Promise.all([
+				getTheoreticalStrategies(),
+				strategiesApi.getStrategies({}),
+			]);
+
+			// Convert real strategies to theoretical format
+			const convertedStrategies: TheoreticalStrategyResponse[] = (realStrategiesData.strategies || []).map(
+				(strategy: StrategyResponse) => {
+					const profitTargets = strategy.steps.map((step, index) => ({
+						order: index + 1,
+						targetType: (step.targetType === "exact_price" ? "price" : "percentage") as "percentage" | "price",
+						targetValue: step.targetValue,
+						sellPercentage: step.sellPercentage,
+						notes: step.notes,
+					}));
+
+					return {
+						id: strategy.id,
+						userId: strategy.userId,
+						name: strategy.name,
+						tokenSymbol: strategy.symbol,
+						tokenName: strategy.tokenName,
+						quantity: strategy.baseQuantity,
+						averagePrice: strategy.referencePrice,
+						profitTargets,
+						status:
+							strategy.status === "active" ? "active" : strategy.status === "paused" ? "paused" : "completed",
+						createdAt: strategy.createdAt,
+						updatedAt: strategy.updatedAt,
+						numberOfTargets: strategy.steps.length,
+					} as TheoreticalStrategyResponse;
+				}
+			);
+
+			// Combine theoretical and converted real strategies
+			const allStrategies = [...(theoreticalData || []), ...convertedStrategies];
+			const strategiesMap = new Map<string, TheoreticalStrategyResponse>();
+			allStrategies.forEach((strategy) => {
+				strategiesMap.set(strategy.id, strategy);
+			});
+
+			// For each holding, check if it has an associated strategy
+			for (const holding of holdings) {
+				// Find strategy ID (by holdingId, tokenId, or symbol)
+				const strategyId =
+					appliedStrategies[holding.id] ||
+					appliedStrategies[holding.token?.id] ||
+					appliedStrategies[holding.token?.symbol];
+
+				if (!strategyId || strategyId === "none") continue;
+
+				const strategy = strategiesMap.get(strategyId);
+				if (!strategy) continue;
+
+				// Check if alert already exists
+				const existingTokenAlert = config.tokenAlerts?.find((ta) => ta.holdingId === holding.id);
+				if (existingTokenAlert) {
+					console.log(`✅ Alert already exists for ${holding.token.symbol}`);
+					continue;
+				}
+
+				// Create TP alerts from strategy
+				const tpAlerts: CreateTPAlertDto[] = strategy.profitTargets.map((tp) => {
+					const targetPrice =
+						tp.targetType === "percentage" ? holding.averagePrice * (1 + tp.targetValue / 100) : tp.targetValue;
+					const sellQuantity = (holding.quantity * tp.sellPercentage) / 100;
+					const projectedAmount = targetPrice * sellQuantity;
+					const remainingValue = (holding.quantity - sellQuantity) * targetPrice;
+
+					return {
+						tpOrder: tp.order,
+						targetPrice,
+						sellQuantity,
+						projectedAmount,
+						remainingValue,
+						beforeTP: {
+							enabled: true,
+							value: -10,
+							type: "percentage",
+						},
+						tpReached: {
+							enabled: true,
+						},
+						isActive: true,
+					};
+				});
+
+				const tokenAlert: CreateTokenAlertDto = {
+					holdingId: holding.id,
+					tokenSymbol: holding.token.symbol,
+					strategyId: strategy.id,
+					numberOfTargets: strategy.profitTargets.length,
+					tpAlerts,
+					isActive: true,
+				};
+
+				try {
+					console.log(`🔄 Creating alert for ${holding.token.symbol}...`);
+					await configurationApi.createTokenAlert(config.id, tokenAlert);
+					console.log(`✅ Alert created for ${holding.token.symbol}`);
+				} catch (error) {
+					console.error(`❌ Error creating alert for ${holding.token.symbol}:`, error);
+				}
+			}
+
+			// Reload configuration to get new alerts
+			const updatedConfig = await configurationApi.getAlertConfigurationById(config.id);
+			setAlertConfiguration(updatedConfig);
+		} catch (error) {
+			console.error("Error creating alerts for all tokens:", error);
+		}
+	};
+
 	const doActivateForecast = async (forecastId: string) => {
 		try {
 			setLoading(true);
@@ -155,6 +291,20 @@ export function AddAlertModal({ open, onClose, onSuccess, existingConfig }: AddA
 					isActive: true,
 				});
 			}
+
+			setAlertConfiguration(config);
+			setSelectedForecastId(forecastId);
+
+			// Automatically create alerts for all tokens with strategies
+			await createAlertsForAllTokens(config, forecastId);
+
+			// Reload all configurations to update active state
+			const allConfigs = await configurationApi.getAlertConfigurations();
+			const portfolioConfigs = allConfigs.filter((c) => {
+				const forecast = forecasts.find((f) => f.id === c.forecastId);
+				return forecast !== undefined;
+			});
+			setAllConfigurations(portfolioConfigs);
 
 			onSuccess();
 		} catch (error) {

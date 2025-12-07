@@ -25,8 +25,9 @@ import { getTokenLogoUrl } from "@/lib/utils";
 import type { Holding } from "@/types/portfolio";
 import * as configurationApi from "@/lib/configuration-api";
 import { getTheoreticalStrategies } from "@/lib/portfolios-api";
+import { strategiesApi } from "@/lib/strategies-api";
 import type { AlertConfiguration } from "@/types/configuration";
-import type { TheoreticalStrategyResponse } from "@/types/strategies";
+import type { TheoreticalStrategyResponse, StrategyResponse } from "@/types/strategies";
 
 export interface TokensTableProps {
 	holdings: Holding[];
@@ -52,8 +53,7 @@ export function TokensTable({ holdings, portfolioId, onTokenClick }: TokensTable
 	// Load alert configurations and strategies
 	React.useEffect(() => {
 		const loadAlertData = async () => {
-			if (!portfolioId) return;
-
+			// Load even if no portfolioId (for global view)
 			try {
 				setLoadingAlerts(true);
 
@@ -61,11 +61,44 @@ export function TokensTable({ holdings, portfolioId, onTokenClick }: TokensTable
 				const activeConfigs = allConfigs.filter((config) => config.isActive);
 				setAlertConfigurations(activeConfigs);
 
-				const allStrategies = await getTheoreticalStrategies();
+				// Load theoretical strategies
+				const theoreticalStrategies = await getTheoreticalStrategies();
 				const strategiesById = new Map<string, TheoreticalStrategyResponse>();
-				allStrategies.forEach((strategy) => {
+				theoreticalStrategies.forEach((strategy) => {
 					strategiesById.set(strategy.id, strategy);
 				});
+
+				// Also load real strategies and convert them to theoretical format
+				try {
+					const realStrategiesData = await strategiesApi.getStrategies({});
+					const realStrategies = realStrategiesData.strategies || [];
+					realStrategies.forEach((s: StrategyResponse) => {
+						const theoreticalStrategy: TheoreticalStrategyResponse = {
+							id: s.id,
+							userId: s.userId,
+							name: s.name,
+							tokenSymbol: s.symbol,
+							tokenName: s.tokenName,
+							quantity: s.baseQuantity,
+							averagePrice: s.referencePrice,
+							profitTargets: s.steps.map((step, index) => ({
+								order: index + 1,
+								targetType: step.targetType === "exact_price" ? "price" : "percentage",
+								targetValue: step.targetValue,
+								sellPercentage: step.sellPercentage,
+								notes: step.notes,
+							})),
+							status: s.status === "active" ? "active" : s.status === "paused" ? "paused" : "completed",
+							createdAt: s.createdAt,
+							updatedAt: s.updatedAt,
+							numberOfTargets: s.steps.length,
+						};
+						strategiesById.set(s.id, theoreticalStrategy);
+					});
+				} catch (error) {
+					console.error("Error loading real strategies:", error);
+				}
+
 				setStrategiesMap(strategiesById);
 			} catch (error) {
 				console.error("Error loading alerts:", error);
