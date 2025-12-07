@@ -53,6 +53,15 @@ import type { Portfolio, Holding } from "@/types/portfolio";
 import { usePortfolio } from "@/contexts/PortfolioContext";
 import { Option } from "@/components/core/option";
 
+// Type partiel pour les tokens disponibles depuis les holdings
+type AvailableToken = Pick<TokenSearchResult, "id" | "symbol" | "name"> & {
+	quote: {
+		USD: {
+			price: number | null;
+		};
+	};
+};
+
 interface ProfitTarget {
 	id: string;
 	targetType: "percentage" | "price";
@@ -98,14 +107,14 @@ export function CreateStrategyModal({ onClose, onSuccess, open }: CreateStrategy
 
 	// Strategy form data
 	const [selectedPortfolioId, setSelectedPortfolioId] = React.useState<string>("");
-	const [selectedToken, setSelectedToken] = React.useState<TokenSearchResult | null>(null);
+	const [selectedToken, setSelectedToken] = React.useState<TokenSearchResult | AvailableToken | null>(null);
 	const [availableQuantity, setAvailableQuantity] = React.useState<number>(0);
 	const [strategyQuantity, setStrategyQuantity] = React.useState<string>("");
 	const [strategyAveragePrice, setStrategyAveragePrice] = React.useState<string>("");
 	const [strategyName, setStrategyName] = React.useState<string>("");
 	const [numberOfTargets, setNumberOfTargets] = React.useState<number>(0);
 	const [profitTargets, setProfitTargets] = React.useState<ProfitTarget[]>([]);
-	const [availableTokens, setAvailableTokens] = React.useState<TokenSearchResult[]>([]);
+	const [availableTokens, setAvailableTokens] = React.useState<AvailableToken[]>([]);
 	const [investmentData, setInvestmentData] = React.useState<{
 		numberOfTransactions: number;
 		totalInvested: number;
@@ -135,13 +144,13 @@ export function CreateStrategyModal({ onClose, onSuccess, open }: CreateStrategy
 
 			try {
 				const holdings = await portfoliosApi.getPortfolioHoldings(selectedPortfolioId);
-				const tokens: TokenSearchResult[] = holdings.map((holding) => ({
+				const tokens: AvailableToken[] = holdings.map((holding) => ({
 					id: holding.token.cmcId || 0,
 					symbol: holding.token.symbol,
 					name: holding.token.name,
 					quote: {
 						USD: {
-							price: holding.token.currentPrice || 0,
+							price: holding.currentPrice || holding.token.currentPrice || null,
 						},
 					},
 				}));
