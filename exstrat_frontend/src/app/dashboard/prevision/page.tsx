@@ -22,9 +22,19 @@ import { MagnifyingGlassIcon } from "@phosphor-icons/react/dist/ssr/MagnifyingGl
 import { PlusIcon } from "@phosphor-icons/react/dist/ssr/Plus";
 import { PencilIcon } from "@phosphor-icons/react/dist/ssr/Pencil";
 import { TrashIcon } from "@phosphor-icons/react/dist/ssr/Trash";
+import { CaretDownIcon } from "@phosphor-icons/react/dist/ssr/CaretDown";
+import { CaretRightIcon } from "@phosphor-icons/react/dist/ssr/CaretRight";
+import Collapse from "@mui/material/Collapse";
+import Divider from "@mui/material/Divider";
+import Checkbox from "@mui/material/Checkbox";
+import List from "@mui/material/List";
+import ListItem from "@mui/material/ListItem";
+import ListItemText from "@mui/material/ListItemText";
 import { formatCurrency, formatPercentage } from "@/lib/format";
-import { getForecasts, deleteForecast } from "@/lib/portfolios-api";
+import { getForecasts, deleteForecast, getForecastById, getPortfolioHoldings, getTheoreticalStrategies } from "@/lib/portfolios-api";
+import { strategiesApi } from "@/lib/strategies-api";
 import type { ForecastResponse } from "@/types/portfolio";
+import type { TheoreticalStrategyResponse, StrategyResponse } from "@/types/strategies";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import { CreateForecastModal } from "./create-forecast-modal";
 
@@ -41,6 +51,9 @@ function ForecastPageContent(): React.JSX.Element {
 	const [isLoading, setIsLoading] = React.useState(true);
 	const [searchQuery, setSearchQuery] = React.useState("");
 	const [showCreateModal, setShowCreateModal] = React.useState(false);
+	const [expandedForecastId, setExpandedForecastId] = React.useState<string | null>(null);
+	const [expandedTokens, setExpandedTokens] = React.useState<Set<string>>(new Set());
+	const [forecastDetails, setForecastDetails] = React.useState<Record<string, any>>({});
 	
 	// Pagination states
 	const [page, setPage] = React.useState(0);
@@ -85,6 +98,97 @@ function ForecastPageContent(): React.JSX.Element {
 	const handleEditForecast = (forecast: ForecastResponse) => {
 		// TODO: Implement edit functionality
 		console.log("Edit forecast:", forecast);
+	};
+
+	const handleToggleExpand = async (forecastId: string) => {
+		if (expandedForecastId === forecastId) {
+			setExpandedForecastId(null);
+			// Clear expanded tokens when closing forecast
+			setExpandedTokens(new Set());
+		} else {
+			setExpandedForecastId(forecastId);
+			// Load forecast details if not already loaded
+			if (!forecastDetails[forecastId]) {
+				await loadForecastDetails(forecastId);
+			}
+		}
+	};
+
+	const handleToggleTokenExpand = (tokenKey: string) => {
+		setExpandedTokens((prev) => {
+			const newSet = new Set(prev);
+			if (newSet.has(tokenKey)) {
+				newSet.delete(tokenKey);
+			} else {
+				newSet.add(tokenKey);
+			}
+			return newSet;
+		});
+	};
+
+	const loadForecastDetails = async (forecastId: string) => {
+		try {
+			const forecast = forecasts.find((f) => f.id === forecastId);
+			if (!forecast) return;
+
+			// Load holdings and strategies
+			const [holdingsData, theoreticalStrategiesData, realStrategiesData] = await Promise.all([
+				getPortfolioHoldings(forecast.portfolioId),
+				getTheoreticalStrategies(),
+				strategiesApi.getStrategies({}),
+			]);
+
+			// Convert real strategies to theoretical format
+			const convertedStrategies: TheoreticalStrategyResponse[] = (realStrategiesData.strategies || []).map(
+				(strategy: StrategyResponse) => {
+					const profitTargets = strategy.steps.map((step, index) => ({
+						order: index + 1,
+						targetType: (step.targetType === "exact_price" ? "price" : "percentage") as "percentage" | "price",
+						targetValue: step.targetValue,
+						sellPercentage: step.sellPercentage,
+					}));
+
+					return {
+						id: strategy.id,
+						userId: strategy.userId,
+						name: strategy.name,
+						tokenSymbol: strategy.symbol,
+						tokenName: strategy.tokenName,
+						quantity: strategy.baseQuantity,
+						averagePrice: strategy.referencePrice,
+						profitTargets,
+						status: strategy.status === "active" ? "active" : strategy.status === "paused" ? "paused" : "completed",
+						createdAt: strategy.createdAt,
+						updatedAt: strategy.updatedAt,
+						numberOfTargets: strategy.steps.length,
+					} as TheoreticalStrategyResponse;
+				}
+			);
+
+			const allStrategies = [...(theoreticalStrategiesData || []), ...convertedStrategies];
+
+			// Map holdings with their applied strategies
+			const holdingsWithStrategies = holdingsData.map((holding: any) => {
+				const strategyId = forecast.appliedStrategies[holding.id];
+				const strategy = strategyId && strategyId !== "none" ? allStrategies.find((s) => s.id === strategyId) : null;
+
+				return {
+					...holding,
+					strategy,
+					strategyId,
+				};
+			});
+
+			setForecastDetails((prev) => ({
+				...prev,
+				[forecastId]: {
+					holdings: holdingsWithStrategies,
+					strategies: allStrategies,
+				},
+			}));
+		} catch (error) {
+			console.error("Error loading forecast details:", error);
+		}
 	};
 
 	// Filter forecasts based on search query
@@ -187,6 +291,7 @@ function ForecastPageContent(): React.JSX.Element {
 								<Table>
 									<TableHead>
 										<TableRow>
+											<TableCell sx={{ width: "40px", fontWeight: 600 }} />
 											<TableCell sx={{ fontWeight: 600 }}>Forecast Name</TableCell>
 											<TableCell sx={{ fontWeight: 600 }}>Wallet</TableCell>
 											<TableCell align="right" sx={{ fontWeight: 600 }}>Tokens</TableCell>
@@ -199,70 +304,204 @@ function ForecastPageContent(): React.JSX.Element {
 										</TableRow>
 									</TableHead>
 									<TableBody>
-										{paginatedForecasts.map((forecast) => (
-											<TableRow key={forecast.id} hover>
-												<TableCell>
-													<Typography variant="subtitle2">{forecast.name}</Typography>
-												</TableCell>
-												<TableCell>
-													<Typography variant="body2">{forecast.portfolioName || "Unknown"}</Typography>
-												</TableCell>
-												<TableCell align="right">
-													<Typography variant="body2">{forecast.summary.tokenCount}</Typography>
-												</TableCell>
-												<TableCell align="right">
-													<Typography variant="body2">{formatCurrency(forecast.summary.totalInvested, "$", 2)}</Typography>
-												</TableCell>
-												<TableCell align="right">
-													<Typography color="success.main" variant="body2">
-														{formatCurrency(forecast.summary.totalCollected, "$", 2)}
-													</Typography>
-												</TableCell>
-												<TableCell align="right">
-													<Typography
-														color={forecast.summary.totalProfit >= 0 ? "success.main" : "error.main"}
-														variant="body2"
-													>
-														{formatCurrency(forecast.summary.totalProfit, "$", 2)}
-													</Typography>
-												</TableCell>
-												<TableCell align="right">
-													<Chip
-														color={forecast.summary.returnPercentage >= 0 ? "success" : "error"}
-														label={formatPercentage(forecast.summary.returnPercentage)}
-														size="small"
-													/>
-												</TableCell>
-												<TableCell align="right">
-													<Typography color="text.secondary" variant="body2">
-														{new Date(forecast.createdAt).toLocaleDateString("en-US", {
-															year: "numeric",
-															month: "short",
-															day: "numeric",
-														})}
-													</Typography>
-												</TableCell>
-												<TableCell align="right">
-													<Stack direction="row" spacing={1} sx={{ justifyContent: "flex-end" }}>
-														<IconButton
-															onClick={() => handleEditForecast(forecast)}
-															size="small"
-															title="Edit forecast"
-														>
-															<PencilIcon fontSize="var(--icon-fontSize-md)" />
-														</IconButton>
-														<IconButton
-															color="error"
-															onClick={() => handleDeleteForecast(forecast.id)}
-															size="small"
-															title="Delete forecast"
-														>
-															<TrashIcon fontSize="var(--icon-fontSize-md)" />
-														</IconButton>
-													</Stack>
-												</TableCell>
-											</TableRow>
-										))}
+										{paginatedForecasts.map((forecast) => {
+											const isExpanded = expandedForecastId === forecast.id;
+											const details = forecastDetails[forecast.id];
+											return (
+												<React.Fragment key={forecast.id}>
+													<TableRow hover>
+														<TableCell>
+															<IconButton
+																onClick={() => handleToggleExpand(forecast.id)}
+																size="small"
+																sx={{ padding: "4px" }}
+															>
+																{isExpanded ? (
+																	<CaretDownIcon fontSize="var(--icon-fontSize-md)" />
+																) : (
+																	<CaretRightIcon fontSize="var(--icon-fontSize-md)" />
+																)}
+															</IconButton>
+														</TableCell>
+														<TableCell>
+															<Typography variant="subtitle2">{forecast.name}</Typography>
+														</TableCell>
+														<TableCell>
+															<Typography variant="body2">{forecast.portfolioName || "Unknown"}</Typography>
+														</TableCell>
+														<TableCell align="right">
+															<Typography variant="body2">{forecast.summary.tokenCount}</Typography>
+														</TableCell>
+														<TableCell align="right">
+															<Typography variant="body2">{formatCurrency(forecast.summary.totalInvested, "$", 2)}</Typography>
+														</TableCell>
+														<TableCell align="right">
+															<Typography color="success.main" variant="body2">
+																{formatCurrency(forecast.summary.totalCollected, "$", 2)}
+															</Typography>
+														</TableCell>
+														<TableCell align="right">
+															<Typography
+																color={forecast.summary.totalProfit >= 0 ? "success.main" : "error.main"}
+																variant="body2"
+															>
+																{formatCurrency(forecast.summary.totalProfit, "$", 2)}
+															</Typography>
+														</TableCell>
+														<TableCell align="right">
+															<Chip
+																color={forecast.summary.returnPercentage >= 0 ? "success" : "error"}
+																label={formatPercentage(forecast.summary.returnPercentage)}
+																size="small"
+															/>
+														</TableCell>
+														<TableCell align="right">
+															<Typography color="text.secondary" variant="body2">
+																{new Date(forecast.createdAt).toLocaleDateString("en-US", {
+																	year: "numeric",
+																	month: "short",
+																	day: "numeric",
+																})}
+															</Typography>
+														</TableCell>
+														<TableCell align="right">
+															<Stack direction="row" spacing={1} sx={{ justifyContent: "flex-end" }}>
+																<IconButton
+																	onClick={() => handleEditForecast(forecast)}
+																	size="small"
+																	title="Edit forecast"
+																>
+																	<PencilIcon fontSize="var(--icon-fontSize-md)" />
+																</IconButton>
+																<IconButton
+																	color="error"
+																	onClick={() => handleDeleteForecast(forecast.id)}
+																	size="small"
+																	title="Delete forecast"
+																>
+																	<TrashIcon fontSize="var(--icon-fontSize-md)" />
+																</IconButton>
+															</Stack>
+														</TableCell>
+													</TableRow>
+													<TableRow>
+														<TableCell colSpan={10} sx={{ py: 0, borderBottom: isExpanded ? "1px solid var(--mui-palette-divider)" : "none" }}>
+															<Collapse in={isExpanded} timeout="auto" unmountOnExit>
+																{details ? (
+																	<Box sx={{ py: 3 }}>
+																		<Typography variant="h6" sx={{ mb: 2 }}>
+																			Profit-taking strategies by token
+																		</Typography>
+																		<Table size="small" sx={{ mt: 2 }}>
+																			<TableHead>
+																				<TableRow>
+																					<TableCell sx={{ width: "40px", fontWeight: 600 }} />
+																					<TableCell sx={{ fontWeight: 600 }}>Token</TableCell>
+																					<TableCell sx={{ fontWeight: 600 }}>Strategy</TableCell>
+																					<TableCell align="right" sx={{ fontWeight: 600 }}>Quantity</TableCell>
+																					<TableCell align="right" sx={{ fontWeight: 600 }}>Invested</TableCell>
+																				</TableRow>
+																			</TableHead>
+																			<TableBody>
+																				{details.holdings
+																					.filter((holding: any) => holding.strategy)
+																					.map((holding: any) => {
+																						const strategy = holding.strategy as TheoreticalStrategyResponse;
+																						const quantity = holding.quantity || 0;
+																						const averagePrice = holding.averagePrice || 0;
+																						const tokenKey = `${forecast.id}-${holding.id}`;
+																						const isTokenExpanded = expandedTokens.has(tokenKey);
+																						return (
+																							<React.Fragment key={holding.id}>
+																								<TableRow>
+																									<TableCell>
+																										<IconButton
+																											onClick={() => handleToggleTokenExpand(tokenKey)}
+																											size="small"
+																											sx={{ padding: "4px" }}
+																										>
+																											{isTokenExpanded ? (
+																												<CaretDownIcon fontSize="var(--icon-fontSize-sm)" />
+																											) : (
+																												<CaretRightIcon fontSize="var(--icon-fontSize-sm)" />
+																											)}
+																										</IconButton>
+																									</TableCell>
+																									<TableCell>
+																										<Typography variant="subtitle2">
+																											{holding.token?.symbol || holding.symbol || "Unknown"}
+																										</Typography>
+																									</TableCell>
+																									<TableCell>
+																										<Typography variant="body2">{strategy.name}</Typography>
+																									</TableCell>
+																									<TableCell align="right">
+																										<Typography variant="body2">
+																											{quantity.toLocaleString(undefined, {
+																												maximumFractionDigits: 8,
+																											})}
+																										</Typography>
+																									</TableCell>
+																									<TableCell align="right">
+																										<Typography variant="body2">
+																											{formatCurrency(quantity * averagePrice, "$", 2)}
+																										</Typography>
+																									</TableCell>
+																								</TableRow>
+																								<TableRow>
+																									<TableCell colSpan={5} sx={{ py: 0, borderBottom: isTokenExpanded ? "1px solid var(--mui-palette-divider)" : "none" }}>
+																										<Collapse in={isTokenExpanded} timeout="auto" unmountOnExit>
+																											<Box sx={{ py: 2, pl: 4 }}>
+																												<Card variant="outlined" sx={{ bgcolor: "var(--mui-palette-background-level1)" }}>
+																													<CardContent>
+																														<Stack spacing={2}>
+																															<Typography variant="subtitle2">
+																																Profit takings for strategy {strategy.name} on {holding.token?.symbol || holding.symbol}
+																															</Typography>
+																															<List dense>
+																																{strategy.profitTargets.map((target) => {
+																																	const targetPrice =
+																																		target.targetType === "percentage"
+																																			? averagePrice * (1 + target.targetValue / 100)
+																																			: target.targetValue;
+																																	return (
+																																		<ListItem key={target.order} sx={{ py: 0.5 }}>
+																																			<Checkbox checked size="small" sx={{ p: 0, mr: 1 }} />
+																																			<ListItemText
+																																				primary={
+																																					<Typography variant="body2">
+																																						TP {target.order}: {holding.token?.symbol || holding.symbol} = {formatCurrency(targetPrice, "$", 2)} Sell {target.sellPercentage.toFixed(1)}%
+																																					</Typography>
+																																				}
+																																			/>
+																																		</ListItem>
+																																	);
+																																})}
+																															</List>
+																														</Stack>
+																													</CardContent>
+																												</Card>
+																											</Box>
+																										</Collapse>
+																									</TableCell>
+																								</TableRow>
+																							</React.Fragment>
+																						);
+																					})}
+																			</TableBody>
+																		</Table>
+																	</Box>
+																) : (
+																	<Box sx={{ py: 3, textAlign: "center" }}>
+																		<CircularProgress size={24} />
+																	</Box>
+																)}
+															</Collapse>
+														</TableCell>
+													</TableRow>
+												</React.Fragment>
+											);
+										})}
 									</TableBody>
 								</Table>
 							</Box>

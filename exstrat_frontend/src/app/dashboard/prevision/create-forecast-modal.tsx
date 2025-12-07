@@ -13,6 +13,11 @@ import DialogTitle from "@mui/material/DialogTitle";
 import Divider from "@mui/material/Divider";
 import FormControl from "@mui/material/FormControl";
 import IconButton from "@mui/material/IconButton";
+import Collapse from "@mui/material/Collapse";
+import Checkbox from "@mui/material/Checkbox";
+import List from "@mui/material/List";
+import ListItem from "@mui/material/ListItem";
+import ListItemText from "@mui/material/ListItemText";
 import InputLabel from "@mui/material/InputLabel";
 import LinearProgress from "@mui/material/LinearProgress";
 import Select from "@mui/material/Select";
@@ -25,6 +30,8 @@ import TableRow from "@mui/material/TableRow";
 import TextField from "@mui/material/TextField";
 import Typography from "@mui/material/Typography";
 import { XIcon } from "@phosphor-icons/react/dist/ssr/X";
+import { CaretDownIcon } from "@phosphor-icons/react/dist/ssr/CaretDown";
+import { CaretRightIcon } from "@phosphor-icons/react/dist/ssr/CaretRight";
 import { formatCurrency, formatPercentage } from "@/lib/format";
 import { createForecast, getTheoreticalStrategies, getPortfolioHoldings } from "@/lib/portfolios-api";
 import { strategiesApi } from "@/lib/strategies-api";
@@ -47,6 +54,7 @@ export function CreateForecastModal({ onClose, onSuccess, open }: CreateForecast
 	const [theoreticalStrategies, setTheoreticalStrategies] = React.useState<TheoreticalStrategyResponse[]>([]);
 	const [holdings, setHoldings] = React.useState<any[]>([]);
 	const [appliedStrategies, setAppliedStrategies] = React.useState<Record<string, string>>({});
+	const [expandedTokens, setExpandedTokens] = React.useState<Set<string>>(new Set());
 	const [loading, setLoading] = React.useState(false);
 
 	// Load portfolios and theoretical strategies on mount
@@ -136,6 +144,26 @@ export function CreateForecastModal({ onClose, onSuccess, open }: CreateForecast
 			...prev,
 			[holdingId]: strategyId,
 		}));
+		// Close expansion when strategy is removed
+		if (strategyId === "none") {
+			setExpandedTokens((prev) => {
+				const newSet = new Set(prev);
+				newSet.delete(holdingId);
+				return newSet;
+			});
+		}
+	};
+
+	const toggleTokenExpansion = (holdingId: string) => {
+		setExpandedTokens((prev) => {
+			const newSet = new Set(prev);
+			if (newSet.has(holdingId)) {
+				newSet.delete(holdingId);
+			} else {
+				newSet.add(holdingId);
+			}
+			return newSet;
+		});
 	};
 
 	const getCompatibleStrategies = (tokenSymbol: string) => {
@@ -148,6 +176,12 @@ export function CreateForecastModal({ onClose, onSuccess, open }: CreateForecast
 		returnPercentage: number;
 		remainingTokens: number;
 		remainingTokensValue: number;
+		profitTargetsDetails: Array<{
+			order: number;
+			targetPrice: number;
+			tokensSold: number;
+			amountCollected: number;
+		}>;
 	} | null => {
 		const strategyId = appliedStrategies[holding.id];
 		if (!strategyId || strategyId === "none") {
@@ -163,6 +197,12 @@ export function CreateForecastModal({ onClose, onSuccess, open }: CreateForecast
 
 		let amountCollected = 0;
 		let remainingTokens = quantity;
+		const profitTargetsDetails: Array<{
+			order: number;
+			targetPrice: number;
+			tokensSold: number;
+			amountCollected: number;
+		}> = [];
 
 		// Calculate based on profit targets
 		strategy.profitTargets.forEach((target) => {
@@ -171,11 +211,17 @@ export function CreateForecastModal({ onClose, onSuccess, open }: CreateForecast
 					? averagePrice * (1 + target.targetValue / 100)
 					: target.targetValue;
 
-			if (currentPrice >= targetPrice) {
-				const tokensToSell = (quantity * target.sellPercentage) / 100;
-				amountCollected += tokensToSell * targetPrice;
-				remainingTokens -= tokensToSell;
-			}
+			const tokensToSell = (quantity * target.sellPercentage) / 100;
+			const collected = tokensToSell * targetPrice;
+			amountCollected += collected;
+			remainingTokens -= tokensToSell;
+
+			profitTargetsDetails.push({
+				order: target.order,
+				targetPrice,
+				tokensSold: tokensToSell,
+				amountCollected: collected,
+			});
 		});
 
 		const invested = quantity * averagePrice;
@@ -189,6 +235,7 @@ export function CreateForecastModal({ onClose, onSuccess, open }: CreateForecast
 			returnPercentage,
 			remainingTokens,
 			remainingTokensValue,
+			profitTargetsDetails,
 		};
 	};
 
@@ -348,6 +395,7 @@ export function CreateForecastModal({ onClose, onSuccess, open }: CreateForecast
 										<Table>
 											<TableHead>
 												<TableRow>
+													<TableCell sx={{ width: "40px", fontWeight: 600 }} />
 													<TableCell sx={{ fontWeight: 600 }}>Token</TableCell>
 													<TableCell align="right" sx={{ fontWeight: 600 }}>
 														Quantity
@@ -368,64 +416,119 @@ export function CreateForecastModal({ onClose, onSuccess, open }: CreateForecast
 													);
 													const selectedStrategyId = appliedStrategies[holding.id] || "none";
 													const result = calculateTokenResult(holding);
+													const isExpanded = expandedTokens.has(holding.id);
+													const selectedStrategy = theoreticalStrategies.find((s) => s.id === selectedStrategyId);
 
 													return (
-														<TableRow key={holding.id}>
-															<TableCell>
-																<Typography variant="subtitle2">
-																	{holding.token?.symbol || holding.symbol || "Unknown"}
-																</Typography>
-																<Typography color="text.secondary" variant="caption">
-																	{holding.token?.name || holding.tokenName || ""}
-																</Typography>
-															</TableCell>
-															<TableCell align="right">
-																<Typography variant="body2">
-																	{(holding.quantity || 0).toLocaleString(undefined, {
-																		maximumFractionDigits: 8,
-																	})}
-																</Typography>
-															</TableCell>
-															<TableCell align="right">
-																<Typography variant="body2">
-																	{formatCurrency((holding.quantity || 0) * (holding.averagePrice || 0), "$", 2)}
-																</Typography>
-															</TableCell>
-															<TableCell>
-																<FormControl fullWidth size="small">
-																	<Select
-																		value={selectedStrategyId}
-																		onChange={(e) => handleStrategyChange(holding.id, e.target.value)}
-																	>
-																		<Option value="none">No strategy</Option>
-																		{compatibleStrategies.map((strategy) => (
-																			<Option key={strategy.id} value={strategy.id}>
-																				{strategy.name}
-																			</Option>
-																		))}
-																	</Select>
-																</FormControl>
-															</TableCell>
-															<TableCell align="right">
-																{result ? (
-																	<Stack spacing={0.5}>
-																		<Typography
-																			color={result.returnPercentage >= 0 ? "success.main" : "error.main"}
-																			variant="body2"
+														<React.Fragment key={holding.id}>
+															<TableRow>
+																<TableCell>
+																	{selectedStrategyId !== "none" && result && (
+																		<IconButton
+																			onClick={() => toggleTokenExpansion(holding.id)}
+																			size="small"
+																			sx={{ padding: "4px" }}
 																		>
-																			{formatPercentage(result.returnPercentage)}
-																		</Typography>
-																		<Typography color="text.secondary" variant="caption">
-																			{formatCurrency(result.amountCollected, "$", 2)}
-																		</Typography>
-																	</Stack>
-																) : (
-																	<Typography color="text.secondary" variant="body2">
-																		-
+																			{isExpanded ? (
+																				<CaretDownIcon fontSize="var(--icon-fontSize-md)" />
+																			) : (
+																				<CaretRightIcon fontSize="var(--icon-fontSize-md)" />
+																			)}
+																		</IconButton>
+																	)}
+																</TableCell>
+																<TableCell>
+																	<Typography variant="subtitle2">
+																		{holding.token?.symbol || holding.symbol || "Unknown"}
 																	</Typography>
-																)}
-															</TableCell>
-														</TableRow>
+																	<Typography color="text.secondary" variant="caption">
+																		{holding.token?.name || holding.tokenName || ""}
+																	</Typography>
+																</TableCell>
+																<TableCell align="right">
+																	<Typography variant="body2">
+																		{(holding.quantity || 0).toLocaleString(undefined, {
+																			maximumFractionDigits: 8,
+																		})}
+																	</Typography>
+																</TableCell>
+																<TableCell align="right">
+																	<Typography variant="body2">
+																		{formatCurrency((holding.quantity || 0) * (holding.averagePrice || 0), "$", 2)}
+																	</Typography>
+																</TableCell>
+																<TableCell>
+																	<FormControl fullWidth size="small">
+																		<Select
+																			value={selectedStrategyId}
+																			onChange={(e) => handleStrategyChange(holding.id, e.target.value)}
+																		>
+																			<Option value="none">No strategy</Option>
+																			{compatibleStrategies.map((strategy) => (
+																				<Option key={strategy.id} value={strategy.id}>
+																					{strategy.name}
+																				</Option>
+																			))}
+																		</Select>
+																	</FormControl>
+																</TableCell>
+																<TableCell align="right">
+																	{result ? (
+																		<Stack spacing={0.5}>
+																			<Typography
+																				color={result.returnPercentage >= 0 ? "success.main" : "error.main"}
+																				variant="body2"
+																			>
+																				{formatPercentage(result.returnPercentage)}
+																			</Typography>
+																			<Typography color="text.secondary" variant="caption">
+																				{formatCurrency(result.amountCollected, "$", 2)}
+																			</Typography>
+																		</Stack>
+																	) : (
+																		<Typography color="text.secondary" variant="body2">
+																			-
+																		</Typography>
+																	)}
+																</TableCell>
+															</TableRow>
+															{selectedStrategyId !== "none" && result && (
+																<TableRow>
+																	<TableCell colSpan={6} sx={{ py: 0, borderBottom: isExpanded ? "1px solid var(--mui-palette-divider)" : "none" }}>
+																		<Collapse in={isExpanded} timeout="auto" unmountOnExit>
+																			<Box sx={{ py: 2 }}>
+																				<Card variant="outlined" sx={{ bgcolor: "var(--mui-palette-background-level1)" }}>
+																					<CardContent>
+																						<Stack spacing={2}>
+																							<Typography variant="subtitle2">
+																								Profit takings for strategy {selectedStrategy?.name} on {holding.token?.symbol || holding.symbol}
+																							</Typography>
+																							<List dense>
+																								{result.profitTargetsDetails.map((detail) => {
+																									const percentage = holding.quantity > 0 ? (detail.tokensSold / holding.quantity) * 100 : 0;
+																									return (
+																										<ListItem key={detail.order} sx={{ py: 0.5 }}>
+																											<Checkbox checked size="small" sx={{ p: 0, mr: 1 }} />
+																											<ListItemText
+																												primary={
+																													<Typography variant="body2">
+																														TP {detail.order}: {holding.token?.symbol || holding.symbol} = {formatCurrency(detail.targetPrice, "$", 2)} Sell {percentage.toFixed(1)}%
+																													</Typography>
+																												}
+																											/>
+																										</ListItem>
+																									);
+																								})}
+																							</List>
+																						</Stack>
+																					</CardContent>
+																				</Card>
+																			</Box>
+																		</Collapse>
+																	</TableCell>
+																</TableRow>
+															)}
+														</React.Fragment>
 													);
 												})}
 											</TableBody>
