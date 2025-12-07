@@ -13,18 +13,16 @@ import { setSettings as setPersistedSettings } from "@/lib/settings";
 import { useSettings } from "@/components/core/settings/settings-context";
 import { toast } from "@/components/core/toaster";
 
-export type Language = "en" | "de" | "es";
+export type Language = "en" | "fr";
 
 export const languageFlags = {
 	en: "/assets/flag-uk.svg",
-	de: "/assets/flag-de.svg",
-	es: "/assets/flag-es.svg",
+	fr: "/assets/flag-uk.svg", // Placeholder - will be replaced with flag-fr.svg
 } as const;
 
 const languageOptions = {
-	en: { icon: "/assets/flag-uk.svg", label: "English" },
-	de: { icon: "/assets/flag-de.svg", label: "German" },
-	es: { icon: "/assets/flag-es.svg", label: "Spanish" },
+	en: { icon: "/assets/flag-uk.svg", label: "English", comingSoon: false },
+	fr: { icon: "/assets/flag-uk.svg", label: "Français", comingSoon: true }, // Placeholder - will be replaced with flag-fr.svg
 } as const;
 
 export interface LanguagePopoverProps {
@@ -40,6 +38,10 @@ export function LanguagePopover({ anchorEl, onClose, open = false }: LanguagePop
 
 	const handleChange = React.useCallback(
 		async (language: Language): Promise<void> => {
+			const option = languageOptions[language];
+			if (option.comingSoon) {
+				return; // Don't change language if coming soon
+			}
 			onClose?.();
 			await setPersistedSettings({ ...settings, language });
 			await i18n.changeLanguage(language);
@@ -69,13 +71,25 @@ export function LanguagePopover({ anchorEl, onClose, open = false }: LanguagePop
 								// ignore
 							});
 						}}
+						disabled={option.comingSoon}
+						sx={{
+							opacity: option.comingSoon ? 0.5 : 1,
+							cursor: option.comingSoon ? "not-allowed" : "pointer",
+						}}
 					>
 						<ListItemIcon>
-							<Box sx={{ height: "28px", width: "28px" }}>
+							<Box sx={{ height: "28px", width: "28px", opacity: option.comingSoon ? 0.5 : 1 }}>
 								<Box alt={option.label} component="img" src={option.icon} sx={{ height: "auto", width: "100%" }} />
 							</Box>
 						</ListItemIcon>
-						<Typography variant="subtitle2">{option.label}</Typography>
+						<Box sx={{ flex: 1, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+							<Typography variant="subtitle2">{option.label}</Typography>
+							{option.comingSoon && (
+								<Typography variant="caption" color="text.secondary" sx={{ ml: 1, fontSize: "0.7rem" }}>
+									To be soon
+								</Typography>
+							)}
+						</Box>
 					</MenuItem>
 				);
 			})}

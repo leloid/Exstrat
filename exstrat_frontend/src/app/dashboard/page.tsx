@@ -256,7 +256,7 @@ export default function Page(): React.JSX.Element {
 									}
 								}}
 							>
-								<MenuItem value="global">🌐 Global (All Portfolios)</MenuItem>
+								<MenuItem value="global">🌐 Global Wallet</MenuItem>
 								{portfolios.map((portfolio) => (
 									<MenuItem key={portfolio.id} value={portfolio.id}>
 										{portfolio.name}
