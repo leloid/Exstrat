@@ -173,6 +173,7 @@ export interface PortfolioContextType {
 	currentPortfolio: Portfolio | null;
 	holdings: Holding[];
 	isLoading: boolean;
+	isLoadingHoldings: boolean;
 	error: string | null;
 	createPortfolio: (data: CreatePortfolioDto) => Promise<void>;
 	updatePortfolio: (id: string, data: UpdatePortfolioDto) => Promise<void>;

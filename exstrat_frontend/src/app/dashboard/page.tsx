@@ -29,6 +29,7 @@ export default function Page(): React.JSX.Element {
 		currentPortfolio,
 		holdings,
 		isLoading: portfoliosLoading,
+		isLoadingHoldings,
 		selectPortfolio,
 	} = usePortfolio();
 	const [isGlobalView, setIsGlobalView] = React.useState(true);
@@ -164,7 +165,8 @@ export default function Page(): React.JSX.Element {
 		}
 	}, [isGlobalView, currentPortfolio, portfolios.length]);
 
-	if (portfoliosLoading || loadingGlobal) {
+
+	if (portfoliosLoading || loadingGlobal || (!isGlobalView && isLoadingHoldings)) {
 		return (
 			<Box
 				sx={{
@@ -256,11 +258,11 @@ export default function Page(): React.JSX.Element {
 						<Grid container spacing={3}>
 							<Grid size={{ xs: 12, lg: 8 }}>
 								<GainsLossesChart holdings={displayHoldings} />
-							</Grid>
+					</Grid>
 							<Grid size={{ xs: 12, lg: 4 }}>
 								<TokenDistribution holdings={displayHoldings} />
-							</Grid>
-						</Grid>
+					</Grid>
+					</Grid>
 
 						{/* Tokens Table */}
 						<TokensTable

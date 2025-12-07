@@ -33,6 +33,7 @@ export const PortfolioProvider: React.FC<PortfolioProviderProps> = ({ children }
 	const [currentPortfolio, setCurrentPortfolio] = React.useState<Portfolio | null>(null);
 	const [holdings, setHoldings] = React.useState<Holding[]>([]);
 	const [isLoading, setIsLoading] = React.useState(true);
+	const [isLoadingHoldings, setIsLoadingHoldings] = React.useState(false);
 	const [error, setError] = React.useState<string | null>(null);
 
 	// Load portfolios only if user is authenticated
@@ -94,6 +95,7 @@ export const PortfolioProvider: React.FC<PortfolioProviderProps> = ({ children }
 
 	const loadHoldings = React.useCallback(async (portfolioId: string) => {
 		try {
+			setIsLoadingHoldings(true);
 			setError(null);
 			const data = await portfoliosApi.getPortfolioHoldings(portfolioId);
 			setHoldings(data);
@@ -107,6 +109,8 @@ export const PortfolioProvider: React.FC<PortfolioProviderProps> = ({ children }
 			// For other errors, log but don't block the interface
 			console.error("Error loading holdings:", error_);
 			setHoldings([]);
+		} finally {
+			setIsLoadingHoldings(false);
 		}
 	}, []);
 
@@ -216,6 +220,7 @@ export const PortfolioProvider: React.FC<PortfolioProviderProps> = ({ children }
 			currentPortfolio,
 			holdings,
 			isLoading,
+			isLoadingHoldings,
 			error,
 			createPortfolio,
 			updatePortfolio,
@@ -231,6 +236,7 @@ export const PortfolioProvider: React.FC<PortfolioProviderProps> = ({ children }
 			currentPortfolio,
 			holdings,
 			isLoading,
+			isLoadingHoldings,
 			error,
 			createPortfolio,
 			updatePortfolio,
