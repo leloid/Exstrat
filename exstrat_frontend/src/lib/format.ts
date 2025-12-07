@@ -76,3 +76,38 @@ export const formatCurrency = (
 	})}`;
 };
 
+/**
+ * Format an amount in currency with compact notation (k for thousands, M for millions)
+ * @param amount - The amount to format (can be null or undefined)
+ * @param currency - Currency symbol (default: '$')
+ * @param decimals - Number of decimals (default: 2)
+ * @returns Formatted amount with currency and compact notation
+ */
+export const formatCompactCurrency = (
+	amount: number | null | undefined,
+	currency: string = "$",
+	decimals: number = 2
+): string => {
+	if (amount === null || amount === undefined || isNaN(amount)) {
+		return `${currency}0.00`;
+	}
+
+	const absAmount = Math.abs(amount);
+	const sign = amount < 0 ? "-" : "";
+
+	// For amounts >= 1 million, use "M" notation
+	if (absAmount >= 1_000_000) {
+		const millions = absAmount / 1_000_000;
+		return `${sign}${currency}${millions.toFixed(decimals)} M`;
+	}
+
+	// For amounts >= 1,000, use "k" notation
+	if (absAmount >= 1_000) {
+		const thousands = absAmount / 1_000;
+		return `${sign}${currency}${thousands.toFixed(decimals)}k`;
+	}
+
+	// For amounts < 1,000, display full number
+	return `${sign}${currency}${absAmount.toFixed(decimals)}`;
+};
+

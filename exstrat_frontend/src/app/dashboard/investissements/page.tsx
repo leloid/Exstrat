@@ -53,10 +53,15 @@ import { XIcon } from "@phosphor-icons/react/dist/ssr/X";
 import { usePortfolio } from "@/contexts/PortfolioContext";
 import * as portfoliosApi from "@/lib/portfolios-api";
 import { transactionsApi } from "@/lib/transactions-api";
-import { formatCurrency, formatPercentage } from "@/lib/format";
+import { formatCurrency, formatPercentage, formatCompactCurrency } from "@/lib/format";
 import { TokenSearch } from "@/components/transactions/token-search";
 import type { Holding, CreatePortfolioDto, UpdatePortfolioDto } from "@/types/portfolio";
 import type { TransactionResponse, CreateTransactionDto, TokenSearchResult } from "@/types/transactions";
+import { Cell, Pie, PieChart, Tooltip } from "recharts";
+import { NoSsr } from "@/components/core/no-ssr";
+import CardActions from "@mui/material/CardActions";
+import { ArrowDownRightIcon } from "@phosphor-icons/react/dist/ssr/ArrowDownRight";
+import { ArrowUpRightIcon } from "@phosphor-icons/react/dist/ssr/ArrowUpRight";
 
 interface PortfolioData {
 	id: string;
@@ -185,6 +190,91 @@ export default function Page(): React.JSX.Element {
 	const [transactionOrderBy, setTransactionOrderBy] = React.useState<string>("");
 	const [transactionOrder, setTransactionOrder] = React.useState<"asc" | "desc">("asc");
 
+	// View all tokens modal state
+	const [showAllTokensModal, setShowAllTokensModal] = React.useState(false);
+	const [allTokensSearchQuery, setAllTokensSearchQuery] = React.useState("");
+	const [allTokensPage, setAllTokensPage] = React.useState(0);
+	const [allTokensRowsPerPage, setAllTokensRowsPerPage] = React.useState(10);
+
+	// Calculate aggregated token data for chart
+	// Full token data (all tokens, no limit)
+	const allTokenData = React.useMemo(() => {
+		const tokenMap = new Map<string, { symbol: string; name: string; quantity: number; value: number; color: string }>();
+
+		// Aggregate all holdings from all portfolios
+		Object.values(portfolioData).forEach((portfolio) => {
+			portfolio.holdings.forEach((holding) => {
+				const symbol = holding.token.symbol.toUpperCase();
+				const currentValue = holding.currentValue || (holding.currentPrice || holding.averagePrice) * holding.quantity;
+
+				if (tokenMap.has(symbol)) {
+					const existing = tokenMap.get(symbol)!;
+					existing.quantity += holding.quantity;
+					existing.value += currentValue;
+				} else {
+					// Generate a color based on symbol
+					const colors = [
+						"var(--mui-palette-primary-main)",
+						"var(--mui-palette-success-main)",
+						"var(--mui-palette-warning-main)",
+						"var(--mui-palette-error-main)",
+						"var(--mui-palette-info-main)",
+						"#9c27b0",
+						"#f50057",
+						"#00acc1",
+						"#ff9800",
+						"#795548",
+					];
+					const colorIndex = symbol.charCodeAt(0) % colors.length;
+
+					tokenMap.set(symbol, {
+						symbol,
+						name: holding.token.name,
+						quantity: holding.quantity,
+						value: currentValue,
+						color: colors[colorIndex],
+					});
+				}
+			});
+		});
+
+		// Convert to array and sort by value (descending)
+		return Array.from(tokenMap.values())
+			.sort((a, b) => b.value - a.value)
+			.map((item) => ({
+				name: item.symbol,
+				value: item.value,
+				color: item.color,
+				quantity: item.quantity,
+				tokenName: item.name,
+			}));
+	}, [portfolioData]);
+
+	// Token data for chart (limited to top 10, with "Others" for the rest)
+	const aggregatedTokenData = React.useMemo(() => {
+		// Limit to top 10 for chart display, group the rest as "Others"
+		const MAX_TOKENS_FOR_CHART = 10;
+		if (allTokenData.length <= MAX_TOKENS_FOR_CHART) {
+			return allTokenData;
+		}
+
+		const topTokens = allTokenData.slice(0, MAX_TOKENS_FOR_CHART);
+		const othersValue = allTokenData.slice(MAX_TOKENS_FOR_CHART).reduce((sum, token) => sum + token.value, 0);
+		const othersQuantity = allTokenData.slice(MAX_TOKENS_FOR_CHART).reduce((sum, token) => sum + token.quantity, 0);
+
+		if (othersValue > 0) {
+			topTokens.push({
+				name: "Others",
+				value: othersValue,
+				color: "var(--mui-palette-text-secondary)",
+				quantity: othersQuantity,
+				tokenName: `+${allTokenData.length - MAX_TOKENS_FOR_CHART} more tokens`,
+			});
+		}
+
+		return topTokens;
+	}, [allTokenData]);
+
 	// Load portfolio data
 	React.useEffect(() => {
 		const loadPortfolioData = async () => {
@@ -309,10 +399,6 @@ export default function Page(): React.JSX.Element {
 				case "pnl":
 					aValue = dataA.pnl;
 					bValue = dataB.pnl;
-					break;
-				case "holdingsCount":
-					aValue = dataA.holdingsCount;
-					bValue = dataB.holdingsCount;
 					break;
 				default:
 					return 0;
@@ -740,7 +826,7 @@ export default function Page(): React.JSX.Element {
 						sx={{
 							display: "grid",
 							gap: 2,
-							gridTemplateColumns: { xs: "1fr", md: "repeat(2, 1fr)", lg: "repeat(4, 1fr)" },
+							gridTemplateColumns: { xs: "1fr", md: "repeat(2, 1fr)", lg: "repeat(3, 1fr)" },
 							p: 3,
 						}}
 					>
@@ -753,7 +839,7 @@ export default function Page(): React.JSX.Element {
 							}}
 						>
 							<Typography color="text.secondary">Total Value</Typography>
-							<Typography variant="h3">{formatCurrency(globalStats.totalValue, "$", 2)}</Typography>
+							<Typography variant="h3">{formatCompactCurrency(globalStats.totalValue, "$", 2)}</Typography>
 						</Stack>
 						<Stack
 							spacing={1}
@@ -764,7 +850,7 @@ export default function Page(): React.JSX.Element {
 							}}
 						>
 							<Typography color="text.secondary">Total Invested</Typography>
-							<Typography variant="h3">{formatCurrency(globalStats.totalInvested, "$", 2)}</Typography>
+							<Typography variant="h3">{formatCompactCurrency(globalStats.totalInvested, "$", 2)}</Typography>
 						</Stack>
 						<Stack
 							spacing={1}
@@ -779,7 +865,7 @@ export default function Page(): React.JSX.Element {
 								color={globalStats.totalPNL >= 0 ? "success.main" : "error.main"}
 								variant="h3"
 							>
-								{formatCurrency(globalStats.totalPNL, "$", 2)}
+								{formatCompactCurrency(globalStats.totalPNL, "$", 2)}
 							</Typography>
 							<Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
 								{globalStats.totalPNL >= 0 ? (
@@ -799,14 +885,132 @@ export default function Page(): React.JSX.Element {
 								</Typography>
 							</Stack>
 						</Stack>
-						<Stack spacing={1}>
-							<Typography color="text.secondary">Total Holdings</Typography>
-							<Typography variant="h3">{globalStats.totalHoldings}</Typography>
-						</Stack>
 					</Box>
 				</Card>
 
-				{/* Wallets Section */}
+				{/* Token Distribution and Wallets - Side by Side */}
+				<Grid container spacing={3}>
+					{/* Token Distribution Chart */}
+					{aggregatedTokenData.length > 0 && (
+						<Grid size={{ xs: 12, md: 4 }}>
+							<Card sx={{ height: "100%" }}>
+								<CardHeader
+									avatar={
+										<Avatar>
+											<WalletIcon fontSize="var(--Icon-fontSize)" />
+										</Avatar>
+									}
+									subheader="Balance across all your wallets"
+									title="Token Distribution"
+								/>
+								<CardContent>
+									<Stack direction="row" spacing={3} sx={{ alignItems: "center", flexWrap: "wrap" }}>
+										<NoSsr fallback={<Box sx={{ height: "200px", width: "200px" }} />}>
+											<PieChart height={200} margin={{ top: 0, right: 0, bottom: 0, left: 0 }} width={200}>
+												<Pie
+													animationDuration={300}
+													cx={100}
+													cy={100}
+													data={aggregatedTokenData}
+													dataKey="value"
+													innerRadius={70}
+													nameKey="name"
+													outerRadius={100}
+													strokeWidth={0}
+												>
+													{aggregatedTokenData.map(
+														(entry): React.JSX.Element => (
+															<Cell fill={entry.color} key={entry.name} />
+														)
+													)}
+												</Pie>
+												<Tooltip animationDuration={50} content={<TokenTooltipContent />} />
+											</PieChart>
+										</NoSsr>
+										<Stack spacing={3} sx={{ flex: "1 1 auto" }}>
+											<Stack spacing={1}>
+												<Typography color="text.secondary" variant="overline">
+													Total balance
+												</Typography>
+												<Typography variant="h4">
+													{formatCompactCurrency(
+														allTokenData.reduce((sum, item) => sum + item.value, 0),
+														"$",
+														2
+													)}
+												</Typography>
+											</Stack>
+											<Stack spacing={1}>
+												<Typography color="text.secondary" variant="overline">
+													Available tokens {allTokenData.length > 4 && `(showing top 4 of ${allTokenData.length})`}
+												</Typography>
+												<Stack component="ul" spacing={2} sx={{ listStyle: "none", m: 0, p: 0 }}>
+													{aggregatedTokenData.slice(0, 4).map((entry) => (
+														<Stack component="li" direction="row" key={entry.name} spacing={1} sx={{ alignItems: "center" }}>
+															<Box sx={{ bgcolor: entry.color, borderRadius: "2px", height: "4px", width: "16px" }} />
+															<Typography sx={{ flex: "1 1 auto" }} variant="subtitle2">
+																{entry.name}
+															</Typography>
+															<Typography color="text.secondary" variant="body2">
+																{formatCompactCurrency(entry.value, "$", 2)}
+															</Typography>
+														</Stack>
+													))}
+													{allTokenData.length > 4 && (
+														<Stack
+															component="li"
+															direction="row"
+															spacing={1}
+															sx={{ alignItems: "center", opacity: 0.6 }}
+														>
+															<Box
+																sx={{
+																	bgcolor: "var(--mui-palette-text-secondary)",
+																	borderRadius: "2px",
+																	height: "4px",
+																	width: "16px",
+																}}
+															/>
+															<Typography color="text.secondary" sx={{ flex: "1 1 auto" }} variant="subtitle2">
+																+{allTokenData.length - 4} more tokens
+															</Typography>
+															<Typography color="text.secondary" variant="body2">
+																{formatCompactCurrency(
+																	allTokenData
+																		.slice(4)
+																		.reduce((sum, token) => sum + token.value, 0),
+																	"$",
+																	2
+																)}
+															</Typography>
+														</Stack>
+													)}
+												</Stack>
+											</Stack>
+										</Stack>
+									</Stack>
+								</CardContent>
+								<Divider />
+								<CardActions>
+									<Button
+										color="secondary"
+										endIcon={<ArrowUpRightIcon />}
+										size="small"
+										onClick={() => {
+											setShowAllTokensModal(true);
+											setAllTokensSearchQuery("");
+											setAllTokensPage(0);
+										}}
+									>
+										View All Tokens
+									</Button>
+								</CardActions>
+							</Card>
+						</Grid>
+					)}
+
+					{/* Wallets Section */}
+					<Grid size={{ xs: 12, md: aggregatedTokenData.length > 0 ? 8 : 12 }}>
 				<Card>
 					<CardContent>
 						<Stack direction="row" spacing={2} sx={{ alignItems: "center", justifyContent: "space-between", mb: 3 }}>
@@ -855,99 +1059,81 @@ export default function Page(): React.JSX.Element {
 								</Typography>
 							</Box>
 						) : (
-							<Table>
-								<TableHead>
-									<TableRow>
-										<TableCell>
-											<TableSortLabel
-												active={walletOrderBy === "name"}
-												direction={walletOrderBy === "name" ? walletOrder : "asc"}
-												onClick={() => {
-													if (walletOrderBy === "name") {
-														// If already sorting by this column, toggle direction
-														setWalletOrder(walletOrder === "asc" ? "desc" : "asc");
-													} else {
-														// If sorting by another column, start with ascending
-														setWalletOrder("asc");
-														setWalletOrderBy("name");
-													}
-													setWalletPage(0);
-												}}
-											>
-												Wallet
-											</TableSortLabel>
-										</TableCell>
-										<TableCell align="right">
-											<TableSortLabel
-												active={walletOrderBy === "value"}
-												direction={walletOrderBy === "value" ? walletOrder : "asc"}
-												onClick={() => {
-													if (walletOrderBy === "value") {
-														setWalletOrder(walletOrder === "asc" ? "desc" : "asc");
-													} else {
-														setWalletOrder("asc");
-														setWalletOrderBy("value");
-													}
-													setWalletPage(0);
-												}}
-											>
-												Current Value
-											</TableSortLabel>
-										</TableCell>
-										<TableCell align="right">
-											<TableSortLabel
-												active={walletOrderBy === "invested"}
-												direction={walletOrderBy === "invested" ? walletOrder : "asc"}
-												onClick={() => {
-													if (walletOrderBy === "invested") {
-														setWalletOrder(walletOrder === "asc" ? "desc" : "asc");
-													} else {
-														setWalletOrder("asc");
-														setWalletOrderBy("invested");
-													}
-													setWalletPage(0);
-												}}
-											>
-												Invested
-											</TableSortLabel>
-										</TableCell>
-										<TableCell align="right">
-											<TableSortLabel
-												active={walletOrderBy === "pnl"}
-												direction={walletOrderBy === "pnl" ? walletOrder : "asc"}
-												onClick={() => {
-													if (walletOrderBy === "pnl") {
-														setWalletOrder(walletOrder === "asc" ? "desc" : "asc");
-													} else {
-														setWalletOrder("asc");
-														setWalletOrderBy("pnl");
-													}
-													setWalletPage(0);
-												}}
-											>
-												P&L
-											</TableSortLabel>
-										</TableCell>
-										<TableCell align="right">
-											<TableSortLabel
-												active={walletOrderBy === "holdingsCount"}
-												direction={walletOrderBy === "holdingsCount" ? walletOrder : "asc"}
-												onClick={() => {
-													if (walletOrderBy === "holdingsCount") {
-														setWalletOrder(walletOrder === "asc" ? "desc" : "asc");
-													} else {
-														setWalletOrder("asc");
-														setWalletOrderBy("holdingsCount");
-													}
-													setWalletPage(0);
-												}}
-											>
-												Positions
-											</TableSortLabel>
-										</TableCell>
-										<TableCell align="right">Actions</TableCell>
-									</TableRow>
-								</TableHead>
+							<Box sx={{ overflowX: "auto", width: "100%" }}>
+								<Table sx={{ tableLayout: "fixed", width: "100%" }}>
+									<TableHead>
+										<TableRow>
+											<TableCell sx={{ width: "30%", minWidth: "150px", maxWidth: "200px" }}>
+												<TableSortLabel
+													active={walletOrderBy === "name"}
+													direction={walletOrderBy === "name" ? walletOrder : "asc"}
+													onClick={() => {
+														if (walletOrderBy === "name") {
+															setWalletOrder(walletOrder === "asc" ? "desc" : "asc");
+														} else {
+															setWalletOrder("asc");
+															setWalletOrderBy("name");
+														}
+														setWalletPage(0);
+													}}
+												>
+													Wallet
+												</TableSortLabel>
+											</TableCell>
+											<TableCell align="right" sx={{ width: "15%", minWidth: "100px" }}>
+												<TableSortLabel
+													active={walletOrderBy === "value"}
+													direction={walletOrderBy === "value" ? walletOrder : "asc"}
+													onClick={() => {
+														if (walletOrderBy === "value") {
+															setWalletOrder(walletOrder === "asc" ? "desc" : "asc");
+														} else {
+															setWalletOrder("asc");
+															setWalletOrderBy("value");
+														}
+														setWalletPage(0);
+													}}
+												>
+													Value
+												</TableSortLabel>
+											</TableCell>
+											<TableCell align="right" sx={{ width: "15%", minWidth: "100px" }}>
+												<TableSortLabel
+													active={walletOrderBy === "invested"}
+													direction={walletOrderBy === "invested" ? walletOrder : "asc"}
+													onClick={() => {
+														if (walletOrderBy === "invested") {
+															setWalletOrder(walletOrder === "asc" ? "desc" : "asc");
+														} else {
+															setWalletOrder("asc");
+															setWalletOrderBy("invested");
+														}
+														setWalletPage(0);
+													}}
+												>
+													Invested
+												</TableSortLabel>
+											</TableCell>
+											<TableCell align="right" sx={{ width: "20%", minWidth: "120px" }}>
+												<TableSortLabel
+													active={walletOrderBy === "pnl"}
+													direction={walletOrderBy === "pnl" ? walletOrder : "asc"}
+													onClick={() => {
+														if (walletOrderBy === "pnl") {
+															setWalletOrder(walletOrder === "asc" ? "desc" : "asc");
+														} else {
+															setWalletOrder("asc");
+															setWalletOrderBy("pnl");
+														}
+														setWalletPage(0);
+													}}
+												>
+													P&L
+												</TableSortLabel>
+											</TableCell>
+											<TableCell align="right" sx={{ width: "10%", minWidth: "80px" }}>Actions</TableCell>
+										</TableRow>
+									</TableHead>
 								<TableBody>
 									{paginatedWallets.map((portfolio) => {
 										const data = portfolioData[portfolio.id];
@@ -961,7 +1147,7 @@ export default function Page(): React.JSX.Element {
 												sx={{ cursor: "pointer" }}
 											>
 												<TableCell>
-													<Stack direction="row" spacing={2} sx={{ alignItems: "center" }}>
+													<Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
 														<Box
 															sx={{
 																alignItems: "center",
@@ -969,20 +1155,48 @@ export default function Page(): React.JSX.Element {
 																borderRadius: 1,
 																color: "var(--mui-palette-primary-contrastText)",
 																display: "flex",
-																height: "40px",
+																flexShrink: 0,
+																height: "32px",
 																justifyContent: "center",
-																width: "40px",
+																width: "32px",
 															}}
 														>
-															<WalletIcon fontSize="var(--icon-fontSize-md)" />
+															<WalletIcon fontSize="var(--icon-fontSize-xs)" />
 														</Box>
-														<Box>
-															<Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
-																<Typography variant="subtitle2">{data.name}</Typography>
-																{data.isDefault && <Chip label="Default" size="small" />}
+														<Box sx={{ minWidth: 0, flex: 1, overflow: "hidden" }}>
+															<Stack direction="row" spacing={0.5} sx={{ alignItems: "center" }}>
+																<Typography
+																	variant="subtitle2"
+																	sx={{
+																		fontSize: "0.875rem",
+																		lineHeight: 1.2,
+																		overflow: "hidden",
+																		textOverflow: "ellipsis",
+																		whiteSpace: "nowrap",
+																	}}
+																>
+																	{data.name}
+																</Typography>
+																{data.isDefault && (
+																	<Chip
+																		label="D"
+																		size="small"
+																		sx={{ height: "18px", fontSize: "0.65rem", minWidth: "20px", px: 0.5 }}
+																	/>
+																)}
 															</Stack>
 															{data.description && (
-																<Typography color="text.secondary" variant="body2">
+																<Typography
+																	color="text.secondary"
+																	variant="caption"
+																	sx={{
+																		display: "block",
+																		fontSize: "0.7rem",
+																		overflow: "hidden",
+																		textOverflow: "ellipsis",
+																		whiteSpace: "nowrap",
+																	}}
+																>
 																	{data.description}
 																</Typography>
 															)}
@@ -990,45 +1204,57 @@ export default function Page(): React.JSX.Element {
 													</Stack>
 												</TableCell>
 												<TableCell align="right">
-													<Typography variant="body2">{formatCurrency(data.value, "$", 2)}</Typography>
-												</TableCell>
-												<TableCell align="right">
-													<Typography variant="body2">{formatCurrency(data.invested, "$", 2)}</Typography>
-												</TableCell>
-												<TableCell align="right">
-													<Stack direction="row" spacing={0.5} sx={{ alignItems: "center", justifyContent: "flex-end" }}>
-														{data.pnl >= 0 ? (
-															<TrendUpIcon color="var(--mui-palette-success-main)" fontSize="var(--icon-fontSize-sm)" />
-														) : (
-															<TrendDownIcon color="var(--mui-palette-error-main)" fontSize="var(--icon-fontSize-sm)" />
-														)}
-														<Typography
-															color={data.pnl >= 0 ? "success.main" : "error.main"}
-															variant="body2"
-														>
-															{formatCurrency(data.pnl, "$", 2)}
-														</Typography>
-													</Stack>
-													<Typography
-														color={data.pnlPercentage >= 0 ? "success.main" : "error.main"}
-														variant="caption"
-													>
-														{formatPercentage(data.pnlPercentage)}
+													<Typography variant="body2" sx={{ fontSize: "0.875rem", whiteSpace: "nowrap" }}>
+														{formatCompactCurrency(data.value, "$", 2)}
 													</Typography>
 												</TableCell>
 												<TableCell align="right">
-													<Typography variant="body2">{data.holdingsCount}</Typography>
+													<Typography variant="body2" sx={{ fontSize: "0.875rem", whiteSpace: "nowrap" }}>
+														{formatCompactCurrency(data.invested, "$", 2)}
+													</Typography>
 												</TableCell>
 												<TableCell align="right">
-													<Stack direction="row" spacing={1} sx={{ justifyContent: "flex-end" }}>
+													<Stack spacing={0.25} sx={{ alignItems: "flex-end" }}>
+														<Stack direction="row" spacing={0.5} sx={{ alignItems: "center" }}>
+															{data.pnl >= 0 ? (
+																<TrendUpIcon
+																	color="var(--mui-palette-success-main)"
+																	fontSize="var(--icon-fontSize-xs)"
+																/>
+															) : (
+																<TrendDownIcon
+																	color="var(--mui-palette-error-main)"
+																	fontSize="var(--icon-fontSize-xs)"
+																/>
+															)}
+															<Typography
+																color={data.pnl >= 0 ? "success.main" : "error.main"}
+																variant="body2"
+																sx={{ fontSize: "0.8rem", whiteSpace: "nowrap" }}
+															>
+																{formatCompactCurrency(data.pnl, "$", 2)}
+															</Typography>
+														</Stack>
+														<Typography
+															color={data.pnlPercentage >= 0 ? "success.main" : "error.main"}
+															variant="caption"
+															sx={{ fontSize: "0.65rem" }}
+														>
+															{formatPercentage(data.pnlPercentage)}
+														</Typography>
+													</Stack>
+												</TableCell>
+												<TableCell align="right" onClick={(e) => e.stopPropagation()}>
+													<Stack direction="row" spacing={0.25} sx={{ justifyContent: "flex-end" }}>
 														<IconButton
 															onClick={(e) => {
 																e.stopPropagation();
 																openEditPortfolio(data);
 															}}
 															size="small"
+															sx={{ padding: "2px" }}
 														>
-															<PencilIcon fontSize="var(--icon-fontSize-sm)" />
+															<PencilIcon fontSize="var(--icon-fontSize-xs)" />
 														</IconButton>
 														<IconButton
 															color="error"
@@ -1037,8 +1263,9 @@ export default function Page(): React.JSX.Element {
 																handleDeletePortfolio(portfolio.id);
 															}}
 															size="small"
+															sx={{ padding: "2px" }}
 														>
-															<TrashIcon fontSize="var(--icon-fontSize-sm)" />
+															<TrashIcon fontSize="var(--icon-fontSize-xs)" />
 														</IconButton>
 													</Stack>
 												</TableCell>
@@ -1047,6 +1274,7 @@ export default function Page(): React.JSX.Element {
 									})}
 								</TableBody>
 							</Table>
+							</Box>
 						)}
 						{sortedWallets.length > 0 && (
 							<TablePagination
@@ -1064,7 +1292,58 @@ export default function Page(): React.JSX.Element {
 							/>
 						)}
 					</CardContent>
+					<Divider />
+					<CardActions>
+						<Button
+							color="secondary"
+							endIcon={<ArrowUpRightIcon />}
+							size="small"
+							onClick={() => {
+								setEditingPortfolioId(null);
+								setPortfolioName("");
+								setPortfolioFormData({ name: "", description: "", isDefault: false });
+								setShowPortfolioDialog(true);
+							}}
+						>
+							Add Wallet
+						</Button>
+						<Button
+							color="secondary"
+							endIcon={<ArrowUpRightIcon />}
+							size="small"
+							onClick={() => {
+								setEditingTransaction(null);
+								setSelectedToken(null);
+								setTransactionError(null);
+								setTransactionFormData({
+									quantity: "",
+									amountInvested: "",
+									averagePrice: "",
+									type: "BUY",
+									transactionDate: new Date().toISOString().split("T")[0],
+									notes: "",
+									portfolioId: portfolios[0]?.id || "",
+								});
+								setShowTransactionDialog(true);
+							}}
+						>
+							Add Transaction
+						</Button>
+						<Button
+							color="secondary"
+							endIcon={<ArrowDownRightIcon />}
+							size="small"
+							onClick={() => {
+								// TODO: Implement transfer token functionality
+								console.log("Transfer Token clicked");
+							}}
+						>
+							Transfer Token
+						</Button>
+					</CardActions>
 				</Card>
+					</Grid>
+				</Grid>
 
 				{/* Transactions Section */}
 				<Card>
@@ -1677,14 +1956,14 @@ export default function Page(): React.JSX.Element {
 							{/* Wallet Statistics */}
 							<Box sx={{ display: "flex" }}>
 								<Box sx={{ flex: "1 1 auto", p: 3, textAlign: "center" }}>
-									<Typography variant="h5">{formatCurrency(selectedWalletData.value, "$", 2)}</Typography>
+									<Typography variant="h5">{formatCompactCurrency(selectedWalletData.value, "$", 2)}</Typography>
 									<Typography color="text.secondary" component="h4" variant="overline">
 										Current Value
 									</Typography>
 								</Box>
 								<Divider orientation="vertical" flexItem />
 								<Box sx={{ flex: "1 1 auto", p: 3, textAlign: "center" }}>
-									<Typography variant="h5">{formatCurrency(selectedWalletData.invested, "$", 2)}</Typography>
+									<Typography variant="h5">{formatCompactCurrency(selectedWalletData.invested, "$", 2)}</Typography>
 									<Typography color="text.secondary" component="h4" variant="overline">
 										Invested
 									</Typography>
@@ -1695,7 +1974,7 @@ export default function Page(): React.JSX.Element {
 										color={selectedWalletData.pnl >= 0 ? "success.main" : "error.main"}
 										variant="h5"
 									>
-										{formatCurrency(selectedWalletData.pnl, "$", 2)}
+										{formatCompactCurrency(selectedWalletData.pnl, "$", 2)}
 									</Typography>
 									<Typography color="text.secondary" component="h4" variant="overline">
 										P&L
@@ -1791,6 +2070,247 @@ export default function Page(): React.JSX.Element {
 					)}
 				</DialogContent>
 			</Dialog>
+
+			{/* All Tokens Modal */}
+			<AllTokensModal
+				open={showAllTokensModal}
+				onClose={() => setShowAllTokensModal(false)}
+				tokens={allTokenData}
+				searchQuery={allTokensSearchQuery}
+				onSearchChange={setAllTokensSearchQuery}
+				page={allTokensPage}
+				onPageChange={setAllTokensPage}
+				rowsPerPage={allTokensRowsPerPage}
+				onRowsPerPageChange={setAllTokensRowsPerPage}
+			/>
 		</Box>
+	);
+}
+
+// Tooltip component for token chart
+interface TokenTooltipContentProps {
+	active?: boolean;
+	payload?: { name: string; payload: { fill: string; quantity: number; tokenName: string }; value: number }[];
+	label?: string;
+}
+
+function TokenTooltipContent({ active, payload }: TokenTooltipContentProps): React.JSX.Element | null {
+	if (!active || !payload || payload.length === 0) {
+		return null;
+	}
+
+	const entry = payload[0];
+	const data = entry.payload;
+
+	return (
+		<Paper sx={{ border: "1px solid var(--mui-palette-divider)", boxShadow: "var(--mui-shadows-16)", p: 1.5 }}>
+			<Stack spacing={1.5}>
+				<Stack direction="row" spacing={2} sx={{ alignItems: "center" }}>
+					<Box sx={{ bgcolor: entry.payload.fill, borderRadius: "2px", height: "8px", width: "8px" }} />
+					<Typography sx={{ whiteSpace: "nowrap" }} variant="subtitle2">
+						{entry.name}
+					</Typography>
+				</Stack>
+				{data.tokenName && (
+					<Typography color="text.secondary" variant="caption">
+						{data.tokenName}
+					</Typography>
+				)}
+				<Divider />
+				<Stack spacing={1}>
+					<Stack direction="row" spacing={2} sx={{ justifyContent: "space-between" }}>
+						<Typography color="text.secondary" variant="body2">
+							Quantity:
+						</Typography>
+						<Typography variant="body2">
+							{data.quantity?.toLocaleString(undefined, { maximumFractionDigits: 8 })} {entry.name}
+						</Typography>
+					</Stack>
+					<Stack direction="row" spacing={2} sx={{ justifyContent: "space-between" }}>
+						<Typography color="text.secondary" variant="body2">
+							Value:
+						</Typography>
+						<Typography variant="body2" sx={{ fontWeight: 600 }}>
+							{formatCompactCurrency(entry.value, "$", 2)}
+						</Typography>
+					</Stack>
+				</Stack>
+			</Stack>
+		</Paper>
+	);
+}
+
+// All Tokens Modal Component
+function AllTokensModal({
+	open,
+	onClose,
+	tokens,
+	searchQuery,
+	onSearchChange,
+	page,
+	onPageChange,
+	rowsPerPage,
+	onRowsPerPageChange,
+}: {
+	open: boolean;
+	onClose: () => void;
+	tokens: Array<{ name: string; value: number; quantity: number; tokenName?: string; color: string }>;
+	searchQuery: string;
+	onSearchChange: (query: string) => void;
+	page: number;
+	onPageChange: (page: number) => void;
+	rowsPerPage: number;
+	onRowsPerPageChange: (rowsPerPage: number) => void;
+}): React.JSX.Element {
+	const totalValue = tokens.reduce((sum, token) => sum + token.value, 0);
+
+	// Filter tokens based on search query
+	const filteredTokens = React.useMemo(() => {
+		if (!searchQuery.trim()) return tokens;
+		const query = searchQuery.toLowerCase();
+		return tokens.filter(
+			(token) =>
+				token.name.toLowerCase().includes(query) ||
+				token.tokenName?.toLowerCase().includes(query)
+		);
+	}, [tokens, searchQuery]);
+
+	// Calculate percentage for each token
+	const tokensWithPercentage = React.useMemo(() => {
+		return filteredTokens.map((token) => ({
+			...token,
+			percentage: totalValue > 0 ? (token.value / totalValue) * 100 : 0,
+		}));
+	}, [filteredTokens, totalValue]);
+
+	// Paginate tokens
+	const paginatedTokens = React.useMemo(() => {
+		const start = page * rowsPerPage;
+		return tokensWithPercentage.slice(start, start + rowsPerPage);
+	}, [tokensWithPercentage, page, rowsPerPage]);
+
+	// Helper to get token logo - extract cmcId from tokenName if it's a number string
+	const getTokenLogo = (symbol: string, tokenName?: string): string | null => {
+		// Try to extract cmcId from tokenName if it contains a number
+		let cmcId: number | undefined;
+		if (tokenName) {
+			const match = tokenName.match(/\d+/);
+			if (match) {
+				cmcId = parseInt(match[0], 10);
+			}
+		}
+		return getTokenLogoUrl(symbol, cmcId);
+	};
+
+	return (
+		<Dialog fullWidth maxWidth="md" onClose={onClose} open={open}>
+			<DialogTitle>
+				<Stack direction="row" spacing={2} sx={{ alignItems: "center", justifyContent: "space-between" }}>
+					<Typography variant="h6">All Tokens ({filteredTokens.length})</Typography>
+					<IconButton onClick={onClose} size="small">
+						<XIcon />
+					</IconButton>
+				</Stack>
+			</DialogTitle>
+			<DialogContent>
+				<Stack spacing={3}>
+					{/* Search */}
+					<OutlinedInput
+						onChange={(e) => {
+							onSearchChange(e.target.value);
+							onPageChange(0); // Reset to first page on search
+						}}
+						placeholder="Search tokens..."
+						size="small"
+						startAdornment={
+							<InputAdornment position="start">
+								<MagnifyingGlassIcon fontSize="var(--icon-fontSize-md)" />
+							</InputAdornment>
+						}
+						value={searchQuery}
+					/>
+
+					{/* Table */}
+					<Box sx={{ overflowX: "auto" }}>
+						<Table>
+							<TableHead>
+								<TableRow>
+									<TableCell>Token</TableCell>
+									<TableCell align="right">Percentage</TableCell>
+									<TableCell align="right">Total Value (USD)</TableCell>
+									<TableCell align="right">Quantity</TableCell>
+								</TableRow>
+							</TableHead>
+							<TableBody>
+								{paginatedTokens.length === 0 ? (
+									<TableRow>
+										<TableCell colSpan={4} sx={{ textAlign: "center", py: 4 }}>
+											<Typography color="text.secondary" variant="body2">
+												No tokens found
+											</Typography>
+										</TableCell>
+									</TableRow>
+								) : (
+									paginatedTokens.map((token) => (
+										<TableRow key={token.name}>
+											<TableCell>
+												<Stack direction="row" spacing={1.5} sx={{ alignItems: "center" }}>
+													<Avatar
+														src={getTokenLogo(token.name, token.tokenName) || undefined}
+														sx={{ height: 32, width: 32 }}
+													>
+														{token.name.charAt(0)}
+													</Avatar>
+													<Stack>
+														<Typography variant="subtitle2">{token.name}</Typography>
+														{token.tokenName && token.tokenName !== `+${tokens.length - 10} more tokens` && (
+															<Typography color="text.secondary" variant="caption">
+																{token.tokenName}
+															</Typography>
+														)}
+													</Stack>
+												</Stack>
+											</TableCell>
+											<TableCell align="right">
+												<Typography variant="body2">
+													{token.percentage.toFixed(2)}%
+												</Typography>
+											</TableCell>
+											<TableCell align="right">
+												<Typography variant="body2" sx={{ fontWeight: 600 }}>
+													{formatCompactCurrency(token.value, "$", 2)}
+												</Typography>
+											</TableCell>
+											<TableCell align="right">
+												<Typography variant="body2" color="text.secondary">
+													{token.quantity.toLocaleString(undefined, { maximumFractionDigits: 8 })}
+												</Typography>
+											</TableCell>
+										</TableRow>
+									))
+								)}
+							</TableBody>
+						</Table>
+					</Box>
+
+					{/* Pagination */}
+					{filteredTokens.length > 0 && (
+						<TablePagination
+							component="div"
+							count={filteredTokens.length}
+							onPageChange={(_, newPage) => onPageChange(newPage)}
+							onRowsPerPageChange={(e) => {
+								onRowsPerPageChange(parseInt(e.target.value, 10));
+								onPageChange(0);
+							}}
+							page={page}
+							rowsPerPage={rowsPerPage}
+							rowsPerPageOptions={[10]}
+							labelRowsPerPage="Rows per page:"
+						/>
+					)}
+				</Stack>
+			</DialogContent>
+		</Dialog>
 	);
 }
