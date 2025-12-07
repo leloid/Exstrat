@@ -50,6 +50,7 @@ export const dashboardConfig = {
 			title: "Help",
 			items: [
 				{ key: "getting-started", title: "Getting Started", href: paths.dashboard.gettingStarted, icon: "graduation-cap" },
+				{ key: "pricing", title: "Pricing", href: paths.pricing, icon: "credit-card" },
 			],
 		},
 	],
