@@ -247,7 +247,9 @@ function StrategiesPageContent(): React.JSX.Element {
 					<Box sx={{ flex: "1 1 auto" }}>
 						<Typography variant="h4">Strategies</Typography>
 						<Typography color="text.secondary" variant="body1">
-							Manage your automated profit-taking strategies
+							Create and manage your automated profit-taking strategies by token.
+							<br />
+							These strategies will be available to apply to your wallets in the Forecast page.
 						</Typography>
 					</Box>
 					<Button onClick={handleCreateStrategy} startIcon={<PlusIcon />} variant="contained">
