@@ -309,18 +309,35 @@ function ForecastPageContent(): React.JSX.Element {
 											const details = forecastDetails[forecast.id];
 											return (
 												<React.Fragment key={forecast.id}>
-													<TableRow hover>
+													<TableRow
+														hover
+														onClick={() => handleToggleExpand(forecast.id)}
+														sx={{
+															cursor: "pointer",
+															transition: "background-color 0.2s ease-in-out",
+															...(isExpanded && {
+																bgcolor: "var(--mui-palette-primary-selected)",
+																"&:hover": {
+																	bgcolor: "var(--mui-palette-primary-selected)",
+																},
+															}),
+														}}
+													>
 														<TableCell>
 															<IconButton
-																onClick={() => handleToggleExpand(forecast.id)}
+																onClick={(e) => {
+																	e.stopPropagation();
+																	handleToggleExpand(forecast.id);
+																}}
 																size="small"
-																sx={{ padding: "4px" }}
+																sx={{
+																	padding: "4px",
+																	color: isExpanded ? "var(--mui-palette-primary-main)" : "var(--mui-palette-text-secondary)",
+																	transition: "color 0.2s ease-in-out, transform 0.2s ease-in-out",
+																	transform: isExpanded ? "rotate(0deg)" : "rotate(-90deg)",
+																}}
 															>
-																{isExpanded ? (
-																	<CaretDownIcon fontSize="var(--icon-fontSize-md)" />
-																) : (
-																	<CaretRightIcon fontSize="var(--icon-fontSize-md)" />
-																)}
+																<CaretDownIcon fontSize="var(--icon-fontSize-md)" />
 															</IconButton>
 														</TableCell>
 														<TableCell>
@@ -367,7 +384,10 @@ function ForecastPageContent(): React.JSX.Element {
 														<TableCell align="right">
 															<Stack direction="row" spacing={1} sx={{ justifyContent: "flex-end" }}>
 																<IconButton
-																	onClick={() => handleEditForecast(forecast)}
+																	onClick={(e) => {
+																		e.stopPropagation();
+																		handleEditForecast(forecast);
+																	}}
 																	size="small"
 																	title="Edit forecast"
 																>
@@ -375,7 +395,10 @@ function ForecastPageContent(): React.JSX.Element {
 																</IconButton>
 																<IconButton
 																	color="error"
-																	onClick={() => handleDeleteForecast(forecast.id)}
+																	onClick={(e) => {
+																		e.stopPropagation();
+																		handleDeleteForecast(forecast.id);
+																	}}
 																	size="small"
 																	title="Delete forecast"
 																>
@@ -413,18 +436,35 @@ function ForecastPageContent(): React.JSX.Element {
 																						const isTokenExpanded = expandedTokens.has(tokenKey);
 																						return (
 																							<React.Fragment key={holding.id}>
-																								<TableRow>
+																								<TableRow
+																									hover
+																									onClick={() => handleToggleTokenExpand(tokenKey)}
+																									sx={{
+																										cursor: "pointer",
+																										transition: "background-color 0.2s ease-in-out",
+																										...(isTokenExpanded && {
+																											bgcolor: "var(--mui-palette-primary-selected)",
+																											"&:hover": {
+																												bgcolor: "var(--mui-palette-primary-selected)",
+																											},
+																										}),
+																									}}
+																								>
 																									<TableCell>
 																										<IconButton
-																											onClick={() => handleToggleTokenExpand(tokenKey)}
+																											onClick={(e) => {
+																												e.stopPropagation();
+																												handleToggleTokenExpand(tokenKey);
+																											}}
 																											size="small"
-																											sx={{ padding: "4px" }}
+																											sx={{
+																												padding: "4px",
+																												color: isTokenExpanded ? "var(--mui-palette-primary-main)" : "var(--mui-palette-text-secondary)",
+																												transition: "color 0.2s ease-in-out, transform 0.2s ease-in-out",
+																												transform: isTokenExpanded ? "rotate(0deg)" : "rotate(-90deg)",
+																											}}
 																										>
-																											{isTokenExpanded ? (
-																												<CaretDownIcon fontSize="var(--icon-fontSize-sm)" />
-																											) : (
-																												<CaretRightIcon fontSize="var(--icon-fontSize-sm)" />
-																											)}
+																											<CaretDownIcon fontSize="var(--icon-fontSize-sm)" />
 																										</IconButton>
 																									</TableCell>
 																									<TableCell>

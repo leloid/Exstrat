@@ -40,6 +40,7 @@ import TextField from "@mui/material/TextField";
 import Typography from "@mui/material/Typography";
 import InputAdornment from "@mui/material/InputAdornment";
 import OutlinedInput from "@mui/material/OutlinedInput";
+import Collapse from "@mui/material/Collapse";
 import { MagnifyingGlassIcon } from "@phosphor-icons/react/dist/ssr/MagnifyingGlass";
 import { PencilIcon } from "@phosphor-icons/react/dist/ssr/Pencil";
 import { PlusIcon } from "@phosphor-icons/react/dist/ssr/Plus";
@@ -51,6 +52,8 @@ import { WarningIcon } from "@phosphor-icons/react/dist/ssr/Warning";
 import { XIcon } from "@phosphor-icons/react/dist/ssr/X";
 import { GlobeIcon } from "@phosphor-icons/react/dist/ssr/Globe";
 import { ChartLineIcon } from "@phosphor-icons/react/dist/ssr/ChartLine";
+import { PlugsConnectedIcon } from "@phosphor-icons/react/dist/ssr/PlugsConnected";
+import MuiTooltip from "@mui/material/Tooltip";
 
 import { usePortfolio } from "@/contexts/PortfolioContext";
 import * as portfoliosApi from "@/lib/portfolios-api";
@@ -66,6 +69,8 @@ import ToggleButton from "@mui/material/ToggleButton";
 import ToggleButtonGroup from "@mui/material/ToggleButtonGroup";
 import { ArrowDownRightIcon } from "@phosphor-icons/react/dist/ssr/ArrowDownRight";
 import { ArrowUpRightIcon } from "@phosphor-icons/react/dist/ssr/ArrowUpRight";
+import { CaretDownIcon } from "@phosphor-icons/react/dist/ssr/CaretDown";
+import { CaretRightIcon } from "@phosphor-icons/react/dist/ssr/CaretRight";
 
 interface PortfolioData {
 	id: string;
@@ -202,6 +207,9 @@ export default function Page(): React.JSX.Element {
 
 	// Wallet performance view mode
 	const [walletPerformanceView, setWalletPerformanceView] = React.useState<"global" | "byWallet">("global");
+	
+	// Expanded wallets state
+	const [expandedWalletId, setExpandedWalletId] = React.useState<string | null>(null);
 
 	// Calculate aggregated token data for chart
 	// Full token data (all tokens, no limit)
@@ -719,6 +727,14 @@ export default function Page(): React.JSX.Element {
 		setShowWalletDetailsModal(true);
 	};
 
+	const handleToggleWalletExpand = (portfolioId: string) => {
+		if (expandedWalletId === portfolioId) {
+			setExpandedWalletId(null);
+		} else {
+			setExpandedWalletId(portfolioId);
+		}
+	};
+
 	// Get wallet transactions
 	const walletTransactions = React.useMemo(() => {
 		if (!selectedWalletId) return [];
@@ -958,6 +974,31 @@ export default function Page(): React.JSX.Element {
 								Add Transaction
 							</Button>
 						)}
+						<MuiTooltip title="Coming soon - Exchange integration will be available in a future update">
+							<span>
+								<Button
+									disabled
+									startIcon={<PlugsConnectedIcon />}
+									variant="outlined"
+									sx={{ position: "relative" }}
+								>
+									Add Exchange
+									<Chip
+										label="Soon"
+										size="small"
+										color="primary"
+										sx={{
+											ml: 1,
+											height: "18px",
+											fontSize: "0.65rem",
+											"& .MuiChip-label": {
+												px: 0.75,
+											},
+										}}
+									/>
+								</Button>
+							</span>
+						</MuiTooltip>
 					</Stack>
 				</Stack>
 
@@ -1224,6 +1265,7 @@ export default function Page(): React.JSX.Element {
 								<Table sx={{ tableLayout: "fixed", width: "100%" }}>
 									<TableHead>
 										<TableRow>
+											<TableCell sx={{ width: "40px" }} />
 											<TableCell sx={{ width: "30%", minWidth: "150px", maxWidth: "200px" }}>
 												<TableSortLabel
 													active={walletOrderBy === "name"}
@@ -1299,31 +1341,59 @@ export default function Page(): React.JSX.Element {
 									{paginatedWallets.map((portfolio) => {
 										const data = portfolioData[portfolio.id];
 										if (!data) return null;
+										const isExpanded = expandedWalletId === portfolio.id;
+										const walletTransactions = transactions.filter((t) => t.portfolioId === portfolio.id);
 
 										return (
-											<TableRow
-												key={portfolio.id}
-												hover
-												onClick={() => openWalletDetails(portfolio.id)}
-												sx={{ cursor: "pointer" }}
-											>
-												<TableCell>
-													<Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
-														<Box
-															sx={{
-																alignItems: "center",
-																bgcolor: "var(--mui-palette-primary-main)",
-																borderRadius: 1,
-																color: "var(--mui-palette-primary-contrastText)",
-																display: "flex",
-																flexShrink: 0,
-																height: "32px",
-																justifyContent: "center",
-																width: "32px",
-															}}
-														>
-															<WalletIcon fontSize="var(--icon-fontSize-xs)" />
-														</Box>
+											<React.Fragment key={portfolio.id}>
+												<TableRow
+													hover
+													onClick={() => handleToggleWalletExpand(portfolio.id)}
+													sx={{
+														cursor: "pointer",
+														transition: "background-color 0.2s ease-in-out",
+														...(isExpanded && {
+															bgcolor: "var(--mui-palette-primary-selected)",
+															"&:hover": {
+																bgcolor: "var(--mui-palette-primary-selected)",
+															},
+														}),
+													}}
+												>
+													<TableCell>
+														<IconButton
+																onClick={(e) => {
+																	e.stopPropagation();
+																	handleToggleWalletExpand(portfolio.id);
+																}}
+																size="small"
+																sx={{
+																	padding: "4px",
+																	color: isExpanded ? "var(--mui-palette-primary-main)" : "var(--mui-palette-text-secondary)",
+																	transition: "color 0.2s ease-in-out, transform 0.2s ease-in-out",
+																	transform: isExpanded ? "rotate(0deg)" : "rotate(-90deg)",
+																}}
+															>
+																<CaretDownIcon fontSize="var(--icon-fontSize-md)" />
+															</IconButton>
+														</TableCell>
+														<TableCell>
+															<Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
+															<Box
+																sx={{
+																	alignItems: "center",
+																	bgcolor: "var(--mui-palette-primary-main)",
+																	borderRadius: 1,
+																	color: "var(--mui-palette-primary-contrastText)",
+																	display: "flex",
+																	flexShrink: 0,
+																	height: "32px",
+																	justifyContent: "center",
+																	width: "32px",
+																}}
+															>
+																<WalletIcon fontSize="var(--icon-fontSize-xs)" />
+															</Box>
 														<Box sx={{ minWidth: 0, flex: 1, overflow: "hidden" }}>
 															<Stack direction="row" spacing={0.5} sx={{ alignItems: "center" }}>
 																<Typography
@@ -1431,6 +1501,93 @@ export default function Page(): React.JSX.Element {
 													</Stack>
 												</TableCell>
 											</TableRow>
+											<TableRow>
+												<TableCell
+													colSpan={5}
+													sx={{
+														py: 0,
+														borderBottom: isExpanded ? "1px solid var(--mui-palette-divider)" : "none",
+														bgcolor: isExpanded ? "var(--mui-palette-background-default)" : "transparent",
+													}}
+												>
+													<Collapse in={isExpanded} timeout="auto" unmountOnExit>
+														<Box sx={{ py: 3 }}>
+															<Typography variant="h6" sx={{ mb: 2 }}>
+																Wallet Transactions
+															</Typography>
+															{walletTransactions.length === 0 ? (
+																<Typography color="text.secondary" variant="body2">
+																	No transactions in this wallet yet.
+																</Typography>
+															) : (
+																<Table size="small">
+																	<TableHead>
+																		<TableRow>
+																			<TableCell sx={{ fontWeight: 600 }}>Date</TableCell>
+																			<TableCell sx={{ fontWeight: 600 }}>Token</TableCell>
+																			<TableCell align="right" sx={{ fontWeight: 600 }}>Type</TableCell>
+																			<TableCell align="right" sx={{ fontWeight: 600 }}>Quantity</TableCell>
+																			<TableCell align="right" sx={{ fontWeight: 600 }}>Price</TableCell>
+																			<TableCell align="right" sx={{ fontWeight: 600 }}>Amount</TableCell>
+																		</TableRow>
+																	</TableHead>
+																	<TableBody>
+																		{walletTransactions.map((transaction) => (
+																			<TableRow key={transaction.id}>
+																				<TableCell>
+																					<Typography variant="body2">
+																						{new Date(transaction.transactionDate).toLocaleDateString("en-US", {
+																							year: "numeric",
+																							month: "short",
+																							day: "numeric",
+																						})}
+																					</Typography>
+																				</TableCell>
+																				<TableCell>
+																					<Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
+																						<Avatar
+																							src={getTokenLogoUrl(transaction.symbol, transaction.cmcId) || undefined}
+																							sx={{ width: 24, height: 24 }}
+																						>
+																							{transaction.symbol.charAt(0)}
+																						</Avatar>
+																						<Typography variant="body2">{transaction.symbol}</Typography>
+																					</Stack>
+																				</TableCell>
+																				<TableCell align="right">
+																					<Chip
+																						label={transaction.type}
+																						size="small"
+																						color={transaction.type === "BUY" ? "success" : "error"}
+																					/>
+																				</TableCell>
+																				<TableCell align="right">
+																					<Typography variant="body2">
+																						{transaction.quantity.toLocaleString(undefined, {
+																							maximumFractionDigits: 8,
+																						})}
+																					</Typography>
+																				</TableCell>
+																				<TableCell align="right">
+																					<Typography variant="body2">
+																						{formatCurrency(transaction.averagePrice, "$", 2)}
+																					</Typography>
+																				</TableCell>
+																				<TableCell align="right">
+																					<Typography variant="body2">
+																						{formatCurrency(transaction.amountInvested, "$", 2)}
+																					</Typography>
+																				</TableCell>
+																			</TableRow>
+																		))}
+																	</TableBody>
+																</Table>
+															)}
+														</Box>
+													</Collapse>
+												</TableCell>
+											</TableRow>
+										</React.Fragment>
 										);
 									})}
 								</TableBody>

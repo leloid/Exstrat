@@ -45,9 +45,9 @@ export function QuickStats({
 						xs: 12,
 					}}
 				>
-					<Card>
+					<Card sx={{ overflow: "visible" }}>
 						<Stack direction="row" spacing={2} sx={{ alignItems: "center", p: 3 }}>
-							<Stack spacing={1} sx={{ flex: "1 1 auto" }}>
+							<Stack spacing={1} sx={{ flex: "1 1 auto", minWidth: 0 }}>
 								<Typography color="text.secondary" variant="overline">
 									Current Value
 								</Typography>
@@ -63,9 +63,11 @@ export function QuickStats({
 							</Stack>
 							<Avatar
 								sx={{
-									"--Avatar-size": "48px",
 									bgcolor: "var(--mui-palette-primary-main)",
 									color: "var(--mui-palette-primary-contrastText)",
+									height: "48px",
+									width: "48px",
+									flexShrink: 0,
 								}}
 							>
 								<ChartLineIcon fontSize="var(--Icon-fontSize)" />
