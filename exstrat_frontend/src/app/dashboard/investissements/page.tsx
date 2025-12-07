@@ -179,7 +179,7 @@ export default function Page(): React.JSX.Element {
 	// Search and pagination states for wallets
 	const [walletSearchQuery, setWalletSearchQuery] = React.useState("");
 	const [walletPage, setWalletPage] = React.useState(0);
-	const [walletRowsPerPage, setWalletRowsPerPage] = React.useState(5);
+	const [walletRowsPerPage, setWalletRowsPerPage] = React.useState(3);
 	const [walletOrderBy, setWalletOrderBy] = React.useState<keyof PortfolioData | "">("");
 	const [walletOrder, setWalletOrder] = React.useState<"asc" | "desc">("asc");
 
@@ -904,30 +904,41 @@ export default function Page(): React.JSX.Element {
 									title="Token Distribution"
 								/>
 								<CardContent>
-									<Stack direction="row" spacing={3} sx={{ alignItems: "center", flexWrap: "wrap" }}>
-										<NoSsr fallback={<Box sx={{ height: "200px", width: "200px" }} />}>
-											<PieChart height={200} margin={{ top: 0, right: 0, bottom: 0, left: 0 }} width={200}>
-												<Pie
-													animationDuration={300}
-													cx={100}
-													cy={100}
-													data={aggregatedTokenData}
-													dataKey="value"
-													innerRadius={70}
-													nameKey="name"
-													outerRadius={100}
-													strokeWidth={0}
-												>
-													{aggregatedTokenData.map(
-														(entry): React.JSX.Element => (
-															<Cell fill={entry.color} key={entry.name} />
-														)
-													)}
-												</Pie>
-												<Tooltip animationDuration={50} content={<TokenTooltipContent />} />
-											</PieChart>
-										</NoSsr>
-										<Stack spacing={3} sx={{ flex: "1 1 auto" }}>
+									<Stack spacing={3}>
+										{/* Centered Chart */}
+										<Box
+											sx={{
+												display: "flex",
+												justifyContent: "center",
+												alignItems: "center",
+												width: "100%",
+											}}
+										>
+											<NoSsr fallback={<Box sx={{ height: "200px", width: "200px" }} />}>
+												<PieChart height={200} margin={{ top: 0, right: 0, bottom: 0, left: 0 }} width={200}>
+													<Pie
+														animationDuration={300}
+														cx={100}
+														cy={100}
+														data={aggregatedTokenData}
+														dataKey="value"
+														innerRadius={70}
+														nameKey="name"
+														outerRadius={100}
+														strokeWidth={0}
+													>
+														{aggregatedTokenData.map(
+															(entry): React.JSX.Element => (
+																<Cell fill={entry.color} key={entry.name} />
+															)
+														)}
+													</Pie>
+													<Tooltip animationDuration={50} content={<TokenTooltipContent />} />
+												</PieChart>
+											</NoSsr>
+										</Box>
+										{/* Text Content */}
+										<Stack spacing={3}>
 											<Stack spacing={1}>
 												<Typography color="text.secondary" variant="overline">
 													Total balance
@@ -1287,7 +1298,7 @@ export default function Page(): React.JSX.Element {
 								}}
 								page={walletPage}
 								rowsPerPage={walletRowsPerPage}
-								rowsPerPageOptions={[5, 10, 25, 50]}
+								rowsPerPageOptions={[3, 5, 10, 25, 50]}
 								labelRowsPerPage="Rows per page:"
 							/>
 						)}
