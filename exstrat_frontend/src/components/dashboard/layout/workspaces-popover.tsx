@@ -7,13 +7,14 @@ import Menu from "@mui/material/Menu";
 import MenuItem from "@mui/material/MenuItem";
 
 export const workspaces = [
-	{ name: "Devias", avatar: "/assets/workspace-avatar-1.png" },
-	{ name: "Carpatin", avatar: "/assets/workspace-avatar-2.png" },
+	{ name: "My Wallets", avatar: "/assets/logo-btc.svg", disabled: false },
+	{ name: "Virtual Wallet", avatar: "/assets/logo-eth.svg", disabled: true },
 ] satisfies Workspaces[];
 
 export interface Workspaces {
 	name: string;
 	avatar: string;
+	disabled?: boolean;
 }
 
 export interface WorkspacesPopoverProps {
@@ -41,12 +42,18 @@ export function WorkspacesPopover({
 			{workspaces.map((workspace) => (
 				<MenuItem
 					key={workspace.name}
+					disabled={workspace.disabled}
 					onClick={() => {
-						onChange?.(workspace.name);
+						if (!workspace.disabled) {
+							onChange?.(workspace.name);
+						}
+					}}
+					sx={{
+						opacity: workspace.disabled ? 0.5 : 1,
 					}}
 				>
 					<ListItemAvatar>
-						<Avatar src={workspace.avatar} sx={{ "--Avatar-size": "32px" }} variant="rounded" />
+						<Avatar src={workspace.avatar} sx={{ "--Avatar-size": "32px", opacity: workspace.disabled ? 0.5 : 1 }} variant="rounded" />
 					</ListItemAvatar>
 					{workspace.name}
 				</MenuItem>

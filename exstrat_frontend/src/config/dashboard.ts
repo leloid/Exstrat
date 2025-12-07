@@ -34,15 +34,15 @@ export const dashboardConfig = {
 			key: "trading",
 			title: "Trading",
 			items: [
-				{ key: "strategies", title: "Strategies", href: paths.dashboard.strategies, icon: "chart-pie" },
-				{ key: "prevision", title: "Prevision", href: paths.dashboard.prevision, icon: "calendar-check" },
+				{ key: "strategies", title: "Profit Strategies", href: paths.dashboard.strategies, icon: "chart-pie" },
+				{ key: "prevision", title: "Forecast", href: paths.dashboard.prevision, icon: "calendar-check" },
 			],
 		},
 		{
 			key: "settings",
-			title: "Settings",
+			title: "Configuration",
 			items: [
-				{ key: "configuration", title: "Configuration", href: paths.dashboard.configuration, icon: "gear" },
+				{ key: "configuration", title: "Forecast Alerts", href: paths.dashboard.configuration, icon: "gear" },
 			],
 		},
 		{
