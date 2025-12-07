@@ -81,12 +81,12 @@ export const PortfolioProvider: React.FC<PortfolioProviderProps> = ({ children }
 			} else {
 				setCurrentPortfolio(null);
 			}
-		} catch (err: unknown) {
-			const axiosError = err as { response?: { data?: { message?: string } }; message?: string };
+		} catch (error_: unknown) {
+			const axiosError = error_ as { response?: { data?: { message?: string } }; message?: string };
 			const errorMessage =
 				axiosError.response?.data?.message || axiosError.message || "Error loading portfolios";
 			setError(errorMessage);
-			console.error("Error loading portfolios:", err);
+			console.error("Error loading portfolios:", error_);
 		} finally {
 			setIsLoading(false);
 		}
@@ -97,15 +97,15 @@ export const PortfolioProvider: React.FC<PortfolioProviderProps> = ({ children }
 			setError(null);
 			const data = await portfoliosApi.getPortfolioHoldings(portfolioId);
 			setHoldings(data);
-		} catch (err: unknown) {
+		} catch (error_: unknown) {
 			// Silently ignore 404 errors (portfolio may not have holdings)
-			const axiosError = err as { response?: { status?: number } };
+			const axiosError = error_ as { response?: { status?: number } };
 			if (axiosError.response?.status === 404) {
 				setHoldings([]);
 				return;
 			}
 			// For other errors, log but don't block the interface
-			console.error("Error loading holdings:", err);
+			console.error("Error loading holdings:", error_);
 			setHoldings([]);
 		}
 	}, []);
@@ -120,12 +120,12 @@ export const PortfolioProvider: React.FC<PortfolioProviderProps> = ({ children }
 			if (data.isDefault) {
 				setCurrentPortfolio(newPortfolio);
 			}
-		} catch (err: unknown) {
-			const axiosError = err as { response?: { data?: { message?: string } }; message?: string };
+		} catch (error_: unknown) {
+			const axiosError = error_ as { response?: { data?: { message?: string } }; message?: string };
 			const errorMessage =
 				axiosError.response?.data?.message || axiosError.message || "Error creating portfolio";
 			setError(errorMessage);
-			throw err;
+			throw error_;
 		}
 	}, []);
 
@@ -139,12 +139,12 @@ export const PortfolioProvider: React.FC<PortfolioProviderProps> = ({ children }
 			if (currentPortfolio?.id === id) {
 				setCurrentPortfolio(updatedPortfolio);
 			}
-		} catch (err: unknown) {
-			const axiosError = err as { response?: { data?: { message?: string } }; message?: string };
+		} catch (error_: unknown) {
+			const axiosError = error_ as { response?: { data?: { message?: string } }; message?: string };
 			const errorMessage =
 				axiosError.response?.data?.message || axiosError.message || "Error updating portfolio";
 			setError(errorMessage);
-			throw err;
+			throw error_;
 		}
 	}, [currentPortfolio]);
 
@@ -164,12 +164,12 @@ export const PortfolioProvider: React.FC<PortfolioProviderProps> = ({ children }
 					setCurrentPortfolio(null);
 				}
 			}
-		} catch (err: unknown) {
-			const axiosError = err as { response?: { data?: { message?: string } }; message?: string };
+		} catch (error_: unknown) {
+			const axiosError = error_ as { response?: { data?: { message?: string } }; message?: string };
 			const errorMessage =
 				axiosError.response?.data?.message || axiosError.message || "Error deleting portfolio";
 			setError(errorMessage);
-			throw err;
+			throw error_;
 		}
 	}, [currentPortfolio, portfolios]);
 
@@ -199,12 +199,12 @@ export const PortfolioProvider: React.FC<PortfolioProviderProps> = ({ children }
 			await portfoliosApi.syncPortfolios();
 			// Reload portfolios after synchronization
 			await loadPortfolios();
-		} catch (err: unknown) {
-			const axiosError = err as { response?: { data?: { message?: string } }; message?: string };
+		} catch (error_: unknown) {
+			const axiosError = error_ as { response?: { data?: { message?: string } }; message?: string };
 			const errorMessage =
 				axiosError.response?.data?.message || axiosError.message || "Error synchronizing portfolios";
 			setError(errorMessage);
-			console.error("Error synchronizing portfolios:", err);
+			console.error("Error synchronizing portfolios:", error_);
 		} finally {
 			setIsLoading(false);
 		}

@@ -38,7 +38,7 @@ export function getTokenLogoUrl(symbol: string, cmcId?: number | null): string {
 		matic: 4713,
 		dot: 6636,
 		avax: 5805,
-		shib: 11939,
+		shib: 11_939,
 		ltc: 2,
 		link: 1975,
 		trx: 1958,

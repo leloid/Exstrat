@@ -22,7 +22,6 @@ import Alert from "@mui/material/Alert";
 import { paths } from "@/paths";
 import { CenteredLayout } from "@/components/auth/centered-layout";
 import { useAuth } from "@/contexts/AuthContext";
-import type { SignUpData } from "@/types/auth";
 
 const signUpSchema = z
 	.object({
@@ -75,8 +74,8 @@ export default function Page(): React.JSX.Element {
 			});
 			// Nouvel utilisateur, rediriger vers le dashboard
 			router.push(paths.dashboard.overview);
-		} catch (err: unknown) {
-			const error = err as Error | { message?: string };
+		} catch (error_: unknown) {
+			const error = error_ as Error | { message?: string };
 			const errorMessage = error instanceof Error ? error.message : error.message || "An error occurred during sign up";
 			setError(errorMessage);
 		} finally {

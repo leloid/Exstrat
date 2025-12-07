@@ -74,9 +74,9 @@ export function TokenSearch({ onTokenSelect, selectedToken, error, helperText }:
 			setOptions(results);
 			// Mettre en cache les résultats
 			searchCache.set(cacheKey, { data: results, timestamp: Date.now() });
-		} catch (err: unknown) {
-			console.error("Error searching tokens:", err);
-			const axiosError = err as { response?: { status?: number } };
+		} catch (error_: unknown) {
+			console.error("Error searching tokens:", error_);
+			const _axiosError = error_ as { response?: { status?: number } };
 			// Ne pas afficher d'erreur pour les erreurs réseau/backend (502, 503, etc.)
 			// L'utilisateur verra simplement qu'aucun résultat n'est trouvé
 			setOptions([]);

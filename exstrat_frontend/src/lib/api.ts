@@ -14,7 +14,7 @@ export const api = axios.create({
 // Intercepteur pour ajouter le token JWT automatiquement
 api.interceptors.request.use(
 	(config) => {
-		if (typeof window !== "undefined") {
+		if (typeof globalThis.window !== "undefined") {
 			const token = localStorage.getItem("accessToken");
 			if (token) {
 				config.headers.Authorization = `Bearer ${token}`;
@@ -23,7 +23,7 @@ api.interceptors.request.use(
 		return config;
 	},
 	(error) => {
-		return Promise.reject(error);
+		throw error;
 	}
 );
 
@@ -35,13 +35,13 @@ let failedQueue: Array<{
 }> = [];
 
 const processQueue = (error: unknown, token: string | null = null) => {
-	failedQueue.forEach(({ resolve, reject }) => {
+	for (const { resolve, reject } of failedQueue) {
 		if (error) {
 			reject(error);
 		} else {
 			resolve(token);
 		}
-	});
+	}
 
 	failedQueue = [];
 };
@@ -93,8 +93,8 @@ api.interceptors.response.use(
 						originalRequest.headers.Authorization = `Bearer ${token}`;
 						return api(originalRequest);
 					})
-					.catch((err) => {
-						return Promise.reject(err);
+					.catch((error_) => {
+						throw error_;
 					});
 			}
 
@@ -106,7 +106,7 @@ api.interceptors.response.use(
 				const refreshResponse = await api.post("/auth/refresh");
 				const { accessToken } = refreshResponse.data;
 
-				if (typeof window !== "undefined") {
+				if (typeof globalThis.window !== "undefined") {
 					localStorage.setItem("accessToken", accessToken);
 				}
 
@@ -118,12 +118,12 @@ api.interceptors.response.use(
 			} catch (refreshError) {
 				// Si le refresh échoue, déconnecter l'utilisateur
 				processQueue(refreshError, null);
-				if (typeof window !== "undefined") {
+				if (typeof globalThis.window !== "undefined") {
 					localStorage.removeItem("accessToken");
 					localStorage.removeItem("user");
-					window.location.href = "/auth/sign-in";
+					globalThis.window.location.href = "/auth/sign-in";
 				}
-				return Promise.reject(refreshError);
+				throw refreshError;
 			} finally {
 				isRefreshing = false;
 			}
@@ -133,7 +133,7 @@ api.interceptors.response.use(
 			throw new Error("Erreur de connexion. Vérifiez que le backend est démarré sur le port 3000.");
 		}
 
-		return Promise.reject(error);
+		throw error;
 	}
 );
 

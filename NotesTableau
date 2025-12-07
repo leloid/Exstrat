@@ -1,88 +1,357 @@
-3.4 Module Configuration
-3.4.1 Rôle et objectif
-Le module Configuration intervient après la création des stratégies et des prévisions.
-Dans sa version V1, il sert à activer et personnaliser les alertes. La gestion des ordres (liée à la connexion aux exchanges) est planifiée pour une V2, mais l’interface doit d’ores et déjà anticiper cette évolution.
-L’utilisateur doit pouvoir :
-•	sélectionner un wallet ;
-•	consulter les prévisions associées ;
-•	activer les alertes liées à une prévision ;
-•	configurer précisément ces alertes (par token, par palier, avant/seuil atteint) ;
-•	choisir le canal de notification (email, push mobile) ;
-•	se préparer à l’activation des ordres (V2+).
-L’expérience doit rester simple, claire et cohérente avec la logique “outil professionnel” des modules Stratégies et Prévisions.
-3.4.2 Structure générale (V1)
-Le module est divisé en deux sous-onglets :
-1.	Alertes (V1 – fonctionnel)
-Permet d’activer et de personnaliser les alertes liées aux prévisions.
-2.	Ordres / Exécution (placeholder pour V2)
-Préfigurera la gestion semi-automatique des ordres de vente. L’UI doit être prête mais ce sous-onglet restera inactif en V1.
-3.4.3 Sous-onglet A – Alertes (V1)
-A1 – Sélection du wallet
-•	Menu déroulant listant les wallets.
-•	Une fois sélectionné, afficher les prévisions existantes pour ce wallet.
-A2 – Sélection de la prévision
-•	Afficher, pour chaque prévision : nom, total investi, total encaissé projeté, profit projeté, rendement.
-•	Bouton “Configurer les alertes” : l’utilisateur choisit la prévision sur laquelle activer les alertes.
-•	Bien que plusieurs prévisions puissent être activées, la plupart des utilisateurs choisiront leur scénario principal.
-A3 – Configuration des alertes par token
-•	Après sélection de la prévision, liste des tokens avec :
-o	nom du token ;
-o	stratégie associée ;
-o	nombre de TP ;
-o	bouton “Configurer alertes”.
-•	Un clic affiche les TP dans un panneau spécifique.
-A4 – Configuration des alertes par TP
-Pour chaque TP (TP1, TP2, TP3…) :
-•	Données affichées : seuil de prix, quantité à vendre, montant encaissé projeté, valeur restante après la vente.
-•	Alertes possibles (V1) :
-o	Avant le TP – générée par défaut à -10 % sous le seuil (modifiable via boutons +/- ou champ manuel).
-o	Atteinte du TP – déclenchée lorsque le prix atteint le seuil (activable/désactivable).
-•	Personnalisation :
-o	activer/désactiver chaque alerte ;
-o	modifier la valeur exacte ou le pourcentage ;
-o	activer/désactiver toutes les alertes du token.
-Objectif : offrir un workflow clair et flexible pour les utilisateurs avancés.
-A5 – Choix des canaux de notification
-•	Email – activé par défaut ; facile à gérer côté serveur.
-•	Notifications push – nécessite l’application mobile ; un message d’invitation à télécharger l’app doit être prévu si l’option est activée.
 
-3.4.4 Sous-onglet B – Ordres (V2, structure à anticiper)
-Même si ce sous-onglet ne sera pas actif en V1, l’interface doit être prête à accueillir :
-•	Sélection du wallet et de la prévision active.
-•	Affichage des comptes connectés (exchanges / wallets externes).
-•	Association (mapping) des tokens aux comptes.
-•	Activation des ordres “semi-automatiques” : exStrat pré-remplit les transactions et l’utilisateur les valide manuellement (ex. « Envoyer vers Binance / Coinbase / Ledger Live »).
-•	Avertissement important : si l’utilisateur modifie une stratégie utilisée dans une prévision active, un message doit indiquer que les alertes ou ordres associés seront impactés.
-
-3.4.5 Recommandations UX/UI
-Même si aucune version précédente n’existe, voici des orientations possibles :
-1.	Interface en panneaux (accordion)
-o	Panneau 1 : prévisions du wallet ;
-o	Panneau 2 : token 1 ;
-o	Panneau 3 : token 2 ; etc.
-→ vue compacte et lisible.
-2.	Dual layout (desktop-first)
-o	Colonne gauche : navigation (wallet → prévision → token).
-o	Colonne droite : contenu (alertes par TP, réglages).
-3.	Automatisation + personnalisation
-o	Par défaut : alertes proposées intelligemment (–10 %, TP atteint).
-o	Optionnel : personnalisation via boutons +/ , slider, saisie manuelle.
-4.	Codes couleurs pro
-o	Alerte “avant TP” : jaune/orangé.
-o	Alerte “TP atteint” : vert.
-o	Erreurs/conflits : rouge sobre.
-→ ambiance trading pro, sans effets “grand public”.
-5.	Cohérence avec Stratégies et Prévisions
-o	Afficher les TP exactement comme dans le module Stratégies.
-o	Résultats globaux cohérents avec le module Prévisions.
-o	Aucun changement d’UX inutile.
-
-3.4.6 Synthèse
-Pour le module Configuration, nous attendons du designer qu’il propose une solution :
-•	clairement séparée entre alertes (V1) et ordres (V2) ;
-•	facile à naviguer (wallet → prévision → token → TP) ;
-•	dotée de réglages intelligents par défaut, mais offrant des options avancées ;
-•	permettant de choisir le canal de notification ;
-•	prête à l’intégration future des ordres semi-automatiques ;
-•	intégrant la logique de warning lorsque des modifications impactent des alertes ou des ordres.
-L’objectif final est de faire de Configuration un véritable centre de contrôle, reliant les stratégies, leurs projections et l’exécution, tout en restant ergonomique et professionnel.
+16:43:40.976 Failed to compile.
+16:43:40.976 
+16:43:40.976 ./src/app/auth/sign-up/page.tsx
+16:43:40.976 25:15  Error: 'SignUpData' is defined but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+16:43:40.977 78:12  Error: The catch parameter `err` should be named `error_`.  unicorn/catch-error-name
+16:43:40.977 
+16:43:40.977 ./src/app/dashboard/configuration/add-alert-modal.tsx
+16:43:40.977 14:8  Error: 'FormControl' is defined but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+16:43:40.977 15:8  Error: 'InputLabel' is defined but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+16:43:40.977 16:8  Error: 'MenuItem' is defined but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+16:43:40.977 17:8  Error: 'Select' is defined but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+16:43:40.978 23:69  Warning: '/vercel/path0/exstrat_frontend/src/lib/portfolios-api.ts' imported multiple times.  import/no-duplicates
+16:43:40.978 24:42  Warning: '/vercel/path0/exstrat_frontend/src/lib/portfolios-api.ts' imported multiple times.  import/no-duplicates
+16:43:40.978 49:67  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+16:43:40.978 195:18  Error: Use `for…of` instead of `.forEach(…)`.  unicorn/no-array-for-each
+16:43:40.978 278:4  Error: This `if` statement can be replaced by a ternary expression.  unicorn/prefer-ternary
+16:43:40.979 278:8  Error: Unexpected negated condition.  unicorn/no-negated-condition
+16:43:40.979 387:37  Error: Prefer `.some(…)` over `.find(…)`.  unicorn/prefer-array-some
+16:43:40.979 
+16:43:40.979 ./src/app/dashboard/configuration/configuration-alerts-tab.tsx
+16:43:40.981 10:8  Error: 'FormControl' is defined but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+16:43:40.982 11:8  Error: 'InputLabel' is defined but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+16:43:40.982 12:8  Error: 'MenuItem' is defined but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+16:43:40.982 13:8  Error: 'Select' is defined but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+16:43:40.982 21:35  Error: 'CreateTokenAlertDto' is defined but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+16:43:40.982 184:18  Error: Use `for…of` instead of `.forEach(…)`.  unicorn/no-array-for-each
+16:43:40.982 263:4  Error: This `if` statement can be replaced by a ternary expression.  unicorn/prefer-ternary
+16:43:40.983 263:8  Error: Unexpected negated condition.  unicorn/no-negated-condition
+16:43:40.983 395:31  Error: Prefer `.some(…)` over `.find(…)`.  unicorn/prefer-array-some
+16:43:40.983 429:38  Error: Prefer `.some(…)` over `.find(…)`.  unicorn/prefer-array-some
+16:43:40.983 467:73  Error: `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`.  react/no-unescaped-entities
+16:43:40.983 467:90  Error: `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`.  react/no-unescaped-entities
+16:43:40.983 
+16:43:40.984 ./src/app/dashboard/configuration/forecast-selector.tsx
+16:43:40.984 4:8  Error: 'Box' is defined but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+16:43:40.984 29:8  Error: 'selectedForecast' is assigned a value but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+16:43:40.984 
+16:43:40.987 ./src/app/dashboard/configuration/page.tsx
+16:43:40.991 22:8  Error: 'Grid' is defined but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+16:43:40.991 24:10  Error: 'CaretRightIcon' is defined but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+16:43:40.991 27:10  Error: 'PencilIcon' is defined but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+16:43:40.993 78:9  Error: 'query' is assigned a value but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+16:43:40.993 79:38  Error: 'config' is defined but never used. Allowed unused args must match /^_/u.  @typescript-eslint/no-unused-vars
+16:43:40.993 93:51  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+16:43:40.993 99:18  Error: Use `for…of` instead of `.forEach(…)`.  unicorn/no-array-for-each
+16:43:40.995 114:7  Error: Prefer `globalThis` over `window`.  unicorn/prefer-global-this
+16:43:40.995 476:25  Error: Prefer `Number.parseInt` over `parseInt`.  unicorn/prefer-number-properties
+16:43:40.995 
+16:43:40.995 ./src/app/dashboard/configuration/token-alert-item.tsx
+16:43:40.996 8:27  Error: 'AlertConfiguration' is defined but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+16:43:40.996 12:11  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+16:43:40.996 24:2  Error: 'isForecastActive' is defined but never used. Allowed unused args must match /^_/u.  @typescript-eslint/no-unused-vars
+16:43:40.996 
+16:43:40.996 ./src/app/dashboard/configuration/token-alerts-list.tsx
+16:43:40.996 26:11  Error: 'PendingTPAlertUpdate' is defined but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+16:43:40.997 38:49  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+16:43:40.997 100:18  Error: Use `for…of` instead of `.forEach(…)`.  unicorn/no-array-for-each
+16:43:40.997 122:49  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+16:43:40.997 219:41  Error: Prefer the spread operator over `Array.from(…)`.  unicorn/prefer-spread
+16:43:40.997 
+16:43:40.997 ./src/app/dashboard/configuration/token-alerts-modal.tsx
+16:43:40.997 25:11  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+16:43:40.998 113:5  Error: Prefer the spread operator over `Array.from(…)`.  unicorn/prefer-spread
+16:43:40.998 164:73  Error: Unexpected negated condition.  unicorn/no-negated-condition
+16:43:40.998 174:6  Error: Unexpected negated condition.  unicorn/no-negated-condition
+16:43:40.998 
+16:43:40.998 ./src/app/dashboard/configuration/tp-alerts-config.tsx
+16:43:40.999 74:25  Error: Do not use useless `undefined`.  unicorn/no-useless-undefined
+16:43:40.999 79:11  Error: Do not use useless `undefined`.  unicorn/no-useless-undefined
+16:43:40.999 218:30  Error: Prefer `Number.parseFloat` over `parseFloat`.  unicorn/prefer-number-properties
+16:43:41.000 219:21  Error: Prefer `Number.isNaN` over `isNaN`.  unicorn/prefer-number-properties
+16:43:41.000 
+16:43:41.000 ./src/app/dashboard/investissements/page.tsx
+16:43:41.000 24:8  Error: 'FormLabel' is defined but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+16:43:41.000 60:44  Error: 'UpdatePortfolioDto' is defined but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+16:43:41.001 107:9  Error: Invalid group length in numeric value.  unicorn/numeric-separators-style
+16:43:41.001 118:8  Error: Invalid group length in numeric value.  unicorn/numeric-separators-style
+16:43:41.001 212:32  Error: Use `for…of` instead of `.forEach(…)`.  unicorn/no-array-for-each
+16:43:41.001 213:23  Error: Use `for…of` instead of `.forEach(…)`.  unicorn/no-array-for-each
+16:43:41.001 235:32  Error: Prefer `String#codePointAt()` over `String#charCodeAt()`.  unicorn/prefer-code-point
+16:43:41.002 249:10  Error: Prefer the spread operator over `Array.from(…)`.  unicorn/prefer-spread
+16:43:41.002 345:5  Warning: React Hook React.useEffect has a missing dependency: 'loadingPortfolios'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+16:43:41.002 394:5  Error: Missing braces in case clause.  unicorn/switch-case-braces
+16:43:41.002 398:5  Error: Missing braces in case clause.  unicorn/switch-case-braces
+16:43:41.003 402:5  Error: Missing braces in case clause.  unicorn/switch-case-braces
+16:43:41.003 406:5  Error: Missing braces in case clause.  unicorn/switch-case-braces
+16:43:41.004 410:5  Error: Missing braces in case clause.  unicorn/switch-case-braces
+16:43:41.004 457:5  Error: Missing braces in case clause.  unicorn/switch-case-braces
+16:43:41.004 461:5  Error: Missing braces in case clause.  unicorn/switch-case-braces
+16:43:41.004 465:5  Error: Missing braces in case clause.  unicorn/switch-case-braces
+16:43:41.005 469:5  Error: Missing braces in case clause.  unicorn/switch-case-braces
+16:43:41.005 473:5  Error: Missing braces in case clause.  unicorn/switch-case-braces
+16:43:41.005 477:5  Error: Missing braces in case clause.  unicorn/switch-case-braces
+16:43:41.005 481:5  Error: Missing braces in case clause.  unicorn/switch-case-braces
+16:43:41.005 485:5  Error: Missing braces in case clause.  unicorn/switch-case-braces
+16:43:41.005 489:5  Error: Missing braces in case clause.  unicorn/switch-case-braces
+16:43:41.006 533:10  Error: 'currentTotalValue' is assigned a value but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+16:43:41.006 646:15  Error: Use `for…of` instead of `.forEach(…)`.  unicorn/no-array-for-each
+16:43:41.006 651:35  Error: Prefer `String#replaceAll()` over `String#replace()`.  unicorn/prefer-string-replace-all
+16:43:41.006 736:20  Error: Prefer `Number.parseFloat` over `parseFloat`.  unicorn/prefer-number-properties
+16:43:41.006 737:26  Error: Prefer `Number.parseFloat` over `parseFloat`.  unicorn/prefer-number-properties
+16:43:41.006 738:8  Error: Prefer `Number.isNaN` over `isNaN`.  unicorn/prefer-number-properties
+16:43:41.007 738:28  Error: Prefer `Number.isNaN` over `isNaN`.  unicorn/prefer-number-properties
+16:43:41.007 765:16  Error: Prefer `Number.parseFloat` over `parseFloat`.  unicorn/prefer-number-properties
+16:43:41.007 766:22  Error: Prefer `Number.parseFloat` over `parseFloat`.  unicorn/prefer-number-properties
+16:43:41.007 767:20  Error: Prefer `Number.parseFloat` over `parseFloat`.  unicorn/prefer-number-properties
+16:43:41.007 779:16  Error: Prefer `Number.parseFloat` over `parseFloat`.  unicorn/prefer-number-properties
+16:43:41.007 780:22  Error: Prefer `Number.parseFloat` over `parseFloat`.  unicorn/prefer-number-properties
+16:43:41.008 781:20  Error: Prefer `Number.parseFloat` over `parseFloat`.  unicorn/prefer-number-properties
+16:43:41.008 1219:36  Error: `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`.  react/no-unescaped-entities
+16:43:41.008 1219:56  Error: `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`.  react/no-unescaped-entities
+16:43:41.008 1446:31  Error: Prefer `Number.parseInt` over `parseInt`.  unicorn/prefer-number-properties
+16:43:41.008 1609:43  Error: Prefer `String#replaceAll()` over `String#replace()`.  unicorn/prefer-string-replace-all
+16:43:41.008 1727:41  Error: `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`.  react/no-unescaped-entities
+16:43:41.008 1727:66  Error: `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`.  react/no-unescaped-entities
+16:43:41.009 1930:36  Error: Prefer `Number.parseInt` over `parseInt`.  unicorn/prefer-number-properties
+16:43:41.009 2066:20  Error: Unexpected negated condition.  unicorn/no-negated-condition
+16:43:41.009 2319:51  Error: Unexpected negated condition.  unicorn/no-negated-condition
+16:43:41.009 2439:48  Error: Prefer `String#replaceAll()` over `String#replace()`.  unicorn/prefer-string-replace-all
+16:43:41.009 2605:75  Error: Move arrow function 'getTokenLogo' to the outer scope.  unicorn/consistent-function-scoping
+16:43:41.009 2611:13  Error: Prefer `Number.parseInt` over `parseInt`.  unicorn/prefer-number-properties
+16:43:41.009 2715:29  Error: Prefer `Number.parseInt` over `parseInt`.  unicorn/prefer-number-properties
+16:43:41.010 
+16:43:41.010 ./src/app/dashboard/page.tsx
+16:43:41.010 75:17  Error: Use `for…of` instead of `.forEach(…)`.  unicorn/no-array-for-each
+16:43:41.010 113:23  Error: Prefer the spread operator over `Array.from(…)`.  unicorn/prefer-spread
+16:43:41.010 124:5  Warning: React Hook React.useEffect has a missing dependency: 'portfolios'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+16:43:41.010 
+16:43:41.011 ./src/app/dashboard/prevision/create-forecast-modal.tsx
+16:43:41.011 13:8  Error: 'Divider' is defined but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+16:43:41.011 22:8  Error: 'LinearProgress' is defined but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+16:43:41.011 39:15  Error: 'ForecastResponse' is defined but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+16:43:41.011 55:49  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+16:43:41.011 76:5  Warning: React Hook React.useEffect has a missing dependency: 'loadHoldings'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+16:43:41.012 130:17  Error: Use `for…of` instead of `.forEach(…)`.  unicorn/no-array-for-each
+16:43:41.012 130:35  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+16:43:41.012 173:41  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+16:43:41.012 208:26  Error: Use `for…of` instead of `.forEach(…)`.  unicorn/no-array-for-each
+16:43:41.012 248:12  Error: Use `for…of` instead of `.forEach(…)`.  unicorn/no-array-for-each
+16:43:41.012 
+16:43:41.013 ./src/app/dashboard/prevision/page.tsx
+16:43:41.013 28:8  Error: 'Divider' is defined but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+16:43:41.013 34:40  Error: 'getForecastById' is defined but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+16:43:41.013 56:78  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+16:43:41.013 88:7  Error: Prefer `globalThis` over `window`.  unicorn/prefer-global-this
+16:43:41.013 171:62  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+16:43:41.013 407:40  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+16:43:41.014 408:37  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+16:43:41.014 513:25  Error: Prefer `Number.parseInt` over `parseInt`.  unicorn/prefer-number-properties
+16:43:41.014 
+16:43:41.014 ./src/app/dashboard/strategies/create-strategy-modal.tsx
+16:43:41.014 17:8  Error: 'FormHelperText' is defined but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+16:43:41.014 20:8  Error: 'InputAdornment' is defined but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+16:43:41.015 22:8  Error: 'LinearProgress' is defined but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+16:43:41.015 23:8  Error: 'OutlinedInput' is defined but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+16:43:41.015 35:10  Error: 'zodResolver' is defined but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+16:43:41.015 36:10  Error: 'Controller' is defined but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+16:43:41.015 36:22  Error: 'useForm' is defined but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+16:43:41.015 37:15  Error: 'zod' is defined but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+16:43:41.016 47:26  Error: 'formatPercentage' is defined but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+16:43:41.016 52:15  Error: 'Portfolio' is defined but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+16:43:41.016 52:26  Error: 'Holding' is defined but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+16:43:41.016 131:69  Error: Use `.length === 0` when checking length is zero.  unicorn/explicit-length-check
+16:43:41.016 201:17  Error: Prefer `Number.parseFloat` over `parseFloat`.  unicorn/prefer-number-properties
+16:43:41.016 202:22  Error: Prefer `Number.parseFloat` over `parseFloat`.  unicorn/prefer-number-properties
+16:43:41.017 303:15  Error: Prefer `Number.parseFloat` over `parseFloat`.  unicorn/prefer-number-properties
+16:43:41.017 304:20  Error: Prefer `Number.parseFloat` over `parseFloat`.  unicorn/prefer-number-properties
+16:43:41.017 310:17  Error: Use `for…of` instead of `.forEach(…)`.  unicorn/no-array-for-each
+16:43:41.017 313:4  Error: This `if` statement can be replaced by a ternary expression.  unicorn/prefer-ternary
+16:43:41.017 343:54  Error: Prefer `Number.parseFloat` over `parseFloat`.  unicorn/prefer-number-properties
+16:43:41.018 373:15  Error: Prefer `Number.parseFloat` over `parseFloat`.  unicorn/prefer-number-properties
+16:43:41.018 374:7  Error: Prefer `Number.isNaN` over `isNaN`.  unicorn/prefer-number-properties
+16:43:41.018 392:19  Error: Prefer `Number.parseFloat` over `parseFloat`.  unicorn/prefer-number-properties
+16:43:41.018 393:21  Error: Prefer `Number.parseFloat` over `parseFloat`.  unicorn/prefer-number-properties
+16:43:41.018 394:39  Error: 'index' is defined but never used. Allowed unused args must match /^_/u.  @typescript-eslint/no-unused-vars
+16:43:41.018 578:87  Error: Prefer `Number.parseFloat` over `parseFloat`.  unicorn/prefer-number-properties
+16:43:41.019 579:24  Error: Invalid group length in numeric value.  unicorn/numeric-separators-style
+16:43:41.019 580:25  Error: Prefer `Number.parseFloat` over `parseFloat`.  unicorn/prefer-number-properties
+16:43:41.019 600:36  Error: Prefer `Number.parseFloat` over `parseFloat`.  unicorn/prefer-number-properties
+16:43:41.019 614:37  Error: Prefer `Number.parseFloat` over `parseFloat`.  unicorn/prefer-number-properties
+16:43:41.019 628:36  Error: Prefer `Number.parseFloat` over `parseFloat`.  unicorn/prefer-number-properties
+16:43:41.020 673:30  Error: Prefer `Number.parseInt` over `parseInt`.  unicorn/prefer-number-properties
+16:43:41.020 674:23  Error: Prefer `Number.isNaN` over `isNaN`.  unicorn/prefer-number-properties
+16:43:41.020 695:28  Error: Prefer `Number.parseFloat` over `parseFloat`.  unicorn/prefer-number-properties
+16:43:41.020 696:33  Error: Prefer `Number.parseFloat` over `parseFloat`.  unicorn/prefer-number-properties
+16:43:41.020 700:16  Error: This `if` statement can be replaced by a ternary expression.  unicorn/prefer-ternary
+16:43:41.020 749:90  Error: Prefer `Number.parseFloat` over `parseFloat`.  unicorn/prefer-number-properties
+16:43:41.020 764:89  Error: Prefer `Number.parseFloat` over `parseFloat`.  unicorn/prefer-number-properties
+16:43:41.021 768:63  Error: Prefer `Number.isNaN` over `isNaN`.  unicorn/prefer-number-properties
+16:43:41.021 822:43  Error: Prefer `Number.parseFloat` over `parseFloat`.  unicorn/prefer-number-properties
+16:43:41.021 823:34  Error: Prefer `Number.isNaN` over `isNaN`.  unicorn/prefer-number-properties
+16:43:41.021 842:41  Error: Prefer `Number.parseFloat` over `parseFloat`.  unicorn/prefer-number-properties
+16:43:41.021 843:32  Error: Prefer `Number.isNaN` over `isNaN`.  unicorn/prefer-number-properties
+16:43:41.021 982:32  Error: Prefer `Number.parseFloat` over `parseFloat`.  unicorn/prefer-number-properties
+16:43:41.021 982:63  Error: Prefer `Number.parseFloat` over `parseFloat`.  unicorn/prefer-number-properties
+16:43:41.022 992:34  Error: Prefer `Number.parseFloat` over `parseFloat`.  unicorn/prefer-number-properties
+16:43:41.022 1003:32  Error: Prefer `Number.parseFloat` over `parseFloat`.  unicorn/prefer-number-properties
+16:43:41.022 1065:30  Error: Prefer `Number.parseFloat` over `parseFloat`.  unicorn/prefer-number-properties
+16:43:41.022 1065:61  Error: Prefer `Number.parseFloat` over `parseFloat`.  unicorn/prefer-number-properties
+16:43:41.022 1087:16  Error: Prefer `Number.parseFloat` over `parseFloat`.  unicorn/prefer-number-properties
+16:43:41.022 1087:47  Error: Prefer `Number.parseFloat` over `parseFloat`.  unicorn/prefer-number-properties
+16:43:41.022 1099:30  Error: Prefer `.at(…)` over `[….length - index]`.  unicorn/prefer-at
+16:43:41.024 
+16:43:41.024 ./src/app/dashboard/strategies/page.tsx
+16:43:41.024 21:10  Error: 'XIcon' is defined but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+16:43:41.024 30:10  Error: 'DataTable' is defined but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+16:43:41.024 31:15  Error: 'ColumnDef' is defined but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+16:43:41.024 55:9  Error: 'isSubmitting' is assigned a value but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+16:43:41.030 55:23  Error: 'setIsSubmitting' is assigned a value but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+16:43:41.030 72:5  Warning: React Hook React.useEffect has a missing dependency: 'loadTokenPrices'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+16:43:41.030 91:26  Error: Prefer the spread operator over `Array.from(…)`.  unicorn/prefer-spread
+16:43:41.030 104:16  Error: Use `for…of` instead of `.forEach(…)`.  unicorn/no-array-for-each
+16:43:41.030 184:14  Error: Use `for…of` instead of `.forEach(…)`.  unicorn/no-array-for-each
+16:43:41.030 210:7  Error: Prefer `globalThis` over `window`.  unicorn/prefer-global-this
+16:43:41.030 353:25  Error: Prefer `Number.parseInt` over `parseInt`.  unicorn/prefer-number-properties
+16:43:41.030 384:85  Error: Move arrow function 'getTokenLogoUrl' to the outer scope.  unicorn/consistent-function-scoping
+16:43:41.030 407:10  Error: Invalid group length in numeric value.  unicorn/numeric-separators-style
+16:43:41.030 418:9  Error: Invalid group length in numeric value.  unicorn/numeric-separators-style
+16:43:41.031 488:17  Error: Use `for…of` instead of `.forEach(…)`.  unicorn/no-array-for-each
+16:43:41.031 
+16:43:41.031 ./src/components/auth/ProtectedRoute.tsx
+16:43:41.031 1:1  Error: Filename is not in kebab case. Rename it to `protected-route.tsx`.  unicorn/filename-case
+16:43:41.031 
+16:43:41.031 ./src/components/dashboard/layout/contacts-popover.tsx
+16:43:41.031 16:7  Error: 'contacts' is assigned a value but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+16:43:41.031 
+16:43:41.031 ./src/components/dashboard/layout/horizontal/main-nav.tsx
+16:43:41.031 65:8  Error: 'logoColor' is assigned a value but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+16:43:41.032 
+16:43:41.032 ./src/components/dashboard/layout/notifications-popover.tsx
+16:43:41.032 24:2  Error: 'onRemoveOne' is defined but never used. Allowed unused args must match /^_/u.  @typescript-eslint/no-unused-vars
+16:43:41.032 
+16:43:41.032 ./src/components/dashboard/layout/vertical/side-nav.tsx
+16:43:41.032 39:8  Error: 'logoColor' is assigned a value but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+16:43:41.032 
+16:43:41.032 ./src/components/dashboard/portfolio/gains-losses-chart.tsx
+16:43:41.032 85:48  Error: Prefer `.at(…)` over `[….length - index]`.  unicorn/prefer-at
+16:43:41.032 128:53  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+16:43:41.032 168:27  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+16:43:41.033 328:26  Error: Invalid group length in numeric value.  unicorn/numeric-separators-style
+16:43:41.033 328:53  Error: Invalid group length in numeric value.  unicorn/numeric-separators-style
+16:43:41.033 
+16:43:41.033 ./src/components/dashboard/portfolio/portfolio-evolution-chart.tsx
+16:43:41.033 13:16  Error: 'AreaChart' is defined but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+16:43:41.033 92:23  Error: Invalid group length in numeric value.  unicorn/numeric-separators-style
+16:43:41.033 92:52  Error: Invalid group length in numeric value.  unicorn/numeric-separators-style
+16:43:41.033 152:29  Error: Use `.length === 0` when checking length is zero.  unicorn/explicit-length-check
+16:43:41.033 
+16:43:41.033 ./src/components/dashboard/portfolio/quick-stats.tsx
+16:43:41.033 13:10  Error: 'CoinsIcon' is defined but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+16:43:41.033 34:8  Error: 'returnPercentage' is assigned a value but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+16:43:41.034 
+16:43:41.034 ./src/components/dashboard/portfolio/token-distribution.tsx
+16:43:41.034 7:8  Error: 'CardActions' is defined but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+16:43:41.034 10:8  Error: 'Divider' is defined but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+16:43:41.034 43:12  Error: Use `for…of` instead of `.forEach(…)`.  unicorn/no-array-for-each
+16:43:41.034 76:18  Error: Prefer the spread operator over `Array.from(…)`.  unicorn/prefer-spread
+16:43:41.034 80:22  Error: Prefer the spread operator over `Array.from(…)`.  unicorn/prefer-spread
+16:43:41.034 177:50  Error: Do not use useless `undefined`.  unicorn/no-useless-undefined
+16:43:41.034 
+16:43:41.034 ./src/components/dashboard/portfolio/token-strategy-sidebar.tsx
+16:43:41.034 12:8  Error: 'List' is defined but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+16:43:41.034 13:8  Error: 'ListItem' is defined but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+16:43:41.034 14:8  Error: 'ListItemText' is defined but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+16:43:41.035 24:30  Warning: '/vercel/path0/exstrat_frontend/src/types/portfolio.ts' imported multiple times.  import/no-duplicates
+16:43:41.035 28:39  Warning: '/vercel/path0/exstrat_frontend/src/types/portfolio.ts' imported multiple times.  import/no-duplicates
+16:43:41.035 189:53  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+16:43:41.035 190:28  Error: Use `.length > 0` when checking length is not zero.  unicorn/explicit-length-check
+16:43:41.035 447:28  Error: Invalid group length in numeric value.  unicorn/numeric-separators-style
+16:43:41.035 447:55  Error: Invalid group length in numeric value.  unicorn/numeric-separators-style
+16:43:41.035 
+16:43:41.035 ./src/components/dashboard/portfolio/tokens-table.tsx
+16:43:41.035 51:9  Error: 'loadingAlerts' is assigned a value but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+16:43:41.035 67:27  Error: Use `for…of` instead of `.forEach(…)`.  unicorn/no-array-for-each
+16:43:41.035 75:21  Error: Use `for…of` instead of `.forEach(…)`.  unicorn/no-array-for-each
+16:43:41.035 170:5  Error: Missing braces in case clause.  unicorn/switch-case-braces
+16:43:41.035 174:5  Error: Missing braces in case clause.  unicorn/switch-case-braces
+16:43:41.036 178:5  Error: Missing braces in case clause.  unicorn/switch-case-braces
+16:43:41.036 182:5  Error: Missing braces in case clause.  unicorn/switch-case-braces
+16:43:41.036 186:5  Error: Missing braces in case clause.  unicorn/switch-case-braces
+16:43:41.036 190:5  Error: Missing braces in case clause.  unicorn/switch-case-braces
+16:43:41.036 194:5  Error: Missing braces in case clause.  unicorn/switch-case-braces
+16:43:41.036 198:5  Error: Missing braces in case clause.  unicorn/switch-case-braces
+16:43:41.036 202:5  Error: Missing braces in case clause.  unicorn/switch-case-braces
+16:43:41.036 258:38  Error: Unexpected negated condition.  unicorn/no-negated-condition
+16:43:41.036 450:13  Error: Unexpected negated condition.  unicorn/no-negated-condition
+16:43:41.036 
+16:43:41.036 ./src/components/marketing/pricing/plans-table.tsx
+16:43:41.036 10:8  Error: 'IconButton' is defined but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+16:43:41.036 
+16:43:41.037 ./src/components/transactions/token-search.tsx
+16:43:41.037 36:48  Error: Move arrow function 'extractSymbol' to the outer scope.  unicorn/consistent-function-scoping
+16:43:41.037 77:12  Error: The catch parameter `err` should be named `error_`.  unicorn/catch-error-name
+16:43:41.037 79:10  Error: 'axiosError' is assigned a value but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+16:43:41.037 
+16:43:41.037 ./src/contexts/AuthContext.tsx
+16:43:41.037 1:1  Error: Filename is not in kebab case. Rename it to `auth-context.tsx`.  unicorn/filename-case
+16:43:41.037 5:8  Warning: Using exported name 'api' as identifier for default import.  import/no-named-as-default
+16:43:41.037 39:22  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+16:43:41.037 48:17  Error: Remove unused catch binding `refreshError`.  unicorn/prefer-optional-catch-binding
+16:43:41.037 48:17  Error: 'refreshError' is defined but never used. Allowed unused caught errors must match /^_/u.  @typescript-eslint/no-unused-vars
+16:43:41.037 64:13  Error: Remove unused catch binding `error`.  unicorn/prefer-optional-catch-binding
+16:43:41.037 64:13  Error: 'error' is defined but never used. Allowed unused caught errors must match /^_/u.  @typescript-eslint/no-unused-vars
+16:43:41.037 75:5  Warning: React Hook useEffect has a missing dependency: 'refreshToken'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+16:43:41.038 90:4  Error: Use `switch` instead of multiple `else-if`.  unicorn/prefer-switch
+16:43:41.038 119:4  Error: Use `switch` instead of multiple `else-if`.  unicorn/prefer-switch
+16:43:41.038 151:12  Error: Remove unused catch binding `error`.  unicorn/prefer-optional-catch-binding
+16:43:41.038 151:12  Error: 'error' is defined but never used. Allowed unused caught errors must match /^_/u.  @typescript-eslint/no-unused-vars
+16:43:41.038 
+16:43:41.038 ./src/contexts/PortfolioContext.tsx
+16:43:41.038 1:1  Error: Filename is not in kebab case. Rename it to `portfolio-context.tsx`.  unicorn/filename-case
+16:43:41.038 50:5  Warning: React Hook React.useEffect has a missing dependency: 'loadPortfolios'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+16:43:41.038 65:5  Warning: React Hook React.useEffect has a missing dependency: 'loadHoldings'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+16:43:41.038 84:12  Error: The catch parameter `err` should be named `error_`.  unicorn/catch-error-name
+16:43:41.038 100:12  Error: The catch parameter `err` should be named `error_`.  unicorn/catch-error-name
+16:43:41.038 123:12  Error: The catch parameter `err` should be named `error_`.  unicorn/catch-error-name
+16:43:41.038 142:12  Error: The catch parameter `err` should be named `error_`.  unicorn/catch-error-name
+16:43:41.038 167:12  Error: The catch parameter `err` should be named `error_`.  unicorn/catch-error-name
+16:43:41.039 202:12  Error: The catch parameter `err` should be named `error_`.  unicorn/catch-error-name
+16:43:41.039 
+16:43:41.039 ./src/lib/api.ts
+16:43:41.039 17:14  Error: Prefer `globalThis.window` over `window`.  unicorn/prefer-global-this
+16:43:41.039 38:14  Error: Use `for…of` instead of `.forEach(…)`.  unicorn/no-array-for-each
+16:43:41.039 96:14  Error: The catch parameter `err` should be named `error_`.  unicorn/catch-error-name
+16:43:41.039 97:14  Error: Prefer `throw error` over `return Promise.reject(error)`.  unicorn/no-useless-promise-resolve-reject
+16:43:41.039 109:16  Error: Prefer `globalThis.window` over `window`.  unicorn/prefer-global-this
+16:43:41.039 121:16  Error: Prefer `globalThis.window` over `window`.  unicorn/prefer-global-this
+16:43:41.039 124:6  Error: Prefer `globalThis` over `window`.  unicorn/prefer-global-this
+16:43:41.039 126:12  Error: Prefer `throw error` over `return Promise.reject(error)`.  unicorn/no-useless-promise-resolve-reject
+16:43:41.039 136:10  Error: Prefer `throw error` over `return Promise.reject(error)`.  unicorn/no-useless-promise-resolve-reject
+16:43:41.039 
+16:43:41.039 ./src/lib/configuration-api.ts
+16:43:41.040 6:8  Warning: Using exported name 'api' as identifier for default import.  import/no-named-as-default
+16:43:41.040 
+16:43:41.040 ./src/lib/format.ts
+16:43:41.040 13:47  Error: Prefer `Number.isNaN` over `isNaN`.  unicorn/prefer-number-properties
+16:43:41.040 26:57  Error: Prefer `Number.isNaN` over `isNaN`.  unicorn/prefer-number-properties
+16:43:41.040 39:53  Error: Prefer `Number.isNaN` over `isNaN`.  unicorn/prefer-number-properties
+16:43:41.040 52:49  Error: Prefer `Number.isNaN` over `isNaN`.  unicorn/prefer-number-properties
+16:43:41.040 70:49  Error: Prefer `Number.isNaN` over `isNaN`.  unicorn/prefer-number-properties
+16:43:41.040 91:49  Error: Prefer `Number.isNaN` over `isNaN`.  unicorn/prefer-number-properties
+16:43:41.040 
+16:43:41.040 ./src/lib/portfolios-api.ts
+16:43:41.040 6:8  Warning: Using exported name 'api' as identifier for default import.  import/no-named-as-default
+16:43:41.040 
+16:43:41.040 ./src/lib/strategies-api.ts
+16:43:41.041 6:8  Warning: Using exported name 'api' as identifier for default import.  import/no-named-as-default
+16:43:41.041 
+16:43:41.041 ./src/lib/transactions-api.ts
+16:43:41.041 6:8  Warning: Using exported name 'api' as identifier for default import.  import/no-named-as-default
+16:43:41.042 
+16:43:41.042 ./src/lib/utils.ts
+16:43:41.042 41:9  Error: Invalid group length in numeric value.  unicorn/numeric-separators-style
+16:43:41.042 
+16:43:41.042 info  - Need to disable some ESLint rules? Learn more here: https://nextjs.org/docs/app/api-reference/config/eslint#disabling-rules
+16:43:41.045 Error: Command "npm run build" exited with 1
