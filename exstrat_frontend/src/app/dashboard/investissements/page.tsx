@@ -935,27 +935,29 @@ export default function Page(): React.JSX.Element {
 						>
 							Add Wallet
 						</Button>
-						<Button
-							onClick={() => {
-								setEditingTransaction(null);
-								setSelectedToken(null);
-								setTransactionError(null);
-								setTransactionFormData({
-									quantity: "",
-									amountInvested: "",
-									averagePrice: "",
-									type: "BUY",
-									transactionDate: new Date().toISOString().split("T")[0],
-									notes: "",
-									portfolioId: portfolios[0]?.id || "",
-								});
-								setShowTransactionDialog(true);
-							}}
-							startIcon={<PlusIcon />}
-							variant="contained"
-						>
-							Add Transaction
-						</Button>
+						{portfolios.length > 0 && (
+							<Button
+								onClick={() => {
+									setEditingTransaction(null);
+									setSelectedToken(null);
+									setTransactionError(null);
+									setTransactionFormData({
+										quantity: "",
+										amountInvested: "",
+										averagePrice: "",
+										type: "BUY",
+										transactionDate: new Date().toISOString().split("T")[0],
+										notes: "",
+										portfolioId: portfolios[0]?.id || "",
+									});
+									setShowTransactionDialog(true);
+								}}
+								startIcon={<PlusIcon />}
+								variant="contained"
+							>
+								Add Transaction
+							</Button>
+						)}
 					</Stack>
 				</Stack>
 
@@ -1457,46 +1459,51 @@ export default function Page(): React.JSX.Element {
 						>
 							Add Wallet
 						</Button>
-						<Button
-							color="secondary"
-							endIcon={<ArrowUpRightIcon />}
-							size="small"
-							onClick={() => {
-								setEditingTransaction(null);
-								setSelectedToken(null);
-								setTransactionError(null);
-								setTransactionFormData({
-									quantity: "",
-									amountInvested: "",
-									averagePrice: "",
-									type: "BUY",
-									transactionDate: new Date().toISOString().split("T")[0],
-									notes: "",
-									portfolioId: portfolios[0]?.id || "",
-								});
-								setShowTransactionDialog(true);
-							}}
-						>
-							Add Transaction
-						</Button>
-						<Button
-							color="secondary"
-							endIcon={<ArrowDownRightIcon />}
-							size="small"
-							onClick={() => {
-								// TODO: Implement transfer token functionality
-								console.log("Transfer Token clicked");
-							}}
-						>
-							Transfer Token
-						</Button>
+						{portfolios.length > 0 && (
+							<>
+								<Button
+									color="secondary"
+									endIcon={<ArrowUpRightIcon />}
+									size="small"
+									onClick={() => {
+										setEditingTransaction(null);
+										setSelectedToken(null);
+										setTransactionError(null);
+										setTransactionFormData({
+											quantity: "",
+											amountInvested: "",
+											averagePrice: "",
+											type: "BUY",
+											transactionDate: new Date().toISOString().split("T")[0],
+											notes: "",
+											portfolioId: portfolios[0]?.id || "",
+										});
+										setShowTransactionDialog(true);
+									}}
+								>
+									Add Transaction
+								</Button>
+								<Button
+									color="secondary"
+									endIcon={<ArrowDownRightIcon />}
+									size="small"
+									onClick={() => {
+										// TODO: Implement transfer token functionality
+										console.log("Transfer Token clicked");
+									}}
+								>
+									Transfer Token
+								</Button>
+							</>
+						)}
 					</CardActions>
 				</Card>
 
 				{/* Portfolio Performance Chart */}
-				<Card sx={{ mt: 3 }}>
-					<CardHeader
-						title="Wallet Performance"
+				{portfolios.length > 0 && transactions.length > 0 && (
+					<Card sx={{ mt: 3 }}>
+						<CardHeader
+							title="Wallet Performance"
 						action={
 							<ToggleButtonGroup
 								color="primary"
@@ -1644,11 +1651,14 @@ export default function Page(): React.JSX.Element {
 						)}
 					</CardContent>
 				</Card>
+				)}
+
 					</Grid>
 				</Grid>
 
 				{/* Transactions Section */}
-				<Card>
+				{portfolios.length > 0 && (
+					<Card>
 					<CardContent>
 						<Stack direction="row" spacing={2} sx={{ alignItems: "center", justifyContent: "space-between", mb: 3 }}>
 							<Stack direction="row" spacing={2} sx={{ alignItems: "center" }}>
@@ -1919,6 +1929,7 @@ export default function Page(): React.JSX.Element {
 						)}
 					</CardContent>
 				</Card>
+				)}
 			</Stack>
 
 			{/* Wallet Dialog */}
