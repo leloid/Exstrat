@@ -18,6 +18,10 @@ import TableHead from "@mui/material/TableHead";
 import TableRow from "@mui/material/TableRow";
 import TablePagination from "@mui/material/TablePagination";
 import Typography from "@mui/material/Typography";
+import Collapse from "@mui/material/Collapse";
+import Grid from "@mui/material/Grid";
+import { CaretDownIcon } from "@phosphor-icons/react/dist/ssr/CaretDown";
+import { CaretRightIcon } from "@phosphor-icons/react/dist/ssr/CaretRight";
 import { MagnifyingGlassIcon } from "@phosphor-icons/react/dist/ssr/MagnifyingGlass";
 import { PlusIcon } from "@phosphor-icons/react/dist/ssr/Plus";
 import { PencilIcon } from "@phosphor-icons/react/dist/ssr/Pencil";
@@ -27,6 +31,9 @@ import * as configurationApi from "@/lib/configuration-api";
 import { getForecasts } from "@/lib/portfolios-api";
 import type { AlertConfiguration } from "@/types/configuration";
 import { AddAlertModal } from "./add-alert-modal";
+import { TokenAlertsList } from "./token-alerts-list";
+import Checkbox from "@mui/material/Checkbox";
+import FormControlLabel from "@mui/material/FormControlLabel";
 
 export default function Page(): React.JSX.Element {
 	return (
@@ -38,9 +45,11 @@ export default function Page(): React.JSX.Element {
 
 function ConfigurationPageContent(): React.JSX.Element {
 	const [alertConfigurations, setAlertConfigurations] = React.useState<AlertConfiguration[]>([]);
+	const [alertConfigurationsDetails, setAlertConfigurationsDetails] = React.useState<Record<string, AlertConfiguration>>({});
 	const [isLoading, setIsLoading] = React.useState(true);
 	const [searchQuery, setSearchQuery] = React.useState("");
 	const [showAddModal, setShowAddModal] = React.useState(false);
+	const [expandedAlertId, setExpandedAlertId] = React.useState<string | null>(null);
 	const [page, setPage] = React.useState(0);
 	const [rowsPerPage, setRowsPerPage] = React.useState(10);
 
@@ -79,23 +88,25 @@ function ConfigurationPageContent(): React.JSX.Element {
 		return filteredConfigurations.slice(start, start + rowsPerPage);
 	}, [filteredConfigurations, page, rowsPerPage]);
 
-	// Load forecast names for display
+	// Load forecast names and data for display
 	const [forecastNames, setForecastNames] = React.useState<Record<string, string>>({});
+	const [forecasts, setForecasts] = React.useState<any[]>([]);
 	React.useEffect(() => {
-		const loadForecastNames = async () => {
+		const loadForecastData = async () => {
 			try {
-				const forecasts = await getForecasts();
+				const allForecasts = await getForecasts();
 				const namesMap: Record<string, string> = {};
-				forecasts.forEach((forecast) => {
+				allForecasts.forEach((forecast) => {
 					namesMap[forecast.id] = forecast.name;
 				});
 				setForecastNames(namesMap);
+				setForecasts(allForecasts);
 			} catch (error) {
-				console.error("Error loading forecast names:", error);
+				console.error("Error loading forecast data:", error);
 			}
 		};
 		if (alertConfigurations.length > 0) {
-			loadForecastNames();
+			loadForecastData();
 		}
 	}, [alertConfigurations]);
 
@@ -110,12 +121,33 @@ function ConfigurationPageContent(): React.JSX.Element {
 		}
 	};
 
-	const [selectedConfig, setSelectedConfig] = React.useState<AlertConfiguration | null>(null);
-	const [showEditModal, setShowEditModal] = React.useState(false);
+	const handleToggleExpand = async (configId: string) => {
+		if (expandedAlertId === configId) {
+			setExpandedAlertId(null);
+		} else {
+			setExpandedAlertId(configId);
+			// Load full configuration details if not already loaded
+			if (!alertConfigurationsDetails[configId]) {
+				try {
+					const fullConfig = await configurationApi.getAlertConfigurationById(configId);
+					setAlertConfigurationsDetails((prev) => ({
+						...prev,
+						[configId]: fullConfig,
+					}));
+				} catch (error) {
+					console.error("Error loading alert configuration details:", error);
+				}
+			}
+		}
+	};
 
-	const handleEditAlert = (config: AlertConfiguration) => {
-		setSelectedConfig(config);
-		setShowEditModal(true);
+	const handleConfigurationUpdate = async (config: AlertConfiguration) => {
+		setAlertConfigurationsDetails((prev) => ({
+			...prev,
+			[config.id]: config,
+		}));
+		// Reload the list to update counts
+		await loadAlertConfigurations();
 	};
 
 	if (isLoading) {
@@ -201,6 +233,7 @@ function ConfigurationPageContent(): React.JSX.Element {
 								<Table>
 									<TableHead>
 										<TableRow>
+											<TableCell sx={{ width: "40px", fontWeight: 600 }} />
 											<TableCell sx={{ fontWeight: 600 }}>Forecast</TableCell>
 											<TableCell align="right" sx={{ fontWeight: 600 }}>
 												Tokens
@@ -218,66 +251,220 @@ function ConfigurationPageContent(): React.JSX.Element {
 										</TableRow>
 									</TableHead>
 									<TableBody>
-										{paginatedConfigurations.map((config) => (
-											<TableRow
-												key={config.id}
-												hover
-												onClick={() => handleEditAlert(config)}
-												sx={{ cursor: "pointer" }}
-											>
-												<TableCell>
-													<Typography variant="subtitle2">
-														{forecastNames[config.forecastId] || "Unknown Forecast"}
-													</Typography>
-												</TableCell>
-												<TableCell align="right">
-													<Typography variant="body2">{config.tokenAlerts?.length || 0}</Typography>
-												</TableCell>
-												<TableCell align="right">
-													<Typography variant="body2">
-														{config.tokenAlerts?.reduce((sum, ta) => sum + (ta.tpAlerts?.length || 0), 0) || 0}
-													</Typography>
-												</TableCell>
-												<TableCell>
-													<Stack direction="row" spacing={1}>
-														{config.notificationChannels.email && (
-															<Chip label="Email" size="small" color="primary" />
-														)}
-														{config.notificationChannels.push && (
-															<Chip label="Push" size="small" color="secondary" />
-														)}
-													</Stack>
-												</TableCell>
-												<TableCell align="right">
-													<Typography color="text.secondary" variant="body2">
-														{new Date(config.createdAt).toLocaleDateString("en-US", {
-															year: "numeric",
-															month: "short",
-															day: "numeric",
-														})}
-													</Typography>
-												</TableCell>
-												<TableCell align="right">
-													<Stack direction="row" spacing={1} sx={{ justifyContent: "flex-end" }}>
-														<IconButton
-															onClick={() => handleEditAlert(config)}
-															size="small"
-															title="Edit alert"
+										{paginatedConfigurations.map((config) => {
+											const isExpanded = expandedAlertId === config.id;
+											const configDetails = alertConfigurationsDetails[config.id] || config;
+											// Get portfolio ID from forecast
+											const forecast = forecasts.find((f) => f.id === config.forecastId);
+											const portfolioId = forecast?.portfolioId || "";
+
+											return (
+												<React.Fragment key={config.id}>
+													<TableRow
+														hover
+														onClick={() => handleToggleExpand(config.id)}
+														sx={{
+															cursor: "pointer",
+															transition: "background-color 0.2s ease-in-out",
+															...(isExpanded && {
+																bgcolor: "var(--mui-palette-primary-selected)",
+																"&:hover": {
+																	bgcolor: "var(--mui-palette-primary-selected)",
+																},
+															}),
+														}}
+													>
+														<TableCell>
+															<IconButton
+																onClick={(e) => {
+																	e.stopPropagation();
+																	handleToggleExpand(config.id);
+																}}
+																size="small"
+																sx={{
+																	padding: "4px",
+																	color: isExpanded ? "var(--mui-palette-primary-main)" : "var(--mui-palette-text-secondary)",
+																	transition: "color 0.2s ease-in-out, transform 0.2s ease-in-out",
+																	transform: isExpanded ? "rotate(0deg)" : "rotate(-90deg)",
+																}}
+															>
+																<CaretDownIcon fontSize="var(--icon-fontSize-md)" />
+															</IconButton>
+														</TableCell>
+														<TableCell>
+															<Typography variant="subtitle2">
+																{forecastNames[config.forecastId] || "Unknown Forecast"}
+															</Typography>
+														</TableCell>
+														<TableCell align="right">
+															<Typography variant="body2">{config.tokenAlerts?.length || 0}</Typography>
+														</TableCell>
+														<TableCell align="right">
+															<Typography variant="body2">
+																{config.tokenAlerts?.reduce((sum, ta) => sum + (ta.tpAlerts?.length || 0), 0) || 0}
+															</Typography>
+														</TableCell>
+														<TableCell>
+															<Stack direction="row" spacing={1}>
+																{config.notificationChannels.email && (
+																	<Chip label="Email" size="small" color="primary" />
+																)}
+																{config.notificationChannels.push && (
+																	<Chip label="Push" size="small" color="secondary" />
+																)}
+															</Stack>
+														</TableCell>
+														<TableCell align="right">
+															<Typography color="text.secondary" variant="body2">
+																{new Date(config.createdAt).toLocaleDateString("en-US", {
+																	year: "numeric",
+																	month: "short",
+																	day: "numeric",
+																})}
+															</Typography>
+														</TableCell>
+														<TableCell align="right">
+															<Stack direction="row" spacing={1} sx={{ justifyContent: "flex-end" }}>
+																<IconButton
+																	onClick={(e) => {
+																		e.stopPropagation();
+																		handleDeleteAlert(config.id);
+																	}}
+																	color="error"
+																	size="small"
+																	title="Delete alert"
+																>
+																	<TrashIcon fontSize="var(--icon-fontSize-md)" />
+																</IconButton>
+															</Stack>
+														</TableCell>
+													</TableRow>
+													<TableRow>
+														<TableCell
+															colSpan={7}
+															sx={{
+																py: 0,
+																borderBottom: isExpanded ? "1px solid var(--mui-palette-divider)" : "none",
+																bgcolor: isExpanded ? "var(--mui-palette-background-default)" : "transparent",
+															}}
 														>
-															<PencilIcon fontSize="var(--icon-fontSize-md)" />
-														</IconButton>
-														<IconButton
-															color="error"
-															onClick={() => handleDeleteAlert(config.id)}
-															size="small"
-															title="Delete alert"
-														>
-															<TrashIcon fontSize="var(--icon-fontSize-md)" />
-														</IconButton>
-													</Stack>
-												</TableCell>
-											</TableRow>
-										))}
+															<Collapse
+																in={isExpanded}
+																timeout={{ enter: 300, exit: 200 }}
+																unmountOnExit
+															>
+																<Box
+																	sx={{
+																		py: 3,
+																		px: 3,
+																		bgcolor: "var(--mui-palette-background-paper)",
+																		borderTop: "1px solid var(--mui-palette-divider)",
+																	}}
+																>
+																	<Stack spacing={3}>
+																		{/* Header Section */}
+																		<Box
+																			sx={{
+																				display: "flex",
+																				alignItems: "center",
+																				justifyContent: "space-between",
+																				pb: 2,
+																				borderBottom: "2px solid var(--mui-palette-divider)",
+																			}}
+																		>
+																			<Box>
+																				<Typography variant="h6" sx={{ fontWeight: 600, mb: 0.5 }}>
+																					Alert Configuration
+																				</Typography>
+																				<Typography color="text.secondary" variant="body2">
+																					Manage token alerts and notification preferences
+																				</Typography>
+																			</Box>
+																			{/* Notification Channels Checkboxes */}
+																			<Stack direction="row" spacing={2}>
+																				<FormControlLabel
+																					control={
+																						<Checkbox
+																							checked={configDetails.notificationChannels.email}
+																							onChange={async (e) => {
+																								try {
+																									const updated = await configurationApi.updateAlertConfiguration(configDetails.id, {
+																										notificationChannels: {
+																											...configDetails.notificationChannels,
+																											email: e.target.checked,
+																										},
+																									});
+																									handleConfigurationUpdate(updated);
+																								} catch (error) {
+																									console.error("Error updating notification channels:", error);
+																								}
+																							}}
+																						/>
+																					}
+																					label={<Typography variant="body2">Email</Typography>}
+																					sx={{ m: 0 }}
+																				/>
+																				<FormControlLabel
+																					control={
+																						<Checkbox
+																							checked={configDetails.notificationChannels.push}
+																							onChange={async (e) => {
+																								try {
+																									const updated = await configurationApi.updateAlertConfiguration(configDetails.id, {
+																										notificationChannels: {
+																											...configDetails.notificationChannels,
+																											push: e.target.checked,
+																										},
+																									});
+																									handleConfigurationUpdate(updated);
+																								} catch (error) {
+																									console.error("Error updating notification channels:", error);
+																								}
+																							}}
+																						/>
+																					}
+																					label={<Typography variant="body2">Push</Typography>}
+																					sx={{ m: 0 }}
+																				/>
+																			</Stack>
+																		</Box>
+
+																		{/* Main Content - Token Alerts */}
+																		{portfolioId && (
+																			<Card
+																				variant="outlined"
+																				sx={{
+																					boxShadow: "0 1px 3px rgba(0, 0, 0, 0.05)",
+																				}}
+																			>
+																				<CardContent>
+																					<Stack spacing={2}>
+																						<Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
+																							Token Alerts
+																						</Typography>
+																						<Typography color="text.secondary" variant="caption">
+																							Configure alerts for each token with an associated strategy
+																						</Typography>
+																						<Box sx={{ pt: 1 }}>
+																							<TokenAlertsList
+																								forecastId={config.forecastId}
+																								portfolioId={portfolioId}
+																								alertConfiguration={configDetails}
+																								onConfigurationUpdate={handleConfigurationUpdate}
+																							/>
+																						</Box>
+																					</Stack>
+																				</CardContent>
+																			</Card>
+																		)}
+																	</Stack>
+																</Box>
+															</Collapse>
+														</TableCell>
+													</TableRow>
+												</React.Fragment>
+											);
+										})}
 									</TableBody>
 								</Table>
 							</Box>
@@ -306,23 +493,6 @@ function ConfigurationPageContent(): React.JSX.Element {
 						loadAlertConfigurations();
 					}}
 				/>
-
-				{/* Edit Alert Modal - Reuse AddAlertModal with existing config */}
-				{selectedConfig && (
-					<AddAlertModal
-						open={showEditModal}
-						onClose={() => {
-							setShowEditModal(false);
-							setSelectedConfig(null);
-						}}
-						onSuccess={() => {
-							setShowEditModal(false);
-							setSelectedConfig(null);
-							loadAlertConfigurations();
-						}}
-						existingConfig={selectedConfig}
-					/>
-				)}
 			</Stack>
 		</Box>
 	);

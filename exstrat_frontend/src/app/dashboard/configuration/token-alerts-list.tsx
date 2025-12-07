@@ -11,15 +11,21 @@ import { getForecastById, getPortfolioHoldings, getTheoreticalStrategies } from 
 import { strategiesApi } from "@/lib/strategies-api";
 import * as configurationApi from "@/lib/configuration-api";
 import type { ForecastResponse } from "@/types/portfolio";
-import type { AlertConfiguration, CreateTokenAlertDto } from "@/types/configuration";
+import type { AlertConfiguration, CreateTokenAlertDto, UpdateTPAlertDto } from "@/types/configuration";
 import type { TheoreticalStrategyResponse, StrategyResponse } from "@/types/strategies";
 import { TokenAlertItem } from "./token-alert-item";
+import { TokenAlertsModal } from "./token-alerts-modal";
 
 interface TokenAlertsListProps {
 	forecastId: string;
 	portfolioId: string;
 	alertConfiguration: AlertConfiguration | null;
 	onConfigurationUpdate: (config: AlertConfiguration) => void;
+}
+
+interface PendingTPAlertUpdate {
+	tpAlertId: string;
+	updates: UpdateTPAlertDto;
 }
 
 export function TokenAlertsList({
@@ -32,7 +38,7 @@ export function TokenAlertsList({
 	const [holdings, setHoldings] = React.useState<any[]>([]);
 	const [strategiesMap, setStrategiesMap] = React.useState<Map<string, TheoreticalStrategyResponse>>(new Map());
 	const [loading, setLoading] = React.useState(true);
-	const [expandedTokens, setExpandedTokens] = React.useState<Set<string>>(new Set());
+	const [selectedTokenId, setSelectedTokenId] = React.useState<string | null>(null);
 
 	// Load forecast and associated data
 	React.useEffect(() => {
@@ -169,19 +175,40 @@ export function TokenAlertsList({
 		}
 	};
 
-	if (loading && !forecast) {
+	if (loading) {
 		return (
-			<Box sx={{ display: "flex", justifyContent: "center", py: 2 }}>
-				<CircularProgress size={24} />
+			<Box
+				sx={{
+					display: "flex",
+					flexDirection: "column",
+					alignItems: "center",
+					justifyContent: "center",
+					py: 4,
+					gap: 2,
+				}}
+			>
+				<CircularProgress size={32} />
+				<Typography color="text.secondary" variant="body2">
+					Loading token alerts...
+				</Typography>
 			</Box>
 		);
 	}
 
 	if (!forecast) {
 		return (
-			<Typography color="text.secondary" variant="body2">
-				No forecast found
-			</Typography>
+			<Box
+				sx={{
+					p: 3,
+					textAlign: "center",
+					border: "1px dashed var(--mui-palette-divider)",
+					borderRadius: 1,
+				}}
+			>
+				<Typography color="text.secondary" variant="body2">
+					No forecast found
+				</Typography>
+			</Box>
 		);
 	}
 
@@ -225,33 +252,69 @@ export function TokenAlertsList({
 
 	const isForecastActive = alertConfiguration?.isActive === true;
 
-	return (
-		<Stack spacing={2}>
-			{/* Warning if forecast not active */}
-			{!isForecastActive && (
-				<Card variant="outlined" sx={{ bgcolor: "warning.light", borderColor: "warning.main" }}>
-					<CardContent>
-						<Stack spacing={1}>
-							<Typography color="warning.dark" variant="body2" sx={{ fontWeight: 600 }}>
-								⚠️ Forecast not active
-							</Typography>
-							<Typography color="warning.dark" variant="caption">
-								You must first activate this forecast using the "Activate alerts" button above before you can configure token
-								alerts.
-							</Typography>
-						</Stack>
-					</CardContent>
-				</Card>
-			)}
+	if (!isForecastActive) {
+		return (
+			<Box
+				sx={{
+					p: 2,
+					bgcolor: "warning.light",
+					borderRadius: 1,
+					border: "1px solid",
+					borderColor: "warning.main",
+				}}
+			>
+				<Typography variant="body2" sx={{ fontWeight: 500, color: "warning.dark" }}>
+					⚠️ Forecast not active. Activate it to configure alerts.
+				</Typography>
+			</Box>
+		);
+	}
 
-			{/* Token alerts list */}
-			{isForecastActive ? (
-				<Stack spacing={2}>
+	if (tokensWithStrategies.length === 0) {
+		return (
+			<Box
+				sx={{
+					p: 3,
+					textAlign: "center",
+					border: "1px dashed var(--mui-palette-divider)",
+					borderRadius: 1,
+				}}
+			>
+				<Typography color="text.secondary" variant="body2">
+					No tokens with strategies in this forecast.
+				</Typography>
+			</Box>
+		);
+	}
+
+	return (
+		<>
+			{/* Token Alerts List */}
+			<Box
+				sx={{
+					maxHeight: "550px",
+					overflowY: "auto",
+					pr: 1,
+					"&::-webkit-scrollbar": {
+						width: "6px",
+					},
+					"&::-webkit-scrollbar-track": {
+						bgcolor: "transparent",
+					},
+					"&::-webkit-scrollbar-thumb": {
+						bgcolor: "var(--mui-palette-divider)",
+						borderRadius: "3px",
+						"&:hover": {
+							bgcolor: "var(--mui-palette-text-secondary)",
+						},
+					},
+				}}
+			>
+				<Stack spacing={1.5}>
 					{tokensWithStrategies.map(({ holding, strategy }) => {
 						if (!strategy) return null;
 
 						const tokenAlert = alertConfiguration?.tokenAlerts?.find((ta) => ta.holdingId === holding.id);
-						const isExpanded = expandedTokens.has(holding.id);
 
 						return (
 							<TokenAlertItem
@@ -261,32 +324,35 @@ export function TokenAlertsList({
 								tokenAlert={tokenAlert}
 								alertConfigurationId={alertConfiguration?.id}
 								isForecastActive={isForecastActive}
-								isExpanded={isExpanded}
-								onToggleExpand={() => {
-									const newExpanded = new Set(expandedTokens);
-									if (isExpanded) {
-										newExpanded.delete(holding.id);
-									} else {
-										newExpanded.add(holding.id);
-									}
-									setExpandedTokens(newExpanded);
-								}}
-								onCreateAlert={() => handleCreateTokenAlert(holding, strategy)}
-								onConfigurationUpdate={onConfigurationUpdate}
+								onClick={() => setSelectedTokenId(holding.id)}
 							/>
 						);
 					})}
 				</Stack>
-			) : (
-				<Card variant="outlined">
-					<CardContent>
-						<Typography color="text.secondary" variant="body2">
-							Tokens will be displayed here once the forecast is activated.
-						</Typography>
-					</CardContent>
-				</Card>
-			)}
-		</Stack>
+			</Box>
+
+			{/* Token Alerts Modal */}
+			{selectedTokenId && (() => {
+				const selectedTokenData = tokensWithStrategies.find(({ holding }) => holding.id === selectedTokenId);
+				if (!selectedTokenData || !selectedTokenData.strategy) return null;
+				
+				return (
+					<TokenAlertsModal
+						open={selectedTokenId !== null}
+						onClose={() => setSelectedTokenId(null)}
+						holding={selectedTokenData.holding}
+						strategy={selectedTokenData.strategy}
+						tokenAlert={alertConfiguration?.tokenAlerts?.find((ta) => ta.holdingId === selectedTokenData.holding.id)}
+						alertConfigurationId={alertConfiguration?.id}
+						isForecastActive={isForecastActive}
+						onConfigurationUpdate={onConfigurationUpdate}
+						onCreateAlert={async () => {
+							await handleCreateTokenAlert(selectedTokenData.holding, selectedTokenData.strategy!);
+						}}
+					/>
+				);
+			})()}
+		</>
 	);
 }
 

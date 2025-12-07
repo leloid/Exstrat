@@ -2,13 +2,8 @@
 
 import * as React from "react";
 import Box from "@mui/material/Box";
-import Button from "@mui/material/Button";
-import Card from "@mui/material/Card";
-import CardContent from "@mui/material/CardContent";
 import Checkbox from "@mui/material/Checkbox";
-import Divider from "@mui/material/Divider";
 import FormControlLabel from "@mui/material/FormControlLabel";
-import Grid from "@mui/material/Grid";
 import IconButton from "@mui/material/IconButton";
 import Stack from "@mui/material/Stack";
 import TextField from "@mui/material/TextField";
@@ -23,259 +18,314 @@ interface TPAlertsConfigProps {
 	tokenAlert: TokenAlert;
 	alertConfigurationId: string;
 	onConfigurationUpdate: (config: AlertConfiguration) => void;
+	onLocalUpdate?: (tpAlertId: string, updates: UpdateTPAlertDto) => void;
+	pendingUpdates?: Map<string, UpdateTPAlertDto>;
 }
 
 export function TPAlertsConfig({
 	tokenAlert,
 	alertConfigurationId,
 	onConfigurationUpdate,
+	onLocalUpdate,
+	pendingUpdates,
 }: TPAlertsConfigProps): React.JSX.Element {
-	const [saving, setSaving] = React.useState<Record<string, boolean>>({});
+	// Use local updates if provided, otherwise use immediate save
+	const handleUpdateTPAlert = React.useCallback(
+		(tpAlertId: string, updates: UpdateTPAlertDto) => {
+			if (onLocalUpdate) {
+				// Store locally for batch save
+				onLocalUpdate(tpAlertId, updates);
+			} else {
+				// Immediate save (fallback)
+				(async () => {
+					try {
+						await configurationApi.updateTPAlert(tpAlertId, updates);
+						const updated = await configurationApi.getAlertConfigurationById(alertConfigurationId);
+						onConfigurationUpdate(updated);
+					} catch (error) {
+						console.error("Error updating TP alert:", error);
+					}
+				})();
+			}
+		},
+		[onLocalUpdate, alertConfigurationId, onConfigurationUpdate]
+	);
 
-	const handleUpdateTPAlert = async (tpAlertId: string, updates: UpdateTPAlertDto) => {
-		try {
-			setSaving((prev) => ({ ...prev, [tpAlertId]: true }));
-			await configurationApi.updateTPAlert(tpAlertId, updates);
-
-			// Reload configuration
-			const updated = await configurationApi.getAlertConfigurationById(alertConfigurationId);
-			onConfigurationUpdate(updated);
-		} catch (error) {
-			console.error("Error updating TP alert:", error);
-		} finally {
-			setSaving((prev) => ({ ...prev, [tpAlertId]: false }));
-		}
-	};
-
-	const handleToggleTokenAlert = async (isActive: boolean) => {
-		try {
-			setSaving((prev) => ({ ...prev, token: true }));
-			await configurationApi.updateTokenAlert(tokenAlert.id, { isActive });
-
-			// Reload configuration
-			const updated = await configurationApi.getAlertConfigurationById(alertConfigurationId);
-			onConfigurationUpdate(updated);
-		} catch (error) {
-			console.error("Error updating token alert:", error);
-		} finally {
-			setSaving((prev) => ({ ...prev, token: false }));
-		}
-	};
+	// Get current value (from pending updates or original)
+	const getCurrentValue = React.useCallback(
+		(tpAlertId: string, field: "beforeTPValue" | "beforeTPEnabled" | "tpReachedEnabled" | "isActive") => {
+			const pending = pendingUpdates?.get(tpAlertId);
+			if (pending) {
+				if (field === "beforeTPValue") {
+					return pending.beforeTP?.value;
+				}
+				if (field === "beforeTPEnabled") {
+					return pending.beforeTP?.enabled;
+				}
+				if (field === "tpReachedEnabled") {
+					return pending.tpReached?.enabled;
+				}
+				if (field === "isActive") {
+					return pending.isActive;
+				}
+			}
+			// Fallback to original value
+			const tpAlert = tokenAlert.tpAlerts.find((ta) => ta.id === tpAlertId);
+			if (!tpAlert) return undefined;
+			if (field === "beforeTPValue") return tpAlert.beforeTPValue;
+			if (field === "beforeTPEnabled") return tpAlert.beforeTPEnabled;
+			if (field === "tpReachedEnabled") return tpAlert.tpReachedEnabled;
+			if (field === "isActive") return tpAlert.isActive;
+			return undefined;
+		},
+		[pendingUpdates, tokenAlert]
+	);
 
 	// Sort TP alerts by order
 	const sortedTPAlerts = [...tokenAlert.tpAlerts].sort((a, b) => a.tpOrder - b.tpOrder);
 
 	return (
-		<Stack spacing={3}>
-			{/* Header with global toggle */}
-			<Stack direction="row" spacing={2} sx={{ alignItems: "center", justifyContent: "space-between" }}>
-				<Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
-					TP Alerts Configuration
-				</Typography>
-				<FormControlLabel
-					control={
-						<Checkbox
-							checked={tokenAlert.isActive}
-							onChange={(e) => handleToggleTokenAlert(e.target.checked)}
-							disabled={saving.token}
-						/>
-					}
-					label={<Typography variant="body2">Enable all alerts</Typography>}
-				/>
-			</Stack>
+		<Stack spacing={1.5}>
+			{sortedTPAlerts.map((tpAlert) => {
+				const beforeTPValue = getCurrentValue(tpAlert.id, "beforeTPValue");
+				const beforeTPEnabled = getCurrentValue(tpAlert.id, "beforeTPEnabled");
+				const tpReachedEnabled = getCurrentValue(tpAlert.id, "tpReachedEnabled");
+				
+				const currentBeforeTPValue = (typeof beforeTPValue === "number" ? beforeTPValue : tpAlert.beforeTPValue) ?? -10;
+				const currentBeforeTPEnabled = typeof beforeTPEnabled === "boolean" ? beforeTPEnabled : (tpAlert.beforeTPEnabled ?? false);
+				const currentTPReachedEnabled = typeof tpReachedEnabled === "boolean" ? tpReachedEnabled : (tpAlert.tpReachedEnabled ?? false);
 
-			<Divider />
+				return (
+					<Box
+						key={tpAlert.id}
+						sx={{
+							border: "1px solid var(--mui-palette-divider)",
+							borderRadius: 1.5,
+							overflow: "hidden",
+							transition: "all 0.2s ease-in-out",
+							"&:hover": {
+								borderColor: "var(--mui-palette-primary-main)",
+								boxShadow: "0 2px 8px rgba(0, 0, 0, 0.08)",
+							},
+						}}
+					>
+						{/* Header with TP number */}
+						<Box
+							sx={{
+								px: 1.5,
+								py: 1,
+								bgcolor: "var(--mui-palette-background-default)",
+								borderBottom: "1px solid var(--mui-palette-divider)",
+							}}
+						>
+							<Typography variant="body2" sx={{ fontWeight: 600, fontSize: "0.875rem" }}>
+								TP {tpAlert.tpOrder}
+							</Typography>
+						</Box>
 
-			{/* TP Alerts List */}
-			<Stack spacing={2}>
-				{sortedTPAlerts.map((tpAlert) => {
-					const isSaving = saving[tpAlert.id];
-
-					return (
-						<Card key={tpAlert.id} variant="outlined">
-							<CardContent>
-								<Stack spacing={2}>
-									{/* TP Header */}
-									<Stack direction="row" spacing={2} sx={{ alignItems: "center", justifyContent: "space-between" }}>
-										<Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
-											TP {tpAlert.tpOrder}
+						{/* Content */}
+						<Box sx={{ p: 1.5 }}>
+							<Stack spacing={2}>
+								{/* Metrics Grid */}
+								<Box
+									sx={{
+										display: "grid",
+										gridTemplateColumns: "repeat(4, 1fr)",
+										gap: 1.5,
+									}}
+								>
+									<Box>
+										<Typography color="text.secondary" variant="caption" sx={{ display: "block", mb: 0.5, fontSize: "0.7rem" }}>
+											Target
 										</Typography>
-										<FormControlLabel
-											control={
-												<Checkbox
-													checked={tpAlert.isActive}
-													onChange={(e) => handleUpdateTPAlert(tpAlert.id, { isActive: e.target.checked })}
-													disabled={isSaving}
-												/>
-											}
-											label={<Typography variant="caption">Active</Typography>}
-										/>
-									</Stack>
+										<Typography variant="body2" sx={{ fontWeight: 600, fontSize: "0.875rem" }}>
+											{formatCurrency(tpAlert.targetPrice, "$", 2)}
+										</Typography>
+									</Box>
+									<Box>
+										<Typography color="text.secondary" variant="caption" sx={{ display: "block", mb: 0.5, fontSize: "0.7rem" }}>
+											Qty
+										</Typography>
+										<Typography variant="body2" sx={{ fontWeight: 600, fontSize: "0.875rem" }}>
+											{tpAlert.sellQuantity.toFixed(4)}
+										</Typography>
+									</Box>
+									<Box>
+										<Typography color="text.secondary" variant="caption" sx={{ display: "block", mb: 0.5, fontSize: "0.7rem" }}>
+											Projected
+										</Typography>
+										<Typography variant="body2" sx={{ fontWeight: 600, fontSize: "0.875rem" }}>
+											{formatCurrency(tpAlert.projectedAmount, "$", 2)}
+										</Typography>
+									</Box>
+									<Box>
+										<Typography color="text.secondary" variant="caption" sx={{ display: "block", mb: 0.5, fontSize: "0.7rem" }}>
+											Remaining
+										</Typography>
+										<Typography variant="body2" sx={{ fontWeight: 600, fontSize: "0.875rem" }}>
+											{formatCurrency(tpAlert.remainingValue, "$", 2)}
+										</Typography>
+									</Box>
+								</Box>
 
-									{/* TP Data */}
-									<Grid container spacing={2}>
-										<Grid size={{ xs: 6, sm: 3 }}>
-											<Typography color="text.secondary" variant="caption">
-												Target price:
-											</Typography>
-											<Typography variant="body2" sx={{ fontWeight: 500 }}>
-												{formatCurrency(tpAlert.targetPrice, "$", 2)}
-											</Typography>
-										</Grid>
-										<Grid size={{ xs: 6, sm: 3 }}>
-											<Typography color="text.secondary" variant="caption">
-												Sell quantity:
-											</Typography>
-											<Typography variant="body2" sx={{ fontWeight: 500 }}>
-												{tpAlert.sellQuantity.toFixed(4)}
-											</Typography>
-										</Grid>
-										<Grid size={{ xs: 6, sm: 3 }}>
-											<Typography color="text.secondary" variant="caption">
-												Projected amount:
-											</Typography>
-											<Typography variant="body2" sx={{ fontWeight: 500 }}>
-												{formatCurrency(tpAlert.projectedAmount, "$", 2)}
-											</Typography>
-										</Grid>
-										<Grid size={{ xs: 6, sm: 3 }}>
-											<Typography color="text.secondary" variant="caption">
-												Remaining value:
-											</Typography>
-											<Typography variant="body2" sx={{ fontWeight: 500 }}>
-												{formatCurrency(tpAlert.remainingValue, "$", 2)}
-											</Typography>
-										</Grid>
-									</Grid>
+								{/* Divider */}
+								<Box sx={{ height: "1px", bgcolor: "var(--mui-palette-divider)" }} />
 
-									<Divider />
-
-									{/* Alert Configuration */}
-									<Stack spacing={2}>
-										{/* Before TP Alert */}
-										<Card variant="outlined" sx={{ bgcolor: "warning.light", borderColor: "warning.main" }}>
-											<CardContent>
-												<Stack spacing={2}>
-													<FormControlLabel
-														control={
-															<Checkbox
-																checked={tpAlert.beforeTPEnabled}
-																onChange={(e) =>
-																	handleUpdateTPAlert(tpAlert.id, {
-																		beforeTP: {
-																			enabled: e.target.checked,
-																			value: tpAlert.beforeTPValue || -10,
-																			type: (tpAlert.beforeTPType as "percentage" | "absolute") || "percentage",
-																		},
-																	})
-																}
-																disabled={isSaving}
-															/>
-														}
-														label={
-															<Typography variant="body2" sx={{ fontWeight: 600, color: "warning.dark" }}>
-																Before TP
-															</Typography>
-														}
+								{/* Alert Me Section */}
+								<Box>
+									<Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, mb: 1.5, display: "block", fontSize: "0.7rem" }}>
+										Alert Me
+									</Typography>
+									<Stack direction="row" spacing={3} sx={{ alignItems: "flex-start" }}>
+										{/* Before */}
+										<Box sx={{ flex: 1 }}>
+											<Typography variant="caption" color="text.secondary" sx={{ display: "block", mb: 1, fontSize: "0.7rem" }}>
+												Before
+											</Typography>
+											<Stack spacing={1}>
+												<Stack direction="row" spacing={0.5} sx={{ alignItems: "center" }}>
+													<IconButton
+														size="small"
+														onClick={() => {
+															const newValue = Math.max(-50, currentBeforeTPValue - 5);
+															handleUpdateTPAlert(tpAlert.id, {
+																beforeTP: {
+																	enabled: true,
+																	value: newValue,
+																	type: (tpAlert.beforeTPType as "percentage" | "absolute") || "percentage",
+																},
+															});
+														}}
+														disabled={!currentBeforeTPEnabled}
+														sx={{
+															p: 0.5,
+															width: "32px",
+															height: "32px",
+															border: "1px solid var(--mui-palette-divider)",
+															borderRadius: 0.5,
+															"&:hover": {
+																bgcolor: "var(--mui-palette-action-hover)",
+																borderColor: "var(--mui-palette-primary-main)",
+															},
+														}}
+													>
+														<MinusIcon fontSize="var(--icon-fontSize-sm)" />
+													</IconButton>
+													<TextField
+														type="number"
+														value={currentBeforeTPValue}
+														onChange={(e) => {
+															const value = parseFloat(e.target.value);
+															if (!isNaN(value)) {
+																handleUpdateTPAlert(tpAlert.id, {
+																	beforeTP: {
+																		enabled: true,
+																		value: Math.max(-50, Math.min(0, value)),
+																		type: (tpAlert.beforeTPType as "percentage" | "absolute") || "percentage",
+																	},
+																});
+															}
+														}}
+														disabled={!currentBeforeTPEnabled}
+														size="small"
+														sx={{
+															width: "70px",
+															"& .MuiOutlinedInput-root": {
+																height: "32px",
+																"& input": {
+																	padding: "4px 8px",
+																	fontSize: "0.875rem",
+																	fontWeight: 600,
+																	textAlign: "center",
+																},
+															},
+														}}
+														inputProps={{ min: -50, max: 0, step: 1 }}
 													/>
-													{tpAlert.beforeTPEnabled && (
-														<Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
-															<IconButton
-																size="small"
-																onClick={() => {
-																	const currentValue = tpAlert.beforeTPValue || -10;
-																	const newValue = Math.max(-50, currentValue - 5);
-																	handleUpdateTPAlert(tpAlert.id, {
-																		beforeTP: {
-																			enabled: true,
-																			value: newValue,
-																			type: (tpAlert.beforeTPType as "percentage" | "absolute") || "percentage",
-																		},
-																	});
-																}}
-																disabled={isSaving}
-															>
-																<MinusIcon fontSize="var(--icon-fontSize-sm)" />
-															</IconButton>
-															<TextField
-																type="number"
-																value={tpAlert.beforeTPValue || -10}
-																onChange={(e) => {
-																	const value = parseFloat(e.target.value);
-																	if (!isNaN(value)) {
-																		handleUpdateTPAlert(tpAlert.id, {
-																			beforeTP: {
-																				enabled: true,
-																				value: Math.max(-50, Math.min(0, value)),
-																				type: (tpAlert.beforeTPType as "percentage" | "absolute") || "percentage",
-																			},
-																		});
-																	}
-																}}
-																disabled={isSaving}
-																size="small"
-																sx={{ width: "80px" }}
-																inputProps={{ min: -50, max: 0, step: 1 }}
-															/>
-															<Typography variant="body2">%</Typography>
-															<IconButton
-																size="small"
-																onClick={() => {
-																	const currentValue = tpAlert.beforeTPValue || -10;
-																	const newValue = Math.min(0, currentValue + 5);
-																	handleUpdateTPAlert(tpAlert.id, {
-																		beforeTP: {
-																			enabled: true,
-																			value: newValue,
-																			type: (tpAlert.beforeTPType as "percentage" | "absolute") || "percentage",
-																		},
-																	});
-																}}
-																disabled={isSaving}
-															>
-																<PlusIcon fontSize="var(--icon-fontSize-sm)" />
-															</IconButton>
-															<Typography variant="caption" color="text.secondary" sx={{ ml: 1 }}>
-																below threshold
-															</Typography>
-														</Stack>
-													)}
+													<Typography variant="body2" sx={{ fontSize: "0.75rem", fontWeight: 500, minWidth: "20px" }}>
+														%
+													</Typography>
+													<IconButton
+														size="small"
+														onClick={() => {
+															const newValue = Math.min(0, currentBeforeTPValue + 5);
+															handleUpdateTPAlert(tpAlert.id, {
+																beforeTP: {
+																	enabled: true,
+																	value: newValue,
+																	type: (tpAlert.beforeTPType as "percentage" | "absolute") || "percentage",
+																},
+															});
+														}}
+														disabled={!currentBeforeTPEnabled}
+														sx={{
+															p: 0.5,
+															width: "32px",
+															height: "32px",
+															border: "1px solid var(--mui-palette-divider)",
+															borderRadius: 0.5,
+															"&:hover": {
+																bgcolor: "var(--mui-palette-action-hover)",
+																borderColor: "var(--mui-palette-primary-main)",
+															},
+														}}
+													>
+														<PlusIcon fontSize="var(--icon-fontSize-sm)" />
+													</IconButton>
 												</Stack>
-											</CardContent>
-										</Card>
-
-										{/* TP Reached Alert */}
-										<Card variant="outlined" sx={{ bgcolor: "success.light", borderColor: "success.main" }}>
-											<CardContent>
 												<FormControlLabel
 													control={
 														<Checkbox
-															checked={tpAlert.tpReachedEnabled}
+															checked={currentBeforeTPEnabled}
 															onChange={(e) =>
 																handleUpdateTPAlert(tpAlert.id, {
-																	tpReached: {
+																	beforeTP: {
 																		enabled: e.target.checked,
+																		value: currentBeforeTPValue,
+																		type: (tpAlert.beforeTPType as "percentage" | "absolute") || "percentage",
 																	},
 																})
 															}
-															disabled={isSaving}
+															size="small"
 														/>
 													}
-													label={
-														<Typography variant="body2" sx={{ fontWeight: 600, color: "success.dark" }}>
-															TP Reached
-														</Typography>
-													}
+													label={<Typography variant="caption">Enable</Typography>}
+													sx={{ m: 0 }}
 												/>
-											</CardContent>
-										</Card>
+											</Stack>
+										</Box>
+
+										{/* Reaching */}
+										<Box sx={{ flex: 1 }}>
+											<Typography variant="caption" color="text.secondary" sx={{ display: "block", mb: 1, fontSize: "0.7rem" }}>
+												Reaching
+											</Typography>
+											<Box sx={{ height: "32px", display: "flex", alignItems: "center", mb: 1 }} />
+											<FormControlLabel
+												control={
+													<Checkbox
+														checked={currentTPReachedEnabled}
+														onChange={(e) =>
+															handleUpdateTPAlert(tpAlert.id, {
+																tpReached: {
+																	enabled: e.target.checked,
+																},
+															})
+														}
+														size="small"
+													/>
+												}
+												label={<Typography variant="caption">Enable</Typography>}
+												sx={{ m: 0 }}
+											/>
+										</Box>
 									</Stack>
-								</Stack>
-							</CardContent>
-						</Card>
-					);
-				})}
-			</Stack>
+								</Box>
+							</Stack>
+						</Box>
+					</Box>
+				);
+			})}
 		</Stack>
 	);
 }
