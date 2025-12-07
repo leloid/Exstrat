@@ -33,20 +33,20 @@ export default function Page(): React.JSX.Element {
 		formState: { errors },
 	} = useForm<ResetPasswordForm>();
 
-	const onSubmit = async (data: ResetPasswordForm) => {
+	const onSubmit = async (_data: ResetPasswordForm) => {
 		setIsLoading(true);
 		setError("");
 		setSuccess(false);
 
 		try {
 			// TODO: Implémenter l'appel API pour réinitialiser le mot de passe
-			// await api.post("/auth/reset-password", { email: data.email });
+			// await api.post("/auth/reset-password", { email: _data.email });
 			
 			// Simulation pour l'instant
 			await new Promise((resolve) => setTimeout(resolve, 1000));
 			setSuccess(true);
-		} catch (err: unknown) {
-			const error = err as Error | { message?: string };
+		} catch (error_: unknown) {
+			const error = error_ as Error | { message?: string };
 			const errorMessage = error instanceof Error ? error.message : error.message || "An error occurred. Please try again.";
 			setError(errorMessage);
 		} finally {

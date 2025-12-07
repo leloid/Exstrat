@@ -16,7 +16,6 @@ import OutlinedInput from "@mui/material/OutlinedInput";
 import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
 import Alert from "@mui/material/Alert";
-import { appConfig } from "@/config/app";
 import { paths } from "@/paths";
 import { CenteredLayout } from "@/components/auth/centered-layout";
 import { useAuth } from "@/contexts/AuthContext";
@@ -48,8 +47,8 @@ export default function Page(): React.JSX.Element {
 		try {
 			await signIn(data);
 			router.push(paths.dashboard.overview);
-		} catch (err: unknown) {
-			const error = err as Error | { message?: string };
+		} catch (error_: unknown) {
+			const error = error_ as Error | { message?: string };
 			const errorMessage = error instanceof Error ? error.message : error.message || "An error occurred during sign in";
 			setError(errorMessage);
 		} finally {
