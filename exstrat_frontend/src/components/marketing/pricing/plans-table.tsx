@@ -1,15 +1,19 @@
 "use client";
 
 import * as React from "react";
+import RouterLink from "next/link";
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
 import Chip from "@mui/material/Chip";
 import Container from "@mui/material/Container";
 import Grid from "@mui/material/Grid";
+import IconButton from "@mui/material/IconButton";
 import Stack from "@mui/material/Stack";
 import Switch from "@mui/material/Switch";
 import Typography from "@mui/material/Typography";
+import { ArrowLeftIcon } from "@phosphor-icons/react/dist/ssr/ArrowLeft";
 
+import { paths } from "@/paths";
 import { Plan } from "./plan";
 
 export function PlansTable(): React.JSX.Element {
@@ -19,6 +23,17 @@ export function PlansTable(): React.JSX.Element {
 		<Box sx={{ bgcolor: "var(--mui-palette-background-level1)", py: { xs: "60px", sm: "120px" } }}>
 			<Container maxWidth="lg">
 				<Stack spacing={3}>
+					<Box sx={{ display: "flex", justifyContent: "flex-start", mb: 2 }}>
+						<Button
+							component={RouterLink}
+							href={paths.dashboard.overview}
+							startIcon={<ArrowLeftIcon />}
+							variant="outlined"
+							sx={{ textTransform: "none" }}
+						>
+							Back to Dashboard
+						</Button>
+					</Box>
 					<Stack spacing={2} sx={{ alignItems: "center" }}>
 						<Typography sx={{ textAlign: "center" }} variant="h3">
 							Start today. Boost up your services!
