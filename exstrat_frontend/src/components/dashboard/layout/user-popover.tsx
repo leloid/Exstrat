@@ -16,6 +16,8 @@ import { UserIcon } from "@phosphor-icons/react/dist/ssr/User";
 
 import Avatar from "@mui/material/Avatar";
 import Stack from "@mui/material/Stack";
+import Chip from "@mui/material/Chip";
+import MuiTooltip from "@mui/material/Tooltip";
 import { appConfig } from "@/config/app";
 import { paths } from "@/paths";
 import { AuthStrategy } from "@/lib/auth-strategy";
@@ -125,18 +127,54 @@ export function UserPopover({ anchorEl, onClose, open }: UserPopoverProps): Reac
 					</ListItemIcon>
 					Account
 				</MenuItem>
-				<MenuItem component={RouterLink} href={paths.dashboard.settings.security} onClick={onClose}>
-					<ListItemIcon>
-						<LockKeyIcon />
-					</ListItemIcon>
-					Security
-				</MenuItem>
-				<MenuItem component={RouterLink} href={paths.dashboard.settings.billing} onClick={onClose}>
-					<ListItemIcon>
-						<CreditCardIcon />
-					</ListItemIcon>
-					Billing
-				</MenuItem>
+				<MuiTooltip title="Coming soon - Security settings will be available in a future update">
+					<span>
+						<MenuItem disabled sx={{ justifyContent: "space-between" }}>
+							<Stack direction="row" spacing={1} sx={{ alignItems: "center", flex: 1 }}>
+								<ListItemIcon>
+									<LockKeyIcon />
+								</ListItemIcon>
+								Security
+							</Stack>
+							<Chip
+								label="Soon"
+								size="small"
+								color="primary"
+								sx={{
+									height: "18px",
+									fontSize: "0.65rem",
+									"& .MuiChip-label": {
+										px: 0.75,
+									},
+								}}
+							/>
+						</MenuItem>
+					</span>
+				</MuiTooltip>
+				<MuiTooltip title="Coming soon - Billing settings will be available in a future update">
+					<span>
+						<MenuItem disabled sx={{ justifyContent: "space-between" }}>
+							<Stack direction="row" spacing={1} sx={{ alignItems: "center", flex: 1 }}>
+								<ListItemIcon>
+									<CreditCardIcon />
+								</ListItemIcon>
+								Billing
+							</Stack>
+							<Chip
+								label="Soon"
+								size="small"
+								color="primary"
+								sx={{
+									height: "18px",
+									fontSize: "0.65rem",
+									"& .MuiChip-label": {
+										px: 0.75,
+									},
+								}}
+							/>
+						</MenuItem>
+					</span>
+				</MuiTooltip>
 			</List>
 			<Divider />
 			<Box sx={{ p: 1 }}>
