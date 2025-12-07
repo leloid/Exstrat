@@ -10,16 +10,16 @@ import MenuItem from "@mui/material/MenuItem";
 import Select from "@mui/material/Select";
 import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
-import { PlusIcon } from "@phosphor-icons/react/dist/ssr/Plus";
+import { useRouter } from "next/navigation";
 
-import { appConfig } from "@/config/app";
 import { usePortfolio } from "@/contexts/PortfolioContext";
-import { PortfolioSummary } from "@/components/dashboard/portfolio/portfolio-summary";
+import { QuickStats } from "@/components/dashboard/portfolio/quick-stats";
 import { TokenCard } from "@/components/dashboard/portfolio/token-card";
 import { PortfolioEvolutionChart } from "@/components/dashboard/portfolio/portfolio-evolution-chart";
 import { HoldingsTable } from "@/components/dashboard/portfolio/holdings-table";
 import type { Holding } from "@/types/portfolio";
 import * as portfoliosApi from "@/lib/portfolios-api";
+import { TokenDistribution } from "@/components/dashboard/portfolio/token-distribution";
 
 interface EvolutionDataPoint {
 	date: string;
@@ -29,6 +29,7 @@ interface EvolutionDataPoint {
 }
 
 export default function Page(): React.JSX.Element {
+	const router = useRouter();
 	const {
 		portfolios,
 		currentPortfolio,
@@ -235,7 +236,9 @@ export default function Page(): React.JSX.Element {
 						<Typography color="text.secondary" variant="body1" sx={{ mb: 2 }}>
 							No portfolio selected. Please create a portfolio or select one.
 						</Typography>
-						<Button variant="contained">Manage Portfolios</Button>
+						<Button variant="contained" onClick={() => router.push("/dashboard/investissements")}>
+							Manage Portfolios
+						</Button>
 					</Box>
 				</Stack>
 			</Box>
@@ -254,14 +257,11 @@ export default function Page(): React.JSX.Element {
 			>
 				<Stack spacing={4}>
 					<Box sx={{ py: 8, textAlign: "center" }}>
-						<Typography color="text.secondary" variant="body1" sx={{ mb: 2 }}>
+						<Typography color="text.secondary" variant="body1">
 							{isGlobalView
 								? "No investments found in your portfolios. Add transactions to get started."
 								: "This portfolio contains no tokens. Add transactions to get started."}
 						</Typography>
-						<Button startIcon={<PlusIcon />} variant="contained">
-							Add Transaction
-						</Button>
 					</Box>
 				</Stack>
 			</Box>
@@ -282,39 +282,37 @@ export default function Page(): React.JSX.Element {
 				<Stack direction={{ xs: "column", sm: "row" }} spacing={3} sx={{ alignItems: "flex-start" }}>
 					<Box sx={{ flex: "1 1 auto" }}>
 						<Typography variant="h4">Dashboard</Typography>
+						<Typography color="text.secondary" variant="body2" sx={{ mt: 0.5 }}>
+							Overview of your portfolio performance
+						</Typography>
 					</Box>
-					<Stack direction="row" spacing={2} sx={{ alignItems: "center" }}>
-						{portfolios.length > 0 && (
-							<FormControl size="small" sx={{ minWidth: 200 }}>
-								<Select
-									value={isGlobalView ? "global" : currentPortfolio?.id || ""}
-									onChange={(e) => {
-										if (e.target.value === "global") {
-											setIsGlobalView(true);
-										} else {
-											setIsGlobalView(false);
-											selectPortfolio(e.target.value);
-										}
-									}}
-								>
-									<MenuItem value="global">🌐 Global (All Portfolios)</MenuItem>
-									{portfolios.map((portfolio) => (
-										<MenuItem key={portfolio.id} value={portfolio.id}>
-											{portfolio.name}
-											{portfolio.isDefault && " (default)"}
-										</MenuItem>
-									))}
-								</Select>
-							</FormControl>
-						)}
-						<Button startIcon={<PlusIcon />} variant="contained">
-							Add Transaction
-						</Button>
-					</Stack>
+					{portfolios.length > 0 && (
+						<FormControl size="small" sx={{ minWidth: 200 }}>
+							<Select
+								value={isGlobalView ? "global" : currentPortfolio?.id || ""}
+								onChange={(e) => {
+									if (e.target.value === "global") {
+										setIsGlobalView(true);
+									} else {
+										setIsGlobalView(false);
+										selectPortfolio(e.target.value);
+									}
+								}}
+							>
+								<MenuItem value="global">🌐 Global (All Portfolios)</MenuItem>
+								{portfolios.map((portfolio) => (
+									<MenuItem key={portfolio.id} value={portfolio.id}>
+										{portfolio.name}
+										{portfolio.isDefault && " (default)"}
+									</MenuItem>
+								))}
+							</Select>
+						</FormControl>
+					)}
 				</Stack>
 
-				{/* Portfolio Summary */}
-				<PortfolioSummary
+				{/* Quick Stats */}
+				<QuickStats
 					capitalInvesti={portfolioStats.capitalInvesti}
 					valeurActuelle={portfolioStats.valeurActuelle}
 					pnlAbsolu={portfolioStats.pnlAbsolu}
@@ -348,16 +346,19 @@ export default function Page(): React.JSX.Element {
 						<PortfolioEvolutionChart data={evolutionData} />
 					</Grid>
 
-					{/* Holdings Table */}
+					{/* Token Distribution */}
 					<Grid
 						size={{
 							lg: 4,
 							xs: 12,
 						}}
 					>
-						<HoldingsTable holdings={displayHoldings} onTokenClick={setSelectedToken} />
+						<TokenDistribution holdings={displayHoldings} />
 					</Grid>
 				</Grid>
+
+				{/* Holdings Table */}
+				<HoldingsTable holdings={displayHoldings} onTokenClick={setSelectedToken} />
 			</Stack>
 		</Box>
 	);
