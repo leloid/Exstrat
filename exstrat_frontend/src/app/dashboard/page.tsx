@@ -31,7 +31,7 @@ export default function Page(): React.JSX.Element {
 		isLoading: portfoliosLoading,
 		selectPortfolio,
 	} = usePortfolio();
-	const [isGlobalView, setIsGlobalView] = React.useState(false);
+	const [isGlobalView, setIsGlobalView] = React.useState(true);
 	const [globalHoldings, setGlobalHoldings] = React.useState<Holding[]>([]);
 	const [loadingGlobal, setLoadingGlobal] = React.useState(false);
 	const [selectedToken, setSelectedToken] = React.useState<Holding | null>(null);
@@ -157,7 +157,12 @@ export default function Page(): React.JSX.Element {
 		};
 	}, [displayHoldings]);
 
-
+	// If no portfolio is selected and not in global view, switch to global view
+	React.useEffect(() => {
+		if (!isGlobalView && !currentPortfolio && portfolios.length > 0) {
+			setIsGlobalView(true);
+		}
+	}, [isGlobalView, currentPortfolio, portfolios.length]);
 
 	if (portfoliosLoading || loadingGlobal) {
 		return (
@@ -174,53 +179,6 @@ export default function Page(): React.JSX.Element {
 				<Typography color="text.secondary" sx={{ mt: 2 }} variant="body2">
 					Loading portfolio data...
 				</Typography>
-			</Box>
-		);
-	}
-
-	if (!isGlobalView && !currentPortfolio) {
-		return (
-			<Box
-				sx={{
-					maxWidth: "var(--Content-maxWidth)",
-					m: "var(--Content-margin)",
-					p: "var(--Content-padding)",
-					width: "var(--Content-width)",
-				}}
-			>
-				<Stack spacing={4}>
-					<Box sx={{ py: 8, textAlign: "center" }}>
-						<Typography color="text.secondary" variant="body1" sx={{ mb: 2 }}>
-							No portfolio selected. Please create a portfolio or select one.
-						</Typography>
-						<Button variant="contained" onClick={() => router.push("/dashboard/investissements")}>
-							Manage Portfolios
-						</Button>
-					</Box>
-				</Stack>
-			</Box>
-		);
-	}
-
-	if (displayHoldings.length === 0) {
-		return (
-			<Box
-				sx={{
-					maxWidth: "var(--Content-maxWidth)",
-					m: "var(--Content-margin)",
-					p: "var(--Content-padding)",
-					width: "var(--Content-width)",
-				}}
-			>
-				<Stack spacing={4}>
-					<Box sx={{ py: 8, textAlign: "center" }}>
-						<Typography color="text.secondary" variant="body1">
-							{isGlobalView
-								? "No investments found in your portfolios. Add transactions to get started."
-								: "This portfolio contains no tokens. Add transactions to get started."}
-						</Typography>
-					</Box>
-				</Stack>
 			</Box>
 		);
 	}
@@ -243,55 +201,75 @@ export default function Page(): React.JSX.Element {
 							Overview of your portfolio performance
 						</Typography>
 					</Box>
-					{portfolios.length > 0 && (
-						<FormControl size="small" sx={{ minWidth: 200 }}>
-							<Select
-								value={isGlobalView ? "global" : currentPortfolio?.id || ""}
-								onChange={(e) => {
-									if (e.target.value === "global") {
-										setIsGlobalView(true);
-									} else {
-										setIsGlobalView(false);
-										selectPortfolio(e.target.value);
-									}
-								}}
-							>
-								<MenuItem value="global">🌐 Global Wallet</MenuItem>
-								{portfolios.map((portfolio) => (
-									<MenuItem key={portfolio.id} value={portfolio.id}>
-										{portfolio.name}
-										{portfolio.isDefault && " (default)"}
-									</MenuItem>
-								))}
-							</Select>
-						</FormControl>
-					)}
+					<FormControl size="small" sx={{ minWidth: 200 }}>
+						<Select
+							value={isGlobalView ? "global" : currentPortfolio?.id || ""}
+							onChange={(e) => {
+								if (e.target.value === "global") {
+									setIsGlobalView(true);
+								} else {
+									setIsGlobalView(false);
+									selectPortfolio(e.target.value);
+								}
+							}}
+						>
+							<MenuItem value="global">🌐 Global Wallet</MenuItem>
+							{portfolios.map((portfolio) => (
+								<MenuItem key={portfolio.id} value={portfolio.id}>
+									{portfolio.name}
+									{portfolio.isDefault && " (default)"}
+								</MenuItem>
+							))}
+						</Select>
+					</FormControl>
 				</Stack>
 
-				{/* Quick Stats */}
-				<QuickStats
-					capitalInvesti={portfolioStats.capitalInvesti}
-					valeurActuelle={portfolioStats.valeurActuelle}
-					pnlAbsolu={portfolioStats.pnlAbsolu}
-					pnlRelatif={portfolioStats.pnlRelatif}
-				/>
+				{/* Empty State */}
+				{displayHoldings.length === 0 ? (
+					<Box sx={{ py: 8, textAlign: "center" }}>
+						<Typography color="text.secondary" variant="body1">
+							{isGlobalView
+								? "No investments found in your portfolios. Add transactions to get started."
+								: "This portfolio contains no tokens. Add transactions to get started."}
+						</Typography>
+						{!isGlobalView && (
+							<Button
+								variant="contained"
+								sx={{ mt: 2 }}
+								onClick={() => router.push("/dashboard/investissements")}
+							>
+								Add Transactions
+							</Button>
+						)}
+					</Box>
+				) : (
+					<>
+						{/* Quick Stats */}
+						<QuickStats
+							capitalInvesti={portfolioStats.capitalInvesti}
+							valeurActuelle={portfolioStats.valeurActuelle}
+							pnlAbsolu={portfolioStats.pnlAbsolu}
+							pnlRelatif={portfolioStats.pnlRelatif}
+						/>
 
-				{/* Gains and Losses Chart and Token Distribution */}
-				<Grid container spacing={3}>
-					<Grid size={{ xs: 12, lg: 8 }}>
-						<GainsLossesChart holdings={displayHoldings} />
-					</Grid>
-					<Grid size={{ xs: 12, lg: 4 }}>
-						<TokenDistribution holdings={displayHoldings} />
-					</Grid>
-				</Grid>
+						{/* Gains and Losses Chart and Token Distribution */}
+						<Grid container spacing={3}>
+							<Grid size={{ xs: 12, lg: 8 }}>
+								<GainsLossesChart holdings={displayHoldings} />
+							</Grid>
+							<Grid size={{ xs: 12, lg: 4 }}>
+								<TokenDistribution holdings={displayHoldings} />
+							</Grid>
+						</Grid>
 
-				{/* Tokens Table */}
-				<TokensTable
-					holdings={displayHoldings}
-					portfolioId={isGlobalView ? undefined : currentPortfolio?.id}
-					onTokenClick={setSelectedToken}
-				/>
+						{/* Tokens Table */}
+						<TokensTable
+							holdings={displayHoldings}
+							portfolioId={isGlobalView ? undefined : currentPortfolio?.id}
+							onTokenClick={setSelectedToken}
+						/>
+					</>
+				)}
 
 				{/* Token Strategy Sidebar */}
 				<TokenStrategySidebar

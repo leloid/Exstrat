@@ -25,6 +25,7 @@ import { MobileNav } from "../mobile-nav";
 import { NotificationsPopover } from "../notifications-popover";
 import { SearchDialog } from "../search-dialog";
 import { UserPopover } from "../user-popover";
+import { useAuth } from "@/contexts/AuthContext";
 
 export interface MainNavProps {
 	items: NavItemConfig[];
@@ -173,15 +174,10 @@ function LanguageSwitch(): React.JSX.Element {
 	);
 }
 
-const user = {
-	id: "USR-000",
-	name: "Sofia Rivers",
-	avatar: "/assets/avatar.png",
-	email: "sofia@devias.io",
-} as const;
-
 function UserButton(): React.JSX.Element {
 	const popover = usePopover<HTMLButtonElement>();
+	const { user } = useAuth();
+	const userInitial = user?.email?.charAt(0).toUpperCase() || "U";
 
 	return (
 		<React.Fragment>
@@ -206,7 +202,7 @@ function UserButton(): React.JSX.Element {
 					}}
 					variant="dot"
 				>
-					<Avatar src={user.avatar} />
+					<Avatar>{userInitial}</Avatar>
 				</Badge>
 			</Box>
 			<UserPopover anchorEl={popover.anchorRef.current} onClose={popover.handleClose} open={popover.open} />

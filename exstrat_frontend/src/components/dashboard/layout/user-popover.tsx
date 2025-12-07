@@ -14,17 +14,12 @@ import { CreditCardIcon } from "@phosphor-icons/react/dist/ssr/CreditCard";
 import { LockKeyIcon } from "@phosphor-icons/react/dist/ssr/LockKey";
 import { UserIcon } from "@phosphor-icons/react/dist/ssr/User";
 
+import Avatar from "@mui/material/Avatar";
+import Stack from "@mui/material/Stack";
 import { appConfig } from "@/config/app";
 import { paths } from "@/paths";
 import { AuthStrategy } from "@/lib/auth-strategy";
 import { useAuth } from "@/contexts/AuthContext";
-
-const user = {
-	id: "USR-000",
-	name: "Sofia Rivers",
-	avatar: "/assets/avatar.png",
-	email: "sofia@devias.io",
-} as const;
 
 function SignOutButton({ onClose }: { onClose?: () => void }): React.JSX.Element {
 	const router = useRouter();
@@ -96,6 +91,10 @@ export interface UserPopoverProps {
 }
 
 export function UserPopover({ anchorEl, onClose, open }: UserPopoverProps): React.JSX.Element {
+	const { user } = useAuth();
+	const userName = user?.email?.split("@")[0] || "User";
+	const userEmail = user?.email || "";
+
 	return (
 		<Popover
 			anchorEl={anchorEl}
@@ -106,10 +105,17 @@ export function UserPopover({ anchorEl, onClose, open }: UserPopoverProps): Reac
 			transformOrigin={{ horizontal: "right", vertical: "top" }}
 		>
 			<Box sx={{ p: 2 }}>
-				<Typography>{user.name}</Typography>
-				<Typography color="text.secondary" variant="body2">
-					{user.email}
-				</Typography>
+				<Stack direction="row" spacing={2} sx={{ alignItems: "center" }}>
+					<Avatar>{userEmail.charAt(0).toUpperCase() || "U"}</Avatar>
+					<Box sx={{ flex: 1, minWidth: 0 }}>
+						<Typography noWrap variant="subtitle1">
+							{userName}
+						</Typography>
+						<Typography color="text.secondary" noWrap variant="body2">
+							{userEmail}
+						</Typography>
+					</Box>
+				</Stack>
 			</Box>
 			<Divider />
 			<List sx={{ p: 1 }}>
