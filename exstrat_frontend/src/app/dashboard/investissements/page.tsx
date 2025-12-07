@@ -1092,10 +1092,10 @@ export default function Page(): React.JSX.Element {
 											</Stack>
 											<Stack spacing={1}>
 												<Typography color="text.secondary" variant="overline">
-													Available tokens {allTokenData.length > 4 && `(showing top 4 of ${allTokenData.length})`}
+													Available tokens {allTokenData.length > 6 && `(showing top 6 of ${allTokenData.length})`}
 												</Typography>
 												<Stack component="ul" spacing={2} sx={{ listStyle: "none", m: 0, p: 0 }}>
-													{aggregatedTokenData.slice(0, 4).map((entry) => (
+													{aggregatedTokenData.slice(0, 6).map((entry) => (
 														<Stack component="li" direction="row" key={entry.name} spacing={1} sx={{ alignItems: "center" }}>
 															<Box sx={{ bgcolor: entry.color, borderRadius: "2px", height: "4px", width: "16px" }} />
 															<Typography sx={{ flex: "1 1 auto" }} variant="subtitle2">
@@ -1106,7 +1106,7 @@ export default function Page(): React.JSX.Element {
 															</Typography>
 														</Stack>
 													))}
-													{allTokenData.length > 4 && (
+													{allTokenData.length > 6 && (
 														<Stack
 															component="li"
 															direction="row"
