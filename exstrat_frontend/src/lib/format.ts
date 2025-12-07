@@ -102,8 +102,8 @@ export const formatCompactCurrency = (
 	}
 
 	// For amounts >= 1,000, use "k" notation
-	if (absAmount >= 1_000) {
-		const thousands = absAmount / 1_000;
+	if (absAmount >= 1000) {
+		const thousands = absAmount / 1000;
 		return `${sign}${currency}${thousands.toFixed(decimals)}k`;
 	}
 

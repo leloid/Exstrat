@@ -84,20 +84,20 @@ export function getTokenLogoUrl(symbol: string, cmcId?: number | null): string {
 		perp: 6950,
 		rad: 6848,
 		dydx: 9129,
-		ens: 13855,
-		ldo: 13573,
-		arb: 11841,
-		op: 11840,
-		apt: 21794,
-		sui: 20947,
-		sei: 23149,
-		tia: 22861,
+		ens: 13_855,
+		ldo: 13_573,
+		arb: 11_841,
+		op: 11_840,
+		apt: 21_794,
+		sui: 20_947,
+		sei: 23_149,
+		tia: 22_861,
 		inj: 7226,
 		pendle: 9481,
-		gmx: 11857,
-		magic: 16250,
+		gmx: 11_857,
+		magic: 16_250,
 		rndr: 5690,
-		imx: 10603,
+		imx: 10_603,
 		stx: 4847,
 		mina: 8646,
 		flux: 3029,
@@ -105,16 +105,16 @@ export function getTokenLogoUrl(symbol: string, cmcId?: number | null): string {
 		kava: 4846,
 		scrt: 5604,
 		akt: 7431,
-		osmo: 12220,
-		juno: 14299,
-		evmos: 19891,
-		strd: 14754,
+		osmo: 12_220,
+		juno: 14_299,
+		evmos: 19_891,
+		strd: 14_754,
 		ixo: 2930,
-		umee: 12258,
-		ngm: 15628,
-		eeur: 15629,
-		bcna: 15630,
-		boot: 15631,
+		umee: 12_258,
+		ngm: 15_628,
+		eeur: 15_629,
+		bcna: 15_630,
+		boot: 15_631,
 		xprt: 7281,
 	};
 
@@ -123,8 +123,8 @@ export function getTokenLogoUrl(symbol: string, cmcId?: number | null): string {
 		return `https://s2.coinmarketcap.com/static/img/coins/64x64/${commonCmcId}.png`;
 	}
 
-	// Priority 3: Binance Assets CDN
-	const binanceUrl = `https://assets.binance.com/files/logo/${symbolLower}.svg`;
+	// Priority 3: Binance Assets CDN (commented out as fallback, but not used directly)
+	// const binanceUrl = `https://assets.binance.com/files/logo/${symbolLower}.svg`;
 
 	// Priority 4: cryptologos.cc (general fallback)
 	return `https://cryptologos.cc/logos/${symbolLower}-logo.svg`;
