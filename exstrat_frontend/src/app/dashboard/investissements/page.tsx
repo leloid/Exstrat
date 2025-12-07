@@ -49,6 +49,8 @@ import { TrendUpIcon } from "@phosphor-icons/react/dist/ssr/TrendUp";
 import { WalletIcon } from "@phosphor-icons/react/dist/ssr/Wallet";
 import { WarningIcon } from "@phosphor-icons/react/dist/ssr/Warning";
 import { XIcon } from "@phosphor-icons/react/dist/ssr/X";
+import { GlobeIcon } from "@phosphor-icons/react/dist/ssr/Globe";
+import { ChartLineIcon } from "@phosphor-icons/react/dist/ssr/ChartLine";
 
 import { usePortfolio } from "@/contexts/PortfolioContext";
 import * as portfoliosApi from "@/lib/portfolios-api";
@@ -57,9 +59,11 @@ import { formatCurrency, formatPercentage, formatCompactCurrency } from "@/lib/f
 import { TokenSearch } from "@/components/transactions/token-search";
 import type { Holding, CreatePortfolioDto, UpdatePortfolioDto } from "@/types/portfolio";
 import type { TransactionResponse, CreateTransactionDto, TokenSearchResult } from "@/types/transactions";
-import { Cell, Pie, PieChart, Tooltip } from "recharts";
+import { Area, AreaChart, CartesianGrid, Cell, Line, LineChart, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { NoSsr } from "@/components/core/no-ssr";
 import CardActions from "@mui/material/CardActions";
+import ToggleButton from "@mui/material/ToggleButton";
+import ToggleButtonGroup from "@mui/material/ToggleButtonGroup";
 import { ArrowDownRightIcon } from "@phosphor-icons/react/dist/ssr/ArrowDownRight";
 import { ArrowUpRightIcon } from "@phosphor-icons/react/dist/ssr/ArrowUpRight";
 
@@ -195,6 +199,9 @@ export default function Page(): React.JSX.Element {
 	const [allTokensSearchQuery, setAllTokensSearchQuery] = React.useState("");
 	const [allTokensPage, setAllTokensPage] = React.useState(0);
 	const [allTokensRowsPerPage, setAllTokensRowsPerPage] = React.useState(10);
+
+	// Wallet performance view mode
+	const [walletPerformanceView, setWalletPerformanceView] = React.useState<"global" | "byWallet">("global");
 
 	// Calculate aggregated token data for chart
 	// Full token data (all tokens, no limit)
@@ -517,6 +524,138 @@ export default function Page(): React.JSX.Element {
 					: 0,
 			totalHoldings: portfolioStats.reduce((sum, p) => sum + p.holdingsCount, 0),
 		};
+	}, [portfolioData]);
+
+	// Calculate portfolio performance over time
+	const portfolioPerformanceData = React.useMemo(() => {
+		if (transactions.length === 0 || Object.keys(portfolioData).length === 0) {
+			// Generate simulated data based on current values
+			const currentTotalValue = globalStats.totalValue;
+			const currentTotalInvested = globalStats.totalInvested;
+			const now = new Date();
+			const days = 30;
+			const data: Array<{ name: string; value: number }> = [];
+
+			for (let i = days; i >= 0; i--) {
+				const date = new Date(now);
+				date.setDate(date.getDate() - i);
+				const progress = i / days;
+				const simulatedInvested = currentTotalInvested * (0.7 + 0.3 * progress);
+				const simulatedValue = simulatedInvested * (1 + (globalStats.totalPNLPercentage / 100) * progress);
+				const monthName = date.toLocaleDateString("en-US", { month: "short" });
+				const day = date.getDate();
+				data.push({
+					name: `${monthName} ${day}`,
+					value: simulatedValue,
+				});
+			}
+
+			return data;
+		}
+
+		// Group transactions by date and calculate cumulative value
+		const transactionsByDate = new Map<string, number>();
+		const sortedTransactions = [...transactions].sort((a, b) => {
+			const dateA = new Date(a.transactionDate).getTime();
+			const dateB = new Date(b.transactionDate).getTime();
+			return dateA - dateB;
+		});
+
+		let cumulativeValue = 0;
+		const now = new Date();
+		const days = 30;
+		const data: Array<{ name: string; value: number }> = [];
+
+		// Calculate cumulative value for each transaction date
+		for (const transaction of sortedTransactions) {
+			const transactionDate = new Date(transaction.transactionDate);
+			const daysDiff = Math.floor((now.getTime() - transactionDate.getTime()) / (1000 * 60 * 60 * 24));
+			if (daysDiff <= days) {
+				if (transaction.type === "BUY") {
+					cumulativeValue += transaction.amountInvested || 0;
+				} else {
+					cumulativeValue -= transaction.amountInvested || 0;
+				}
+				const monthName = transactionDate.toLocaleDateString("en-US", { month: "short" });
+				const day = transactionDate.getDate();
+				transactionsByDate.set(`${monthName} ${day}`, cumulativeValue);
+			}
+		}
+
+		// Fill in missing dates with interpolated values
+		for (let i = days; i >= 0; i--) {
+			const date = new Date(now);
+			date.setDate(date.getDate() - i);
+			const monthName = date.toLocaleDateString("en-US", { month: "short" });
+			const day = date.getDate();
+			const dateKey = `${monthName} ${day}`;
+
+			if (transactionsByDate.has(dateKey)) {
+				data.push({
+					name: dateKey,
+					value: transactionsByDate.get(dateKey)!,
+				});
+			} else {
+				// Interpolate based on current total value
+				const progress = i / days;
+				const simulatedValue = globalStats.totalValue * (0.7 + 0.3 * progress);
+				data.push({
+					name: dateKey,
+					value: simulatedValue,
+				});
+			}
+		}
+
+		return data;
+	}, [transactions, portfolioData, globalStats]);
+
+	// Calculate performance data by wallet (top 3)
+	const walletPerformanceByWalletData = React.useMemo<{
+		data: Array<{ name: string; [key: string]: string | number }>;
+		wallets: PortfolioData[];
+	}>(() => {
+		const portfolioStats = Object.values(portfolioData);
+		if (portfolioStats.length === 0) {
+			return { data: [], wallets: [] };
+		}
+
+		// Get top 3 wallets by value
+		const topWallets = [...portfolioStats]
+			.sort((a, b) => b.value - a.value)
+			.slice(0, 3);
+
+		if (topWallets.length === 0) {
+			return { data: [], wallets: [] };
+		}
+
+		const now = new Date();
+		const days = 30;
+		const data: Array<{ name: string; [key: string]: string | number }> = [];
+
+		// Generate data points for each date
+		for (let i = days; i >= 0; i--) {
+			const date = new Date(now);
+			date.setDate(date.getDate() - i);
+			const monthName = date.toLocaleDateString("en-US", { month: "short" });
+			const day = date.getDate();
+			const dateKey = `${monthName} ${day}`;
+
+			const dataPoint: { name: string; [key: string]: string | number } = { name: dateKey };
+
+			// Calculate value for each wallet
+			topWallets.forEach((wallet) => {
+				const progress = i / days;
+				// Simulate wallet value evolution
+				const simulatedValue = wallet.value * (0.7 + 0.3 * progress);
+				// Use wallet name as key (sanitized)
+				const walletKey = wallet.name.replace(/\s+/g, "_");
+				dataPoint[walletKey] = simulatedValue;
+			});
+
+			data.push(dataPoint);
+		}
+
+		return { data, wallets: topWallets };
 	}, [portfolioData]);
 
 	// Portfolio handlers
@@ -1353,6 +1492,158 @@ export default function Page(): React.JSX.Element {
 						</Button>
 					</CardActions>
 				</Card>
+
+				{/* Portfolio Performance Chart */}
+				<Card sx={{ mt: 3 }}>
+					<CardHeader
+						title="Wallet Performance"
+						action={
+							<ToggleButtonGroup
+								color="primary"
+								exclusive
+								onChange={(_, value) => {
+									if (value !== null) {
+										setWalletPerformanceView(value);
+									}
+								}}
+								size="small"
+								value={walletPerformanceView}
+							>
+								<ToggleButton value="global">
+									<Stack direction="row" spacing={0.5} sx={{ alignItems: "center" }}>
+										<GlobeIcon fontSize="var(--icon-fontSize-md)" />
+										<Typography variant="body2">Global</Typography>
+									</Stack>
+								</ToggleButton>
+								<ToggleButton value="byWallet">
+									<Stack direction="row" spacing={0.5} sx={{ alignItems: "center" }}>
+										<ChartLineIcon fontSize="var(--icon-fontSize-md)" />
+										<Typography variant="body2">Top Wallets</Typography>
+									</Stack>
+								</ToggleButton>
+							</ToggleButtonGroup>
+						}
+					/>
+					<CardContent>
+						{walletPerformanceView === "global" ? (
+							<NoSsr fallback={<Box sx={{ height: "240px" }} />}>
+								<ResponsiveContainer height={240} width="100%">
+									<AreaChart data={portfolioPerformanceData} margin={{ top: 0, right: 0, bottom: 0, left: 0 }}>
+										<defs>
+											<linearGradient id="area-performance" x1="0" x2="0" y1="0" y2="1">
+												<stop offset="0" stopColor="var(--mui-palette-primary-main)" stopOpacity={0.3} />
+												<stop offset="100%" stopColor="var(--mui-palette-primary-main)" stopOpacity={0} />
+											</linearGradient>
+										</defs>
+										<CartesianGrid strokeDasharray="2 4" vertical={false} />
+										<XAxis
+											axisLine={false}
+											dataKey="name"
+											tickLine={false}
+											type="category"
+											interval="preserveStartEnd"
+										/>
+										<YAxis
+											axisLine={false}
+											tickLine={false}
+											type="number"
+											tickFormatter={(value) => formatCompactCurrency(value, "$", 0).replace("$", "")}
+										/>
+										<Area
+											animationDuration={300}
+											dataKey="value"
+											fill="url(#area-performance)"
+											fillOpacity={1}
+											name="Total Value"
+											stroke="var(--mui-palette-primary-main)"
+											strokeWidth={3}
+											type="natural"
+										/>
+										<Tooltip
+											animationDuration={50}
+											content={<PerformanceTooltipContent />}
+											cursor={false}
+										/>
+									</AreaChart>
+								</ResponsiveContainer>
+							</NoSsr>
+						) : (
+							<Stack spacing={2}>
+								<NoSsr fallback={<Box sx={{ height: "240px" }} />}>
+									<ResponsiveContainer height={240} width="100%">
+										<LineChart
+											data={walletPerformanceByWalletData.data}
+											margin={{ top: 0, right: 0, bottom: 0, left: 0 }}
+										>
+											<CartesianGrid strokeDasharray="2 4" vertical={false} />
+											<XAxis
+												axisLine={false}
+												dataKey="name"
+												tickLine={false}
+												type="category"
+												interval="preserveStartEnd"
+											/>
+											<YAxis
+												axisLine={false}
+												tickLine={false}
+												type="number"
+												tickFormatter={(value) => formatCompactCurrency(value, "$", 0).replace("$", "")}
+											/>
+											{walletPerformanceByWalletData.wallets.map((wallet, index) => {
+												const walletKey = wallet.name.replace(/\s+/g, "_");
+												const colors = [
+													"var(--mui-palette-primary-main)",
+													"var(--mui-palette-success-main)",
+													"var(--mui-palette-warning-main)",
+												];
+												return (
+													<Line
+														key={wallet.id}
+														animationDuration={300}
+														dataKey={walletKey}
+														name={wallet.name}
+														stroke={colors[index % colors.length]}
+														strokeWidth={3}
+														type="natural"
+													/>
+												);
+											})}
+											<Tooltip
+												animationDuration={50}
+												content={<WalletPerformanceTooltipContent wallets={walletPerformanceByWalletData.wallets} />}
+												cursor={false}
+											/>
+										</LineChart>
+									</ResponsiveContainer>
+								</NoSsr>
+								{walletPerformanceByWalletData.wallets.length > 0 && (
+									<Stack direction="row" spacing={2} sx={{ flexWrap: "wrap", justifyContent: "center" }}>
+										{walletPerformanceByWalletData.wallets.map((wallet, index) => {
+											const colors = [
+												"var(--mui-palette-primary-main)",
+												"var(--mui-palette-success-main)",
+												"var(--mui-palette-warning-main)",
+											];
+											return (
+												<Stack key={wallet.id} direction="row" spacing={1} sx={{ alignItems: "center" }}>
+													<Box
+														sx={{
+															bgcolor: colors[index % colors.length],
+															borderRadius: "2px",
+															height: "4px",
+															width: "16px",
+														}}
+													/>
+													<Typography variant="body2">{wallet.name}</Typography>
+												</Stack>
+											);
+										})}
+									</Stack>
+								)}
+							</Stack>
+						)}
+					</CardContent>
+				</Card>
 					</Grid>
 				</Grid>
 
@@ -2098,6 +2389,58 @@ export default function Page(): React.JSX.Element {
 	);
 }
 
+// Wallet Performance Tooltip Component
+interface WalletPerformanceTooltipContentProps {
+	active?: boolean;
+	payload?: { name: string; dataKey: string; value: number; stroke: string }[];
+	label?: string;
+	wallets: Array<{ id: string; name: string }>;
+}
+
+function WalletPerformanceTooltipContent({
+	active,
+	payload,
+	label,
+	wallets,
+}: WalletPerformanceTooltipContentProps): React.JSX.Element | null {
+	if (!active || !payload || payload.length === 0) {
+		return null;
+	}
+
+	return (
+		<Paper sx={{ border: "1px solid var(--mui-palette-divider)", boxShadow: "var(--mui-shadows-16)", p: 1 }}>
+			<Stack spacing={2}>
+				{label && (
+					<Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
+						{label}
+					</Typography>
+				)}
+				{payload.map((entry) => {
+					const wallet = wallets.find((w) => w.name.replace(/\s+/g, "_") === entry.dataKey);
+					return (
+						<Stack key={entry.dataKey} direction="row" spacing={3} sx={{ alignItems: "center" }}>
+							<Stack direction="row" spacing={1} sx={{ alignItems: "center", flex: "1 1 auto" }}>
+								<Box
+									sx={{
+										bgcolor: entry.stroke,
+										borderRadius: "2px",
+										height: "8px",
+										width: "8px",
+									}}
+								/>
+								<Typography sx={{ whiteSpace: "nowrap" }}>{wallet?.name || entry.name}</Typography>
+							</Stack>
+							<Typography color="text.secondary" variant="body2">
+								{formatCompactCurrency(entry.value, "$", 2)}
+							</Typography>
+						</Stack>
+					);
+				})}
+			</Stack>
+		</Paper>
+	);
+}
+
 // Tooltip component for token chart
 interface TokenTooltipContentProps {
 	active?: boolean;
@@ -2145,6 +2488,44 @@ function TokenTooltipContent({ active, payload }: TokenTooltipContentProps): Rea
 							{formatCompactCurrency(entry.value, "$", 2)}
 						</Typography>
 					</Stack>
+				</Stack>
+			</Stack>
+		</Paper>
+	);
+}
+
+// Performance Tooltip Component
+interface PerformanceTooltipContentProps {
+	active?: boolean;
+	payload?: { name: string; dataKey: string; value: number; stroke: string }[];
+	label?: string;
+}
+
+function PerformanceTooltipContent({ active, payload }: PerformanceTooltipContentProps): React.JSX.Element | null {
+	if (!active || !payload || payload.length === 0) {
+		return null;
+	}
+
+	const entry = payload[0];
+
+	return (
+		<Paper sx={{ border: "1px solid var(--mui-palette-divider)", boxShadow: "var(--mui-shadows-16)", p: 1 }}>
+			<Stack spacing={2}>
+				<Stack direction="row" spacing={3} sx={{ alignItems: "center" }}>
+					<Stack direction="row" spacing={1} sx={{ alignItems: "center", flex: "1 1 auto" }}>
+						<Box
+							sx={{
+								bgcolor: entry.stroke,
+								borderRadius: "2px",
+								height: "8px",
+								width: "8px",
+							}}
+						/>
+						<Typography sx={{ whiteSpace: "nowrap" }}>{entry.name}</Typography>
+					</Stack>
+					<Typography color="text.secondary" variant="body2">
+						{formatCompactCurrency(entry.value, "$", 2)}
+					</Typography>
 				</Stack>
 			</Stack>
 		</Paper>
