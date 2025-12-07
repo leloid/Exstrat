@@ -53,7 +53,7 @@ export function ThemeSwitch(): React.JSX.Element {
 			<CardContent>
 				<Card variant="outlined">
 					<RadioGroup
-						value={mode || settings.theme || "light"}
+						value={mode || "light"}
 						onChange={handleChange}
 						sx={{
 							gap: 0,

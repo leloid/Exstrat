@@ -150,7 +150,7 @@ export function CreateStrategyModal({ onClose, onSuccess, open }: CreateStrategy
 					name: holding.token.name,
 					quote: {
 						USD: {
-							price: holding.currentPrice || holding.token.currentPrice || null,
+							price: holding.currentPrice || null,
 						},
 					},
 				}));
@@ -1049,7 +1049,7 @@ export function CreateStrategyModal({ onClose, onSuccess, open }: CreateStrategy
 														Current price
 													</Typography>
 													<Typography variant="body2">
-														{formatCurrency(selectedToken.quote.USD.price, "$", 2)}
+														{formatCurrency(selectedToken.quote?.USD?.price || null, "$", 2)}
 													</Typography>
 												</Stack>
 											</>

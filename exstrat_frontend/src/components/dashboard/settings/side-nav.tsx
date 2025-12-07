@@ -92,7 +92,7 @@ export function SideNav(): React.JSX.Element {
 				<Stack direction="row" spacing={2} sx={{ alignItems: "center" }}>
 					<Avatar>{user?.email?.charAt(0).toUpperCase() || "U"}</Avatar>
 					<div>
-						<Typography variant="subtitle1">{user?.name || "User"}</Typography>
+						<Typography variant="subtitle1">{user?.email?.split("@")[0] || "User"}</Typography>
 						<Typography color="text.secondary" variant="caption">
 							{user?.email || ""}
 						</Typography>

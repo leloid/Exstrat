@@ -227,12 +227,20 @@ export function TokensTable({ holdings, portfolioId, onTokenClick }: TokensTable
 
 	const SortIcon = ({ field }: { field: SortField }) => {
 		if (sortField !== field) {
-			return <CaretUpIcon fontSize="var(--icon-fontSize-sm)" sx={{ color: "var(--mui-palette-text-secondary)" }} />;
+			return (
+				<Box sx={{ color: "var(--mui-palette-text-secondary)" }}>
+					<CaretUpIcon size={16} />
+				</Box>
+			);
 		}
 		return sortDirection === "asc" ? (
-			<CaretUpIcon fontSize="var(--icon-fontSize-sm)" sx={{ color: "var(--mui-palette-primary-main)" }} />
+			<Box sx={{ color: "var(--mui-palette-primary-main)" }}>
+				<CaretUpIcon size={16} />
+			</Box>
 		) : (
-			<CaretDownIcon fontSize="var(--icon-fontSize-sm)" sx={{ color: "var(--mui-palette-primary-main)" }} />
+			<Box sx={{ color: "var(--mui-palette-primary-main)" }}>
+				<CaretDownIcon size={16} />
+			</Box>
 		);
 	};
 
@@ -412,9 +420,13 @@ export function TokensTable({ holdings, portfolioId, onTokenClick }: TokensTable
 										<TableCell align="right">
 											<Stack direction="row" spacing={0.5} sx={{ alignItems: "center", justifyContent: "flex-end" }}>
 												{isPositive ? (
-													<ArrowUpIcon fontSize="var(--icon-fontSize-sm)" sx={{ color: "success.main" }} />
+													<Box sx={{ color: "success.main" }}>
+														<ArrowUpIcon size={16} />
+													</Box>
 												) : (
-													<ArrowDownIcon fontSize="var(--icon-fontSize-sm)" sx={{ color: "error.main" }} />
+													<Box sx={{ color: "error.main" }}>
+														<ArrowDownIcon size={16} />
+													</Box>
 												)}
 												<Typography variant="body2" sx={{ fontWeight: 600, color: isPositive ? "success.main" : "error.main" }}>
 													{isPositive ? "+" : ""}

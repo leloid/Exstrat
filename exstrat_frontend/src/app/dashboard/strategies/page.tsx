@@ -24,7 +24,8 @@ import { strategiesApi } from "@/lib/strategies-api";
 import { getPortfolios, getPortfolioHoldings } from "@/lib/portfolios-api";
 import { transactionsApi } from "@/lib/transactions-api";
 import { formatCurrency, formatPercentage } from "@/lib/format";
-import type { StrategyResponse, StrategyStatus } from "@/types/strategies";
+import type { StrategyResponse } from "@/types/strategies";
+import { StrategyStatus } from "@/types/strategies";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import { CreateStrategyModal } from "./create-strategy-modal";
 import { DataTable } from "@/components/core/data-table";
@@ -50,7 +51,7 @@ function StrategiesPageContent(): React.JSX.Element {
 	const [strategies, setStrategies] = React.useState<StrategyResponse[]>([]);
 	const [isLoading, setIsLoading] = React.useState(true);
 	const [searchQuery, setSearchQuery] = React.useState("");
-	const [statusFilter, setStatusFilter] = React.useState<StrategyStatus | "all">("paused");
+	const [statusFilter, setStatusFilter] = React.useState<StrategyStatus | "all">(StrategyStatus.PAUSED);
 	const [showCreateModal, setShowCreateModal] = React.useState(false);
 	const [isSubmitting, setIsSubmitting] = React.useState(false);
 	const [tokenPrices, setTokenPrices] = React.useState<Map<string, number>>(new Map());
@@ -283,13 +284,13 @@ function StrategiesPageContent(): React.JSX.Element {
 								<Chip
 									color={statusFilter === "active" ? "primary" : "default"}
 									label={`Active (${statusCounts.active})`}
-									onClick={() => setStatusFilter("active")}
+									onClick={() => setStatusFilter(StrategyStatus.ACTIVE)}
 									variant={statusFilter === "active" ? "filled" : "outlined"}
 								/>
 								<Chip
 									color={statusFilter === "paused" ? "primary" : "default"}
 									label={`Desactive (${statusCounts.desactive})`}
-									onClick={() => setStatusFilter("paused")}
+									onClick={() => setStatusFilter(StrategyStatus.PAUSED)}
 									variant={statusFilter === "paused" ? "filled" : "outlined"}
 								/>
 							</Stack>

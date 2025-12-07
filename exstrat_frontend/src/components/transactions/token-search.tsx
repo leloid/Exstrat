@@ -13,9 +13,20 @@ import { transactionsApi } from "@/lib/transactions-api";
 import { formatCurrency, formatPercentage } from "@/lib/format";
 import type { TokenSearchResult } from "@/types/transactions";
 
+// Type partiel pour les tokens disponibles depuis les holdings
+type AvailableToken = Pick<TokenSearchResult, "id" | "symbol" | "name"> & {
+	quote: {
+		USD: {
+			price: number | null;
+		};
+	};
+};
+
+type TokenLike = TokenSearchResult | AvailableToken;
+
 interface TokenSearchProps {
 	onTokenSelect: (token: TokenSearchResult | null) => void;
-	selectedToken?: TokenSearchResult | null;
+	selectedToken?: TokenLike | null;
 	error?: boolean;
 	helperText?: string;
 }
@@ -121,7 +132,49 @@ export function TokenSearch({ onTokenSelect, selectedToken, error, helperText }:
 			onClose={() => {
 				setOpen(false);
 			}}
-			value={selectedToken || null}
+			value={
+				selectedToken
+					? ("slug" in selectedToken
+							? selectedToken
+							: ({
+									...selectedToken,
+									slug: selectedToken.symbol.toLowerCase(),
+									num_market_pairs: 0,
+									date_added: new Date().toISOString(),
+									tags: [],
+									max_supply: 0,
+									circulating_supply: 0,
+									total_supply: 0,
+									is_active: 1,
+									infinite_supply: false,
+									platform: null,
+									cmc_rank: 0,
+									is_fiat: 0,
+									self_reported_circulating_supply: null,
+									self_reported_market_cap: null,
+									tvl_ratio: null,
+									last_updated: new Date().toISOString(),
+									quote: {
+										USD: {
+											...selectedToken.quote.USD,
+											volume_24h: null,
+											volume_change_24h: null,
+											percent_change_1h: null,
+											percent_change_24h: null,
+											percent_change_7d: null,
+											percent_change_30d: null,
+											percent_change_60d: null,
+											percent_change_90d: null,
+											market_cap: null,
+											market_cap_dominance: null,
+											fully_diluted_market_cap: null,
+											tvl: null,
+											last_updated: new Date().toISOString(),
+										},
+									},
+								} as TokenSearchResult))
+					: null
+			}
 			onChange={(event, newValue) => {
 				onTokenSelect(newValue);
 				// Réinitialiser l'inputValue quand un token est sélectionné

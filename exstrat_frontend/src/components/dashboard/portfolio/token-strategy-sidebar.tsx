@@ -174,7 +174,7 @@ export function TokenStrategySidebar({
 	}, [holding]);
 
 	if (!holding) {
-		return null;
+		return <></>;
 	}
 
 	const tokenAlert = alertConfiguration?.tokenAlerts?.find((ta) => ta.holdingId === holding.id);

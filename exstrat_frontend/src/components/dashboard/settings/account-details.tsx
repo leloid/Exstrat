@@ -86,7 +86,7 @@ export function AccountDetails(): React.JSX.Element {
 					<Stack spacing={2}>
 						<FormControl>
 							<InputLabel>Full name</InputLabel>
-							<OutlinedInput defaultValue={user?.name || ""} name="fullName" />
+							<OutlinedInput defaultValue="" name="fullName" />
 						</FormControl>
 						<FormControl disabled>
 							<InputLabel>Email address</InputLabel>

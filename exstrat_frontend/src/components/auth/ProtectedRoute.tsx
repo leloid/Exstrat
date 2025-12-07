@@ -47,7 +47,7 @@ export function ProtectedRoute({ children }: ProtectedRouteProps): React.JSX.Ele
 	}
 
 	if (!isAuthenticated) {
-		return null;
+		return <></>;
 	}
 
 	return <>{children}</>;
