@@ -489,6 +489,7 @@ export function CreateStrategyModal({ onClose, onSuccess, open }: CreateStrategy
 															<Select
 																label="Select a wallet"
 																value={selectedPortfolioId}
+																displayEmpty
 																onChange={(e) => {
 																	setSelectedPortfolioId(e.target.value);
 																	setSelectedToken(null);
@@ -501,6 +502,9 @@ export function CreateStrategyModal({ onClose, onSuccess, open }: CreateStrategy
 																	}
 																}}
 															>
+																<Option value="" disabled>
+																	<em>Select a wallet</em>
+																</Option>
 																{portfolios
 																	.filter((p) => p && p.id && p.name)
 																	.map((portfolio) => (
@@ -514,11 +518,6 @@ export function CreateStrategyModal({ onClose, onSuccess, open }: CreateStrategy
 																</Option>
 															</Select>
 														</FormControl>
-														{selectedPortfolioId && (
-															<Button onClick={handleNext} variant="contained">
-																Next
-															</Button>
-														)}
 													</Stack>
 												)}
 
@@ -526,16 +525,24 @@ export function CreateStrategyModal({ onClose, onSuccess, open }: CreateStrategy
 												{index === 1 && selectedPortfolioId && (
 													<Stack spacing={2}>
 														{availableTokens.length > 0 && !isVirtualWallet ? (
-															<FormControl fullWidth>
-																<InputLabel>Select a token</InputLabel>
-																<Select
-																	label="Select a token"
-																	value={selectedToken?.symbol || ""}
-																	onChange={(e) => {
-																		const token = availableTokens.find((t) => t.symbol === e.target.value);
-																		setSelectedToken(token || null);
-																	}}
-																>
+														<FormControl fullWidth>
+															<InputLabel>Select a token</InputLabel>
+															<Select
+																label="Select a token"
+																value={selectedToken?.symbol || ""}
+																displayEmpty
+																onChange={(e) => {
+																	const token = availableTokens.find((t) => t.symbol === e.target.value);
+																	if (token) {
+																		setSelectedToken(token);
+																		// Automatically move to next step when token is selected
+																		setActiveStep(2);
+																	}
+																}}
+															>
+																<Option value="" disabled>
+																	<em>Select a token</em>
+																</Option>
 																	{availableTokens.map((token) => (
 																		<Option key={token.symbol} value={token.symbol}>
 																			{token.symbol} - {token.name}
@@ -544,17 +551,16 @@ export function CreateStrategyModal({ onClose, onSuccess, open }: CreateStrategy
 																</Select>
 															</FormControl>
 														) : (
-															<TokenSearch onTokenSelect={setSelectedToken} selectedToken={selectedToken} />
-														)}
-														{selectedToken && (
-															<Stack direction="row" spacing={2}>
-																<Button onClick={handleBack} variant="outlined">
-																	Previous
-																</Button>
-																<Button onClick={handleNext} variant="contained">
-																	Next
-																</Button>
-															</Stack>
+															<TokenSearch
+																onTokenSelect={(token) => {
+																	setSelectedToken(token);
+																	// Automatically move to next step when token is selected
+																	if (token) {
+																		setActiveStep(2);
+																	}
+																}}
+																selectedToken={selectedToken}
+															/>
 														)}
 													</Stack>
 												)}
@@ -942,7 +948,16 @@ export function CreateStrategyModal({ onClose, onSuccess, open }: CreateStrategy
 					</Grid>
 
 					{/* Right Column: Investment Data */}
-					<Grid size={{ xs: 12, md: 5 }}>
+					<Grid
+						size={{ xs: 12, md: 5 }}
+						sx={{
+							position: { md: "sticky" },
+							top: { md: 24 },
+							alignSelf: { md: "flex-start" },
+							maxHeight: { md: "calc(100vh - 200px)" },
+							overflowY: { md: "auto" },
+						}}
+					>
 						<Stack spacing={3}>
 							<Typography variant="h6">Your Investment Data</Typography>
 							<Card variant="outlined">
