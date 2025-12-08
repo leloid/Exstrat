@@ -27,15 +27,15 @@ export const dashboardConfig = {
 			key: "wallet",
 			title: "Wallet",
 			items: [
-				{ key: "investissements", title: "Investments", href: paths.dashboard.investissements, icon: "shopping-bag-open" },
+				{ key: "investissements", title: "Investments", href: paths.dashboard.investissements, icon: "pencil" },
 			],
 		},
 		{
 			key: "trading",
 			title: "Trading",
 			items: [
-				{ key: "strategies", title: "Profit Strategies", href: paths.dashboard.strategies, icon: "chart-pie" },
-				{ key: "prevision", title: "Forecast", href: paths.dashboard.prevision, icon: "calendar-check" },
+				{ key: "strategies", title: "Profit Strategies", href: paths.dashboard.strategies, icon: "horse" },
+				{ key: "prevision", title: "Forecast", href: paths.dashboard.prevision, icon: "chart-line" },
 			],
 		},
 		{

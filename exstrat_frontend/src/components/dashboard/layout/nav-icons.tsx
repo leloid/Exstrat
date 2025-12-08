@@ -2,7 +2,10 @@ import type { Icon } from "@phosphor-icons/react/dist/lib/types";
 import { AddressBookIcon } from "@phosphor-icons/react/dist/ssr/AddressBook";
 import { AlignLeftIcon } from "@phosphor-icons/react/dist/ssr/AlignLeft";
 import { CalendarCheckIcon } from "@phosphor-icons/react/dist/ssr/CalendarCheck";
+import { ChartLineIcon } from "@phosphor-icons/react/dist/ssr/ChartLine";
 import { ChartPieIcon } from "@phosphor-icons/react/dist/ssr/ChartPie";
+import { HorseIcon } from "@phosphor-icons/react/dist/ssr/Horse";
+import { PencilIcon } from "@phosphor-icons/react/dist/ssr/Pencil";
 import { ChatsCircleIcon } from "@phosphor-icons/react/dist/ssr/ChatsCircle";
 import { CreditCardIcon } from "@phosphor-icons/react/dist/ssr/CreditCard";
 import { CubeIcon } from "@phosphor-icons/react/dist/ssr/Cube";
@@ -34,7 +37,10 @@ export const icons = {
 	"address-book": AddressBookIcon,
 	"align-left": AlignLeftIcon,
 	"calendar-check": CalendarCheckIcon,
+	"chart-line": ChartLineIcon,
 	"chart-pie": ChartPieIcon,
+	horse: HorseIcon,
+	pencil: PencilIcon,
 	"chats-circle": ChatsCircleIcon,
 	"credit-card": CreditCardIcon,
 	"currency-eth": CurrencyEthIcon,
