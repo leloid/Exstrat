@@ -60,6 +60,7 @@ import * as portfoliosApi from "@/lib/portfolios-api";
 import { transactionsApi } from "@/lib/transactions-api";
 import { formatCurrency, formatPercentage, formatCompactCurrency } from "@/lib/format";
 import { TokenSearch } from "@/components/transactions/token-search";
+import { CreateTransactionModal } from "@/components/transactions/create-transaction-modal";
 import type { Holding, CreatePortfolioDto, UpdatePortfolioDto } from "@/types/portfolio";
 import type { TransactionResponse, CreateTransactionDto, TokenSearchResult } from "@/types/transactions";
 import { Area, AreaChart, CartesianGrid, Cell, Line, LineChart, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
@@ -2183,128 +2184,49 @@ export default function Page(): React.JSX.Element {
 			</Dialog>
 
 			{/* Transaction Dialog */}
-			<Dialog fullWidth maxWidth="md" onClose={() => setShowTransactionDialog(false)} open={showTransactionDialog}>
-				<DialogTitle>
-					{editingTransaction ? "Edit Transaction" : "Create Transaction"}
-					<IconButton
-						onClick={() => {
-							setShowTransactionDialog(false);
-							setEditingTransaction(null);
-							setSelectedToken(null);
-							setTransactionError(null);
-							setTransactionFormData({
-								quantity: "",
-								amountInvested: "",
-								averagePrice: "",
-								type: "BUY",
-								transactionDate: new Date().toISOString().split("T")[0],
-								notes: "",
-								portfolioId: portfolios[0]?.id || "",
-							});
-						}}
-						sx={{ position: "absolute", right: 8, top: 8 }}
-					>
-						<XIcon />
-					</IconButton>
-				</DialogTitle>
-				<DialogContent>
-					<Stack spacing={3} sx={{ mt: 1 }}>
-						{transactionError && (
-							<Box sx={{ p: 2, bgcolor: "error.50", borderRadius: 1, border: "1px solid", borderColor: "error.200" }}>
-								<Typography color="error.main" variant="body2">
-									{transactionError}
-								</Typography>
-							</Box>
-						)}
-						<TokenSearch
-							onTokenSelect={setSelectedToken}
-							selectedToken={selectedToken}
-							error={!selectedToken && transactionError !== null}
-							helperText={!selectedToken ? "Please select a token" : undefined}
-						/>
-						<FormControl fullWidth required>
-							<InputLabel>Wallet</InputLabel>
-							<Select
-								label="Wallet"
-								onChange={(e) => setTransactionFormData({ ...transactionFormData, portfolioId: e.target.value })}
-								value={transactionFormData.portfolioId || ""}
-							>
-								{portfolios.map((portfolio) => (
-									<MenuItem key={portfolio.id} value={portfolio.id}>
-										{portfolio.name} {portfolio.isDefault && "(Default)"}
-									</MenuItem>
-								))}
-							</Select>
-						</FormControl>
-						<FormControl fullWidth>
-							<InputLabel>Type</InputLabel>
-							<Select
-								label="Type"
-								onChange={(e) =>
-									setTransactionFormData({ ...transactionFormData, type: e.target.value as "BUY" | "SELL" })
-								}
-								value={transactionFormData.type || "BUY"}
-							>
-								<MenuItem value="BUY">BUY</MenuItem>
-								<MenuItem value="SELL">SELL</MenuItem>
-							</Select>
-						</FormControl>
-						<Grid container spacing={2}>
-							<Grid size={{ xs: 12, sm: 6 }}>
-								<TextField
-									fullWidth
-									label="Quantity"
-									onChange={(e) => setTransactionFormData({ ...transactionFormData, quantity: e.target.value })}
-									required
-									type="number"
-									inputProps={{ step: "0.00000001" }}
-									value={transactionFormData.quantity || ""}
-								/>
-							</Grid>
-							<Grid size={{ xs: 12, sm: 6 }}>
-								<TextField
-									fullWidth
-									label="Amount Invested (USD)"
-									onChange={(e) => setTransactionFormData({ ...transactionFormData, amountInvested: e.target.value })}
-									required
-									type="number"
-									inputProps={{ step: "0.01" }}
-									value={transactionFormData.amountInvested || ""}
-								/>
-							</Grid>
-						</Grid>
-						<TextField
-							fullWidth
-							label="Average Price (USD)"
-							disabled
-							helperText="Calculated automatically from quantity and amount invested"
-							value={transactionFormData.averagePrice || ""}
-						/>
-						<TextField
-							fullWidth
-							label="Transaction Date"
-							onChange={(e) => setTransactionFormData({ ...transactionFormData, transactionDate: e.target.value })}
-							required
-							type="date"
-							value={transactionFormData.transactionDate || ""}
-						/>
-						<TextField
-							fullWidth
-							label="Notes (optional)"
-							multiline
-							onChange={(e) => setTransactionFormData({ ...transactionFormData, notes: e.target.value })}
-							rows={3}
-							value={transactionFormData.notes || ""}
-						/>
-					</Stack>
-				</DialogContent>
-				<DialogActions>
-					<Button onClick={() => setShowTransactionDialog(false)}>Cancel</Button>
-					<Button onClick={handleCreateTransaction} variant="contained">
-						{editingTransaction ? "Update" : "Create"}
-					</Button>
-				</DialogActions>
-			</Dialog>
+			<CreateTransactionModal
+				editingTransaction={
+					editingTransaction
+						? {
+								id: editingTransaction.id,
+								symbol: editingTransaction.symbol,
+								name: editingTransaction.name,
+								cmcId: editingTransaction.cmcId,
+								quantity: editingTransaction.quantity,
+								amountInvested: editingTransaction.amountInvested,
+								averagePrice: editingTransaction.averagePrice,
+								type: editingTransaction.type as "BUY" | "SELL",
+								transactionDate: editingTransaction.transactionDate,
+								notes: editingTransaction.notes,
+								portfolioId: editingTransaction.portfolioId || "",
+							}
+						: null
+				}
+				onClose={() => {
+					setShowTransactionDialog(false);
+					setEditingTransaction(null);
+					setSelectedToken(null);
+					setTransactionError(null);
+					setTransactionFormData({
+						quantity: "",
+						amountInvested: "",
+						averagePrice: "",
+						type: "BUY",
+						transactionDate: new Date().toISOString().split("T")[0],
+						notes: "",
+						portfolioId: portfolios[0]?.id || "",
+					});
+				}}
+				onSuccess={async () => {
+					// Reload transactions
+					const response = await transactionsApi.getTransactions({ limit: 100 });
+					setTransactions(response.transactions);
+					// Reload portfolios
+					await refreshPortfolios();
+				}}
+				open={showTransactionDialog}
+				portfolios={portfolios}
+			/>
 
 			{/* Delete Wallet Confirmation Modal */}
 			<Dialog
