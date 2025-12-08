@@ -1,13 +1,17 @@
 "use client";
 
 import * as React from "react";
+import Avatar from "@mui/material/Avatar";
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
 import Card from "@mui/material/Card";
 import CardContent from "@mui/material/CardContent";
 import Chip from "@mui/material/Chip";
 import CircularProgress from "@mui/material/CircularProgress";
+import Dialog from "@mui/material/Dialog";
+import DialogContent from "@mui/material/DialogContent";
 import IconButton from "@mui/material/IconButton";
+import Paper from "@mui/material/Paper";
 import InputAdornment from "@mui/material/InputAdornment";
 import OutlinedInput from "@mui/material/OutlinedInput";
 import Stack from "@mui/material/Stack";
@@ -22,6 +26,7 @@ import { MagnifyingGlassIcon } from "@phosphor-icons/react/dist/ssr/MagnifyingGl
 import { PlusIcon } from "@phosphor-icons/react/dist/ssr/Plus";
 import { PencilIcon } from "@phosphor-icons/react/dist/ssr/Pencil";
 import { TrashIcon } from "@phosphor-icons/react/dist/ssr/Trash";
+import { WarningIcon } from "@phosphor-icons/react/dist/ssr/Warning";
 import { CaretDownIcon } from "@phosphor-icons/react/dist/ssr/CaretDown";
 import { CaretRightIcon } from "@phosphor-icons/react/dist/ssr/CaretRight";
 import Collapse from "@mui/material/Collapse";
@@ -54,6 +59,8 @@ function ForecastPageContent(): React.JSX.Element {
 	const [expandedForecastId, setExpandedForecastId] = React.useState<string | null>(null);
 	const [expandedTokens, setExpandedTokens] = React.useState<Set<string>>(new Set());
 	const [forecastDetails, setForecastDetails] = React.useState<Record<string, any>>({});
+	const [selectedForecastIds, setSelectedForecastIds] = React.useState<Set<string>>(new Set());
+	const [showDeleteMultipleForecastsModal, setShowDeleteMultipleForecastsModal] = React.useState(false);
 	
 	// Pagination states
 	const [page, setPage] = React.useState(0);
@@ -94,6 +101,44 @@ function ForecastPageContent(): React.JSX.Element {
 			}
 		}
 	};
+
+	const handleSelectForecast = (forecastId: string) => {
+		setSelectedForecastIds((prev) => {
+			const newSet = new Set(prev);
+			if (newSet.has(forecastId)) {
+				newSet.delete(forecastId);
+			} else {
+				newSet.add(forecastId);
+			}
+			return newSet;
+		});
+	};
+
+	const handleSelectAllForecasts = () => {
+		if (selectedForecastIds.size === paginatedForecasts.length) {
+			setSelectedForecastIds(new Set());
+		} else {
+			setSelectedForecastIds(new Set(paginatedForecasts.map((f) => f.id)));
+		}
+	};
+
+	const confirmDeleteMultipleForecasts = async () => {
+		if (selectedForecastIds.size === 0) return;
+		try {
+			// Delete all selected forecasts in parallel
+			await Promise.all(Array.from(selectedForecastIds).map((id) => deleteForecast(id)));
+			await loadForecasts();
+			setShowDeleteMultipleForecastsModal(false);
+			setSelectedForecastIds(new Set());
+		} catch (error) {
+			console.error("Error deleting forecasts:", error);
+		}
+	};
+
+	// Reset selections when search query changes
+	React.useEffect(() => {
+		setSelectedForecastIds(new Set());
+	}, [searchQuery]);
 
 	const handleEditForecast = (forecast: ForecastResponse) => {
 		// TODO: Implement edit functionality
@@ -286,11 +331,31 @@ function ForecastPageContent(): React.JSX.Element {
 					</Card>
 				) : (
 					<Card>
+						{selectedForecastIds.size > 0 && (
+							<Box sx={{ p: 2, borderBottom: "1px solid var(--mui-palette-divider)" }}>
+								<Button
+									color="error"
+									onClick={() => setShowDeleteMultipleForecastsModal(true)}
+									size="small"
+									startIcon={<TrashIcon />}
+									variant="outlined"
+								>
+									Delete ({selectedForecastIds.size})
+								</Button>
+							</Box>
+						)}
 						<CardContent sx={{ p: 0 }}>
 							<Box sx={{ overflowX: "auto" }}>
 								<Table>
 									<TableHead>
 										<TableRow>
+											<TableCell padding="checkbox" sx={{ width: "40px", fontWeight: 600 }}>
+												<Checkbox
+													checked={paginatedForecasts.length > 0 && selectedForecastIds.size === paginatedForecasts.length}
+													indeterminate={selectedForecastIds.size > 0 && selectedForecastIds.size < paginatedForecasts.length}
+													onChange={handleSelectAllForecasts}
+												/>
+											</TableCell>
 											<TableCell sx={{ width: "40px", fontWeight: 600 }} />
 											<TableCell sx={{ fontWeight: 600 }}>Forecast Name</TableCell>
 											<TableCell sx={{ fontWeight: 600 }}>Wallet</TableCell>
@@ -323,6 +388,12 @@ function ForecastPageContent(): React.JSX.Element {
 															}),
 														}}
 													>
+														<TableCell padding="checkbox" onClick={(e) => e.stopPropagation()}>
+															<Checkbox
+																checked={selectedForecastIds.has(forecast.id)}
+																onChange={() => handleSelectForecast(forecast.id)}
+															/>
+														</TableCell>
 														<TableCell>
 															<IconButton
 																onClick={(e) => {
@@ -382,33 +453,20 @@ function ForecastPageContent(): React.JSX.Element {
 															</Typography>
 														</TableCell>
 														<TableCell align="right">
-															<Stack direction="row" spacing={1} sx={{ justifyContent: "flex-end" }}>
-																<IconButton
-																	onClick={(e) => {
-																		e.stopPropagation();
-																		handleEditForecast(forecast);
-																	}}
-																	size="small"
-																	title="Edit forecast"
-																>
-																	<PencilIcon fontSize="var(--icon-fontSize-md)" />
-																</IconButton>
-																<IconButton
-																	color="error"
-																	onClick={(e) => {
-																		e.stopPropagation();
-																		handleDeleteForecast(forecast.id);
-																	}}
-																	size="small"
-																	title="Delete forecast"
-																>
-																	<TrashIcon fontSize="var(--icon-fontSize-md)" />
-																</IconButton>
-															</Stack>
+															<IconButton
+																onClick={(e) => {
+																	e.stopPropagation();
+																	handleEditForecast(forecast);
+																}}
+																size="small"
+																title="Edit forecast"
+															>
+																<PencilIcon fontSize="var(--icon-fontSize-md)" />
+															</IconButton>
 														</TableCell>
 													</TableRow>
 													<TableRow>
-														<TableCell colSpan={10} sx={{ py: 0, borderBottom: isExpanded ? "1px solid var(--mui-palette-divider)" : "none" }}>
+														<TableCell colSpan={11} sx={{ py: 0, borderBottom: isExpanded ? "1px solid var(--mui-palette-divider)" : "none" }}>
 															<Collapse in={isExpanded} timeout="auto" unmountOnExit>
 																{details ? (
 																	<Box sx={{ py: 3 }}>
@@ -564,6 +622,47 @@ function ForecastPageContent(): React.JSX.Element {
 
 			{/* Create Forecast Modal */}
 			<CreateForecastModal onClose={handleCloseCreateModal} onSuccess={loadForecasts} open={showCreateModal} />
+
+			{/* Delete Multiple Forecasts Confirmation Modal */}
+			<Dialog
+				fullWidth
+				maxWidth="sm"
+				onClose={() => {
+					setShowDeleteMultipleForecastsModal(false);
+				}}
+				open={showDeleteMultipleForecastsModal}
+			>
+				<DialogContent>
+					<Paper sx={{ border: "1px solid var(--mui-palette-divider)", boxShadow: "var(--mui-shadows-16)", p: 0 }}>
+						<Stack direction="row" spacing={2} sx={{ display: "flex", p: 3 }}>
+							<Avatar sx={{ bgcolor: "var(--mui-palette-error-50)", color: "var(--mui-palette-error-main)" }}>
+								<WarningIcon fontSize="var(--icon-fontSize-lg)" />
+							</Avatar>
+							<Stack spacing={3} sx={{ flex: 1 }}>
+								<Stack spacing={1}>
+									<Typography variant="h5">Delete Forecasts</Typography>
+									<Typography color="text.secondary" variant="body2">
+										Are you sure you want to delete {selectedForecastIds.size} selected forecast{selectedForecastIds.size > 1 ? "s" : ""}? This action cannot be undone and will permanently remove all associated data.
+									</Typography>
+								</Stack>
+								<Stack direction="row" spacing={2} sx={{ justifyContent: "flex-end" }}>
+									<Button
+										color="secondary"
+										onClick={() => {
+											setShowDeleteMultipleForecastsModal(false);
+										}}
+									>
+										Cancel
+									</Button>
+									<Button color="error" onClick={confirmDeleteMultipleForecasts} variant="contained">
+										Delete {selectedForecastIds.size} Forecast{selectedForecastIds.size > 1 ? "s" : ""}
+									</Button>
+								</Stack>
+							</Stack>
+						</Stack>
+					</Paper>
+				</DialogContent>
+			</Dialog>
 		</Box>
 	);
 }

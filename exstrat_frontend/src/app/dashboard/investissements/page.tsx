@@ -19,6 +19,7 @@ import ListItem from "@mui/material/ListItem";
 import ListItemAvatar from "@mui/material/ListItemAvatar";
 import ListItemText from "@mui/material/ListItemText";
 import CardHeader from "@mui/material/CardHeader";
+import Checkbox from "@mui/material/Checkbox";
 import FormControl from "@mui/material/FormControl";
 import FormControlLabel from "@mui/material/FormControlLabel";
 import FormLabel from "@mui/material/FormLabel";
@@ -152,6 +153,8 @@ export default function Page(): React.JSX.Element {
 	const [walletToDelete, setWalletToDelete] = React.useState<string | null>(null);
 	const [showDeleteTransactionModal, setShowDeleteTransactionModal] = React.useState(false);
 	const [transactionToDelete, setTransactionToDelete] = React.useState<string | null>(null);
+	const [selectedTransactionIds, setSelectedTransactionIds] = React.useState<Set<string>>(new Set());
+	const [showDeleteMultipleTransactionsModal, setShowDeleteMultipleTransactionsModal] = React.useState(false);
 	const [showWalletDetailsModal, setShowWalletDetailsModal] = React.useState(false);
 	const [selectedWalletId, setSelectedWalletId] = React.useState<string | null>(null);
 	const [portfolioFormData, setPortfolioFormData] = React.useState<CreatePortfolioDto>({
@@ -686,7 +689,7 @@ export default function Page(): React.JSX.Element {
 	const handleUpdatePortfolio = async () => {
 		if (!editingPortfolioId) return;
 		try {
-			await updatePortfolio(editingPortfolioId, portfolioFormData);
+			await updatePortfolio(editingPortfolioId, { name: portfolioFormData.name });
 			setShowPortfolioDialog(false);
 			setEditingPortfolioId(null);
 			setPortfolioFormData({ name: "", description: "", isDefault: false });
@@ -717,8 +720,8 @@ export default function Page(): React.JSX.Element {
 		setEditingPortfolioId(portfolio.id);
 		setPortfolioFormData({
 			name: portfolio.name,
-			description: portfolio.description || "",
-			isDefault: portfolio.isDefault,
+			description: "",
+			isDefault: false,
 		});
 		setShowPortfolioDialog(true);
 	};
@@ -902,6 +905,48 @@ export default function Page(): React.JSX.Element {
 			console.error("Error deleting transaction:", error);
 		}
 	};
+
+	const handleSelectTransaction = (transactionId: string) => {
+		setSelectedTransactionIds((prev) => {
+			const newSet = new Set(prev);
+			if (newSet.has(transactionId)) {
+				newSet.delete(transactionId);
+			} else {
+				newSet.add(transactionId);
+			}
+			return newSet;
+		});
+	};
+
+	const handleSelectAllTransactions = () => {
+		if (selectedTransactionIds.size === paginatedTransactions.length) {
+			setSelectedTransactionIds(new Set());
+		} else {
+			setSelectedTransactionIds(new Set(paginatedTransactions.map((t) => t.id)));
+		}
+	};
+
+	const confirmDeleteMultipleTransactions = async () => {
+		if (selectedTransactionIds.size === 0) return;
+		try {
+			// Delete all selected transactions in parallel
+			await Promise.all(Array.from(selectedTransactionIds).map((id) => transactionsApi.deleteTransaction(id)));
+			// Reload transactions
+			const response = await transactionsApi.getTransactions({ limit: 100 });
+			setTransactions(response.transactions);
+			// Reload portfolios
+			await refreshPortfolios();
+			setShowDeleteMultipleTransactionsModal(false);
+			setSelectedTransactionIds(new Set());
+		} catch (error) {
+			console.error("Error deleting transactions:", error);
+		}
+	};
+
+	// Reset selections when search query changes
+	React.useEffect(() => {
+		setSelectedTransactionIds(new Set());
+	}, [transactionSearchQuery]);
 
 	if (portfoliosLoading || loadingPortfolios) {
 		return (
@@ -1831,6 +1876,17 @@ export default function Page(): React.JSX.Element {
 							<Stack direction="row" spacing={2} sx={{ alignItems: "center" }}>
 								<PlusIcon fontSize="var(--icon-fontSize-lg)" />
 								<Typography variant="h6">Transactions</Typography>
+								{selectedTransactionIds.size > 0 && (
+									<Button
+										color="error"
+										onClick={() => setShowDeleteMultipleTransactionsModal(true)}
+										size="small"
+										startIcon={<TrashIcon />}
+										variant="outlined"
+									>
+										Delete ({selectedTransactionIds.size})
+									</Button>
+								)}
 							</Stack>
 							<OutlinedInput
 								onChange={(e) => {
@@ -1889,6 +1945,13 @@ export default function Page(): React.JSX.Element {
 							<Table>
 								<TableHead>
 									<TableRow>
+										<TableCell padding="checkbox">
+											<Checkbox
+												checked={paginatedTransactions.length > 0 && selectedTransactionIds.size === paginatedTransactions.length}
+												indeterminate={selectedTransactionIds.size > 0 && selectedTransactionIds.size < paginatedTransactions.length}
+												onChange={handleSelectAllTransactions}
+											/>
+										</TableCell>
 										<TableCell>
 											<TableSortLabel
 												active={transactionOrderBy === "date"}
@@ -2014,6 +2077,12 @@ export default function Page(): React.JSX.Element {
 								<TableBody>
 									{paginatedTransactions.map((transaction) => (
 										<TableRow key={transaction.id}>
+											<TableCell padding="checkbox">
+												<Checkbox
+													checked={selectedTransactionIds.has(transaction.id)}
+													onChange={() => handleSelectTransaction(transaction.id)}
+												/>
+											</TableCell>
 											<TableCell>
 												<Typography variant="body2">
 													{new Date(transaction.transactionDate).toLocaleDateString()}
@@ -2061,18 +2130,9 @@ export default function Page(): React.JSX.Element {
 												<Typography variant="body2">{transaction.portfolio?.name || "-"}</Typography>
 											</TableCell>
 											<TableCell align="right">
-												<Stack direction="row" spacing={1} sx={{ justifyContent: "flex-end" }}>
-													<IconButton onClick={() => openEditTransaction(transaction)} size="small">
-														<PencilIcon fontSize="var(--icon-fontSize-sm)" />
-													</IconButton>
-													<IconButton
-														color="error"
-														onClick={() => handleDeleteTransaction(transaction.id)}
-														size="small"
-													>
-														<TrashIcon fontSize="var(--icon-fontSize-sm)" />
-													</IconButton>
-												</Stack>
+												<IconButton onClick={() => openEditTransaction(transaction)} size="small">
+													<PencilIcon fontSize="var(--icon-fontSize-sm)" />
+												</IconButton>
 											</TableCell>
 										</TableRow>
 									))}
@@ -2118,32 +2178,14 @@ export default function Page(): React.JSX.Element {
 				<DialogContent>
 					<Stack spacing={3} sx={{ mt: 1 }}>
 						{editingPortfolioId ? (
-							<>
-								<TextField
-									fullWidth
-									label="Name"
-									onChange={(e) => setPortfolioFormData({ ...portfolioFormData, name: e.target.value })}
-									required
-									value={portfolioFormData.name}
-								/>
-								<TextField
-									fullWidth
-									label="Description"
-									multiline
-									onChange={(e) => setPortfolioFormData({ ...portfolioFormData, description: e.target.value })}
-									rows={3}
-									value={portfolioFormData.description || ""}
-								/>
-								<FormControlLabel
-									control={
-										<Switch
-											checked={portfolioFormData.isDefault || false}
-											onChange={(e) => setPortfolioFormData({ ...portfolioFormData, isDefault: e.target.checked })}
-										/>
-									}
-									label="Default Wallet"
-								/>
-							</>
+							<TextField
+								autoFocus
+								fullWidth
+								label="Name"
+								onChange={(e) => setPortfolioFormData({ ...portfolioFormData, name: e.target.value })}
+								required
+								value={portfolioFormData.name}
+							/>
 						) : (
 							<TextField
 								autoFocus
@@ -2308,6 +2350,47 @@ export default function Page(): React.JSX.Element {
 									</Button>
 									<Button color="error" onClick={confirmDeleteTransaction} variant="contained">
 										Delete
+									</Button>
+								</Stack>
+							</Stack>
+						</Stack>
+					</Paper>
+				</DialogContent>
+			</Dialog>
+
+			{/* Delete Multiple Transactions Confirmation Modal */}
+			<Dialog
+				fullWidth
+				maxWidth="sm"
+				onClose={() => {
+					setShowDeleteMultipleTransactionsModal(false);
+				}}
+				open={showDeleteMultipleTransactionsModal}
+			>
+				<DialogContent>
+					<Paper sx={{ border: "1px solid var(--mui-palette-divider)", boxShadow: "var(--mui-shadows-16)", p: 0 }}>
+						<Stack direction="row" spacing={2} sx={{ display: "flex", p: 3 }}>
+							<Avatar sx={{ bgcolor: "var(--mui-palette-error-50)", color: "var(--mui-palette-error-main)" }}>
+								<WarningIcon fontSize="var(--icon-fontSize-lg)" />
+							</Avatar>
+							<Stack spacing={3} sx={{ flex: 1 }}>
+								<Stack spacing={1}>
+									<Typography variant="h5">Delete Transactions</Typography>
+									<Typography color="text.secondary" variant="body2">
+										Are you sure you want to delete {selectedTransactionIds.size} selected transaction{selectedTransactionIds.size > 1 ? "s" : ""}? This action cannot be undone and will affect your portfolio calculations.
+									</Typography>
+								</Stack>
+								<Stack direction="row" spacing={2} sx={{ justifyContent: "flex-end" }}>
+									<Button
+										color="secondary"
+										onClick={() => {
+											setShowDeleteMultipleTransactionsModal(false);
+										}}
+									>
+										Cancel
+									</Button>
+									<Button color="error" onClick={confirmDeleteMultipleTransactions} variant="contained">
+										Delete {selectedTransactionIds.size} Transaction{selectedTransactionIds.size > 1 ? "s" : ""}
 									</Button>
 								</Stack>
 							</Stack>

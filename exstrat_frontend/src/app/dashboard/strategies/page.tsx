@@ -5,10 +5,14 @@ import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
 import Card from "@mui/material/Card";
 import CardContent from "@mui/material/CardContent";
+import Checkbox from "@mui/material/Checkbox";
 import Chip from "@mui/material/Chip";
 import CircularProgress from "@mui/material/CircularProgress";
+import Dialog from "@mui/material/Dialog";
+import DialogContent from "@mui/material/DialogContent";
 import Divider from "@mui/material/Divider";
 import IconButton from "@mui/material/IconButton";
+import Paper from "@mui/material/Paper";
 import InputAdornment from "@mui/material/InputAdornment";
 import OutlinedInput from "@mui/material/OutlinedInput";
 import Stack from "@mui/material/Stack";
@@ -18,6 +22,7 @@ import { MagnifyingGlassIcon } from "@phosphor-icons/react/dist/ssr/MagnifyingGl
 import { PlusIcon } from "@phosphor-icons/react/dist/ssr/Plus";
 import { PencilIcon } from "@phosphor-icons/react/dist/ssr/Pencil";
 import { TrashIcon } from "@phosphor-icons/react/dist/ssr/Trash";
+import { WarningIcon } from "@phosphor-icons/react/dist/ssr/Warning";
 import { XIcon } from "@phosphor-icons/react/dist/ssr/X";
 
 import { strategiesApi } from "@/lib/strategies-api";
@@ -55,6 +60,8 @@ function StrategiesPageContent(): React.JSX.Element {
 	const [showCreateModal, setShowCreateModal] = React.useState(false);
 	const [isSubmitting, setIsSubmitting] = React.useState(false);
 	const [tokenPrices, setTokenPrices] = React.useState<Map<string, number>>(new Map());
+	const [selectedStrategyIds, setSelectedStrategyIds] = React.useState<Set<string>>(new Set());
+	const [showDeleteMultipleStrategiesModal, setShowDeleteMultipleStrategiesModal] = React.useState(false);
 	
 	// Pagination states
 	const [page, setPage] = React.useState(0);
@@ -218,6 +225,44 @@ function StrategiesPageContent(): React.JSX.Element {
 		}
 	};
 
+	const handleSelectStrategy = (strategyId: string) => {
+		setSelectedStrategyIds((prev) => {
+			const newSet = new Set(prev);
+			if (newSet.has(strategyId)) {
+				newSet.delete(strategyId);
+			} else {
+				newSet.add(strategyId);
+			}
+			return newSet;
+		});
+	};
+
+	const handleSelectAllStrategies = () => {
+		if (selectedStrategyIds.size === paginatedStrategies.length) {
+			setSelectedStrategyIds(new Set());
+		} else {
+			setSelectedStrategyIds(new Set(paginatedStrategies.map((s) => s.id)));
+		}
+	};
+
+	const confirmDeleteMultipleStrategies = async () => {
+		if (selectedStrategyIds.size === 0) return;
+		try {
+			// Delete all selected strategies in parallel
+			await Promise.all(Array.from(selectedStrategyIds).map((id) => strategiesApi.deleteStrategy(id)));
+			await loadStrategies();
+			setShowDeleteMultipleStrategiesModal(false);
+			setSelectedStrategyIds(new Set());
+		} catch (error) {
+			console.error("Error deleting strategies:", error);
+		}
+	};
+
+	// Reset selections when search query or filter changes
+	React.useEffect(() => {
+		setSelectedStrategyIds(new Set());
+	}, [searchQuery, statusFilter]);
+
 	if (isLoading) {
 		return (
 			<Box
@@ -336,12 +381,28 @@ function StrategiesPageContent(): React.JSX.Element {
 					</Card>
 				) : (
 					<Card>
+						{selectedStrategyIds.size > 0 && (
+							<Box sx={{ p: 2, borderBottom: "1px solid var(--mui-palette-divider)" }}>
+								<Button
+									color="error"
+									onClick={() => setShowDeleteMultipleStrategiesModal(true)}
+									size="small"
+									startIcon={<TrashIcon />}
+									variant="outlined"
+								>
+									Delete ({selectedStrategyIds.size})
+								</Button>
+							</Box>
+						)}
 						<Divider />
 						<Box sx={{ overflowX: "auto" }}>
 							<StrategiesTable
 								onDelete={handleDeleteStrategy}
 								onEdit={handleEditStrategy}
+								onSelect={handleSelectStrategy}
+								onSelectAll={handleSelectAllStrategies}
 								rows={paginatedStrategies}
+								selectedIds={selectedStrategyIds}
 								tokenPrices={tokenPrices}
 							/>
 						</Box>
@@ -366,6 +427,47 @@ function StrategiesPageContent(): React.JSX.Element {
 
 			{/* Create Strategy Modal */}
 			<CreateStrategyModal onClose={handleCloseCreateModal} onSuccess={loadStrategies} open={showCreateModal} />
+
+			{/* Delete Multiple Strategies Confirmation Modal */}
+			<Dialog
+				fullWidth
+				maxWidth="sm"
+				onClose={() => {
+					setShowDeleteMultipleStrategiesModal(false);
+				}}
+				open={showDeleteMultipleStrategiesModal}
+			>
+				<DialogContent>
+					<Paper sx={{ border: "1px solid var(--mui-palette-divider)", boxShadow: "var(--mui-shadows-16)", p: 0 }}>
+						<Stack direction="row" spacing={2} sx={{ display: "flex", p: 3 }}>
+							<Avatar sx={{ bgcolor: "var(--mui-palette-error-50)", color: "var(--mui-palette-error-main)" }}>
+								<WarningIcon fontSize="var(--icon-fontSize-lg)" />
+							</Avatar>
+							<Stack spacing={3} sx={{ flex: 1 }}>
+								<Stack spacing={1}>
+									<Typography variant="h5">Delete Strategies</Typography>
+									<Typography color="text.secondary" variant="body2">
+										Are you sure you want to delete {selectedStrategyIds.size} selected strategy{selectedStrategyIds.size > 1 ? "ies" : ""}? This action cannot be undone and will permanently remove all associated data.
+									</Typography>
+								</Stack>
+								<Stack direction="row" spacing={2} sx={{ justifyContent: "flex-end" }}>
+									<Button
+										color="secondary"
+										onClick={() => {
+											setShowDeleteMultipleStrategiesModal(false);
+										}}
+									>
+										Cancel
+									</Button>
+									<Button color="error" onClick={confirmDeleteMultipleStrategies} variant="contained">
+										Delete {selectedStrategyIds.size} Strategy{selectedStrategyIds.size > 1 ? "ies" : ""}
+									</Button>
+								</Stack>
+							</Stack>
+						</Stack>
+					</Paper>
+				</DialogContent>
+			</Dialog>
 		</Box>
 	);
 }
@@ -374,10 +476,13 @@ interface StrategiesTableProps {
 	rows: StrategyResponse[];
 	onEdit: (strategy: StrategyResponse) => void;
 	onDelete: (strategyId: string) => void;
+	onSelect: (strategyId: string) => void;
+	onSelectAll: () => void;
+	selectedIds: Set<string>;
 	tokenPrices: Map<string, number>;
 }
 
-function StrategiesTable({ rows, onEdit, onDelete, tokenPrices }: StrategiesTableProps): React.JSX.Element {
+function StrategiesTable({ rows, onEdit, onDelete, onSelect, onSelectAll, selectedIds, tokenPrices }: StrategiesTableProps): React.JSX.Element {
 	// State to track mouse position for tooltip (per row)
 	const [mousePosition, setMousePosition] = React.useState<{ x: number; y: number; rowId: string } | null>(null);
 
@@ -433,6 +538,13 @@ function StrategiesTable({ rows, onEdit, onDelete, tokenPrices }: StrategiesTabl
 			<TableHead>
 				{/* Group Headers */}
 				<TableRow>
+					<TableCell padding="checkbox" rowSpan={2}>
+						<Checkbox
+							checked={rows.length > 0 && selectedIds.size === rows.length}
+							indeterminate={selectedIds.size > 0 && selectedIds.size < rows.length}
+							onChange={onSelectAll}
+						/>
+					</TableCell>
 					<TableCell rowSpan={2} sx={{ width: "200px", minWidth: "180px" }}>
 						Strategy
 					</TableCell>
@@ -661,6 +773,12 @@ function StrategiesTable({ rows, onEdit, onDelete, tokenPrices }: StrategiesTabl
 									setMousePosition(null);
 								}}
 							>
+								<TableCell padding="checkbox">
+									<Checkbox
+										checked={selectedIds.has(row.id)}
+										onChange={() => onSelect(row.id)}
+									/>
+								</TableCell>
 								<TableCell>
 									<Stack spacing={0.25}>
 										<Typography variant="subtitle2" sx={{ fontSize: "0.875rem", lineHeight: 1.3 }}>
@@ -730,29 +848,16 @@ function StrategiesTable({ rows, onEdit, onDelete, tokenPrices }: StrategiesTabl
 								</Typography>
 							</TableCell>
 							<TableCell align="right">
-								<Box sx={{ display: "flex", justifyContent: "flex-end", gap: 0.5 }}>
-									<IconButton
-										onClick={(e) => {
-											e.stopPropagation();
-											onEdit(row);
-										}}
-										size="small"
-										sx={{ padding: "4px" }}
-									>
-										<PencilIcon fontSize="var(--icon-fontSize-sm)" />
-									</IconButton>
-									<IconButton
-										color="error"
-										onClick={(e) => {
-											e.stopPropagation();
-											onDelete(row.id);
-										}}
-										size="small"
-										sx={{ padding: "4px" }}
-									>
-										<TrashIcon fontSize="var(--icon-fontSize-sm)" />
-									</IconButton>
-								</Box>
+								<IconButton
+									onClick={(e) => {
+										e.stopPropagation();
+										onEdit(row);
+									}}
+									size="small"
+									sx={{ padding: "4px" }}
+								>
+									<PencilIcon fontSize="var(--icon-fontSize-sm)" />
+								</IconButton>
 							</TableCell>
 							</TableRow>
 						</Tooltip>
