@@ -38,6 +38,7 @@ import ListItemText from "@mui/material/ListItemText";
 import { formatCurrency, formatPercentage } from "@/lib/format";
 import { getForecasts, deleteForecast, getForecastById, getForecastDetails } from "@/lib/portfolios-api";
 import type { ForecastResponse } from "@/types/portfolio";
+import type { ProfitTarget } from "@/types/strategies";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import { CreateForecastModal } from "./create-forecast-modal";
 
@@ -504,7 +505,7 @@ function ForecastPageContent(): React.JSX.Element {
 																																Profit takings for strategy {strategy.name} on {holding.token?.symbol || holding.symbol}
 																															</Typography>
 																															<List dense>
-																																{strategy.profitTargets.map((target) => {
+																																{strategy.profitTargets.map((target: ProfitTarget) => {
 																																	const targetPrice =
 																																		target.targetType === "percentage"
 																																			? averagePrice * (1 + target.targetValue / 100)

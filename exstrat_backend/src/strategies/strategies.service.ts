@@ -22,36 +22,33 @@ export class StrategiesService {
     console.log('StrategiesService.createStrategy - userId:', userId);
     console.log('Données reçues:', createStrategyDto);
     
-    // Vérifier que l'utilisateur a des transactions pour ce token
-    const userTransactions = await this.prisma.transaction.findMany({
-      where: {
-        userId,
-        symbol: createStrategyDto.symbol,
-        type: { in: ['BUY', 'TRANSFER_IN', 'STAKING', 'REWARD'] }
+    // Vérifier que l'utilisateur a des transactions pour ce token (optional check for virtual wallets)
+    // For virtual wallets, we skip this check
+    if (createStrategyDto.baseQuantity > 0) {
+      const userTransactions = await this.prisma.transaction.findMany({
+        where: {
+          userId,
+          symbol: createStrategyDto.symbol,
+          type: { in: ['BUY', 'TRANSFER_IN', 'STAKING', 'REWARD'] }
+        }
+      });
+      
+      console.log('Transactions trouvées:', userTransactions.length);
+
+      if (userTransactions.length > 0) {
+        // Calculer la quantité totale détenue
+        const totalQuantity = userTransactions.reduce((sum, tx) => {
+          if (tx.type === 'BUY' || tx.type === 'TRANSFER_IN' || tx.type === 'STAKING' || tx.type === 'REWARD') {
+            return sum + Number(tx.quantity);
+          } else {
+            return sum - Number(tx.quantity);
+          }
+        }, 0);
+
+        if (totalQuantity > 0 && createStrategyDto.baseQuantity > totalQuantity) {
+          throw new BadRequestException(`La quantité de référence (${createStrategyDto.baseQuantity}) ne peut pas dépasser la quantité détenue (${totalQuantity})`);
+        }
       }
-    });
-    
-    console.log('Transactions trouvées:', userTransactions.length);
-
-    if (userTransactions.length === 0) {
-      throw new BadRequestException(`Aucune transaction trouvée pour le token ${createStrategyDto.symbol}`);
-    }
-
-    // Calculer la quantité totale détenue
-    const totalQuantity = userTransactions.reduce((sum, tx) => {
-      if (tx.type === 'BUY' || tx.type === 'TRANSFER_IN' || tx.type === 'STAKING' || tx.type === 'REWARD') {
-        return sum + Number(tx.quantity);
-      } else {
-        return sum - Number(tx.quantity);
-      }
-    }, 0);
-
-    if (totalQuantity <= 0) {
-      throw new BadRequestException(`Vous ne détenez pas de ${createStrategyDto.symbol}`);
-    }
-
-    if (createStrategyDto.baseQuantity > totalQuantity) {
-      throw new BadRequestException(`La quantité de référence (${createStrategyDto.baseQuantity}) ne peut pas dépasser la quantité détenue (${totalQuantity})`);
     }
 
     // Vérifier que la somme des pourcentages de vente ne dépasse pas 100%
@@ -96,7 +93,7 @@ export class StrategiesService {
       }
     });
 
-    return this.mapToResponseDto(strategy);
+    return await this.mapToResponseDto(strategy);
   }
 
   async findAll(userId: string, searchDto: StrategySearchDto): Promise<{ strategies: StrategyResponseDto[], total: number, page: number, limit: number }> {
@@ -134,7 +131,7 @@ export class StrategiesService {
       console.log('✅ [StrategiesService] Total count:', total);
 
       const result = {
-          strategies: strategies.map(strategy => this.mapToResponseDto(strategy)),
+        strategies: await Promise.all(strategies.map(strategy => this.mapToResponseDto(strategy))),
         total,
         page,
         limit
@@ -166,7 +163,7 @@ export class StrategiesService {
       throw new ForbiddenException('Vous n\'avez pas la permission d\'accéder à cette stratégie');
     }
 
-    return this.mapToResponseDto(strategy);
+    return await this.mapToResponseDto(strategy);
   }
 
   async update(userId: string, id: string, updateStrategyDto: UpdateStrategyDto): Promise<StrategyResponseDto> {
@@ -241,7 +238,7 @@ export class StrategiesService {
     });
 
     console.log('Stratégie mise à jour:', updatedStrategy);
-    return this.mapToResponseDto(updatedStrategy);
+    return await this.mapToResponseDto(updatedStrategy);
   }
 
   async updateStep(userId: string, strategyId: string, stepId: string, updateStepDto: UpdateStrategyStepDto): Promise<StrategyStepResponseDto> {
@@ -372,17 +369,46 @@ export class StrategiesService {
       orderBy: { createdAt: 'desc' }
     });
 
-    return strategies.map(strategy => this.mapToResponseDto(strategy));
+    return Promise.all(strategies.map(strategy => this.mapToResponseDto(strategy)));
   }
 
-  private mapToResponseDto(strategy: any): StrategyResponseDto {
+  private async mapToResponseDto(strategy: any): Promise<StrategyResponseDto> {
+    // Try to get token info from transactions
+    let tokenName = strategy.asset;
+    let cmcId = 0;
+
+    try {
+      const transactions = await this.prisma.transaction.findFirst({
+        where: {
+          userId: strategy.userId,
+          symbol: strategy.asset,
+        },
+        select: {
+          token: {
+            select: {
+              name: true,
+              cmcId: true,
+            },
+          },
+        },
+      });
+
+      if (transactions?.token) {
+        tokenName = transactions.token.name || strategy.asset;
+        cmcId = transactions.token.cmcId || 0;
+      }
+    } catch (error) {
+      console.error('Error fetching token info for strategy:', error);
+      // Fallback to default values
+    }
+
     return {
       id: strategy.id,
       userId: strategy.userId,
       name: strategy.name,
       symbol: strategy.asset,
-      tokenName: strategy.asset, // À améliorer avec les données du token
-      cmcId: 0, // À récupérer depuis les transactions
+      tokenName,
+      cmcId,
       baseQuantity: Number(strategy.baseQty),
       referencePrice: Number(strategy.refPrice),
       status: strategy.status,
