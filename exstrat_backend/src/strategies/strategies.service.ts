@@ -25,30 +25,30 @@ export class StrategiesService {
     // Vérifier que l'utilisateur a des transactions pour ce token (optional check for virtual wallets)
     // For virtual wallets, we skip this check
     if (createStrategyDto.baseQuantity > 0) {
-      const userTransactions = await this.prisma.transaction.findMany({
-        where: {
-          userId,
-          symbol: createStrategyDto.symbol,
-          type: { in: ['BUY', 'TRANSFER_IN', 'STAKING', 'REWARD'] }
-        }
-      });
-      
-      console.log('Transactions trouvées:', userTransactions.length);
+    const userTransactions = await this.prisma.transaction.findMany({
+      where: {
+        userId,
+        symbol: createStrategyDto.symbol,
+        type: { in: ['BUY', 'TRANSFER_IN', 'STAKING', 'REWARD'] }
+      }
+    });
+    
+    console.log('Transactions trouvées:', userTransactions.length);
 
       if (userTransactions.length > 0) {
-        // Calculer la quantité totale détenue
-        const totalQuantity = userTransactions.reduce((sum, tx) => {
-          if (tx.type === 'BUY' || tx.type === 'TRANSFER_IN' || tx.type === 'STAKING' || tx.type === 'REWARD') {
-            return sum + Number(tx.quantity);
-          } else {
-            return sum - Number(tx.quantity);
-          }
-        }, 0);
+    // Calculer la quantité totale détenue
+    const totalQuantity = userTransactions.reduce((sum, tx) => {
+      if (tx.type === 'BUY' || tx.type === 'TRANSFER_IN' || tx.type === 'STAKING' || tx.type === 'REWARD') {
+        return sum + Number(tx.quantity);
+      } else {
+        return sum - Number(tx.quantity);
+      }
+    }, 0);
 
         if (totalQuantity > 0 && createStrategyDto.baseQuantity > totalQuantity) {
           throw new BadRequestException(`La quantité de référence (${createStrategyDto.baseQuantity}) ne peut pas dépasser la quantité détenue (${totalQuantity})`);
         }
-      }
+    }
     }
 
     // Vérifier que la somme des pourcentages de vente ne dépasse pas 100%

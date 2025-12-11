@@ -56,7 +56,7 @@ function StrategiesPageContent(): React.JSX.Element {
 	const [showCreateModal, setShowCreateModal] = React.useState(false);
 	const [tokenPrices, setTokenPrices] = React.useState<Map<string, number>>(new Map());
 	const [showDeleteMultipleStrategiesModal, setShowDeleteMultipleStrategiesModal] = React.useState(false);
-
+	
 	// Pagination states
 	const [page, setPage] = React.useState(0);
 	const [rowsPerPage, setRowsPerPage] = React.useState(10);
@@ -136,11 +136,11 @@ function StrategiesPageContent(): React.JSX.Element {
 				const allHoldings = await Promise.all(holdingsPromises);
 
 				allHoldings.flat().forEach((holding) => {
-					const symbol = holding.token.symbol.toUpperCase();
-					if (uniqueSymbols.includes(symbol) && holding.currentPrice && holding.currentPrice > 0) {
-						pricesMap.set(symbol, holding.currentPrice);
-					}
-				});
+							const symbol = holding.token.symbol.toUpperCase();
+							if (uniqueSymbols.includes(symbol) && holding.currentPrice && holding.currentPrice > 0) {
+								pricesMap.set(symbol, holding.currentPrice);
+							}
+						});
 			} catch (error) {
 				console.error("Error loading portfolios for prices:", error);
 			}
@@ -190,11 +190,11 @@ function StrategiesPageContent(): React.JSX.Element {
 
 		const query = debouncedSearchQuery.toLowerCase();
 		return strategies.filter(
-			(strategy) =>
-				strategy.name.toLowerCase().includes(query) ||
-				strategy.symbol.toLowerCase().includes(query) ||
-				strategy.tokenName.toLowerCase().includes(query)
-		);
+				(strategy) =>
+					strategy.name.toLowerCase().includes(query) ||
+					strategy.symbol.toLowerCase().includes(query) ||
+					strategy.tokenName.toLowerCase().includes(query)
+			);
 	}, [strategies, debouncedSearchQuery]);
 
 	// Reset page when search or filter changes
@@ -240,12 +240,12 @@ function StrategiesPageContent(): React.JSX.Element {
 	const handleDeleteStrategy = React.useCallback(
 		async (strategyId: string) => {
 			if (window.confirm("Êtes-vous sûr de vouloir supprimer cette stratégie ?")) {
-				try {
-					await strategiesApi.deleteStrategy(strategyId);
-					await loadStrategies();
+			try {
+				await strategiesApi.deleteStrategy(strategyId);
+				await loadStrategies();
 					selection.deselectOne(strategyId);
-				} catch (error) {
-					console.error("Error deleting strategy:", error);
+			} catch (error) {
+				console.error("Error deleting strategy:", error);
 					alert("Erreur lors de la suppression de la stratégie");
 				}
 			}
@@ -391,9 +391,9 @@ function StrategiesPageContent(): React.JSX.Element {
 										Créez votre première stratégie automatisée de prise de profit pour commencer.
 									</Typography>
 								</Stack>
-								<Button onClick={handleCreateStrategy} startIcon={<PlusIcon />} variant="contained">
+									<Button onClick={handleCreateStrategy} startIcon={<PlusIcon />} variant="contained">
 									Créer une stratégie
-								</Button>
+									</Button>
 							</Stack>
 						</CardContent>
 					</Card>
