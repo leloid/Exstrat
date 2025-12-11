@@ -51,8 +51,20 @@ export class ConfigurationController {
   @ApiResponse({ status: 200, type: [AlertConfigurationResponseDto] })
   async getAllAlertConfigurations(
     @CurrentUser('id') userId: string,
+    @Query('activeOnly') activeOnly?: string,
   ): Promise<AlertConfigurationResponseDto[]> {
-    return this.configurationService.getAllAlertConfigurations(userId);
+    return this.configurationService.getAllAlertConfigurations(userId, activeOnly === 'true');
+  }
+
+  @Get('alerts/:configurationId')
+  @ApiOperation({ summary: 'Récupérer une configuration d\'alertes par ID' })
+  @ApiResponse({ status: 200, type: AlertConfigurationResponseDto })
+  @ApiResponse({ status: 404, description: 'Configuration non trouvée' })
+  async getAlertConfigurationById(
+    @CurrentUser('id') userId: string,
+    @Param('configurationId') configurationId: string,
+  ): Promise<AlertConfigurationResponseDto> {
+    return this.configurationService.getAlertConfigurationById(userId, configurationId);
   }
 
   @Get('alerts/forecast/:forecastId')

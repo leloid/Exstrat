@@ -18,18 +18,22 @@ import type {
 
 // ===== ALERT CONFIGURATIONS =====
 
-export const getAlertConfigurations = async (): Promise<AlertConfiguration[]> => {
-	const response = await api.get<AlertConfiguration[]>("/configuration/alerts");
+/**
+ * Get all alert configurations - OPTIMIZED: Can filter by activeOnly
+ */
+export const getAlertConfigurations = async (activeOnly: boolean = false): Promise<AlertConfiguration[]> => {
+	const response = await api.get<AlertConfiguration[]>("/configuration/alerts", {
+		params: { activeOnly },
+	});
 	return response.data;
 };
 
+/**
+ * Get alert configuration by ID - OPTIMIZED: Direct API call instead of loading all configs
+ */
 export const getAlertConfigurationById = async (id: string): Promise<AlertConfiguration> => {
-	const allConfigs = await getAlertConfigurations();
-	const config = allConfigs.find((c) => c.id === id);
-	if (!config) {
-		throw new Error("Configuration not found");
-	}
-	return config;
+	const response = await api.get<AlertConfiguration>(`/configuration/alerts/${id}`);
+	return response.data;
 };
 
 export const getAlertConfigurationByForecastId = async (forecastId: string): Promise<AlertConfiguration | null> => {

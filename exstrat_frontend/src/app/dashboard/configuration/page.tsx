@@ -19,12 +19,11 @@ import TableRow from "@mui/material/TableRow";
 import TablePagination from "@mui/material/TablePagination";
 import Typography from "@mui/material/Typography";
 import Collapse from "@mui/material/Collapse";
-import Grid from "@mui/material/Grid";
+import Checkbox from "@mui/material/Checkbox";
+import FormControlLabel from "@mui/material/FormControlLabel";
 import { CaretDownIcon } from "@phosphor-icons/react/dist/ssr/CaretDown";
-import { CaretRightIcon } from "@phosphor-icons/react/dist/ssr/CaretRight";
 import { MagnifyingGlassIcon } from "@phosphor-icons/react/dist/ssr/MagnifyingGlass";
 import { PlusIcon } from "@phosphor-icons/react/dist/ssr/Plus";
-import { PencilIcon } from "@phosphor-icons/react/dist/ssr/Pencil";
 import { TrashIcon } from "@phosphor-icons/react/dist/ssr/Trash";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import * as configurationApi from "@/lib/configuration-api";
@@ -32,8 +31,7 @@ import { getForecasts } from "@/lib/portfolios-api";
 import type { AlertConfiguration } from "@/types/configuration";
 import { AddAlertModal } from "./add-alert-modal";
 import { TokenAlertsList } from "./token-alerts-list";
-import Checkbox from "@mui/material/Checkbox";
-import FormControlLabel from "@mui/material/FormControlLabel";
+import { useDebounce } from "@/hooks/use-debounce";
 
 export default function Page(): React.JSX.Element {
 	return (
@@ -48,107 +46,156 @@ function ConfigurationPageContent(): React.JSX.Element {
 	const [alertConfigurationsDetails, setAlertConfigurationsDetails] = React.useState<Record<string, AlertConfiguration>>({});
 	const [isLoading, setIsLoading] = React.useState(true);
 	const [searchQuery, setSearchQuery] = React.useState("");
+	const debouncedSearchQuery = useDebounce(searchQuery, 300);
 	const [showAddModal, setShowAddModal] = React.useState(false);
 	const [expandedAlertId, setExpandedAlertId] = React.useState<string | null>(null);
 	const [page, setPage] = React.useState(0);
 	const [rowsPerPage, setRowsPerPage] = React.useState(10);
 
-	// Load alert configurations
-	React.useEffect(() => {
-		loadAlertConfigurations();
-	}, []);
+	// OPTIMIZATION: Load forecasts and configs in parallel
+	const [forecastNames, setForecastNames] = React.useState<Record<string, string>>({});
+	const [forecasts, setForecasts] = React.useState<any[]>([]);
 
-	const loadAlertConfigurations = async () => {
+	// Load alert configurations and forecasts in parallel
+	const loadAlertConfigurations = React.useCallback(async () => {
 		try {
 			setIsLoading(true);
-			const allConfigs = await configurationApi.getAlertConfigurations();
-			// Only show active configurations
-			const activeConfigs = allConfigs.filter((config) => config.isActive);
-			setAlertConfigurations(activeConfigs);
+			// OPTIMIZATION: Load configs and forecasts in parallel
+			const [allConfigs, allForecasts] = await Promise.all([
+				configurationApi.getAlertConfigurations(true), // Only active configs
+				getForecasts().catch((error) => {
+					console.error("Error loading forecasts:", error);
+					return [];
+				}),
+			]);
+
+			// Build forecast names map
+			const namesMap: Record<string, string> = {};
+			allForecasts.forEach((forecast) => {
+				namesMap[forecast.id] = forecast.name;
+			});
+
+			setForecastNames(namesMap);
+			setForecasts(allForecasts);
+			setAlertConfigurations(allConfigs);
 		} catch (error) {
 			console.error("Error loading alert configurations:", error);
 		} finally {
 			setIsLoading(false);
 		}
-	};
+	}, []);
 
-	// Filter configurations based on search query
+	// Load on mount
+	React.useEffect(() => {
+		loadAlertConfigurations();
+	}, [loadAlertConfigurations]);
+
+	// Filter configurations based on search query - MEMOIZED
 	const filteredConfigurations = React.useMemo(() => {
-		if (!searchQuery.trim()) return alertConfigurations;
-		const query = searchQuery.toLowerCase();
+		if (!debouncedSearchQuery.trim()) return alertConfigurations;
+		const query = debouncedSearchQuery.toLowerCase();
 		return alertConfigurations.filter((config) => {
-			// Search by forecast name (we'll need to load forecasts to get names)
-			return true; // For now, return all
+			const forecastName = forecastNames[config.forecastId] || "";
+			return forecastName.toLowerCase().includes(query);
 		});
-	}, [alertConfigurations, searchQuery]);
+	}, [alertConfigurations, debouncedSearchQuery, forecastNames]);
 
-	// Paginate configurations
+	// Paginate configurations - MEMOIZED
 	const paginatedConfigurations = React.useMemo(() => {
 		const start = page * rowsPerPage;
 		return filteredConfigurations.slice(start, start + rowsPerPage);
 	}, [filteredConfigurations, page, rowsPerPage]);
 
-	// Load forecast names and data for display
-	const [forecastNames, setForecastNames] = React.useState<Record<string, string>>({});
-	const [forecasts, setForecasts] = React.useState<any[]>([]);
+	// Reset page when search changes
 	React.useEffect(() => {
-		const loadForecastData = async () => {
-			try {
-				const allForecasts = await getForecasts();
-				const namesMap: Record<string, string> = {};
-				allForecasts.forEach((forecast) => {
-					namesMap[forecast.id] = forecast.name;
-				});
-				setForecastNames(namesMap);
-				setForecasts(allForecasts);
-			} catch (error) {
-				console.error("Error loading forecast data:", error);
-			}
-		};
-		if (alertConfigurations.length > 0) {
-			loadForecastData();
-		}
-	}, [alertConfigurations]);
+		setPage(0);
+	}, [debouncedSearchQuery]);
 
-	const handleDeleteAlert = async (configId: string) => {
-		if (window.confirm("Are you sure you want to delete this alert configuration?")) {
-			try {
-				await configurationApi.deleteAlertConfiguration(configId);
-				await loadAlertConfigurations();
-			} catch (error) {
-				console.error("Error deleting alert configuration:", error);
-			}
-		}
-	};
-
-	const handleToggleExpand = async (configId: string) => {
-		if (expandedAlertId === configId) {
-			setExpandedAlertId(null);
-		} else {
-			setExpandedAlertId(configId);
-			// Load full configuration details if not already loaded
-			if (!alertConfigurationsDetails[configId]) {
+	// Memoized handlers
+	const handleDeleteAlert = React.useCallback(
+		async (configId: string) => {
+			if (window.confirm("Êtes-vous sûr de vouloir supprimer cette configuration d'alertes ?")) {
 				try {
-					const fullConfig = await configurationApi.getAlertConfigurationById(configId);
-					setAlertConfigurationsDetails((prev) => ({
-						...prev,
-						[configId]: fullConfig,
-					}));
+					await configurationApi.deleteAlertConfiguration(configId);
+					await loadAlertConfigurations();
+					// Remove from details cache
+					setAlertConfigurationsDetails((prev) => {
+						const newDetails = { ...prev };
+						delete newDetails[configId];
+						return newDetails;
+					});
 				} catch (error) {
-					console.error("Error loading alert configuration details:", error);
+					console.error("Error deleting alert configuration:", error);
 				}
 			}
-		}
-	};
+		},
+		[loadAlertConfigurations]
+	);
 
-	const handleConfigurationUpdate = async (config: AlertConfiguration) => {
-		setAlertConfigurationsDetails((prev) => ({
-			...prev,
-			[config.id]: config,
-		}));
-		// Reload the list to update counts
-		await loadAlertConfigurations();
-	};
+	const handleToggleExpand = React.useCallback(
+		async (configId: string) => {
+			if (expandedAlertId === configId) {
+				setExpandedAlertId(null);
+			} else {
+				setExpandedAlertId(configId);
+				// OPTIMIZATION: Load full configuration details only if not already cached
+				if (!alertConfigurationsDetails[configId]) {
+					try {
+						// OPTIMIZATION: Direct API call instead of loading all configs
+						const fullConfig = await configurationApi.getAlertConfigurationById(configId);
+						setAlertConfigurationsDetails((prev) => ({
+							...prev,
+							[configId]: fullConfig,
+						}));
+					} catch (error) {
+						console.error("Error loading alert configuration details:", error);
+					}
+				}
+			}
+		},
+		[expandedAlertId, alertConfigurationsDetails]
+	);
+
+	const handleConfigurationUpdate = React.useCallback(
+		async (config: AlertConfiguration) => {
+			setAlertConfigurationsDetails((prev) => ({
+				...prev,
+				[config.id]: config,
+			}));
+			// Reload the list to update counts
+			await loadAlertConfigurations();
+		},
+		[loadAlertConfigurations]
+	);
+
+	const handleNotificationChannelChange = React.useCallback(
+		async (configId: string, channel: "email" | "push", checked: boolean) => {
+			const configDetails = alertConfigurationsDetails[configId];
+			if (!configDetails) return;
+
+			try {
+				const updated = await configurationApi.updateAlertConfiguration(configId, {
+					notificationChannels: {
+						...configDetails.notificationChannels,
+						[channel]: checked,
+					},
+				});
+				handleConfigurationUpdate(updated);
+			} catch (error) {
+				console.error("Error updating notification channels:", error);
+			}
+		},
+		[alertConfigurationsDetails, handleConfigurationUpdate]
+	);
+
+	const handlePageChange = React.useCallback((_: unknown, newPage: number) => {
+		setPage(newPage);
+	}, []);
+
+	const handleRowsPerPageChange = React.useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+		setRowsPerPage(parseInt(e.target.value, 10));
+		setPage(0);
+	}, []);
 
 	if (isLoading) {
 		return (
@@ -178,13 +225,13 @@ function ConfigurationPageContent(): React.JSX.Element {
 				{/* Header */}
 				<Stack direction={{ xs: "column", sm: "row" }} spacing={3} sx={{ alignItems: "flex-start" }}>
 					<Box sx={{ flex: "1 1 auto" }}>
-						<Typography variant="h4">Forecast Alerts</Typography>
+						<Typography variant="h4">Alertes de Prévision</Typography>
 						<Typography color="text.secondary" variant="body1">
-							Manage your active alerts and configure profit-taking notifications for your forecasts.
+							Gérez vos alertes actives et configurez les notifications de prise de profit pour vos prévisions.
 						</Typography>
 					</Box>
 					<Button startIcon={<PlusIcon />} variant="contained" onClick={() => setShowAddModal(true)}>
-						Add Alert
+						Ajouter une alerte
 					</Button>
 				</Stack>
 
@@ -195,7 +242,7 @@ function ConfigurationPageContent(): React.JSX.Element {
 							<OutlinedInput
 								fullWidth
 								onChange={(e) => setSearchQuery(e.target.value)}
-								placeholder="Search alerts by forecast name..."
+								placeholder="Rechercher des alertes par nom de prévision..."
 								startAdornment={
 									<InputAdornment position="start">
 										<MagnifyingGlassIcon fontSize="var(--icon-fontSize-md)" />
@@ -215,12 +262,12 @@ function ConfigurationPageContent(): React.JSX.Element {
 							<Stack spacing={2} sx={{ alignItems: "center", py: 4 }}>
 								<Typography color="text.secondary" variant="body1">
 									{searchQuery
-										? "No alerts found matching your search."
-										: "No active alerts yet. Create your first alert configuration to get started."}
+										? "Aucune alerte trouvée correspondant à votre recherche."
+										: "Aucune alerte active pour le moment. Créez votre première configuration d'alertes pour commencer."}
 								</Typography>
 								{!searchQuery && (
 									<Button onClick={() => setShowAddModal(true)} startIcon={<PlusIcon />} variant="contained">
-										Add Alert
+										Ajouter une alerte
 									</Button>
 								)}
 							</Stack>
@@ -234,16 +281,16 @@ function ConfigurationPageContent(): React.JSX.Element {
 									<TableHead>
 										<TableRow>
 											<TableCell sx={{ width: "40px", fontWeight: 600 }} />
-											<TableCell sx={{ fontWeight: 600 }}>Forecast</TableCell>
+											<TableCell sx={{ fontWeight: 600 }}>Prévision</TableCell>
 											<TableCell align="right" sx={{ fontWeight: 600 }}>
 												Tokens
 											</TableCell>
 											<TableCell align="right" sx={{ fontWeight: 600 }}>
-												TP Alerts
+												Alertes TP
 											</TableCell>
-											<TableCell sx={{ fontWeight: 600 }}>Channels</TableCell>
+											<TableCell sx={{ fontWeight: 600 }}>Canaux</TableCell>
 											<TableCell align="right" sx={{ fontWeight: 600 }}>
-												Created
+												Créé le
 											</TableCell>
 											<TableCell align="right" sx={{ fontWeight: 600 }}>
 												Actions
@@ -283,7 +330,9 @@ function ConfigurationPageContent(): React.JSX.Element {
 																size="small"
 																sx={{
 																	padding: "4px",
-																	color: isExpanded ? "var(--mui-palette-primary-main)" : "var(--mui-palette-text-secondary)",
+																	color: isExpanded
+																		? "var(--mui-palette-primary-main)"
+																		: "var(--mui-palette-text-secondary)",
 																	transition: "color 0.2s ease-in-out, transform 0.2s ease-in-out",
 																	transform: isExpanded ? "rotate(0deg)" : "rotate(-90deg)",
 																}}
@@ -293,7 +342,7 @@ function ConfigurationPageContent(): React.JSX.Element {
 														</TableCell>
 														<TableCell>
 															<Typography variant="subtitle2">
-																{forecastNames[config.forecastId] || "Unknown Forecast"}
+																{forecastNames[config.forecastId] || "Prévision inconnue"}
 															</Typography>
 														</TableCell>
 														<TableCell align="right">
@@ -316,7 +365,7 @@ function ConfigurationPageContent(): React.JSX.Element {
 														</TableCell>
 														<TableCell align="right">
 															<Typography color="text.secondary" variant="body2">
-																{new Date(config.createdAt).toLocaleDateString("en-US", {
+																{new Date(config.createdAt).toLocaleDateString("fr-FR", {
 																	year: "numeric",
 																	month: "short",
 																	day: "numeric",
@@ -332,7 +381,7 @@ function ConfigurationPageContent(): React.JSX.Element {
 																	}}
 																	color="error"
 																	size="small"
-																	title="Delete alert"
+																	title="Supprimer l'alerte"
 																>
 																	<TrashIcon fontSize="var(--icon-fontSize-md)" />
 																</IconButton>
@@ -374,10 +423,10 @@ function ConfigurationPageContent(): React.JSX.Element {
 																		>
 																			<Box>
 																				<Typography variant="h6" sx={{ fontWeight: 600, mb: 0.5 }}>
-																					Alert Configuration
+																					Configuration d'Alertes
 																				</Typography>
 																				<Typography color="text.secondary" variant="body2">
-																					Manage token alerts and notification preferences
+																					Gérez les alertes de tokens et les préférences de notification
 																				</Typography>
 																			</Box>
 																			{/* Notification Channels Checkboxes */}
@@ -386,19 +435,9 @@ function ConfigurationPageContent(): React.JSX.Element {
 																					control={
 																						<Checkbox
 																							checked={configDetails.notificationChannels.email}
-																							onChange={async (e) => {
-																								try {
-																									const updated = await configurationApi.updateAlertConfiguration(configDetails.id, {
-																										notificationChannels: {
-																											...configDetails.notificationChannels,
-																											email: e.target.checked,
-																										},
-																									});
-																									handleConfigurationUpdate(updated);
-																								} catch (error) {
-																									console.error("Error updating notification channels:", error);
-																								}
-																							}}
+																							onChange={(e) =>
+																								handleNotificationChannelChange(configDetails.id, "email", e.target.checked)
+																							}
 																						/>
 																					}
 																					label={<Typography variant="body2">Email</Typography>}
@@ -408,19 +447,9 @@ function ConfigurationPageContent(): React.JSX.Element {
 																					control={
 																						<Checkbox
 																							checked={configDetails.notificationChannels.push}
-																							onChange={async (e) => {
-																								try {
-																									const updated = await configurationApi.updateAlertConfiguration(configDetails.id, {
-																										notificationChannels: {
-																											...configDetails.notificationChannels,
-																											push: e.target.checked,
-																										},
-																									});
-																									handleConfigurationUpdate(updated);
-																								} catch (error) {
-																									console.error("Error updating notification channels:", error);
-																								}
-																							}}
+																							onChange={(e) =>
+																								handleNotificationChannelChange(configDetails.id, "push", e.target.checked)
+																							}
 																						/>
 																					}
 																					label={<Typography variant="body2">Push</Typography>}
@@ -440,10 +469,10 @@ function ConfigurationPageContent(): React.JSX.Element {
 																				<CardContent>
 																					<Stack spacing={2}>
 																						<Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
-																							Token Alerts
+																							Alertes de Tokens
 																						</Typography>
 																						<Typography color="text.secondary" variant="caption">
-																							Configure alerts for each token with an associated strategy
+																							Configurez les alertes pour chaque token avec une stratégie associée
 																						</Typography>
 																						<Box sx={{ pt: 1 }}>
 																							<TokenAlertsList
@@ -471,14 +500,15 @@ function ConfigurationPageContent(): React.JSX.Element {
 							<TablePagination
 								component="div"
 								count={filteredConfigurations.length}
-								onPageChange={(_, newPage) => setPage(newPage)}
-								onRowsPerPageChange={(e) => {
-									setRowsPerPage(parseInt(e.target.value, 10));
-									setPage(0);
-								}}
+								onPageChange={handlePageChange}
+								onRowsPerPageChange={handleRowsPerPageChange}
 								page={page}
 								rowsPerPage={rowsPerPage}
 								rowsPerPageOptions={[5, 10, 25, 50]}
+								labelRowsPerPage="Lignes par page :"
+								labelDisplayedRows={({ from, to, count }) =>
+									`${from}-${to} sur ${count !== -1 ? count : `plus de ${to}`}`
+								}
 							/>
 						</CardContent>
 					</Card>

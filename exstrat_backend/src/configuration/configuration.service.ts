@@ -156,11 +156,47 @@ export class ConfigurationService {
   }
 
   /**
-   * Récupérer toutes les configurations d'alertes d'un utilisateur
+   * Récupérer une configuration d'alertes par ID
+   * OPTIMIZED: Direct query instead of loading all configs
    */
-  async getAllAlertConfigurations(userId: string): Promise<AlertConfigurationResponseDto[]> {
+  async getAlertConfigurationById(
+    userId: string,
+    configurationId: string,
+  ): Promise<AlertConfigurationResponseDto> {
+    const configuration = await this.prisma.alertConfiguration.findFirst({
+      where: {
+        id: configurationId,
+        userId,
+      },
+      include: {
+        tokenAlerts: {
+          include: {
+            tpAlerts: {
+              orderBy: { tpOrder: 'asc' },
+            },
+          },
+          orderBy: { createdAt: 'asc' },
+        },
+      },
+    });
+
+    if (!configuration) {
+      throw new NotFoundException('Configuration d\'alertes non trouvée');
+    }
+
+    return this.formatAlertConfigurationResponse(configuration);
+  }
+
+  /**
+   * Récupérer toutes les configurations d'alertes d'un utilisateur
+   * OPTIMIZED: Only load active configs by default, with optional filter
+   */
+  async getAllAlertConfigurations(userId: string, activeOnly: boolean = false): Promise<AlertConfigurationResponseDto[]> {
     const configurations = await this.prisma.alertConfiguration.findMany({
-      where: { userId },
+      where: {
+        userId,
+        ...(activeOnly && { isActive: true }),
+      },
       include: {
         tokenAlerts: {
           include: {
