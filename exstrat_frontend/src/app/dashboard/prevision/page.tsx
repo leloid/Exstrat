@@ -36,10 +36,8 @@ import List from "@mui/material/List";
 import ListItem from "@mui/material/ListItem";
 import ListItemText from "@mui/material/ListItemText";
 import { formatCurrency, formatPercentage } from "@/lib/format";
-import { getForecasts, deleteForecast, getForecastById, getPortfolioHoldings, getTheoreticalStrategies } from "@/lib/portfolios-api";
-import { strategiesApi } from "@/lib/strategies-api";
+import { getForecasts, deleteForecast, getForecastById, getForecastDetails } from "@/lib/portfolios-api";
 import type { ForecastResponse } from "@/types/portfolio";
-import type { TheoreticalStrategyResponse, StrategyResponse } from "@/types/strategies";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import { CreateForecastModal } from "./create-forecast-modal";
 
@@ -173,63 +171,12 @@ function ForecastPageContent(): React.JSX.Element {
 
 	const loadForecastDetails = async (forecastId: string) => {
 		try {
-			const forecast = forecasts.find((f) => f.id === forecastId);
-			if (!forecast) return;
-
-			// Load holdings and strategies
-			const [holdingsData, theoreticalStrategiesData, realStrategiesData] = await Promise.all([
-				getPortfolioHoldings(forecast.portfolioId),
-				getTheoreticalStrategies(),
-				strategiesApi.getStrategies({}),
-			]);
-
-			// Convert real strategies to theoretical format
-			const convertedStrategies: TheoreticalStrategyResponse[] = (realStrategiesData.strategies || []).map(
-				(strategy: StrategyResponse) => {
-					const profitTargets = strategy.steps.map((step, index) => ({
-						order: index + 1,
-						targetType: (step.targetType === "exact_price" ? "price" : "percentage") as "percentage" | "price",
-						targetValue: step.targetValue,
-						sellPercentage: step.sellPercentage,
-					}));
-
-					return {
-						id: strategy.id,
-						userId: strategy.userId,
-						name: strategy.name,
-						tokenSymbol: strategy.symbol,
-						tokenName: strategy.tokenName,
-						quantity: strategy.baseQuantity,
-						averagePrice: strategy.referencePrice,
-						profitTargets,
-						status: strategy.status === "active" ? "active" : strategy.status === "paused" ? "paused" : "completed",
-						createdAt: strategy.createdAt,
-						updatedAt: strategy.updatedAt,
-						numberOfTargets: strategy.steps.length,
-					} as TheoreticalStrategyResponse;
-				}
-			);
-
-			const allStrategies = [...(theoreticalStrategiesData || []), ...convertedStrategies];
-
-			// Map holdings with their applied strategies
-			const holdingsWithStrategies = holdingsData.map((holding: any) => {
-				const strategyId = forecast.appliedStrategies[holding.id];
-				const strategy = strategyId && strategyId !== "none" ? allStrategies.find((s) => s.id === strategyId) : null;
-
-				return {
-					...holding,
-					strategy,
-					strategyId,
-				};
-			});
-
+			// Utiliser le nouvel endpoint optimisé qui retourne tout en une seule requête
+			const data = await getForecastDetails(forecastId);
+			
 			setForecastDetails((prev) => ({
 				...prev,
-				[forecastId]: {
-					holdings: holdingsWithStrategies,
-					strategies: allStrategies,
-				},
+				[forecastId]: data,
 			}));
 		} catch (error) {
 			console.error("Error loading forecast details:", error);
@@ -487,7 +434,7 @@ function ForecastPageContent(): React.JSX.Element {
 																				{details.holdings
 																					.filter((holding: any) => holding.strategy)
 																					.map((holding: any) => {
-																						const strategy = holding.strategy as TheoreticalStrategyResponse;
+																						const strategy = holding.strategy;
 																						const quantity = holding.quantity || 0;
 																						const averagePrice = holding.averagePrice || 0;
 																						const tokenKey = `${forecast.id}-${holding.id}`;

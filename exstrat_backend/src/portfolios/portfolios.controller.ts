@@ -133,6 +133,11 @@ export class PortfoliosController {
     return this.portfoliosService.getForecastById(req.user.id, id);
   }
 
+  @Get('forecasts/:id/details')
+  async getForecastDetails(@Request() req, @Param('id') id: string) {
+    return this.portfoliosService.getForecastDetails(req.user.id, id);
+  }
+
   @Put('forecasts/:id')
   async updateForecast(
     @Request() req,

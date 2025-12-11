@@ -199,3 +199,14 @@ export const deleteForecast = async (id: string): Promise<void> => {
 	await api.delete(`/portfolios/forecasts/${id}`);
 };
 
+export const getForecastDetails = async (id: string): Promise<{
+	holdings: any[];
+	strategies: any[];
+}> => {
+	const response = await api.get<{
+		holdings: any[];
+		strategies: any[];
+	}>(`/portfolios/forecasts/${id}/details`);
+	return response.data;
+};
+

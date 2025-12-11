@@ -148,7 +148,7 @@ export class PortfoliosService {
 
   // ===== HOLDINGS =====
 
-  async getPortfolioHoldings(userId: string, portfolioId: string): Promise<HoldingResponseDto[]> {
+  async getPortfolioHoldings(userId: string, portfolioId: string, skipPriceUpdate: boolean = false): Promise<HoldingResponseDto[]> {
     // Vérifier que le portfolio appartient à l'utilisateur
     const portfolio = await this.prisma.portfolio.findFirst({
       where: { id: portfolioId, userId },
@@ -166,8 +166,22 @@ export class PortfoliosService {
       orderBy: { token: { symbol: 'asc' } },
     });
 
-    // Mettre à jour les prix actuels depuis CoinMarketCap
-    await this.updateHoldingsPrices(holdings);
+    // Mettre à jour les prix actuels depuis CoinMarketCap seulement si nécessaire
+    // et seulement si le prix n'a pas été mis à jour récemment (dans les 5 dernières minutes)
+    if (!skipPriceUpdate) {
+      const now = new Date();
+      const fiveMinutesAgo = new Date(now.getTime() - 5 * 60 * 1000);
+      
+      // Filtrer les holdings qui ont besoin d'une mise à jour de prix
+      const holdingsToUpdate = holdings.filter(holding => {
+        if (!holding.lastUpdated) return true;
+        return new Date(holding.lastUpdated) < fiveMinutesAgo;
+      });
+
+      if (holdingsToUpdate.length > 0) {
+        await this.updateHoldingsPrices(holdingsToUpdate);
+      }
+    }
 
     return holdings.map(holding => this.formatHoldingResponse(holding));
   }
@@ -1278,5 +1292,148 @@ export class PortfoliosService {
     await this.prisma.forecast.delete({
       where: { id },
     });
+  }
+
+  /**
+   * Récupère les détails optimisés d'un forecast avec holdings et stratégies
+   * Cette méthode évite de charger toutes les données inutiles
+   */
+  async getForecastDetails(userId: string, forecastId: string) {
+    // 1. Récupérer le forecast
+    const forecast = await this.prisma.forecast.findFirst({
+      where: {
+        id: forecastId,
+        userId,
+      },
+    });
+
+    if (!forecast) {
+      throw new NotFoundException('Forecast non trouvé');
+    }
+
+    const appliedStrategies = forecast.appliedStrategies as Record<string, string>;
+    const holdingIds = Object.keys(appliedStrategies).filter(id => appliedStrategies[id] !== 'none');
+    const strategyIds = [...new Set(Object.values(appliedStrategies).filter(id => id !== 'none'))];
+
+    // 2. Récupérer uniquement les holdings qui ont une stratégie appliquée
+    // On ne met pas à jour les prix ici car c'est coûteux et pas nécessaire pour l'affichage des détails
+    const holdings = await this.prisma.holding.findMany({
+      where: {
+        id: { in: holdingIds },
+        portfolioId: forecast.portfolioId,
+      },
+      include: {
+        token: true,
+      },
+    });
+
+    // 3. Récupérer uniquement les stratégies théoriques utilisées
+    const theoreticalStrategies = strategyIds.length > 0
+      ? await this.prisma.theoreticalStrategy.findMany({
+          where: {
+            id: { in: strategyIds },
+            userId,
+          },
+        })
+      : [];
+
+    // 4. Récupérer uniquement les stratégies réelles utilisées
+    const realStrategies = strategyIds.length > 0
+      ? await this.prisma.strategy.findMany({
+          where: {
+            id: { in: strategyIds },
+            userId,
+          },
+          include: {
+            steps: {
+              orderBy: { targetPrice: 'asc' },
+            },
+          },
+        })
+      : [];
+
+    // 5. Formater les stratégies théoriques
+    const formattedTheoreticalStrategies = theoreticalStrategies.map(strategy => {
+      const profitTargets = (strategy.profitTargets as any[]).map((target: any, index: number) => ({
+        order: index + 1,
+        targetType: target.targetType === 'exact_price' ? 'price' : 'percentage',
+        targetValue: Number(target.targetValue),
+        sellPercentage: Number(target.sellPercentage),
+      }));
+
+      return {
+        id: strategy.id,
+        userId: strategy.userId,
+        name: strategy.name,
+        tokenSymbol: strategy.tokenSymbol,
+        tokenName: strategy.tokenName,
+        quantity: Number(strategy.quantity),
+        averagePrice: Number(strategy.averagePrice),
+        profitTargets,
+        status: strategy.status,
+        createdAt: strategy.createdAt.toISOString(),
+        updatedAt: strategy.updatedAt.toISOString(),
+        numberOfTargets: profitTargets.length,
+      };
+    });
+
+    // 6. Formater les stratégies réelles
+    const formattedRealStrategies = realStrategies.map(strategy => {
+      const profitTargets = strategy.steps.map((step, index) => ({
+        order: index + 1,
+        targetType: step.targetType === 'exact_price' ? 'price' : 'percentage',
+        targetValue: step.targetType === 'exact_price' 
+          ? Number(step.targetPrice)
+          : Number(step.targetPct),
+        sellPercentage: Number(step.sellPct),
+      }));
+
+      return {
+        id: strategy.id,
+        userId: strategy.userId,
+        name: strategy.name,
+        tokenSymbol: strategy.asset,
+        tokenName: strategy.asset, // On n'a pas le nom complet dans Strategy
+        quantity: Number(strategy.baseQty),
+        averagePrice: Number(strategy.refPrice),
+        profitTargets,
+        status: strategy.status,
+        createdAt: strategy.createdAt.toISOString(),
+        updatedAt: strategy.updatedAt.toISOString(),
+        numberOfTargets: profitTargets.length,
+      };
+    });
+
+    // 7. Combiner toutes les stratégies
+    const allStrategies = [...formattedTheoreticalStrategies, ...formattedRealStrategies];
+    const strategyMap = new Map(allStrategies.map(s => [s.id, s]));
+
+    // 8. Mapper les holdings avec leurs stratégies appliquées
+    const holdingsWithStrategies = holdings.map(holding => {
+      const strategyId = appliedStrategies[holding.id];
+      const strategy = strategyId && strategyId !== 'none' ? strategyMap.get(strategyId) : null;
+
+      return {
+        id: holding.id,
+        quantity: Number(holding.quantity),
+        investedAmount: Number(holding.investedAmount),
+        averagePrice: Number(holding.averagePrice),
+        currentPrice: holding.currentPrice ? Number(holding.currentPrice) : undefined,
+        lastUpdated: holding.lastUpdated,
+        token: {
+          id: holding.token.id,
+          symbol: holding.token.symbol,
+          name: holding.token.name,
+          logoUrl: holding.token.logoUrl,
+        },
+        strategy,
+        strategyId: strategyId || null,
+      };
+    });
+
+    return {
+      holdings: holdingsWithStrategies,
+      strategies: allStrategies,
+    };
   }
 }
