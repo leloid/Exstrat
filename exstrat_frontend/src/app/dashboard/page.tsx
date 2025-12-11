@@ -21,7 +21,6 @@ import { TokenStrategySidebar } from "@/components/dashboard/portfolio/token-str
 import type { Holding } from "@/types/portfolio";
 import * as portfoliosApi from "@/lib/portfolios-api";
 
-
 export default function Page(): React.JSX.Element {
 	const router = useRouter();
 	const {
@@ -37,11 +36,12 @@ export default function Page(): React.JSX.Element {
 	const [loadingGlobal, setLoadingGlobal] = React.useState(false);
 	const [selectedToken, setSelectedToken] = React.useState<Holding | null>(null);
 	const loadingRef = React.useRef(false);
+	const abortControllerRef = React.useRef<AbortController | null>(null);
 
 	// Stabilize portfolio IDs to avoid unnecessary reloads
 	const portfoliosIds = React.useMemo(() => portfolios.map((p) => p.id).join(","), [portfolios]);
 
-	// Load global holdings when in global view
+	// Load global holdings when in global view - OPTIMIZED with parallel loading
 	React.useEffect(() => {
 		const loadGlobalHoldings = async () => {
 			if (!isGlobalView || portfoliosLoading || portfolios.length === 0) {
@@ -56,24 +56,40 @@ export default function Page(): React.JSX.Element {
 				return;
 			}
 
+			// Cancel previous request if still pending
+			if (abortControllerRef.current) {
+				abortControllerRef.current.abort();
+			}
+
 			loadingRef.current = true;
 			setLoadingGlobal(true);
-			try {
-				const allHoldings: Holding[] = [];
 
-				for (const portfolio of portfolios) {
-					try {
-						const portfolioHoldings = await portfoliosApi.getPortfolioHoldings(portfolio.id);
-						allHoldings.push(...portfolioHoldings);
-					} catch (error) {
-						console.error(`Error loading holdings for ${portfolio.name}:`, error);
-					}
+			// Create new AbortController for this request
+			const abortController = new AbortController();
+			abortControllerRef.current = abortController;
+
+			try {
+				// OPTIMIZATION: Use batch endpoint for better performance
+				const portfolioIds = portfolios.map((p) => p.id);
+				const allHoldings = await portfoliosApi.getBatchHoldings(portfolioIds).catch((error) => {
+					console.error("Error loading batch holdings:", error);
+					// Fallback to individual requests if batch fails
+					return Promise.all(
+						portfolios.map((portfolio) =>
+							portfoliosApi.getPortfolioHoldings(portfolio.id).catch(() => [] as Holding[])
+						)
+					).then((arrays) => arrays.flat());
+				});
+
+				// Check if request was aborted
+				if (abortController.signal.aborted) {
+					return;
 				}
 
-				// Aggregate holdings by token
+				// Aggregate holdings by token - OPTIMIZED with Map
 				const holdingsMap = new Map<string, Holding>();
 
-				allHoldings.forEach((holding) => {
+				for (const holding of allHoldings) {
 					const tokenId = holding.token.id;
 					const existing = holdingsMap.get(tokenId);
 
@@ -109,27 +125,41 @@ export default function Page(): React.JSX.Element {
 									: 0,
 						});
 					}
-				});
+				}
 
-				setGlobalHoldings(Array.from(holdingsMap.values()));
+				// Check if request was aborted before setting state
+				if (!abortController.signal.aborted) {
+					setGlobalHoldings(Array.from(holdingsMap.values()));
+				}
 			} catch (error) {
-				console.error("Error loading global holdings:", error);
-				setGlobalHoldings([]);
+				if (!abortController.signal.aborted) {
+					console.error("Error loading global holdings:", error);
+					setGlobalHoldings([]);
+				}
 			} finally {
-				setLoadingGlobal(false);
-				loadingRef.current = false;
+				if (!abortController.signal.aborted) {
+					setLoadingGlobal(false);
+					loadingRef.current = false;
+				}
 			}
 		};
 
 		loadGlobalHoldings();
-	}, [isGlobalView, portfoliosIds, portfoliosLoading]);
 
-	// Determine which holdings to display
+		// Cleanup function to abort request if component unmounts or dependencies change
+		return () => {
+			if (abortControllerRef.current) {
+				abortControllerRef.current.abort();
+			}
+		};
+	}, [isGlobalView, portfoliosIds, portfoliosLoading, portfolios]);
+
+	// Determine which holdings to display - MEMOIZED
 	const displayHoldings = React.useMemo(() => {
 		return isGlobalView ? globalHoldings : holdings;
 	}, [isGlobalView, globalHoldings, holdings]);
 
-	// Calculate portfolio statistics
+	// Calculate portfolio statistics - MEMOIZED with optimized calculations
 	const portfolioStats = React.useMemo(() => {
 		const holdingsToUse = displayHoldings;
 
@@ -142,11 +172,16 @@ export default function Page(): React.JSX.Element {
 			};
 		}
 
-		const capitalInvesti = holdingsToUse.reduce((sum, h) => sum + (h.investedAmount || 0), 0);
-		const valeurActuelle = holdingsToUse.reduce((sum, h) => {
+		// Single pass calculation for better performance
+		let capitalInvesti = 0;
+		let valeurActuelle = 0;
+
+		for (const h of holdingsToUse) {
+			capitalInvesti += h.investedAmount || 0;
 			const currentValue = h.currentValue || (h.currentPrice || h.averagePrice) * h.quantity;
-			return sum + currentValue;
-		}, 0);
+			valeurActuelle += currentValue;
+		}
+
 		const pnlAbsolu = valeurActuelle - capitalInvesti;
 		const pnlRelatif = capitalInvesti > 0 ? (pnlAbsolu / capitalInvesti) * 100 : 0;
 
@@ -165,6 +200,27 @@ export default function Page(): React.JSX.Element {
 		}
 	}, [isGlobalView, currentPortfolio, portfolios.length]);
 
+	// Memoize handlers to prevent unnecessary re-renders
+	const handlePortfolioChange = React.useCallback(
+		(e: React.ChangeEvent<{ value: unknown }>) => {
+			const value = e.target.value as string;
+			if (value === "global") {
+				setIsGlobalView(true);
+			} else {
+				setIsGlobalView(false);
+				selectPortfolio(value);
+			}
+		},
+		[selectPortfolio]
+	);
+
+	const handleTokenClick = React.useCallback((token: Holding) => {
+		setSelectedToken(token);
+	}, []);
+
+	const handleCloseSidebar = React.useCallback(() => {
+		setSelectedToken(null);
+	}, []);
 
 	if (portfoliosLoading || loadingGlobal || (!isGlobalView && isLoadingHoldings)) {
 		return (
@@ -179,7 +235,7 @@ export default function Page(): React.JSX.Element {
 			>
 				<CircularProgress />
 				<Typography color="text.secondary" sx={{ mt: 2 }} variant="body2">
-					Loading portfolio data...
+					Chargement des données du portefeuille...
 				</Typography>
 			</Box>
 		);
@@ -198,28 +254,18 @@ export default function Page(): React.JSX.Element {
 				{/* Header */}
 				<Stack direction={{ xs: "column", sm: "row" }} spacing={3} sx={{ alignItems: "flex-start" }}>
 					<Box sx={{ flex: "1 1 auto" }}>
-						<Typography variant="h4">Overview</Typography>
+						<Typography variant="h4">Vue d'ensemble</Typography>
 						<Typography color="text.secondary" variant="body2" sx={{ mt: 0.5 }}>
-							Overview of your portfolio performance
+							Vue d'ensemble de la performance de votre portefeuille
 						</Typography>
 					</Box>
 					<FormControl size="small" sx={{ minWidth: 200 }}>
-						<Select
-							value={isGlobalView ? "global" : currentPortfolio?.id || ""}
-							onChange={(e) => {
-								if (e.target.value === "global") {
-									setIsGlobalView(true);
-								} else {
-									setIsGlobalView(false);
-									selectPortfolio(e.target.value);
-								}
-							}}
-						>
-							<MenuItem value="global">🌐 Global Wallet</MenuItem>
+						<Select value={isGlobalView ? "global" : currentPortfolio?.id || ""} onChange={handlePortfolioChange}>
+							<MenuItem value="global">🌐 Portefeuille Global</MenuItem>
 							{portfolios.map((portfolio) => (
 								<MenuItem key={portfolio.id} value={portfolio.id}>
 									{portfolio.name}
-									{portfolio.isDefault && " (default)"}
+									{portfolio.isDefault && " (par défaut)"}
 								</MenuItem>
 							))}
 						</Select>
@@ -231,8 +277,8 @@ export default function Page(): React.JSX.Element {
 					<Box sx={{ py: 8, textAlign: "center" }}>
 						<Typography color="text.secondary" variant="body1">
 							{isGlobalView
-								? "No investments found in your portfolios. Add transactions to get started."
-								: "This portfolio contains no tokens. Add transactions to get started."}
+								? "Aucun investissement trouvé dans vos portefeuilles. Ajoutez des transactions pour commencer."
+								: "Ce portefeuille ne contient aucun token. Ajoutez des transactions pour commencer."}
 						</Typography>
 						{!isGlobalView && (
 							<Button
@@ -240,7 +286,7 @@ export default function Page(): React.JSX.Element {
 								sx={{ mt: 2 }}
 								onClick={() => router.push("/dashboard/investissements")}
 							>
-								Add Transactions
+								Ajouter des transactions
 							</Button>
 						)}
 					</Box>
@@ -258,17 +304,17 @@ export default function Page(): React.JSX.Element {
 						<Grid container spacing={3}>
 							<Grid size={{ xs: 12, lg: 8 }}>
 								<GainsLossesChart holdings={displayHoldings} />
-					</Grid>
+							</Grid>
 							<Grid size={{ xs: 12, lg: 4 }}>
 								<TokenDistribution holdings={displayHoldings} />
-					</Grid>
-					</Grid>
+							</Grid>
+						</Grid>
 
 						{/* Tokens Table */}
 						<TokensTable
 							holdings={displayHoldings}
 							portfolioId={isGlobalView ? undefined : currentPortfolio?.id}
-							onTokenClick={setSelectedToken}
+							onTokenClick={handleTokenClick}
 						/>
 					</>
 				)}
@@ -276,11 +322,10 @@ export default function Page(): React.JSX.Element {
 				{/* Token Strategy Sidebar */}
 				<TokenStrategySidebar
 					open={selectedToken !== null}
-					onClose={() => setSelectedToken(null)}
+					onClose={handleCloseSidebar}
 					holding={selectedToken}
 					portfolioId={isGlobalView ? undefined : currentPortfolio?.id}
 				/>
-
 			</Stack>
 		</Box>
 	);

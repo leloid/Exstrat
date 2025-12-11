@@ -148,20 +148,89 @@ export class PortfoliosService {
 
   // ===== HOLDINGS =====
 
+  /**
+   * Get holdings for multiple portfolios in a single optimized query
+   * OPTIMIZED for high load (10k+ concurrent users)
+   */
+  async getBatchHoldings(userId: string, portfolioIds?: string[]): Promise<HoldingResponseDto[]> {
+    // Get all user portfolios if no specific IDs provided
+    let targetPortfolioIds = portfolioIds;
+    
+    if (!targetPortfolioIds || targetPortfolioIds.length === 0) {
+      const userPortfolios = await this.prisma.portfolio.findMany({
+        where: { userId },
+        select: { id: true },
+      });
+      targetPortfolioIds = userPortfolios.map(p => p.id);
+    }
+
+    if (targetPortfolioIds.length === 0) {
+      return [];
+    }
+
+    // OPTIMIZATION: Single query with optimized select to reduce data transfer
+    const holdings = await this.prisma.holding.findMany({
+      where: {
+        portfolioId: { in: targetPortfolioIds },
+        portfolio: { userId }, // Ensure user owns the portfolios
+      },
+      include: {
+        token: {
+          select: {
+            id: true,
+            symbol: true,
+            name: true,
+            cmcId: true,
+            logoUrl: true,
+          },
+        },
+      },
+      orderBy: { token: { symbol: 'asc' } },
+    });
+
+    // Batch update prices only for holdings that need it (last updated > 5 min ago)
+    const now = new Date();
+    const fiveMinutesAgo = new Date(now.getTime() - 5 * 60 * 1000);
+    
+    const holdingsToUpdate = holdings.filter(holding => {
+      if (!holding.lastUpdated) return true;
+      return new Date(holding.lastUpdated) < fiveMinutesAgo;
+    });
+
+    if (holdingsToUpdate.length > 0) {
+      // Update prices in background (don't block response)
+      this.updateHoldingsPrices(holdingsToUpdate).catch(error => {
+        this.logger.warn('Background price update failed:', error);
+      });
+    }
+
+    return holdings.map(holding => this.formatHoldingResponse(holding));
+  }
+
   async getPortfolioHoldings(userId: string, portfolioId: string, skipPriceUpdate: boolean = false): Promise<HoldingResponseDto[]> {
     // Vérifier que le portfolio appartient à l'utilisateur
     const portfolio = await this.prisma.portfolio.findFirst({
       where: { id: portfolioId, userId },
+      select: { id: true }, // OPTIMIZATION: Only select needed field
     });
 
     if (!portfolio) {
       throw new NotFoundException('Portfolio non trouvé');
     }
 
+    // OPTIMIZATION: Optimized select to reduce data transfer
     const holdings = await this.prisma.holding.findMany({
       where: { portfolioId },
       include: {
-        token: true,
+        token: {
+          select: {
+            id: true,
+            symbol: true,
+            name: true,
+            cmcId: true,
+            logoUrl: true,
+          },
+        },
       },
       orderBy: { token: { symbol: 'asc' } },
     });
@@ -179,7 +248,10 @@ export class PortfoliosService {
       });
 
       if (holdingsToUpdate.length > 0) {
-        await this.updateHoldingsPrices(holdingsToUpdate);
+        // Update prices in background for better response time
+        this.updateHoldingsPrices(holdingsToUpdate).catch(error => {
+          this.logger.warn('Background price update failed:', error);
+        });
       }
     }
 
@@ -188,42 +260,74 @@ export class PortfoliosService {
 
   /**
    * Met à jour les prix actuels des holdings depuis CoinMarketCap
+   * OPTIMIZED: Batch updates and rate limiting for high load
    */
   private async updateHoldingsPrices(holdings: any[]): Promise<void> {
-    // Mettre à jour les prix en parallèle pour améliorer les performances
-    const updatePromises = holdings.map(async (holding) => {
+    if (holdings.length === 0) return;
+
+    // OPTIMIZATION: Group holdings by cmcId to reduce API calls
+    const holdingsByCmcId = new Map<number, any[]>();
+    
+    for (const holding of holdings) {
       if (!holding.token?.cmcId) {
         this.logger.warn(`Token ${holding.token?.symbol} n'a pas de cmcId, impossible de mettre à jour le prix`);
-        return;
+        continue;
       }
+      
+      const cmcId = holding.token.cmcId;
+      if (!holdingsByCmcId.has(cmcId)) {
+        holdingsByCmcId.set(cmcId, []);
+      }
+      holdingsByCmcId.get(cmcId)!.push(holding);
+    }
 
-      try {
-        // Récupérer le prix actuel depuis CoinMarketCap
-        const tokenData = await this.tokensService.getTokenById(holding.token.cmcId);
-        const currentPrice = tokenData.quote?.USD?.price;
+    // OPTIMIZATION: Process in batches to avoid overwhelming the API
+    const BATCH_SIZE = 10; // Process 10 tokens at a time
+    const cmcIds = Array.from(holdingsByCmcId.keys());
+    
+    for (let i = 0; i < cmcIds.length; i += BATCH_SIZE) {
+      const batch = cmcIds.slice(i, i + BATCH_SIZE);
+      
+      const updatePromises = batch.map(async (cmcId) => {
+        const holdingsForToken = holdingsByCmcId.get(cmcId)!;
+        
+        try {
+          // Single API call for all holdings of the same token
+          const tokenData = await this.tokensService.getTokenById(cmcId);
+          const currentPrice = tokenData.quote?.USD?.price;
 
-        if (currentPrice && currentPrice > 0) {
-          // Mettre à jour le prix actuel dans la base de données
-          await this.prisma.holding.update({
-            where: { id: holding.id },
-            data: {
-              currentPrice: currentPrice,
-              lastUpdated: new Date(),
-            },
-          });
+          if (currentPrice && currentPrice > 0) {
+            // OPTIMIZATION: Batch update all holdings for this token in a single transaction
+            const holdingIds = holdingsForToken.map(h => h.id);
+            
+            await this.prisma.holding.updateMany({
+              where: { id: { in: holdingIds } },
+              data: {
+                currentPrice: currentPrice,
+                lastUpdated: new Date(),
+              },
+            });
 
-          // Mettre à jour l'objet holding en mémoire pour la réponse
-          holding.currentPrice = currentPrice.toString(); // Convertir en string pour correspondre au type Decimal de Prisma
-          holding.lastUpdated = new Date();
+            // Update in-memory objects
+            holdingsForToken.forEach(holding => {
+              holding.currentPrice = currentPrice.toString();
+              holding.lastUpdated = new Date();
+            });
+          }
+        } catch (error) {
+          // Ne pas faire échouer la requête si la mise à jour du prix échoue
+          this.logger.warn(`Erreur lors de la mise à jour du prix pour cmcId ${cmcId}: ${error.message}`);
         }
-      } catch (error) {
-        // Ne pas faire échouer la requête si la mise à jour du prix échoue
-        this.logger.warn(`Erreur lors de la mise à jour du prix pour ${holding.token?.symbol}: ${error.message}`);
-      }
-    });
+      });
 
-    // Attendre que toutes les mises à jour soient terminées
-    await Promise.all(updatePromises);
+      // Wait for batch to complete before processing next batch
+      await Promise.all(updatePromises);
+      
+      // OPTIMIZATION: Small delay between batches to respect rate limits
+      if (i + BATCH_SIZE < cmcIds.length) {
+        await new Promise(resolve => setTimeout(resolve, 100)); // 100ms delay
+      }
+    }
   }
 
   async addHolding(userId: string, portfolioId: string, createHoldingDto: CreateHoldingDto): Promise<HoldingResponseDto> {

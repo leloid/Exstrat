@@ -187,6 +187,13 @@ export class PortfoliosController {
 
   // ===== HOLDINGS =====
 
+  @Post('holdings/batch')
+  async getBatchHoldings(@Request() req, @Body() body: { portfolioIds?: string[] }) {
+    // If portfolioIds provided, get holdings for specific portfolios
+    // Otherwise, get holdings for all user portfolios
+    return this.portfoliosService.getBatchHoldings(req.user.id, body.portfolioIds);
+  }
+
   @Get(':portfolioId/holdings')
   async getPortfolioHoldings(@Request() req, @Param('portfolioId') portfolioId: string) {
     return this.portfoliosService.getPortfolioHoldings(req.user.id, portfolioId);

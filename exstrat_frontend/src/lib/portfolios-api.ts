@@ -61,6 +61,15 @@ export const getPortfolioHoldings = async (portfolioId: string): Promise<Holding
 	return response.data;
 };
 
+/**
+ * Get holdings for multiple portfolios in a single request
+ * OPTIMIZED for batch loading - reduces API calls from N to 1
+ */
+export const getBatchHoldings = async (portfolioIds?: string[]): Promise<Holding[]> => {
+	const response = await api.post<Holding[]>("/portfolios/holdings/batch", { portfolioIds });
+	return response.data;
+};
+
 export const addHolding = async (portfolioId: string, data: CreateHoldingDto): Promise<Holding> => {
 	const response = await api.post<Holding>(`/portfolios/${portfolioId}/holdings`, data);
 	return response.data;
