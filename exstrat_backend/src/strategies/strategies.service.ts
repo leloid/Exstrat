@@ -378,24 +378,20 @@ export class StrategiesService {
     let cmcId = 0;
 
     try {
-      const transactions = await this.prisma.transaction.findFirst({
+      const transaction = await this.prisma.transaction.findFirst({
         where: {
           userId: strategy.userId,
           symbol: strategy.asset,
         },
         select: {
-          token: {
-            select: {
-              name: true,
-              cmcId: true,
-            },
-          },
+          name: true,
+          cmcId: true,
         },
       });
 
-      if (transactions?.token) {
-        tokenName = transactions.token.name || strategy.asset;
-        cmcId = transactions.token.cmcId || 0;
+      if (transaction) {
+        tokenName = transaction.name || strategy.asset;
+        cmcId = transaction.cmcId || 0;
       }
     } catch (error) {
       console.error('Error fetching token info for strategy:', error);
