@@ -7,7 +7,7 @@ import CircularProgress from "@mui/material/CircularProgress";
 import FormControl from "@mui/material/FormControl";
 import Grid from "@mui/material/Grid";
 import MenuItem from "@mui/material/MenuItem";
-import Select from "@mui/material/Select";
+import Select, { SelectChangeEvent } from "@mui/material/Select";
 import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
 import { useRouter } from "next/navigation";
@@ -202,8 +202,8 @@ export default function Page(): React.JSX.Element {
 
 	// Memoize handlers to prevent unnecessary re-renders
 	const handlePortfolioChange = React.useCallback(
-		(e: React.ChangeEvent<{ value: unknown }>) => {
-			const value = e.target.value as string;
+		(e: SelectChangeEvent<string>) => {
+			const value = e.target.value;
 			if (value === "global") {
 				setIsGlobalView(true);
 			} else {
