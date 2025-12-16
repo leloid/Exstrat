@@ -1,0 +1,45 @@
+========================================
+RÉSULTATS DU TEST DE CHARGE - DASHBOARD
+========================================
+Date: Mon Dec 15 13:54:12 CET 2025
+API URL: https://exstrat-production.up.railway.app
+Nombre d'utilisateurs: 103
+Concurrence: Simultanée
+
+TEMPS DE RÉPONSE GLOBAL
+------------------------
+Temps total: 2291s
+Temps moyen: 22.24271844660194s
+Temps minimum: 5.0s
+Temps maximum: 42.0s
+P50 (médiane): 22.0s
+P95: 40.0s
+P99: 41.0s
+
+TAUX DE RÉUSSITE
+-----------------
+Erreurs totales: 0
+Taux de succès: 100.00%
+
+STATISTIQUES PAR ENDPOINT
+--------------------------
+Portfolios:
+  - Temps moyen: 4.368932038834951s
+  - Erreurs: 0
+
+Holdings:
+  - Temps moyen: 7.504854368932039s
+  - Erreurs: 0
+
+Forecasts:
+  - Temps moyen: 5.854368932038835s
+  - Erreurs: 0
+
+Strategies:
+  - Temps moyen: 3.5825242718446604s
+  - Erreurs: 0
+
+FICHIERS DE RÉSULTATS
+---------------------
+Résultats détaillés: load-test-results/results_20251215_135329.json
+Résumé: load-test-results/summary_20251215_135329.txt

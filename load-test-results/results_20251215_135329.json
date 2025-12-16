@@ -1,0 +1,3092 @@
+[
+  {
+    "userIndex": 6,
+    "email": "usertests7@exstrat.com",
+    "totalTime": 5.0,
+    "avgTimePerCall": 1.250,
+    "apiCalls": 4,
+    "errors": 0,
+    "endpoints": {
+      "portfolios": {
+        "time": 1.0,
+        "httpCode": 200,
+        "success": true
+      },
+      "holdings": {
+        "time": 1.0,
+        "httpCode": 200,
+        "success": true
+      },
+      "forecasts": {
+        "time": 1.0,
+        "httpCode": 200,
+        "success": true
+      },
+      "strategies": {
+        "time": 1.0,
+        "httpCode": 200,
+        "success": true
+      }
+    }
+  },
+  {
+    "userIndex": 139,
+    "email": "usertests140@exstrat.com",
+    "totalTime": 5.0,
+    "avgTimePerCall": 1.250,
+    "apiCalls": 4,
+    "errors": 0,
+    "endpoints": {
+      "portfolios": {
+        "time": 1.0,
+        "httpCode": 200,
+        "success": true
+      },
+      "holdings": {
+        "time": 1.0,
+        "httpCode": 200,
+        "success": true
+      },
+      "forecasts": {
+        "time": 1.0,
+        "httpCode": 200,
+        "success": true
+      },
+      "strategies": {
+        "time": 1.0,
+        "httpCode": 200,
+        "success": true
+      }
+    }
+  },
+  {
+    "userIndex": 9,
+    "email": "usertests10@exstrat.com",
+    "totalTime": 12.0,
+    "avgTimePerCall": 3.000,
+    "apiCalls": 4,
+    "errors": 0,
+    "endpoints": {
+      "portfolios": {
+        "time": 1.0,
+        "httpCode": 200,
+        "success": true
+      },
+      "holdings": {
+        "time": 2.0,
+        "httpCode": 200,
+        "success": true
+      },
+      "forecasts": {
+        "time": 1.0,
+        "httpCode": 200,
+        "success": true
+      },
+      "strategies": {
+        "time": 7.0,
+        "httpCode": 200,
+        "success": true
+      }
+    }
+  },
+  {
+    "userIndex": 3,
+    "email": "usertests4@exstrat.com",
+    "totalTime": 13.0,
+    "avgTimePerCall": 3.250,
+    "apiCalls": 4,
+    "errors": 0,
+    "endpoints": {
+      "portfolios": {
+        "time": 0,
+        "httpCode": 200,
+        "success": true
+      },
+      "holdings": {
+        "time": 2.0,
+        "httpCode": 200,
+        "success": true
+      },
+      "forecasts": {
+        "time": 8.0,
+        "httpCode": 200,
+        "success": true
+      },
+      "strategies": {
+        "time": 1.0,
+        "httpCode": 200,
+        "success": true
+      }
+    }
+  },
+  {
+    "userIndex": 54,
+    "email": "usertests55@exstrat.com",
+    "totalTime": 13.0,
+    "avgTimePerCall": 3.250,
+    "apiCalls": 4,
+    "errors": 0,
+    "endpoints": {
+      "portfolios": {
+        "time": 1.0,
+        "httpCode": 200,
+        "success": true
+      },
+      "holdings": {
+        "time": 1.0,
+        "httpCode": 200,
+        "success": true
+      },
+      "forecasts": {
+        "time": 8.0,
+        "httpCode": 200,
+        "success": true
+      },
+      "strategies": {
+        "time": 1.0,
+        "httpCode": 200,
+        "success": true
+      }
+    }
+  },
+  {
+    "userIndex": 165,
+    "email": "usertests166@exstrat.com",
+    "totalTime": 11.0,
+    "avgTimePerCall": 2.750,
+    "apiCalls": 4,
+    "errors": 0,
+    "endpoints": {
+      "portfolios": {
+        "time": 2.0,
+        "httpCode": 200,
+        "success": true
+      },
+      "holdings": {
+        "time": 0,
+        "httpCode": 200,
+        "success": true
+      },
+      "forecasts": {
+        "time": 7.0,
+        "httpCode": 200,
+        "success": true
+      },
+      "strategies": {
+        "time": 1.0,
+        "httpCode": 200,
+        "success": true
+      }
+    }
+  },
+  {
+    "userIndex": 57,
+    "email": "usertests58@exstrat.com",
+    "totalTime": 12.0,
+    "avgTimePerCall": 3.000,
+    "apiCalls": 4,
+    "errors": 0,
+    "endpoints": {
+      "portfolios": {
+        "time": 2.0,
+        "httpCode": 200,
+        "success": true
+      },
+      "holdings": {
+        "time": 8.0,
+        "httpCode": 200,
+        "success": true
+      },
+      "forecasts": {
+        "time": 0,
+        "httpCode": 200,
+        "success": true
+      },
+      "strategies": {
+        "time": 1.0,
+        "httpCode": 200,
+        "success": true
+      }
+    }
+  },
+  {
+    "userIndex": 5,
+    "email": "usertests6@exstrat.com",
+    "totalTime": 12.0,
+    "avgTimePerCall": 3.000,
+    "apiCalls": 4,
+    "errors": 0,
+    "endpoints": {
+      "portfolios": {
+        "time": 1.0,
+        "httpCode": 200,
+        "success": true
+      },
+      "holdings": {
+        "time": 1.0,
+        "httpCode": 200,
+        "success": true
+      },
+      "forecasts": {
+        "time": 8.0,
+        "httpCode": 200,
+        "success": true
+      },
+      "strategies": {
+        "time": 1.0,
+        "httpCode": 200,
+        "success": true
+      }
+    }
+  },
+  {
+    "userIndex": 1,
+    "email": "usertests2@exstrat.com",
+    "totalTime": 11.0,
+    "avgTimePerCall": 2.750,
+    "apiCalls": 4,
+    "errors": 0,
+    "endpoints": {
+      "portfolios": {
+        "time": 1.0,
+        "httpCode": 200,
+        "success": true
+      },
+      "holdings": {
+        "time": 8.0,
+        "httpCode": 200,
+        "success": true
+      },
+      "forecasts": {
+        "time": 0,
+        "httpCode": 200,
+        "success": true
+      },
+      "strategies": {
+        "time": 1.0,
+        "httpCode": 200,
+        "success": true
+      }
+    }
+  },
+  {
+    "userIndex": 18,
+    "email": "usertests19@exstrat.com",
+    "totalTime": 11.0,
+    "avgTimePerCall": 2.750,
+    "apiCalls": 4,
+    "errors": 0,
+    "endpoints": {
+      "portfolios": {
+        "time": 1.0,
+        "httpCode": 200,
+        "success": true
+      },
+      "holdings": {
+        "time": 9.0,
+        "httpCode": 200,
+        "success": true
+      },
+      "forecasts": {
+        "time": 0,
+        "httpCode": 200,
+        "success": true
+      },
+      "strategies": {
+        "time": 1.0,
+        "httpCode": 200,
+        "success": true
+      }
+    }
+  },
+  {
+    "userIndex": 60,
+    "email": "usertests61@exstrat.com",
+    "totalTime": 12.0,
+    "avgTimePerCall": 3.000,
+    "apiCalls": 4,
+    "errors": 0,
+    "endpoints": {
+      "portfolios": {
+        "time": 3.0,
+        "httpCode": 200,
+        "success": true
+      },
+      "holdings": {
+        "time": 8.0,
+        "httpCode": 200,
+        "success": true
+      },
+      "forecasts": {
+        "time": 0,
+        "httpCode": 200,
+        "success": true
+      },
+      "strategies": {
+        "time": 1.0,
+        "httpCode": 200,
+        "success": true
+      }
+    }
+  },
+  {
+    "userIndex": 110,
+    "email": "usertests111@exstrat.com",
+    "totalTime": 11.0,
+    "avgTimePerCall": 2.750,
+    "apiCalls": 4,
+    "errors": 0,
+    "endpoints": {
+      "portfolios": {
+        "time": 1.0,
+        "httpCode": 200,
+        "success": true
+      },
+      "holdings": {
+        "time": 8.0,
+        "httpCode": 200,
+        "success": true
+      },
+      "forecasts": {
+        "time": 1.0,
+        "httpCode": 200,
+        "success": true
+      },
+      "strategies": {
+        "time": 0,
+        "httpCode": 200,
+        "success": true
+      }
+    }
+  },
+  {
+    "userIndex": 98,
+    "email": "usertests99@exstrat.com",
+    "totalTime": 10.0,
+    "avgTimePerCall": 2.500,
+    "apiCalls": 4,
+    "errors": 0,
+    "endpoints": {
+      "portfolios": {
+        "time": 1.0,
+        "httpCode": 200,
+        "success": true
+      },
+      "holdings": {
+        "time": 8.0,
+        "httpCode": 200,
+        "success": true
+      },
+      "forecasts": {
+        "time": 1.0,
+        "httpCode": 200,
+        "success": true
+      },
+      "strategies": {
+        "time": 0,
+        "httpCode": 200,
+        "success": true
+      }
+    }
+  },
+  {
+    "userIndex": 184,
+    "email": "usertests185@exstrat.com",
+    "totalTime": 10.0,
+    "avgTimePerCall": 2.500,
+    "apiCalls": 4,
+    "errors": 0,
+    "endpoints": {
+      "portfolios": {
+        "time": 1.0,
+        "httpCode": 200,
+        "success": true
+      },
+      "holdings": {
+        "time": 8.0,
+        "httpCode": 200,
+        "success": true
+      },
+      "forecasts": {
+        "time": 1.0,
+        "httpCode": 200,
+        "success": true
+      },
+      "strategies": {
+        "time": 0,
+        "httpCode": 200,
+        "success": true
+      }
+    }
+  },
+  {
+    "userIndex": 7,
+    "email": "usertests8@exstrat.com",
+    "totalTime": 13.0,
+    "avgTimePerCall": 3.250,
+    "apiCalls": 4,
+    "errors": 0,
+    "endpoints": {
+      "portfolios": {
+        "time": 1.0,
+        "httpCode": 200,
+        "success": true
+      },
+      "holdings": {
+        "time": 1.0,
+        "httpCode": 200,
+        "success": true
+      },
+      "forecasts": {
+        "time": 8.0,
+        "httpCode": 200,
+        "success": true
+      },
+      "strategies": {
+        "time": 1.0,
+        "httpCode": 200,
+        "success": true
+      }
+    }
+  },
+  {
+    "userIndex": 25,
+    "email": "usertests26@exstrat.com",
+    "totalTime": 13.0,
+    "avgTimePerCall": 3.250,
+    "apiCalls": 4,
+    "errors": 0,
+    "endpoints": {
+      "portfolios": {
+        "time": 1.0,
+        "httpCode": 200,
+        "success": true
+      },
+      "holdings": {
+        "time": 2.0,
+        "httpCode": 200,
+        "success": true
+      },
+      "forecasts": {
+        "time": 7.0,
+        "httpCode": 200,
+        "success": true
+      },
+      "strategies": {
+        "time": 1.0,
+        "httpCode": 200,
+        "success": true
+      }
+    }
+  },
+  {
+    "userIndex": 112,
+    "email": "usertests113@exstrat.com",
+    "totalTime": 12.0,
+    "avgTimePerCall": 3.000,
+    "apiCalls": 4,
+    "errors": 0,
+    "endpoints": {
+      "portfolios": {
+        "time": 1.0,
+        "httpCode": 200,
+        "success": true
+      },
+      "holdings": {
+        "time": 1.0,
+        "httpCode": 200,
+        "success": true
+      },
+      "forecasts": {
+        "time": 8.0,
+        "httpCode": 200,
+        "success": true
+      },
+      "strategies": {
+        "time": 1.0,
+        "httpCode": 200,
+        "success": true
+      }
+    }
+  },
+  {
+    "userIndex": 93,
+    "email": "usertests94@exstrat.com",
+    "totalTime": 11.0,
+    "avgTimePerCall": 2.750,
+    "apiCalls": 4,
+    "errors": 0,
+    "endpoints": {
+      "portfolios": {
+        "time": 1.0,
+        "httpCode": 200,
+        "success": true
+      },
+      "holdings": {
+        "time": 8.0,
+        "httpCode": 200,
+        "success": true
+      },
+      "forecasts": {
+        "time": 0,
+        "httpCode": 200,
+        "success": true
+      },
+      "strategies": {
+        "time": 2.0,
+        "httpCode": 200,
+        "success": true
+      }
+    }
+  },
+  {
+    "userIndex": 143,
+    "email": "usertests144@exstrat.com",
+    "totalTime": 12.0,
+    "avgTimePerCall": 3.000,
+    "apiCalls": 4,
+    "errors": 0,
+    "endpoints": {
+      "portfolios": {
+        "time": 2.0,
+        "httpCode": 200,
+        "success": true
+      },
+      "holdings": {
+        "time": 8.0,
+        "httpCode": 200,
+        "success": true
+      },
+      "forecasts": {
+        "time": 1.0,
+        "httpCode": 200,
+        "success": true
+      },
+      "strategies": {
+        "time": 1.0,
+        "httpCode": 200,
+        "success": true
+      }
+    }
+  },
+  {
+    "userIndex": 157,
+    "email": "usertests158@exstrat.com",
+    "totalTime": 11.0,
+    "avgTimePerCall": 2.750,
+    "apiCalls": 4,
+    "errors": 0,
+    "endpoints": {
+      "portfolios": {
+        "time": 1.0,
+        "httpCode": 200,
+        "success": true
+      },
+      "holdings": {
+        "time": 8.0,
+        "httpCode": 200,
+        "success": true
+      },
+      "forecasts": {
+        "time": 1.0,
+        "httpCode": 200,
+        "success": true
+      },
+      "strategies": {
+        "time": 1.0,
+        "httpCode": 200,
+        "success": true
+      }
+    }
+  },
+  {
+    "userIndex": 58,
+    "email": "usertests59@exstrat.com",
+    "totalTime": 11.0,
+    "avgTimePerCall": 2.750,
+    "apiCalls": 4,
+    "errors": 0,
+    "endpoints": {
+      "portfolios": {
+        "time": 1.0,
+        "httpCode": 200,
+        "success": true
+      },
+      "holdings": {
+        "time": 7.0,
+        "httpCode": 200,
+        "success": true
+      },
+      "forecasts": {
+        "time": 1.0,
+        "httpCode": 200,
+        "success": true
+      },
+      "strategies": {
+        "time": 1.0,
+        "httpCode": 200,
+        "success": true
+      }
+    }
+  },
+  {
+    "userIndex": 119,
+    "email": "usertests120@exstrat.com",
+    "totalTime": 12.0,
+    "avgTimePerCall": 3.000,
+    "apiCalls": 4,
+    "errors": 0,
+    "endpoints": {
+      "portfolios": {
+        "time": 2.0,
+        "httpCode": 200,
+        "success": true
+      },
+      "holdings": {
+        "time": 8.0,
+        "httpCode": 200,
+        "success": true
+      },
+      "forecasts": {
+        "time": 1.0,
+        "httpCode": 200,
+        "success": true
+      },
+      "strategies": {
+        "time": 1.0,
+        "httpCode": 200,
+        "success": true
+      }
+    }
+  },
+  {
+    "userIndex": 183,
+    "email": "usertests184@exstrat.com",
+    "totalTime": 11.0,
+    "avgTimePerCall": 2.750,
+    "apiCalls": 4,
+    "errors": 0,
+    "endpoints": {
+      "portfolios": {
+        "time": 1.0,
+        "httpCode": 200,
+        "success": true
+      },
+      "holdings": {
+        "time": 8.0,
+        "httpCode": 200,
+        "success": true
+      },
+      "forecasts": {
+        "time": 1.0,
+        "httpCode": 200,
+        "success": true
+      },
+      "strategies": {
+        "time": 1.0,
+        "httpCode": 200,
+        "success": true
+      }
+    }
+  },
+  {
+    "userIndex": 174,
+    "email": "usertests175@exstrat.com",
+    "totalTime": 12.0,
+    "avgTimePerCall": 3.000,
+    "apiCalls": 4,
+    "errors": 0,
+    "endpoints": {
+      "portfolios": {
+        "time": 9.0,
+        "httpCode": 200,
+        "success": true
+      },
+      "holdings": {
+        "time": 1.0,
+        "httpCode": 200,
+        "success": true
+      },
+      "forecasts": {
+        "time": 0,
+        "httpCode": 200,
+        "success": true
+      },
+      "strategies": {
+        "time": 1.0,
+        "httpCode": 200,
+        "success": true
+      }
+    }
+  },
+  {
+    "userIndex": 134,
+    "email": "usertests135@exstrat.com",
+    "totalTime": 12.0,
+    "avgTimePerCall": 3.000,
+    "apiCalls": 4,
+    "errors": 0,
+    "endpoints": {
+      "portfolios": {
+        "time": 1.0,
+        "httpCode": 200,
+        "success": true
+      },
+      "holdings": {
+        "time": 7.0,
+        "httpCode": 200,
+        "success": true
+      },
+      "forecasts": {
+        "time": 2.0,
+        "httpCode": 200,
+        "success": true
+      },
+      "strategies": {
+        "time": 0,
+        "httpCode": 200,
+        "success": true
+      }
+    }
+  },
+  {
+    "userIndex": 72,
+    "email": "usertests73@exstrat.com",
+    "totalTime": 11.0,
+    "avgTimePerCall": 2.750,
+    "apiCalls": 4,
+    "errors": 0,
+    "endpoints": {
+      "portfolios": {
+        "time": 7.0,
+        "httpCode": 200,
+        "success": true
+      },
+      "holdings": {
+        "time": 2.0,
+        "httpCode": 200,
+        "success": true
+      },
+      "forecasts": {
+        "time": 0,
+        "httpCode": 200,
+        "success": true
+      },
+      "strategies": {
+        "time": 1.0,
+        "httpCode": 200,
+        "success": true
+      }
+    }
+  },
+  {
+    "userIndex": 94,
+    "email": "usertests95@exstrat.com",
+    "totalTime": 16.0,
+    "avgTimePerCall": 4.000,
+    "apiCalls": 4,
+    "errors": 0,
+    "endpoints": {
+      "portfolios": {
+        "time": 1.0,
+        "httpCode": 200,
+        "success": true
+      },
+      "holdings": {
+        "time": 2.0,
+        "httpCode": 200,
+        "success": true
+      },
+      "forecasts": {
+        "time": 12.0,
+        "httpCode": 200,
+        "success": true
+      },
+      "strategies": {
+        "time": 0,
+        "httpCode": 200,
+        "success": true
+      }
+    }
+  },
+  {
+    "userIndex": 195,
+    "email": "usertests196@exstrat.com",
+    "totalTime": 14.0,
+    "avgTimePerCall": 3.500,
+    "apiCalls": 4,
+    "errors": 0,
+    "endpoints": {
+      "portfolios": {
+        "time": 2.0,
+        "httpCode": 200,
+        "success": true
+      },
+      "holdings": {
+        "time": 12.0,
+        "httpCode": 200,
+        "success": true
+      },
+      "forecasts": {
+        "time": 0,
+        "httpCode": 200,
+        "success": true
+      },
+      "strategies": {
+        "time": 0,
+        "httpCode": 200,
+        "success": true
+      }
+    }
+  },
+  {
+    "userIndex": 188,
+    "email": "usertests189@exstrat.com",
+    "totalTime": 14.0,
+    "avgTimePerCall": 3.500,
+    "apiCalls": 4,
+    "errors": 0,
+    "endpoints": {
+      "portfolios": {
+        "time": 1.0,
+        "httpCode": 200,
+        "success": true
+      },
+      "holdings": {
+        "time": 12.0,
+        "httpCode": 200,
+        "success": true
+      },
+      "forecasts": {
+        "time": 0,
+        "httpCode": 200,
+        "success": true
+      },
+      "strategies": {
+        "time": 0,
+        "httpCode": 200,
+        "success": true
+      }
+    }
+  },
+  {
+    "userIndex": 12,
+    "email": "usertests13@exstrat.com",
+    "totalTime": 15.0,
+    "avgTimePerCall": 3.750,
+    "apiCalls": 4,
+    "errors": 0,
+    "endpoints": {
+      "portfolios": {
+        "time": 1.0,
+        "httpCode": 200,
+        "success": true
+      },
+      "holdings": {
+        "time": 12.0,
+        "httpCode": 200,
+        "success": true
+      },
+      "forecasts": {
+        "time": 0,
+        "httpCode": 200,
+        "success": true
+      },
+      "strategies": {
+        "time": 0,
+        "httpCode": 200,
+        "success": true
+      }
+    }
+  },
+  {
+    "userIndex": 62,
+    "email": "usertests63@exstrat.com",
+    "totalTime": 16.0,
+    "avgTimePerCall": 4.000,
+    "apiCalls": 4,
+    "errors": 0,
+    "endpoints": {
+      "portfolios": {
+        "time": 1.0,
+        "httpCode": 200,
+        "success": true
+      },
+      "holdings": {
+        "time": 2.0,
+        "httpCode": 200,
+        "success": true
+      },
+      "forecasts": {
+        "time": 1.0,
+        "httpCode": 200,
+        "success": true
+      },
+      "strategies": {
+        "time": 11.0,
+        "httpCode": 200,
+        "success": true
+      }
+    }
+  },
+  {
+    "userIndex": 144,
+    "email": "usertests145@exstrat.com",
+    "totalTime": 17.0,
+    "avgTimePerCall": 4.250,
+    "apiCalls": 4,
+    "errors": 0,
+    "endpoints": {
+      "portfolios": {
+        "time": 2.0,
+        "httpCode": 200,
+        "success": true
+      },
+      "holdings": {
+        "time": 0,
+        "httpCode": 200,
+        "success": true
+      },
+      "forecasts": {
+        "time": 1.0,
+        "httpCode": 200,
+        "success": true
+      },
+      "strategies": {
+        "time": 12.0,
+        "httpCode": 200,
+        "success": true
+      }
+    }
+  },
+  {
+    "userIndex": 88,
+    "email": "usertests89@exstrat.com",
+    "totalTime": 17.0,
+    "avgTimePerCall": 4.250,
+    "apiCalls": 4,
+    "errors": 0,
+    "endpoints": {
+      "portfolios": {
+        "time": 1.0,
+        "httpCode": 200,
+        "success": true
+      },
+      "holdings": {
+        "time": 1.0,
+        "httpCode": 200,
+        "success": true
+      },
+      "forecasts": {
+        "time": 1.0,
+        "httpCode": 200,
+        "success": true
+      },
+      "strategies": {
+        "time": 12.0,
+        "httpCode": 200,
+        "success": true
+      }
+    }
+  },
+  {
+    "userIndex": 84,
+    "email": "usertests85@exstrat.com",
+    "totalTime": 18.0,
+    "avgTimePerCall": 4.500,
+    "apiCalls": 4,
+    "errors": 0,
+    "endpoints": {
+      "portfolios": {
+        "time": 12.0,
+        "httpCode": 200,
+        "success": true
+      },
+      "holdings": {
+        "time": 0,
+        "httpCode": 200,
+        "success": true
+      },
+      "forecasts": {
+        "time": 0,
+        "httpCode": 200,
+        "success": true
+      },
+      "strategies": {
+        "time": 6.0,
+        "httpCode": 200,
+        "success": true
+      }
+    }
+  },
+  {
+    "userIndex": 91,
+    "email": "usertests92@exstrat.com",
+    "totalTime": 19.0,
+    "avgTimePerCall": 4.750,
+    "apiCalls": 4,
+    "errors": 0,
+    "endpoints": {
+      "portfolios": {
+        "time": 0,
+        "httpCode": 200,
+        "success": true
+      },
+      "holdings": {
+        "time": 11.0,
+        "httpCode": 200,
+        "success": true
+      },
+      "forecasts": {
+        "time": 0,
+        "httpCode": 200,
+        "success": true
+      },
+      "strategies": {
+        "time": 5.0,
+        "httpCode": 200,
+        "success": true
+      }
+    }
+  },
+  {
+    "userIndex": 50,
+    "email": "usertests51@exstrat.com",
+    "totalTime": 19.0,
+    "avgTimePerCall": 4.750,
+    "apiCalls": 4,
+    "errors": 0,
+    "endpoints": {
+      "portfolios": {
+        "time": 1.0,
+        "httpCode": 200,
+        "success": true
+      },
+      "holdings": {
+        "time": 11.0,
+        "httpCode": 200,
+        "success": true
+      },
+      "forecasts": {
+        "time": 0,
+        "httpCode": 200,
+        "success": true
+      },
+      "strategies": {
+        "time": 5.0,
+        "httpCode": 200,
+        "success": true
+      }
+    }
+  },
+  {
+    "userIndex": 44,
+    "email": "usertests45@exstrat.com",
+    "totalTime": 20.0,
+    "avgTimePerCall": 5.000,
+    "apiCalls": 4,
+    "errors": 0,
+    "endpoints": {
+      "portfolios": {
+        "time": 2.0,
+        "httpCode": 200,
+        "success": true
+      },
+      "holdings": {
+        "time": 11.0,
+        "httpCode": 200,
+        "success": true
+      },
+      "forecasts": {
+        "time": 6.0,
+        "httpCode": 200,
+        "success": true
+      },
+      "strategies": {
+        "time": 1.0,
+        "httpCode": 200,
+        "success": true
+      }
+    }
+  },
+  {
+    "userIndex": 181,
+    "email": "usertests182@exstrat.com",
+    "totalTime": 20.0,
+    "avgTimePerCall": 5.000,
+    "apiCalls": 4,
+    "errors": 0,
+    "endpoints": {
+      "portfolios": {
+        "time": 1.0,
+        "httpCode": 200,
+        "success": true
+      },
+      "holdings": {
+        "time": 12.0,
+        "httpCode": 200,
+        "success": true
+      },
+      "forecasts": {
+        "time": 6.0,
+        "httpCode": 200,
+        "success": true
+      },
+      "strategies": {
+        "time": 1.0,
+        "httpCode": 200,
+        "success": true
+      }
+    }
+  },
+  {
+    "userIndex": 131,
+    "email": "usertests132@exstrat.com",
+    "totalTime": 22.0,
+    "avgTimePerCall": 5.500,
+    "apiCalls": 4,
+    "errors": 0,
+    "endpoints": {
+      "portfolios": {
+        "time": 4.0,
+        "httpCode": 200,
+        "success": true
+      },
+      "holdings": {
+        "time": 11.0,
+        "httpCode": 200,
+        "success": true
+      },
+      "forecasts": {
+        "time": 5.0,
+        "httpCode": 200,
+        "success": true
+      },
+      "strategies": {
+        "time": 1.0,
+        "httpCode": 200,
+        "success": true
+      }
+    }
+  },
+  {
+    "userIndex": 63,
+    "email": "usertests64@exstrat.com",
+    "totalTime": 21.0,
+    "avgTimePerCall": 5.250,
+    "apiCalls": 4,
+    "errors": 0,
+    "endpoints": {
+      "portfolios": {
+        "time": 13.0,
+        "httpCode": 200,
+        "success": true
+      },
+      "holdings": {
+        "time": 5.0,
+        "httpCode": 200,
+        "success": true
+      },
+      "forecasts": {
+        "time": 1.0,
+        "httpCode": 200,
+        "success": true
+      },
+      "strategies": {
+        "time": 0,
+        "httpCode": 200,
+        "success": true
+      }
+    }
+  },
+  {
+    "userIndex": 129,
+    "email": "usertests130@exstrat.com",
+    "totalTime": 22.0,
+    "avgTimePerCall": 5.500,
+    "apiCalls": 4,
+    "errors": 0,
+    "endpoints": {
+      "portfolios": {
+        "time": 1.0,
+        "httpCode": 200,
+        "success": true
+      },
+      "holdings": {
+        "time": 12.0,
+        "httpCode": 200,
+        "success": true
+      },
+      "forecasts": {
+        "time": 8.0,
+        "httpCode": 200,
+        "success": true
+      },
+      "strategies": {
+        "time": 0,
+        "httpCode": 200,
+        "success": true
+      }
+    }
+  },
+  {
+    "userIndex": 34,
+    "email": "usertests35@exstrat.com",
+    "totalTime": 23.0,
+    "avgTimePerCall": 5.750,
+    "apiCalls": 4,
+    "errors": 0,
+    "endpoints": {
+      "portfolios": {
+        "time": 2.0,
+        "httpCode": 200,
+        "success": true
+      },
+      "holdings": {
+        "time": 11.0,
+        "httpCode": 200,
+        "success": true
+      },
+      "forecasts": {
+        "time": 0,
+        "httpCode": 200,
+        "success": true
+      },
+      "strategies": {
+        "time": 8.0,
+        "httpCode": 200,
+        "success": true
+      }
+    }
+  },
+  {
+    "userIndex": 96,
+    "email": "usertests97@exstrat.com",
+    "totalTime": 21.0,
+    "avgTimePerCall": 5.250,
+    "apiCalls": 4,
+    "errors": 0,
+    "endpoints": {
+      "portfolios": {
+        "time": 12.0,
+        "httpCode": 200,
+        "success": true
+      },
+      "holdings": {
+        "time": 0,
+        "httpCode": 200,
+        "success": true
+      },
+      "forecasts": {
+        "time": 0,
+        "httpCode": 200,
+        "success": true
+      },
+      "strategies": {
+        "time": 8.0,
+        "httpCode": 200,
+        "success": true
+      }
+    }
+  },
+  {
+    "userIndex": 21,
+    "email": "usertests22@exstrat.com",
+    "totalTime": 23.0,
+    "avgTimePerCall": 5.750,
+    "apiCalls": 4,
+    "errors": 0,
+    "endpoints": {
+      "portfolios": {
+        "time": 2.0,
+        "httpCode": 200,
+        "success": true
+      },
+      "holdings": {
+        "time": 2.0,
+        "httpCode": 200,
+        "success": true
+      },
+      "forecasts": {
+        "time": 11.0,
+        "httpCode": 200,
+        "success": true
+      },
+      "strategies": {
+        "time": 8.0,
+        "httpCode": 200,
+        "success": true
+      }
+    }
+  },
+  {
+    "userIndex": 17,
+    "email": "usertests18@exstrat.com",
+    "totalTime": 23.0,
+    "avgTimePerCall": 5.750,
+    "apiCalls": 4,
+    "errors": 0,
+    "endpoints": {
+      "portfolios": {
+        "time": 1.0,
+        "httpCode": 200,
+        "success": true
+      },
+      "holdings": {
+        "time": 2.0,
+        "httpCode": 200,
+        "success": true
+      },
+      "forecasts": {
+        "time": 12.0,
+        "httpCode": 200,
+        "success": true
+      },
+      "strategies": {
+        "time": 7.0,
+        "httpCode": 200,
+        "success": true
+      }
+    }
+  },
+  {
+    "userIndex": 138,
+    "email": "usertests139@exstrat.com",
+    "totalTime": 23.0,
+    "avgTimePerCall": 5.750,
+    "apiCalls": 4,
+    "errors": 0,
+    "endpoints": {
+      "portfolios": {
+        "time": 0,
+        "httpCode": 200,
+        "success": true
+      },
+      "holdings": {
+        "time": 2.0,
+        "httpCode": 200,
+        "success": true
+      },
+      "forecasts": {
+        "time": 12.0,
+        "httpCode": 200,
+        "success": true
+      },
+      "strategies": {
+        "time": 7.0,
+        "httpCode": 200,
+        "success": true
+      }
+    }
+  },
+  {
+    "userIndex": 148,
+    "email": "usertests149@exstrat.com",
+    "totalTime": 22.0,
+    "avgTimePerCall": 5.500,
+    "apiCalls": 4,
+    "errors": 0,
+    "endpoints": {
+      "portfolios": {
+        "time": 2.0,
+        "httpCode": 200,
+        "success": true
+      },
+      "holdings": {
+        "time": 11.0,
+        "httpCode": 200,
+        "success": true
+      },
+      "forecasts": {
+        "time": 7.0,
+        "httpCode": 200,
+        "success": true
+      },
+      "strategies": {
+        "time": 0,
+        "httpCode": 200,
+        "success": true
+      }
+    }
+  },
+  {
+    "userIndex": 150,
+    "email": "usertests151@exstrat.com",
+    "totalTime": 21.0,
+    "avgTimePerCall": 5.250,
+    "apiCalls": 4,
+    "errors": 0,
+    "endpoints": {
+      "portfolios": {
+        "time": 1.0,
+        "httpCode": 200,
+        "success": true
+      },
+      "holdings": {
+        "time": 12.0,
+        "httpCode": 200,
+        "success": true
+      },
+      "forecasts": {
+        "time": 0,
+        "httpCode": 200,
+        "success": true
+      },
+      "strategies": {
+        "time": 8.0,
+        "httpCode": 200,
+        "success": true
+      }
+    }
+  },
+  {
+    "userIndex": 149,
+    "email": "usertests150@exstrat.com",
+    "totalTime": 21.0,
+    "avgTimePerCall": 5.250,
+    "apiCalls": 4,
+    "errors": 0,
+    "endpoints": {
+      "portfolios": {
+        "time": 1.0,
+        "httpCode": 200,
+        "success": true
+      },
+      "holdings": {
+        "time": 12.0,
+        "httpCode": 200,
+        "success": true
+      },
+      "forecasts": {
+        "time": 1.0,
+        "httpCode": 200,
+        "success": true
+      },
+      "strategies": {
+        "time": 7.0,
+        "httpCode": 200,
+        "success": true
+      }
+    }
+  },
+  {
+    "userIndex": 78,
+    "email": "usertests79@exstrat.com",
+    "totalTime": 23.0,
+    "avgTimePerCall": 5.750,
+    "apiCalls": 4,
+    "errors": 0,
+    "endpoints": {
+      "portfolios": {
+        "time": 2.0,
+        "httpCode": 200,
+        "success": true
+      },
+      "holdings": {
+        "time": 11.0,
+        "httpCode": 200,
+        "success": true
+      },
+      "forecasts": {
+        "time": 1.0,
+        "httpCode": 200,
+        "success": true
+      },
+      "strategies": {
+        "time": 7.0,
+        "httpCode": 200,
+        "success": true
+      }
+    }
+  },
+  {
+    "userIndex": 23,
+    "email": "usertests24@exstrat.com",
+    "totalTime": 24.0,
+    "avgTimePerCall": 6.000,
+    "apiCalls": 4,
+    "errors": 0,
+    "endpoints": {
+      "portfolios": {
+        "time": 2.0,
+        "httpCode": 200,
+        "success": true
+      },
+      "holdings": {
+        "time": 1.0,
+        "httpCode": 200,
+        "success": true
+      },
+      "forecasts": {
+        "time": 12.0,
+        "httpCode": 200,
+        "success": true
+      },
+      "strategies": {
+        "time": 7.0,
+        "httpCode": 200,
+        "success": true
+      }
+    }
+  },
+  {
+    "userIndex": 147,
+    "email": "usertests148@exstrat.com",
+    "totalTime": 24.0,
+    "avgTimePerCall": 6.000,
+    "apiCalls": 4,
+    "errors": 0,
+    "endpoints": {
+      "portfolios": {
+        "time": 1.0,
+        "httpCode": 200,
+        "success": true
+      },
+      "holdings": {
+        "time": 2.0,
+        "httpCode": 200,
+        "success": true
+      },
+      "forecasts": {
+        "time": 12.0,
+        "httpCode": 200,
+        "success": true
+      },
+      "strategies": {
+        "time": 7.0,
+        "httpCode": 200,
+        "success": true
+      }
+    }
+  },
+  {
+    "userIndex": 70,
+    "email": "usertests71@exstrat.com",
+    "totalTime": 24.0,
+    "avgTimePerCall": 6.000,
+    "apiCalls": 4,
+    "errors": 0,
+    "endpoints": {
+      "portfolios": {
+        "time": 2.0,
+        "httpCode": 200,
+        "success": true
+      },
+      "holdings": {
+        "time": 2.0,
+        "httpCode": 200,
+        "success": true
+      },
+      "forecasts": {
+        "time": 12.0,
+        "httpCode": 200,
+        "success": true
+      },
+      "strategies": {
+        "time": 8.0,
+        "httpCode": 200,
+        "success": true
+      }
+    }
+  },
+  {
+    "userIndex": 116,
+    "email": "usertests117@exstrat.com",
+    "totalTime": 24.0,
+    "avgTimePerCall": 6.000,
+    "apiCalls": 4,
+    "errors": 0,
+    "endpoints": {
+      "portfolios": {
+        "time": 1.0,
+        "httpCode": 200,
+        "success": true
+      },
+      "holdings": {
+        "time": 3.0,
+        "httpCode": 200,
+        "success": true
+      },
+      "forecasts": {
+        "time": 12.0,
+        "httpCode": 200,
+        "success": true
+      },
+      "strategies": {
+        "time": 8.0,
+        "httpCode": 200,
+        "success": true
+      }
+    }
+  },
+  {
+    "userIndex": 113,
+    "email": "usertests114@exstrat.com",
+    "totalTime": 23.0,
+    "avgTimePerCall": 5.750,
+    "apiCalls": 4,
+    "errors": 0,
+    "endpoints": {
+      "portfolios": {
+        "time": 1.0,
+        "httpCode": 200,
+        "success": true
+      },
+      "holdings": {
+        "time": 2.0,
+        "httpCode": 200,
+        "success": true
+      },
+      "forecasts": {
+        "time": 12.0,
+        "httpCode": 200,
+        "success": true
+      },
+      "strategies": {
+        "time": 8.0,
+        "httpCode": 200,
+        "success": true
+      }
+    }
+  },
+  {
+    "userIndex": 49,
+    "email": "usertests50@exstrat.com",
+    "totalTime": 24.0,
+    "avgTimePerCall": 6.000,
+    "apiCalls": 4,
+    "errors": 0,
+    "endpoints": {
+      "portfolios": {
+        "time": 2.0,
+        "httpCode": 200,
+        "success": true
+      },
+      "holdings": {
+        "time": 2.0,
+        "httpCode": 200,
+        "success": true
+      },
+      "forecasts": {
+        "time": 12.0,
+        "httpCode": 200,
+        "success": true
+      },
+      "strategies": {
+        "time": 8.0,
+        "httpCode": 200,
+        "success": true
+      }
+    }
+  },
+  {
+    "userIndex": 179,
+    "email": "usertests180@exstrat.com",
+    "totalTime": 22.0,
+    "avgTimePerCall": 5.500,
+    "apiCalls": 4,
+    "errors": 0,
+    "endpoints": {
+      "portfolios": {
+        "time": 13.0,
+        "httpCode": 200,
+        "success": true
+      },
+      "holdings": {
+        "time": 7.0,
+        "httpCode": 200,
+        "success": true
+      },
+      "forecasts": {
+        "time": 0,
+        "httpCode": 200,
+        "success": true
+      },
+      "strategies": {
+        "time": 1.0,
+        "httpCode": 200,
+        "success": true
+      }
+    }
+  },
+  {
+    "userIndex": 175,
+    "email": "usertests176@exstrat.com",
+    "totalTime": 23.0,
+    "avgTimePerCall": 5.750,
+    "apiCalls": 4,
+    "errors": 0,
+    "endpoints": {
+      "portfolios": {
+        "time": 1.0,
+        "httpCode": 200,
+        "success": true
+      },
+      "holdings": {
+        "time": 12.0,
+        "httpCode": 200,
+        "success": true
+      },
+      "forecasts": {
+        "time": 7.0,
+        "httpCode": 200,
+        "success": true
+      },
+      "strategies": {
+        "time": 1.0,
+        "httpCode": 200,
+        "success": true
+      }
+    }
+  },
+  {
+    "userIndex": 137,
+    "email": "usertests138@exstrat.com",
+    "totalTime": 23.0,
+    "avgTimePerCall": 5.750,
+    "apiCalls": 4,
+    "errors": 0,
+    "endpoints": {
+      "portfolios": {
+        "time": 2.0,
+        "httpCode": 200,
+        "success": true
+      },
+      "holdings": {
+        "time": 11.0,
+        "httpCode": 200,
+        "success": true
+      },
+      "forecasts": {
+        "time": 7.0,
+        "httpCode": 200,
+        "success": true
+      },
+      "strategies": {
+        "time": 1.0,
+        "httpCode": 200,
+        "success": true
+      }
+    }
+  },
+  {
+    "userIndex": 156,
+    "email": "usertests157@exstrat.com",
+    "totalTime": 22.0,
+    "avgTimePerCall": 5.500,
+    "apiCalls": 4,
+    "errors": 0,
+    "endpoints": {
+      "portfolios": {
+        "time": 1.0,
+        "httpCode": 200,
+        "success": true
+      },
+      "holdings": {
+        "time": 12.0,
+        "httpCode": 200,
+        "success": true
+      },
+      "forecasts": {
+        "time": 7.0,
+        "httpCode": 200,
+        "success": true
+      },
+      "strategies": {
+        "time": 1.0,
+        "httpCode": 200,
+        "success": true
+      }
+    }
+  },
+  {
+    "userIndex": 42,
+    "email": "usertests43@exstrat.com",
+    "totalTime": 23.0,
+    "avgTimePerCall": 5.750,
+    "apiCalls": 4,
+    "errors": 0,
+    "endpoints": {
+      "portfolios": {
+        "time": 14.0,
+        "httpCode": 200,
+        "success": true
+      },
+      "holdings": {
+        "time": 7.0,
+        "httpCode": 200,
+        "success": true
+      },
+      "forecasts": {
+        "time": 0,
+        "httpCode": 200,
+        "success": true
+      },
+      "strategies": {
+        "time": 1.0,
+        "httpCode": 200,
+        "success": true
+      }
+    }
+  },
+  {
+    "userIndex": 28,
+    "email": "usertests29@exstrat.com",
+    "totalTime": 22.0,
+    "avgTimePerCall": 5.500,
+    "apiCalls": 4,
+    "errors": 0,
+    "endpoints": {
+      "portfolios": {
+        "time": 2.0,
+        "httpCode": 200,
+        "success": true
+      },
+      "holdings": {
+        "time": 11.0,
+        "httpCode": 200,
+        "success": true
+      },
+      "forecasts": {
+        "time": 8.0,
+        "httpCode": 200,
+        "success": true
+      },
+      "strategies": {
+        "time": 1.0,
+        "httpCode": 200,
+        "success": true
+      }
+    }
+  },
+  {
+    "userIndex": 106,
+    "email": "usertests107@exstrat.com",
+    "totalTime": 22.0,
+    "avgTimePerCall": 5.500,
+    "apiCalls": 4,
+    "errors": 0,
+    "endpoints": {
+      "portfolios": {
+        "time": 2.0,
+        "httpCode": 200,
+        "success": true
+      },
+      "holdings": {
+        "time": 11.0,
+        "httpCode": 200,
+        "success": true
+      },
+      "forecasts": {
+        "time": 7.0,
+        "httpCode": 200,
+        "success": true
+      },
+      "strategies": {
+        "time": 1.0,
+        "httpCode": 200,
+        "success": true
+      }
+    }
+  },
+  {
+    "userIndex": 90,
+    "email": "usertests91@exstrat.com",
+    "totalTime": 24.0,
+    "avgTimePerCall": 6.000,
+    "apiCalls": 4,
+    "errors": 0,
+    "endpoints": {
+      "portfolios": {
+        "time": 4.0,
+        "httpCode": 200,
+        "success": true
+      },
+      "holdings": {
+        "time": 12.0,
+        "httpCode": 200,
+        "success": true
+      },
+      "forecasts": {
+        "time": 7.0,
+        "httpCode": 200,
+        "success": true
+      },
+      "strategies": {
+        "time": 1.0,
+        "httpCode": 200,
+        "success": true
+      }
+    }
+  },
+  {
+    "userIndex": 102,
+    "email": "usertests103@exstrat.com",
+    "totalTime": 22.0,
+    "avgTimePerCall": 5.500,
+    "apiCalls": 4,
+    "errors": 0,
+    "endpoints": {
+      "portfolios": {
+        "time": 0,
+        "httpCode": 200,
+        "success": true
+      },
+      "holdings": {
+        "time": 12.0,
+        "httpCode": 200,
+        "success": true
+      },
+      "forecasts": {
+        "time": 7.0,
+        "httpCode": 200,
+        "success": true
+      },
+      "strategies": {
+        "time": 1.0,
+        "httpCode": 200,
+        "success": true
+      }
+    }
+  },
+  {
+    "userIndex": 40,
+    "email": "usertests41@exstrat.com",
+    "totalTime": 22.0,
+    "avgTimePerCall": 5.500,
+    "apiCalls": 4,
+    "errors": 0,
+    "endpoints": {
+      "portfolios": {
+        "time": 14.0,
+        "httpCode": 200,
+        "success": true
+      },
+      "holdings": {
+        "time": 7.0,
+        "httpCode": 200,
+        "success": true
+      },
+      "forecasts": {
+        "time": 0,
+        "httpCode": 200,
+        "success": true
+      },
+      "strategies": {
+        "time": 1.0,
+        "httpCode": 200,
+        "success": true
+      }
+    }
+  },
+  {
+    "userIndex": 168,
+    "email": "usertests169@exstrat.com",
+    "totalTime": 21.0,
+    "avgTimePerCall": 5.250,
+    "apiCalls": 4,
+    "errors": 0,
+    "endpoints": {
+      "portfolios": {
+        "time": 1.0,
+        "httpCode": 200,
+        "success": true
+      },
+      "holdings": {
+        "time": 12.0,
+        "httpCode": 200,
+        "success": true
+      },
+      "forecasts": {
+        "time": 7.0,
+        "httpCode": 200,
+        "success": true
+      },
+      "strategies": {
+        "time": 0,
+        "httpCode": 200,
+        "success": true
+      }
+    }
+  },
+  {
+    "userIndex": 145,
+    "email": "usertests146@exstrat.com",
+    "totalTime": 24.0,
+    "avgTimePerCall": 6.000,
+    "apiCalls": 4,
+    "errors": 0,
+    "endpoints": {
+      "portfolios": {
+        "time": 0,
+        "httpCode": 200,
+        "success": true
+      },
+      "holdings": {
+        "time": 14.0,
+        "httpCode": 200,
+        "success": true
+      },
+      "forecasts": {
+        "time": 8.0,
+        "httpCode": 200,
+        "success": true
+      },
+      "strategies": {
+        "time": 0,
+        "httpCode": 200,
+        "success": true
+      }
+    }
+  },
+  {
+    "userIndex": 65,
+    "email": "usertests66@exstrat.com",
+    "totalTime": 22.0,
+    "avgTimePerCall": 5.500,
+    "apiCalls": 4,
+    "errors": 0,
+    "endpoints": {
+      "portfolios": {
+        "time": 14.0,
+        "httpCode": 200,
+        "success": true
+      },
+      "holdings": {
+        "time": 7.0,
+        "httpCode": 200,
+        "success": true
+      },
+      "forecasts": {
+        "time": 0,
+        "httpCode": 200,
+        "success": true
+      },
+      "strategies": {
+        "time": 0,
+        "httpCode": 200,
+        "success": true
+      }
+    }
+  },
+  {
+    "userIndex": 182,
+    "email": "usertests183@exstrat.com",
+    "totalTime": 23.0,
+    "avgTimePerCall": 5.750,
+    "apiCalls": 4,
+    "errors": 0,
+    "endpoints": {
+      "portfolios": {
+        "time": 2.0,
+        "httpCode": 200,
+        "success": true
+      },
+      "holdings": {
+        "time": 13.0,
+        "httpCode": 200,
+        "success": true
+      },
+      "forecasts": {
+        "time": 8.0,
+        "httpCode": 200,
+        "success": true
+      },
+      "strategies": {
+        "time": 0,
+        "httpCode": 200,
+        "success": true
+      }
+    }
+  },
+  {
+    "userIndex": 47,
+    "email": "usertests48@exstrat.com",
+    "totalTime": 25.0,
+    "avgTimePerCall": 6.250,
+    "apiCalls": 4,
+    "errors": 0,
+    "endpoints": {
+      "portfolios": {
+        "time": 2.0,
+        "httpCode": 200,
+        "success": true
+      },
+      "holdings": {
+        "time": 12.0,
+        "httpCode": 200,
+        "success": true
+      },
+      "forecasts": {
+        "time": 8.0,
+        "httpCode": 200,
+        "success": true
+      },
+      "strategies": {
+        "time": 1.0,
+        "httpCode": 200,
+        "success": true
+      }
+    }
+  },
+  {
+    "userIndex": 166,
+    "email": "usertests167@exstrat.com",
+    "totalTime": 24.0,
+    "avgTimePerCall": 6.000,
+    "apiCalls": 4,
+    "errors": 0,
+    "endpoints": {
+      "portfolios": {
+        "time": 2.0,
+        "httpCode": 200,
+        "success": true
+      },
+      "holdings": {
+        "time": 12.0,
+        "httpCode": 200,
+        "success": true
+      },
+      "forecasts": {
+        "time": 8.0,
+        "httpCode": 200,
+        "success": true
+      },
+      "strategies": {
+        "time": 1.0,
+        "httpCode": 200,
+        "success": true
+      }
+    }
+  },
+  {
+    "userIndex": 64,
+    "email": "usertests65@exstrat.com",
+    "totalTime": 26.0,
+    "avgTimePerCall": 6.500,
+    "apiCalls": 4,
+    "errors": 0,
+    "endpoints": {
+      "portfolios": {
+        "time": 1.0,
+        "httpCode": 200,
+        "success": true
+      },
+      "holdings": {
+        "time": 12.0,
+        "httpCode": 200,
+        "success": true
+      },
+      "forecasts": {
+        "time": 8.0,
+        "httpCode": 200,
+        "success": true
+      },
+      "strategies": {
+        "time": 2.0,
+        "httpCode": 200,
+        "success": true
+      }
+    }
+  },
+  {
+    "userIndex": 75,
+    "email": "usertests76@exstrat.com",
+    "totalTime": 25.0,
+    "avgTimePerCall": 6.250,
+    "apiCalls": 4,
+    "errors": 0,
+    "endpoints": {
+      "portfolios": {
+        "time": 3.0,
+        "httpCode": 200,
+        "success": true
+      },
+      "holdings": {
+        "time": 12.0,
+        "httpCode": 200,
+        "success": true
+      },
+      "forecasts": {
+        "time": 8.0,
+        "httpCode": 200,
+        "success": true
+      },
+      "strategies": {
+        "time": 2.0,
+        "httpCode": 200,
+        "success": true
+      }
+    }
+  },
+  {
+    "userIndex": 31,
+    "email": "usertests32@exstrat.com",
+    "totalTime": 26.0,
+    "avgTimePerCall": 6.500,
+    "apiCalls": 4,
+    "errors": 0,
+    "endpoints": {
+      "portfolios": {
+        "time": 1.0,
+        "httpCode": 200,
+        "success": true
+      },
+      "holdings": {
+        "time": 14.0,
+        "httpCode": 200,
+        "success": true
+      },
+      "forecasts": {
+        "time": 7.0,
+        "httpCode": 200,
+        "success": true
+      },
+      "strategies": {
+        "time": 2.0,
+        "httpCode": 200,
+        "success": true
+      }
+    }
+  },
+  {
+    "userIndex": 92,
+    "email": "usertests93@exstrat.com",
+    "totalTime": 24.0,
+    "avgTimePerCall": 6.000,
+    "apiCalls": 4,
+    "errors": 0,
+    "endpoints": {
+      "portfolios": {
+        "time": 2.0,
+        "httpCode": 200,
+        "success": true
+      },
+      "holdings": {
+        "time": 12.0,
+        "httpCode": 200,
+        "success": true
+      },
+      "forecasts": {
+        "time": 8.0,
+        "httpCode": 200,
+        "success": true
+      },
+      "strategies": {
+        "time": 2.0,
+        "httpCode": 200,
+        "success": true
+      }
+    }
+  },
+  {
+    "userIndex": 142,
+    "email": "usertests143@exstrat.com",
+    "totalTime": 25.0,
+    "avgTimePerCall": 6.250,
+    "apiCalls": 4,
+    "errors": 0,
+    "endpoints": {
+      "portfolios": {
+        "time": 1.0,
+        "httpCode": 200,
+        "success": true
+      },
+      "holdings": {
+        "time": 1.0,
+        "httpCode": 200,
+        "success": true
+      },
+      "forecasts": {
+        "time": 20.0,
+        "httpCode": 200,
+        "success": true
+      },
+      "strategies": {
+        "time": 2.0,
+        "httpCode": 200,
+        "success": true
+      }
+    }
+  },
+  {
+    "userIndex": 164,
+    "email": "usertests165@exstrat.com",
+    "totalTime": 22.0,
+    "avgTimePerCall": 5.500,
+    "apiCalls": 4,
+    "errors": 0,
+    "endpoints": {
+      "portfolios": {
+        "time": 12.0,
+        "httpCode": 200,
+        "success": true
+      },
+      "holdings": {
+        "time": 8.0,
+        "httpCode": 200,
+        "success": true
+      },
+      "forecasts": {
+        "time": 1.0,
+        "httpCode": 200,
+        "success": true
+      },
+      "strategies": {
+        "time": 1.0,
+        "httpCode": 200,
+        "success": true
+      }
+    }
+  },
+  {
+    "userIndex": 154,
+    "email": "usertests155@exstrat.com",
+    "totalTime": 24.0,
+    "avgTimePerCall": 6.000,
+    "apiCalls": 4,
+    "errors": 0,
+    "endpoints": {
+      "portfolios": {
+        "time": 12.0,
+        "httpCode": 200,
+        "success": true
+      },
+      "holdings": {
+        "time": 8.0,
+        "httpCode": 200,
+        "success": true
+      },
+      "forecasts": {
+        "time": 2.0,
+        "httpCode": 200,
+        "success": true
+      },
+      "strategies": {
+        "time": 0,
+        "httpCode": 200,
+        "success": true
+      }
+    }
+  },
+  {
+    "userIndex": 127,
+    "email": "usertests128@exstrat.com",
+    "totalTime": 25.0,
+    "avgTimePerCall": 6.250,
+    "apiCalls": 4,
+    "errors": 0,
+    "endpoints": {
+      "portfolios": {
+        "time": 3.0,
+        "httpCode": 200,
+        "success": true
+      },
+      "holdings": {
+        "time": 20.0,
+        "httpCode": 200,
+        "success": true
+      },
+      "forecasts": {
+        "time": 2.0,
+        "httpCode": 200,
+        "success": true
+      },
+      "strategies": {
+        "time": 0,
+        "httpCode": 200,
+        "success": true
+      }
+    }
+  },
+  {
+    "userIndex": 178,
+    "email": "usertests179@exstrat.com",
+    "totalTime": 24.0,
+    "avgTimePerCall": 6.000,
+    "apiCalls": 4,
+    "errors": 0,
+    "endpoints": {
+      "portfolios": {
+        "time": 14.0,
+        "httpCode": 200,
+        "success": true
+      },
+      "holdings": {
+        "time": 8.0,
+        "httpCode": 200,
+        "success": true
+      },
+      "forecasts": {
+        "time": 2.0,
+        "httpCode": 200,
+        "success": true
+      },
+      "strategies": {
+        "time": 0,
+        "httpCode": 200,
+        "success": true
+      }
+    }
+  },
+  {
+    "userIndex": 85,
+    "email": "usertests86@exstrat.com",
+    "totalTime": 23.0,
+    "avgTimePerCall": 5.750,
+    "apiCalls": 4,
+    "errors": 0,
+    "endpoints": {
+      "portfolios": {
+        "time": 12.0,
+        "httpCode": 200,
+        "success": true
+      },
+      "holdings": {
+        "time": 7.0,
+        "httpCode": 200,
+        "success": true
+      },
+      "forecasts": {
+        "time": 1.0,
+        "httpCode": 200,
+        "success": true
+      },
+      "strategies": {
+        "time": 3.0,
+        "httpCode": 200,
+        "success": true
+      }
+    }
+  },
+  {
+    "userIndex": 37,
+    "email": "usertests38@exstrat.com",
+    "totalTime": 23.0,
+    "avgTimePerCall": 5.750,
+    "apiCalls": 4,
+    "errors": 0,
+    "endpoints": {
+      "portfolios": {
+        "time": 12.0,
+        "httpCode": 200,
+        "success": true
+      },
+      "holdings": {
+        "time": 7.0,
+        "httpCode": 200,
+        "success": true
+      },
+      "forecasts": {
+        "time": 0,
+        "httpCode": 200,
+        "success": true
+      },
+      "strategies": {
+        "time": 3.0,
+        "httpCode": 200,
+        "success": true
+      }
+    }
+  },
+  {
+    "userIndex": 38,
+    "email": "usertests39@exstrat.com",
+    "totalTime": 25.0,
+    "avgTimePerCall": 6.250,
+    "apiCalls": 4,
+    "errors": 0,
+    "endpoints": {
+      "portfolios": {
+        "time": 2.0,
+        "httpCode": 200,
+        "success": true
+      },
+      "holdings": {
+        "time": 11.0,
+        "httpCode": 200,
+        "success": true
+      },
+      "forecasts": {
+        "time": 7.0,
+        "httpCode": 200,
+        "success": true
+      },
+      "strategies": {
+        "time": 4.0,
+        "httpCode": 200,
+        "success": true
+      }
+    }
+  },
+  {
+    "userIndex": 8,
+    "email": "usertests9@exstrat.com",
+    "totalTime": 26.0,
+    "avgTimePerCall": 6.500,
+    "apiCalls": 4,
+    "errors": 0,
+    "endpoints": {
+      "portfolios": {
+        "time": 14.0,
+        "httpCode": 200,
+        "success": true
+      },
+      "holdings": {
+        "time": 7.0,
+        "httpCode": 200,
+        "success": true
+      },
+      "forecasts": {
+        "time": 0,
+        "httpCode": 200,
+        "success": true
+      },
+      "strategies": {
+        "time": 3.0,
+        "httpCode": 200,
+        "success": true
+      }
+    }
+  },
+  {
+    "userIndex": 20,
+    "email": "usertests21@exstrat.com",
+    "totalTime": 40.0,
+    "avgTimePerCall": 10.000,
+    "apiCalls": 4,
+    "errors": 0,
+    "endpoints": {
+      "portfolios": {
+        "time": 1.0,
+        "httpCode": 200,
+        "success": true
+      },
+      "holdings": {
+        "time": 1.0,
+        "httpCode": 200,
+        "success": true
+      },
+      "forecasts": {
+        "time": 1.0,
+        "httpCode": 200,
+        "success": true
+      },
+      "strategies": {
+        "time": 35.0,
+        "httpCode": 200,
+        "success": true
+      }
+    }
+  },
+  {
+    "userIndex": 24,
+    "email": "usertests25@exstrat.com",
+    "totalTime": 41.0,
+    "avgTimePerCall": 10.250,
+    "apiCalls": 4,
+    "errors": 0,
+    "endpoints": {
+      "portfolios": {
+        "time": 1.0,
+        "httpCode": 200,
+        "success": true
+      },
+      "holdings": {
+        "time": 2.0,
+        "httpCode": 200,
+        "success": true
+      },
+      "forecasts": {
+        "time": 2.0,
+        "httpCode": 200,
+        "success": true
+      },
+      "strategies": {
+        "time": 35.0,
+        "httpCode": 200,
+        "success": true
+      }
+    }
+  },
+  {
+    "userIndex": 161,
+    "email": "usertests162@exstrat.com",
+    "totalTime": 40.0,
+    "avgTimePerCall": 10.000,
+    "apiCalls": 4,
+    "errors": 0,
+    "endpoints": {
+      "portfolios": {
+        "time": 1.0,
+        "httpCode": 200,
+        "success": true
+      },
+      "holdings": {
+        "time": 1.0,
+        "httpCode": 200,
+        "success": true
+      },
+      "forecasts": {
+        "time": 1.0,
+        "httpCode": 200,
+        "success": true
+      },
+      "strategies": {
+        "time": 36.0,
+        "httpCode": 200,
+        "success": true
+      }
+    }
+  },
+  {
+    "userIndex": 117,
+    "email": "usertests118@exstrat.com",
+    "totalTime": 40.0,
+    "avgTimePerCall": 10.000,
+    "apiCalls": 4,
+    "errors": 0,
+    "endpoints": {
+      "portfolios": {
+        "time": 1.0,
+        "httpCode": 200,
+        "success": true
+      },
+      "holdings": {
+        "time": 2.0,
+        "httpCode": 200,
+        "success": true
+      },
+      "forecasts": {
+        "time": 1.0,
+        "httpCode": 200,
+        "success": true
+      },
+      "strategies": {
+        "time": 36.0,
+        "httpCode": 200,
+        "success": true
+      }
+    }
+  },
+  {
+    "userIndex": 4,
+    "email": "usertests5@exstrat.com",
+    "totalTime": 40.0,
+    "avgTimePerCall": 10.000,
+    "apiCalls": 4,
+    "errors": 0,
+    "endpoints": {
+      "portfolios": {
+        "time": 2.0,
+        "httpCode": 200,
+        "success": true
+      },
+      "holdings": {
+        "time": 1.0,
+        "httpCode": 200,
+        "success": true
+      },
+      "forecasts": {
+        "time": 35.0,
+        "httpCode": 200,
+        "success": true
+      },
+      "strategies": {
+        "time": 0,
+        "httpCode": 200,
+        "success": true
+      }
+    }
+  },
+  {
+    "userIndex": 51,
+    "email": "usertests52@exstrat.com",
+    "totalTime": 39.0,
+    "avgTimePerCall": 9.750,
+    "apiCalls": 4,
+    "errors": 0,
+    "endpoints": {
+      "portfolios": {
+        "time": 2.0,
+        "httpCode": 200,
+        "success": true
+      },
+      "holdings": {
+        "time": 1.0,
+        "httpCode": 200,
+        "success": true
+      },
+      "forecasts": {
+        "time": 36.0,
+        "httpCode": 200,
+        "success": true
+      },
+      "strategies": {
+        "time": 0,
+        "httpCode": 200,
+        "success": true
+      }
+    }
+  },
+  {
+    "userIndex": 191,
+    "email": "usertests192@exstrat.com",
+    "totalTime": 39.0,
+    "avgTimePerCall": 9.750,
+    "apiCalls": 4,
+    "errors": 0,
+    "endpoints": {
+      "portfolios": {
+        "time": 1.0,
+        "httpCode": 200,
+        "success": true
+      },
+      "holdings": {
+        "time": 1.0,
+        "httpCode": 200,
+        "success": true
+      },
+      "forecasts": {
+        "time": 36.0,
+        "httpCode": 200,
+        "success": true
+      },
+      "strategies": {
+        "time": 0,
+        "httpCode": 200,
+        "success": true
+      }
+    }
+  },
+  {
+    "userIndex": 69,
+    "email": "usertests70@exstrat.com",
+    "totalTime": 41.0,
+    "avgTimePerCall": 10.250,
+    "apiCalls": 4,
+    "errors": 0,
+    "endpoints": {
+      "portfolios": {
+        "time": 2.0,
+        "httpCode": 200,
+        "success": true
+      },
+      "holdings": {
+        "time": 3.0,
+        "httpCode": 200,
+        "success": true
+      },
+      "forecasts": {
+        "time": 36.0,
+        "httpCode": 200,
+        "success": true
+      },
+      "strategies": {
+        "time": 0,
+        "httpCode": 200,
+        "success": true
+      }
+    }
+  },
+  {
+    "userIndex": 152,
+    "email": "usertests153@exstrat.com",
+    "totalTime": 38.0,
+    "avgTimePerCall": 9.500,
+    "apiCalls": 4,
+    "errors": 0,
+    "endpoints": {
+      "portfolios": {
+        "time": 1.0,
+        "httpCode": 200,
+        "success": true
+      },
+      "holdings": {
+        "time": 1.0,
+        "httpCode": 200,
+        "success": true
+      },
+      "forecasts": {
+        "time": 36.0,
+        "httpCode": 200,
+        "success": true
+      },
+      "strategies": {
+        "time": 0,
+        "httpCode": 200,
+        "success": true
+      }
+    }
+  },
+  {
+    "userIndex": 194,
+    "email": "usertests195@exstrat.com",
+    "totalTime": 38.0,
+    "avgTimePerCall": 9.500,
+    "apiCalls": 4,
+    "errors": 0,
+    "endpoints": {
+      "portfolios": {
+        "time": 2.0,
+        "httpCode": 200,
+        "success": true
+      },
+      "holdings": {
+        "time": 35.0,
+        "httpCode": 200,
+        "success": true
+      },
+      "forecasts": {
+        "time": 1.0,
+        "httpCode": 200,
+        "success": true
+      },
+      "strategies": {
+        "time": 0,
+        "httpCode": 200,
+        "success": true
+      }
+    }
+  },
+  {
+    "userIndex": 87,
+    "email": "usertests88@exstrat.com",
+    "totalTime": 42.0,
+    "avgTimePerCall": 10.500,
+    "apiCalls": 4,
+    "errors": 0,
+    "endpoints": {
+      "portfolios": {
+        "time": 1.0,
+        "httpCode": 200,
+        "success": true
+      },
+      "holdings": {
+        "time": 4.0,
+        "httpCode": 200,
+        "success": true
+      },
+      "forecasts": {
+        "time": 36.0,
+        "httpCode": 200,
+        "success": true
+      },
+      "strategies": {
+        "time": 0,
+        "httpCode": 200,
+        "success": true
+      }
+    }
+  },
+  {
+    "userIndex": 158,
+    "email": "usertests159@exstrat.com",
+    "totalTime": 41.0,
+    "avgTimePerCall": 10.250,
+    "apiCalls": 4,
+    "errors": 0,
+    "endpoints": {
+      "portfolios": {
+        "time": 4.0,
+        "httpCode": 200,
+        "success": true
+      },
+      "holdings": {
+        "time": 35.0,
+        "httpCode": 200,
+        "success": true
+      },
+      "forecasts": {
+        "time": 1.0,
+        "httpCode": 200,
+        "success": true
+      },
+      "strategies": {
+        "time": 0,
+        "httpCode": 200,
+        "success": true
+      }
+    }
+  },
+  {
+    "userIndex": 121,
+    "email": "usertests122@exstrat.com",
+    "totalTime": 37.0,
+    "avgTimePerCall": 9.250,
+    "apiCalls": 4,
+    "errors": 0,
+    "endpoints": {
+      "portfolios": {
+        "time": 36.0,
+        "httpCode": 200,
+        "success": true
+      },
+      "holdings": {
+        "time": 0,
+        "httpCode": 200,
+        "success": true
+      },
+      "forecasts": {
+        "time": 0,
+        "httpCode": 200,
+        "success": true
+      },
+      "strategies": {
+        "time": 1.0,
+        "httpCode": 200,
+        "success": true
+      }
+    }
+  },
+  {
+    "userIndex": 67,
+    "email": "usertests68@exstrat.com",
+    "totalTime": 40.0,
+    "avgTimePerCall": 10.000,
+    "apiCalls": 4,
+    "errors": 0,
+    "endpoints": {
+      "portfolios": {
+        "time": 3.0,
+        "httpCode": 200,
+        "success": true
+      },
+      "holdings": {
+        "time": 36.0,
+        "httpCode": 200,
+        "success": true
+      },
+      "forecasts": {
+        "time": 0,
+        "httpCode": 200,
+        "success": true
+      },
+      "strategies": {
+        "time": 1.0,
+        "httpCode": 200,
+        "success": true
+      }
+    }
+  },
+  {
+    "userIndex": 196,
+    "email": "usertests197@exstrat.com",
+    "totalTime": 37.0,
+    "avgTimePerCall": 9.250,
+    "apiCalls": 4,
+    "errors": 0,
+    "endpoints": {
+      "portfolios": {
+        "time": 35.0,
+        "httpCode": 200,
+        "success": true
+      },
+      "holdings": {
+        "time": 0,
+        "httpCode": 200,
+        "success": true
+      },
+      "forecasts": {
+        "time": 0,
+        "httpCode": 200,
+        "success": true
+      },
+      "strategies": {
+        "time": 0,
+        "httpCode": 200,
+        "success": true
+      }
+    }
+  },
+  {
+    "userIndex": 122,
+    "email": "usertests123@exstrat.com",
+    "totalTime": 40.0,
+    "avgTimePerCall": 10.000,
+    "apiCalls": 4,
+    "errors": 0,
+    "endpoints": {
+      "portfolios": {
+        "time": 2.0,
+        "httpCode": 200,
+        "success": true
+      },
+      "holdings": {
+        "time": 36.0,
+        "httpCode": 200,
+        "success": true
+      },
+      "forecasts": {
+        "time": 1.0,
+        "httpCode": 200,
+        "success": true
+      },
+      "strategies": {
+        "time": 0,
+        "httpCode": 200,
+        "success": true
+      }
+    }
+  },
+  {
+    "userIndex": 177,
+    "email": "usertests178@exstrat.com",
+    "totalTime": 37.0,
+    "avgTimePerCall": 9.250,
+    "apiCalls": 4,
+    "errors": 0,
+    "endpoints": {
+      "portfolios": {
+        "time": 36.0,
+        "httpCode": 200,
+        "success": true
+      },
+      "holdings": {
+        "time": 0,
+        "httpCode": 200,
+        "success": true
+      },
+      "forecasts": {
+        "time": 1.0,
+        "httpCode": 200,
+        "success": true
+      },
+      "strategies": {
+        "time": 0,
+        "httpCode": 200,
+        "success": true
+      }
+    }
+  },
+  {
+    "userIndex": 153,
+    "email": "usertests154@exstrat.com",
+    "totalTime": 37.0,
+    "avgTimePerCall": 9.250,
+    "apiCalls": 4,
+    "errors": 0,
+    "endpoints": {
+      "portfolios": {
+        "time": 36.0,
+        "httpCode": 200,
+        "success": true
+      },
+      "holdings": {
+        "time": 0,
+        "httpCode": 200,
+        "success": true
+      },
+      "forecasts": {
+        "time": 0,
+        "httpCode": 200,
+        "success": true
+      },
+      "strategies": {
+        "time": 0,
+        "httpCode": 200,
+        "success": true
+      }
+    }
+  }
+]
