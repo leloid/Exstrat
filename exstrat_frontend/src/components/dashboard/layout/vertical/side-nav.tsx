@@ -60,7 +60,13 @@ export function SideNav({ color = "evident", items = [] }: SideNavProps): React.
 					<Box component={RouterLink} href={paths.home} sx={{ display: "inline-flex" }}>
 						<Box
 							component="img"
-							src="/logo_large_dark_theme.svg"
+							src={
+								colorScheme === "dark"
+									? "/logo_large_dark_theme.svg"
+									: color === "blend_in" || color === "discrete"
+										? "/DarkFullLogo.svg"
+										: "/logo_large_dark_theme.svg"
+							}
 							alt="ExStrat"
 							sx={{ height: "auto", maxWidth: "160px", width: "auto" }}
 						/>

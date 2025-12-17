@@ -13,8 +13,10 @@ import { CaretDownIcon } from "@phosphor-icons/react/dist/ssr/CaretDown";
 import { CaretRightIcon } from "@phosphor-icons/react/dist/ssr/CaretRight";
 
 import type { NavItemConfig } from "@/types/nav";
+import type { DashboardNavColor } from "@/types/settings";
 import { paths } from "@/paths";
 import { isNavItemActive } from "@/lib/is-nav-item-active";
+import { useColorScheme } from "@mui/material/styles";
 
 import { icons } from "./nav-icons";
 import { WorkspacesSwitch } from "./workspaces-switch";
@@ -23,10 +25,12 @@ export interface MobileNavProps {
 	onClose?: () => void;
 	open?: boolean;
 	items?: NavItemConfig[];
+	color?: DashboardNavColor;
 }
 
-export function MobileNav({ items = [], open, onClose }: MobileNavProps): React.JSX.Element {
+export function MobileNav({ items = [], open, onClose, color = "evident" }: MobileNavProps): React.JSX.Element {
 	const pathname = usePathname();
+	const { colorScheme = "light" } = useColorScheme();
 
 	return (
 		<Drawer
@@ -70,7 +74,13 @@ export function MobileNav({ items = [], open, onClose }: MobileNavProps): React.
 					<Box component={RouterLink} href={paths.home} sx={{ display: "inline-flex" }}>
 						<Box
 							component="img"
-							src="/logo_large_dark_theme.svg"
+							src={
+								colorScheme === "dark"
+									? "/logo_large_dark_theme.svg"
+									: color === "blend_in" || color === "discrete"
+										? "/DarkFullLogo.svg"
+										: "/logo_large_dark_theme.svg"
+							}
 							alt="ExStrat"
 							sx={{ height: "auto", maxWidth: "200px", width: "auto" }}
 						/>

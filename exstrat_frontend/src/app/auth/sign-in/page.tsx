@@ -16,6 +16,7 @@ import OutlinedInput from "@mui/material/OutlinedInput";
 import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
 import Alert from "@mui/material/Alert";
+import { useColorScheme } from "@mui/material/styles";
 import { paths } from "@/paths";
 import { CenteredLayout } from "@/components/auth/centered-layout";
 import { useAuth } from "@/contexts/AuthContext";
@@ -24,6 +25,7 @@ import type { SignInData } from "@/types/auth";
 export default function Page(): React.JSX.Element {
 	const router = useRouter();
 	const { signIn, isAuthenticated } = useAuth();
+	const { colorScheme = "light" } = useColorScheme();
 	const [error, setError] = React.useState<string>("");
 	const [isLoading, setIsLoading] = React.useState(false);
 
@@ -63,7 +65,7 @@ export default function Page(): React.JSX.Element {
 					<Box component={RouterLink} href={paths.home} sx={{ display: "inline-block", fontSize: 0 }}>
 						<Box
 							component="img"
-							src="/logo_large_dark_theme.svg"
+							src={colorScheme === "light" ? "/DarkFullLogo.svg" : "/logo_large_dark_theme.svg"}
 							alt="ExStrat"
 							sx={{ height: "auto", maxWidth: "300px", width: "auto" }}
 						/>
