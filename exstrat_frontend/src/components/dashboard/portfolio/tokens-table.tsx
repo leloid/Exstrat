@@ -15,6 +15,7 @@ import TableHead from "@mui/material/TableHead";
 import TableRow from "@mui/material/TableRow";
 import TableSortLabel from "@mui/material/TableSortLabel";
 import Typography from "@mui/material/Typography";
+import { useColorScheme } from "@mui/material/styles";
 import { ArrowDownIcon } from "@phosphor-icons/react/dist/ssr/ArrowDown";
 import { ArrowUpIcon } from "@phosphor-icons/react/dist/ssr/ArrowUp";
 import { CaretDownIcon } from "@phosphor-icons/react/dist/ssr/CaretDown";
@@ -44,6 +45,7 @@ type SortField = "symbol" | "quantity" | "investedAmount" | "currentValue" | "pn
 type SortDirection = "asc" | "desc";
 
 export function TokensTable({ holdings, portfolioId, onTokenClick }: TokensTableProps): React.JSX.Element {
+	const { colorScheme = "light" } = useColorScheme();
 	const [sortField, setSortField] = React.useState<SortField>("currentValue");
 	const [sortDirection, setSortDirection] = React.useState<SortDirection>("desc");
 	const [alertConfigurations, setAlertConfigurations] = React.useState<AlertConfiguration[]>([]);
@@ -449,8 +451,16 @@ export function TokensTable({ holdings, portfolioId, onTokenClick }: TokensTable
 													label={alertInfo.strategyName}
 													size="small"
 													color="primary"
-													variant="outlined"
-													sx={{ fontWeight: 500, fontSize: "0.75rem", maxWidth: "100px" }}
+													variant={colorScheme === "dark" ? "filled" : "outlined"}
+													sx={{ 
+														fontWeight: 500, 
+														fontSize: "0.75rem", 
+														maxWidth: "100px",
+														...(colorScheme === "dark" && {
+															bgcolor: "var(--mui-palette-primary-main)",
+															color: "var(--mui-palette-primary-contrastText)",
+														}),
+													}}
 												/>
 											) : (
 												<Typography variant="body2" color="text.secondary">
@@ -464,8 +474,15 @@ export function TokensTable({ holdings, portfolioId, onTokenClick }: TokensTable
 													label={alertInfo.tpProgress}
 													size="small"
 													color="secondary"
-													variant="outlined"
-													sx={{ fontWeight: 600, fontSize: "0.75rem" }}
+													variant={colorScheme === "dark" ? "filled" : "outlined"}
+													sx={{ 
+														fontWeight: 600, 
+														fontSize: "0.75rem",
+														...(colorScheme === "dark" && {
+															bgcolor: "var(--mui-palette-secondary-main)",
+															color: "var(--mui-palette-secondary-contrastText)",
+														}),
+													}}
 												/>
 											) : (
 												<Typography variant="body2" color="text.secondary">

@@ -515,8 +515,8 @@ function ForecastPageContent(): React.JSX.Element {
 																																			<Checkbox checked size="small" sx={{ p: 0, mr: 1 }} />
 																																			<ListItemText
 																																				primary={
-																																					<Typography variant="body2">
-																																						TP {target.order}: {holding.token?.symbol || holding.symbol} = {formatCurrency(targetPrice, "$", 2)} Sell {target.sellPercentage.toFixed(1)}%
+																																					<Typography variant="body2" sx={{ color: "text.primary" }}>
+																																						TP {target.order}: {holding.token?.symbol || holding.symbol} = {formatCurrency(targetPrice, "$", 2)} Sell <Typography component="span" variant="body2" sx={{ color: "primary.main", fontWeight: 600 }}>{target.sellPercentage.toFixed(1)}%</Typography>
 																																					</Typography>
 																																				}
 																																			/>

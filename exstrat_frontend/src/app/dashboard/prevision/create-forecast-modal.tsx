@@ -511,8 +511,8 @@ export function CreateForecastModal({ onClose, onSuccess, open }: CreateForecast
 																											<Checkbox checked size="small" sx={{ p: 0, mr: 1 }} />
 																											<ListItemText
 																												primary={
-																													<Typography variant="body2">
-																														TP {detail.order}: {holding.token?.symbol || holding.symbol} = {formatCurrency(detail.targetPrice, "$", 2)} Sell {percentage.toFixed(1)}%
+																													<Typography variant="body2" sx={{ color: "text.primary" }}>
+																														TP {detail.order}: {holding.token?.symbol || holding.symbol} = {formatCurrency(detail.targetPrice, "$", 2)} Sell <Typography component="span" variant="body2" sx={{ color: "primary.main", fontWeight: 600 }}>{percentage.toFixed(1)}%</Typography>
 																													</Typography>
 																												}
 																											/>

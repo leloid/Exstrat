@@ -14,6 +14,7 @@ import ListItem from "@mui/material/ListItem";
 import ListItemText from "@mui/material/ListItemText";
 import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
+import { useColorScheme } from "@mui/material/styles";
 import { CheckIcon } from "@phosphor-icons/react/dist/ssr/Check";
 import { XIcon } from "@phosphor-icons/react/dist/ssr/X";
 import { Area, AreaChart, CartesianGrid, Line, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
@@ -42,6 +43,7 @@ export function TokenStrategySidebar({
 	holding,
 	portfolioId,
 }: TokenStrategySidebarProps): React.JSX.Element {
+	const { colorScheme = "light" } = useColorScheme();
 	const [forecast, setForecast] = React.useState<ForecastResponse | null>(null);
 	const [strategy, setStrategy] = React.useState<TheoreticalStrategyResponse | null>(null);
 	const [alertConfiguration, setAlertConfiguration] = React.useState<AlertConfiguration | null>(null);
@@ -288,14 +290,25 @@ export function TokenStrategySidebar({
 						</Stack>
 
 						{/* Progress Stats */}
-						<Card variant="outlined" sx={{ mb: 3, bgcolor: "var(--mui-palette-primary-50)" }}>
+						<Card 
+							variant="outlined" 
+							sx={{ 
+								mb: 3, 
+								bgcolor: colorScheme === "dark" 
+									? "var(--mui-palette-background-level1)" 
+									: "var(--mui-palette-primary-50)",
+								borderColor: colorScheme === "dark" 
+									? "var(--mui-palette-divider)" 
+									: undefined
+							}}
+						>
 							<CardContent>
 								<Stack direction="row" spacing={3}>
 									<Box sx={{ flex: 1 }}>
 										<Typography variant="caption" color="text.secondary" sx={{ display: "block", mb: 0.5 }}>
 											Progress
 										</Typography>
-										<Typography variant="h5" sx={{ fontWeight: 600 }}>
+										<Typography variant="h5" sx={{ fontWeight: 600, color: "text.primary" }}>
 											{Math.round(completionPercentage)}%
 										</Typography>
 									</Box>
@@ -322,7 +335,11 @@ export function TokenStrategySidebar({
 											height: 8,
 											borderRadius: "50%",
 											bgcolor: i < tpReached ? "success.main" : "divider",
-											boxShadow: i < tpReached ? "0 0 8px rgba(46, 125, 50, 0.5)" : "none",
+											boxShadow: i < tpReached 
+												? colorScheme === "dark" 
+													? "0 0 8px rgba(76, 175, 80, 0.6)" 
+													: "0 0 8px rgba(46, 125, 50, 0.5)" 
+												: "none",
 										}}
 									/>
 								))}
@@ -363,8 +380,13 @@ export function TokenStrategySidebar({
 											key={tp.order}
 											variant="outlined"
 											sx={{
-												bgcolor: isReached ? "success.light" : "background.paper",
+												bgcolor: isReached 
+													? colorScheme === "dark" 
+														? "rgba(76, 175, 80, 0.15)" 
+														: "success.light" 
+													: "background.paper",
 												borderColor: isReached ? "success.main" : "divider",
+												borderWidth: isReached ? 1.5 : 1,
 											}}
 										>
 											<CardContent sx={{ p: 2, "&:last-child": { pb: 2 } }}>
@@ -386,9 +408,24 @@ export function TokenStrategySidebar({
 															<Typography variant="body2" sx={{ fontWeight: 600, mb: 0.5 }}>
 																{formatCurrency(targetPrice, "$", 2)}
 															</Typography>
-															<Typography variant="caption" color="text.secondary" sx={{ display: "block" }}>
-																{formatPercentage(percentageGain)} • {formatCurrency(tpAlert?.projectedAmount || 0, "$", 0)}
-															</Typography>
+															<Stack direction="row" spacing={1} sx={{ alignItems: "center", flexWrap: "wrap" }}>
+																<Typography 
+																	variant="caption" 
+																	sx={{ 
+																		display: "block",
+																		color: percentageGain >= 0 ? "success.main" : "error.main",
+																		fontWeight: 500
+																	}}
+																>
+																	{formatPercentage(percentageGain)}
+																</Typography>
+																<Typography variant="caption" color="text.secondary" sx={{ display: "block" }}>
+																	•
+																</Typography>
+																<Typography variant="caption" color="text.secondary" sx={{ display: "block" }}>
+																	{formatCurrency(tpAlert?.projectedAmount || 0, "$", 0)}
+																</Typography>
+															</Stack>
 														</Box>
 													</Stack>
 													{isReached ? (
