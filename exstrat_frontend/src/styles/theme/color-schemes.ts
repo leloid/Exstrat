@@ -4,104 +4,40 @@ import { logger } from "@/lib/default-logger";
 
 import {
 	california,
-	chateauGreen,
+	exstratBlue,
+	exstratOrange,
+	exstratBlack,
+	exstratLightBackground,
+	exstratDarkBackground,
 	kepple,
-	neonBlue,
 	nevada,
 	redOrange,
-	royalBlue,
 	shakespeare,
 	stormGrey,
-	tomatoOrange,
 } from "./colors";
 import type { ColorScheme, PrimaryColor } from "./types";
 
+// Palette Exstrat unique
 const primarySchemes: Record<PrimaryColor, Record<ColorScheme, PaletteColorOptions>> = {
-	chateauGreen: {
+	exstrat: {
 		dark: {
-			...chateauGreen,
-			light: chateauGreen[300],
-			main: chateauGreen[400],
-			dark: chateauGreen[500],
-			contrastText: "var(--mui-palette-common-black)",
+			...exstratBlue,
+			light: exstratBlue[300],
+			main: exstratBlue[500], // #047DD5
+			dark: exstratBlue[700], // #1665C0 (pressed)
+			contrastText: "var(--mui-palette-common-white)",
 			activated: "rgba(var(--mui-palette-primary-mainChannel) / var(--mui-palette-action-activatedOpacity))",
-			hovered: "rgba(var(--mui-palette-primary-mainChannel) / var(--mui-palette-action-hoverOpacity))",
+			hovered: exstratBlue[600], // #047DD6 (hover)
 			selected: "rgba(var(--mui-palette-primary-mainChannel) / var(--mui-palette-action-selectedOpacity))",
 		},
 		light: {
-			...chateauGreen,
-			light: chateauGreen[400],
-			main: chateauGreen[500],
-			dark: chateauGreen[600],
+			...exstratBlue,
+			light: exstratBlue[400],
+			main: exstratBlue[500], // #047DD5
+			dark: exstratBlue[700], // #1665C0 (pressed)
 			contrastText: "var(--mui-palette-common-white)",
 			activated: "rgba(var(--mui-palette-primary-mainChannel) / var(--mui-palette-action-activatedOpacity))",
-			hovered: "rgba(var(--mui-palette-primary-mainChannel) / var(--mui-palette-action-hoverOpacity))",
-			selected: "rgba(var(--mui-palette-primary-mainChannel) / var(--mui-palette-action-selectedOpacity))",
-		},
-	},
-	neonBlue: {
-		dark: {
-			...neonBlue,
-			light: neonBlue[300],
-			main: neonBlue[400],
-			dark: neonBlue[500],
-			contrastText: "var(--mui-palette-common-black)",
-			activated: "rgba(var(--mui-palette-primary-mainChannel) / var(--mui-palette-action-activatedOpacity))",
-			hovered: "rgba(var(--mui-palette-primary-mainChannel) / var(--mui-palette-action-hoverOpacity))",
-			selected: "rgba(var(--mui-palette-primary-mainChannel) / var(--mui-palette-action-selectedOpacity))",
-		},
-		light: {
-			...neonBlue,
-			light: neonBlue[400],
-			main: neonBlue[500],
-			dark: neonBlue[600],
-			contrastText: "var(--mui-palette-common-white)",
-			activated: "rgba(var(--mui-palette-primary-mainChannel) / var(--mui-palette-action-activatedOpacity))",
-			hovered: "rgba(var(--mui-palette-primary-mainChannel) / var(--mui-palette-action-hoverOpacity))",
-			selected: "rgba(var(--mui-palette-primary-mainChannel) / var(--mui-palette-action-selectedOpacity))",
-		},
-	},
-	royalBlue: {
-		dark: {
-			...royalBlue,
-			light: royalBlue[300],
-			main: royalBlue[400],
-			dark: royalBlue[500],
-			contrastText: "var(--mui-palette-common-black)",
-			activated: "rgba(var(--mui-palette-primary-mainChannel) / var(--mui-palette-action-activatedOpacity))",
-			hovered: "rgba(var(--mui-palette-primary-mainChannel) / var(--mui-palette-action-hoverOpacity))",
-			selected: "rgba(var(--mui-palette-primary-mainChannel) / var(--mui-palette-action-selectedOpacity))",
-		},
-		light: {
-			...royalBlue,
-			light: royalBlue[400],
-			main: royalBlue[500],
-			dark: royalBlue[600],
-			contrastText: "var(--mui-palette-common-white)",
-			activated: "rgba(var(--mui-palette-primary-mainChannel) / var(--mui-palette-action-activatedOpacity))",
-			hovered: "rgba(var(--mui-palette-primary-mainChannel) / var(--mui-palette-action-hoverOpacity))",
-			selected: "rgba(var(--mui-palette-primary-mainChannel) / var(--mui-palette-action-selectedOpacity))",
-		},
-	},
-	tomatoOrange: {
-		dark: {
-			...tomatoOrange,
-			light: tomatoOrange[300],
-			main: tomatoOrange[400],
-			dark: tomatoOrange[500],
-			contrastText: "var(--mui-palette-common-black)",
-			activated: "rgba(var(--mui-palette-primary-mainChannel) / var(--mui-palette-action-activatedOpacity))",
-			hovered: "rgba(var(--mui-palette-primary-mainChannel) / var(--mui-palette-action-hoverOpacity))",
-			selected: "rgba(var(--mui-palette-primary-mainChannel) / var(--mui-palette-action-selectedOpacity))",
-		},
-		light: {
-			...tomatoOrange,
-			light: tomatoOrange[400],
-			main: tomatoOrange[500],
-			dark: tomatoOrange[600],
-			contrastText: "var(--mui-palette-common-white)",
-			activated: "rgba(var(--mui-palette-primary-mainChannel) / var(--mui-palette-action-activatedOpacity))",
-			hovered: "rgba(var(--mui-palette-primary-mainChannel) / var(--mui-palette-action-hoverOpacity))",
+			hovered: exstratBlue[600], // #047DD6 (hover)
 			selected: "rgba(var(--mui-palette-primary-mainChannel) / var(--mui-palette-action-selectedOpacity))",
 		},
 	},
@@ -115,8 +51,8 @@ export function colorSchemes(config: Config): Partial<Record<ColorScheme, ColorS
 	let primary = primarySchemes[config.primaryColor];
 
 	if (!primary) {
-		logger.warn(`No primary color found for ${config.primaryColor}. Using neonBlue instead.`);
-		primary = primarySchemes.neonBlue;
+		logger.warn(`No primary color found for ${config.primaryColor}. Using exstrat instead.`);
+		primary = primarySchemes.exstrat;
 	}
 
 	return {
@@ -124,12 +60,12 @@ export function colorSchemes(config: Config): Partial<Record<ColorScheme, ColorS
 			palette: {
 				action: { disabledBackground: "rgba(0, 0, 0, 0.12)" },
 				background: {
-					default: "var(--mui-palette-neutral-950)",
-					defaultChannel: "9 10 11",
-					paper: "var(--mui-palette-neutral-900)",
-					paperChannel: "18 21 23",
-					level1: "var(--mui-palette-neutral-800)",
-					level2: "var(--mui-palette-neutral-700)",
+					default: exstratDarkBackground.dark, // #141618 (DBG)
+					defaultChannel: "20 22 24",
+					paper: exstratDarkBackground.light, // #24272A (LBG)
+					paperChannel: "36 39 42",
+					level1: exstratDarkBackground.hoverDark, // #1D1F21
+					level2: exstratDarkBackground.hoverLight, // #2D2F32
 					level3: "var(--mui-palette-neutral-600)",
 				},
 				common: { black: "#000000", white: "#ffffff" },
@@ -158,11 +94,11 @@ export function colorSchemes(config: Config): Partial<Record<ColorScheme, ColorS
 				neutral: { ...nevada },
 				primary: primary.dark,
 				secondary: {
-					...nevada,
-					light: nevada[100],
-					main: nevada[200],
-					dark: nevada[300],
-					contrastText: "var(--mui-palette-common-black)",
+					...exstratOrange,
+					light: exstratOrange[300],
+					main: exstratOrange[500], // #F6851B
+					dark: exstratOrange[700],
+					contrastText: "var(--mui-palette-common-white)",
 					activated: "rgba(var(--mui-palette-secondary-mainChannel) / var(--mui-palette-action-activatedOpacity))",
 					hovered: "rgba(var(--mui-palette-secondary-mainChannel) / var(--mui-palette-action-hoverOpacity))",
 					selected: "rgba(var(--mui-palette-secondary-mainChannel) / var(--mui-palette-action-selectedOpacity))",
@@ -206,12 +142,12 @@ export function colorSchemes(config: Config): Partial<Record<ColorScheme, ColorS
 			palette: {
 				action: { disabledBackground: "rgba(0, 0, 0, 0.06)" },
 				background: {
-					default: "var(--mui-palette-common-white)",
+					default: exstratLightBackground.light, // #FFFFFF (LBG)
 					defaultChannel: "255 255 255",
-					paper: "var(--mui-palette-common-white)",
-					paperChannel: "255 255 255",
-					level1: "var(--mui-palette-neutral-50)",
-					level2: "var(--mui-palette-neutral-100)",
+					paper: exstratLightBackground.dark, // #F7F9FB (DBG)
+					paperChannel: "247 249 251",
+					level1: exstratLightBackground.hoverLight, // #E6EAEE
+					level2: exstratLightBackground.hoverDark, // #CFD0D2
 					level3: "var(--mui-palette-neutral-200)",
 				},
 				common: { black: "#000000", white: "#ffffff" },
@@ -240,10 +176,10 @@ export function colorSchemes(config: Config): Partial<Record<ColorScheme, ColorS
 				neutral: { ...stormGrey },
 				primary: primary.light,
 				secondary: {
-					...nevada,
-					light: nevada[600],
-					main: nevada[700],
-					dark: nevada[800],
+					...exstratOrange,
+					light: exstratOrange[400],
+					main: exstratOrange[500], // #F6851B
+					dark: exstratOrange[700],
 					contrastText: "var(--mui-palette-common-white)",
 					activated: "rgba(var(--mui-palette-secondary-mainChannel) / var(--mui-palette-action-activatedOpacity))",
 					hovered: "rgba(var(--mui-palette-secondary-mainChannel) / var(--mui-palette-action-hoverOpacity))",

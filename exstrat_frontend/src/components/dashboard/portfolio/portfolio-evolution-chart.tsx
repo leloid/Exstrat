@@ -67,12 +67,12 @@ export function PortfolioEvolutionChart({ data }: PortfolioEvolutionChartProps):
 						<LineChart data={data} margin={{ top: 10, right: 20, left: 10, bottom: 10 }}>
 							<defs>
 								<linearGradient id="colorValeurNette" x1="0" y1="0" x2="0" y2="1">
-									<stop offset="5%" stopColor="#10b981" stopOpacity={0.3} />
-									<stop offset="95%" stopColor="#10b981" stopOpacity={0} />
+									<stop offset="5%" stopColor="#F6851B" stopOpacity={0.3} />
+									<stop offset="95%" stopColor="#F6851B" stopOpacity={0} />
 								</linearGradient>
 								<linearGradient id="colorValeurBrute" x1="0" y1="0" x2="0" y2="1">
-									<stop offset="5%" stopColor="#3b82f6" stopOpacity={0.2} />
-									<stop offset="95%" stopColor="#3b82f6" stopOpacity={0} />
+									<stop offset="5%" stopColor="#047DD5" stopOpacity={0.2} />
+									<stop offset="95%" stopColor="#047DD5" stopOpacity={0} />
 								</linearGradient>
 							</defs>
 							<CartesianGrid strokeDasharray="3 3" stroke="var(--mui-palette-divider)" />
@@ -112,7 +112,7 @@ export function PortfolioEvolutionChart({ data }: PortfolioEvolutionChartProps):
 							<Line
 								type="monotone"
 								dataKey="valeurBrute"
-								stroke="#3b82f6"
+								stroke="#047DD5"
 								strokeWidth={2.5}
 								dot={false}
 								activeDot={{ r: 6 }}
@@ -120,7 +120,7 @@ export function PortfolioEvolutionChart({ data }: PortfolioEvolutionChartProps):
 							<Line
 								type="monotone"
 								dataKey="valeurNette"
-								stroke="#10b981"
+								stroke="#F6851B"
 								strokeWidth={2.5}
 								dot={false}
 								activeDot={{ r: 6 }}
@@ -164,7 +164,7 @@ function CustomTooltip({ active, payload, label }: CustomTooltipProps): React.JS
 					<Stack direction="row" key={index} spacing={2} sx={{ alignItems: "center" }}>
 						<Box
 							sx={{
-								bgcolor: entry.color || entry.dataKey === "valeurBrute" ? "#3b82f6" : "#10b981",
+								bgcolor: entry.color || entry.dataKey === "valeurBrute" ? "#047DD5" : "#F6851B",
 								borderRadius: "2px",
 								height: "8px",
 								width: "8px",

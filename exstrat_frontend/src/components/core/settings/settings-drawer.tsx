@@ -15,7 +15,6 @@ import type { Mode } from "@/styles/theme/types";
 import { OptionsColorScheme } from "./options-color-scheme";
 import { OptionsLayout } from "./options-layout";
 import { OptionsNavColor } from "./options-nav-color";
-import { OptionsPrimaryColor } from "./options-primary-color";
 
 export interface SettingsDrawerProps {
 	canReset?: boolean;
@@ -69,12 +68,6 @@ export function SettingsDrawer({
 				</Stack>
 			</Stack>
 			<Stack spacing={5} sx={{ overflowY: "auto", p: 3 }}>
-				<OptionsPrimaryColor
-					onChange={(value) => {
-						handleChange("primaryColor", value);
-					}}
-					value={values.primaryColor}
-				/>
 				<OptionsColorScheme
 					onChange={(value) => {
 						handleChange("theme", value);

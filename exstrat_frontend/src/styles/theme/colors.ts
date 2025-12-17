@@ -139,3 +139,61 @@ export const tomatoOrange = {
 	900: "#7e1110",
 	950: "#440608",
 } satisfies PartialColor;
+
+// Palette Exstrat - Couleurs officielles
+export const exstratBlue = {
+	50: "#e6f4fd",
+	100: "#b3dff9",
+	200: "#80caf5",
+	300: "#4db5f1",
+	400: "#1aa0ed",
+	500: "#047DD5", // Default
+	600: "#047DD6", // Hover
+	700: "#1665C0", // Pressed
+	800: "#0d4d8f",
+	900: "#06355e",
+	950: "#031c2f",
+} satisfies PartialColor;
+
+export const exstratOrange = {
+	50: "#fef5eb",
+	100: "#fde5c7",
+	200: "#fbcb8f",
+	300: "#f9b157",
+	400: "#f7971f",
+	500: "#F6851B", // Default
+	600: "#d66a0f",
+	700: "#b4500c",
+	800: "#923608",
+	900: "#701c04",
+	950: "#3e0e02",
+} satisfies PartialColor;
+
+export const exstratBlack = {
+	50: "#f5f5f6",
+	100: "#e9ebee", // Hover
+	200: "#cfd0d2",
+	300: "#9fa0a3",
+	400: "#6c6e72",
+	500: "#3C3D3E", // Pressed
+	600: "#25292E", // Default
+	700: "#1d1f21",
+	800: "#141618",
+	900: "#0c0d0e",
+	950: "#050506",
+} satisfies PartialColor;
+
+// Couleurs de fond pour les thèmes
+export const exstratLightBackground = {
+	light: "#FFFFFF", // LBG
+	dark: "#F7F9FB", // DBG
+	hoverLight: "#E6EAEE", // Hover LBG
+	hoverDark: "#CFD0D2", // Hover DBG
+} as const;
+
+export const exstratDarkBackground = {
+	light: "#24272A", // LBG
+	dark: "#141618", // DBG
+	hoverLight: "#2D2F32", // Hover LBG
+	hoverDark: "#1D1F21", // Hover DBG
+} as const;
