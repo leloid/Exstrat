@@ -231,18 +231,18 @@ export default function Page(): React.JSX.Element {
 					existing.quantity += holding.quantity;
 					existing.value += currentValue;
 				} else {
-					// Generate a color based on symbol
+					// Generate a color based on symbol using Exstrat palette
 					const colors = [
-						"var(--mui-palette-primary-main)",
+						"var(--mui-palette-primary-main)", // #047DD5 - Exstrat Blue
+						"var(--mui-palette-secondary-main)", // #F6851B - Exstrat Orange
 						"var(--mui-palette-success-main)",
 						"var(--mui-palette-warning-main)",
 						"var(--mui-palette-error-main)",
 						"var(--mui-palette-info-main)",
-						"#9c27b0",
-						"#f50057",
-						"#00acc1",
-						"#ff9800",
-						"#795548",
+						"#25292E", // Exstrat Black
+						"#1665C0", // Exstrat Blue Pressed
+						"#3C3D3E", // Exstrat Black Pressed
+						"#047DD6", // Exstrat Blue Hover
 					];
 					const colorIndex = symbol.charCodeAt(0) % colors.length;
 
