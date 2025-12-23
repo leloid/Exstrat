@@ -2616,6 +2616,8 @@ function WalletPerformanceTooltipContent({
 	label,
 	wallets,
 }: WalletPerformanceTooltipContentProps): React.JSX.Element | null {
+	const { secretMode } = useSecretMode();
+	
 	if (!active || !payload || payload.length === 0) {
 		return null;
 	}
@@ -2715,6 +2717,8 @@ interface PerformanceTooltipContentProps {
 }
 
 function PerformanceTooltipContent({ active, payload }: PerformanceTooltipContentProps): React.JSX.Element | null {
+	const { secretMode } = useSecretMode();
+	
 	if (!active || !payload || payload.length === 0) {
 		return null;
 	}
@@ -2737,7 +2741,7 @@ function PerformanceTooltipContent({ active, payload }: PerformanceTooltipConten
 						<Typography sx={{ whiteSpace: "nowrap" }}>{entry.name}</Typography>
 					</Stack>
 					<Typography color="text.secondary" variant="body2">
-						{formatCompactCurrency(entry.value, "$", 2)}
+						{formatCompactCurrency(entry.value, "$", 2, secretMode)}
 					</Typography>
 				</Stack>
 			</Stack>

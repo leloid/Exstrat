@@ -14,7 +14,7 @@ import { TrendDownIcon } from "@phosphor-icons/react/dist/ssr/TrendDown";
 import { TrendUpIcon } from "@phosphor-icons/react/dist/ssr/TrendUp";
 import { WalletIcon } from "@phosphor-icons/react/dist/ssr/Wallet";
 
-import { formatCurrency, formatPercentage } from "@/lib/format";
+import { formatCompactCurrency, formatPercentage } from "@/lib/format";
 import { useSecretMode } from "@/hooks/use-secret-mode";
 
 export interface PortfolioSummaryProps {
@@ -59,7 +59,7 @@ export function PortfolioSummary({
 							<Typography color="text.secondary" variant="body1">
 								Invested Capital
 							</Typography>
-							<Typography variant="h3">{formatCurrency(capitalInvesti, "$", 2, secretMode)}</Typography>
+							<Typography variant="h3">{formatCompactCurrency(capitalInvesti, "$", 2, secretMode)}</Typography>
 						</div>
 					</Stack>
 				</CardContent>
@@ -83,7 +83,7 @@ export function PortfolioSummary({
 							<Typography color="text.secondary" variant="body1">
 								Current Value
 							</Typography>
-							<Typography variant="h3">{formatCurrency(valeurActuelle, "$", 2, secretMode)}</Typography>
+							<Typography variant="h3">{formatCompactCurrency(valeurActuelle, "$", 2, secretMode)}</Typography>
 						</div>
 					</Stack>
 				</CardContent>
@@ -118,7 +118,7 @@ export function PortfolioSummary({
 								}}
 							>
 								{isPositive ? "+" : ""}
-								{formatCurrency(pnlAbsolu, "$", 2, secretMode)}
+								{formatCompactCurrency(pnlAbsolu, "$", 2, secretMode)}
 							</Typography>
 						</div>
 					</Stack>
