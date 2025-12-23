@@ -828,7 +828,7 @@ export default function Page(): React.JSX.Element {
 			// IMPORTANT: Recharger les holdings pour mettre à jour les valeurs après la transaction
 			// Le backend recalcule déjà le holding de manière synchrone, mais on doit recharger les données
 			const data: Record<string, PortfolioData> = {};
-			const updatedPortfolios = await portfoliosApi.getUserPortfolios();
+			const updatedPortfolios = await portfoliosApi.getPortfolios();
 			for (const portfolio of updatedPortfolios) {
 				try {
 					const holdings = await portfoliosApi.getPortfolioHoldings(portfolio.id);
