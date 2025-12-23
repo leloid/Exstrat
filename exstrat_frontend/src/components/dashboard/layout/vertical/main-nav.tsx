@@ -26,6 +26,7 @@ import { NotificationsPopover } from "../notifications-popover";
 import { SearchDialog } from "../search-dialog";
 import { UserPopover } from "../user-popover";
 import { useAuth } from "@/contexts/AuthContext";
+import { SecretModeButton } from "../secret-mode-button";
 
 export interface MainNavProps {
 	items: NavItemConfig[];
@@ -76,6 +77,7 @@ export function MainNav({ items }: MainNavProps): React.JSX.Element {
 						spacing={2}
 						sx={{ alignItems: "center", flex: "1 1 auto", justifyContent: "flex-end" }}
 					>
+						<SecretModeButton />
 						<NotificationsButton />
 						<ContactsButton />
 						<Divider

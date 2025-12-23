@@ -12,4 +12,5 @@ export interface Settings {
 	primaryColor?: PrimaryColor;
 	dashboardLayout?: DashboardLayout;
 	dashboardNavColor?: DashboardNavColor;
+	secretMode?: boolean;
 }

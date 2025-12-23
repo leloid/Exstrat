@@ -16,6 +16,7 @@ import { TrendDownIcon } from "@phosphor-icons/react/dist/ssr/TrendDown";
 import { TrendUpIcon } from "@phosphor-icons/react/dist/ssr/TrendUp";
 
 import { formatCurrency, formatPercentage } from "@/lib/format";
+import { useSecretMode } from "@/hooks/use-secret-mode";
 
 export interface QuickStatsProps {
 	capitalInvesti: number;
@@ -30,6 +31,7 @@ export function QuickStats({
 	pnlAbsolu,
 	pnlRelatif,
 }: QuickStatsProps): React.JSX.Element {
+	const { secretMode } = useSecretMode();
 	const isPositive = pnlAbsolu >= 0;
 	const returnPercentage = Math.abs(pnlRelatif);
 	const healthPercentage = Math.min(100, Math.max(0, 50 + pnlRelatif)); // Scale return to 0-100% for health
@@ -52,7 +54,7 @@ export function QuickStats({
 									Current Value
 								</Typography>
 								<Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
-									<Typography variant="h5">{formatCurrency(valeurActuelle, "$", 0)}</Typography>
+									<Typography variant="h5">{formatCurrency(valeurActuelle, "$", 0, secretMode)}</Typography>
 									<Chip
 										color={isPositive ? "success" : "error"}
 										label={formatPercentage(pnlRelatif)}
@@ -90,7 +92,7 @@ export function QuickStats({
 								<Typography color="text.secondary" variant="overline">
 									Invested Capital
 								</Typography>
-								<Typography variant="h5">{formatCurrency(capitalInvesti, "$", 0)}</Typography>
+								<Typography variant="h5">{formatCurrency(capitalInvesti, "$", 0, secretMode)}</Typography>
 							</Stack>
 							<Avatar
 								sx={{
@@ -156,7 +158,7 @@ export function QuickStats({
 								</Typography>
 								<Typography color="inherit" variant="h5">
 									{isPositive ? "+" : ""}
-									{formatCurrency(pnlAbsolu, "$", 2)}
+									{formatCurrency(pnlAbsolu, "$", 2, secretMode)}
 								</Typography>
 							</Stack>
 							<Avatar

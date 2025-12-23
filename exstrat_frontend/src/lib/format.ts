@@ -7,9 +7,13 @@
  * Format a price safely
  * @param price - The price to format (can be null or undefined)
  * @param fallback - Fallback value if price is null/undefined
- * @returns Formatted price or fallback value
+ * @param hideAmount - If true, returns "•••" instead of the price
+ * @returns Formatted price or fallback value or "•••" if hideAmount is true
  */
-export const formatPrice = (price: number | null | undefined, fallback: string = "N/A"): string => {
+export const formatPrice = (price: number | null | undefined, fallback: string = "N/A", hideAmount: boolean = false): string => {
+	if (hideAmount) {
+		return "•••";
+	}
 	if (price === null || price === undefined || Number.isNaN(price)) {
 		return fallback;
 	}
@@ -33,9 +37,13 @@ export const formatPercentage = (percentage: number | null | undefined, decimals
  * Format a quantity safely
  * @param quantity - The quantity to format (can be null or undefined)
  * @param decimals - Number of decimals (default: 8)
- * @returns Formatted quantity or '0.00000000'
+ * @param hideAmount - If true, returns "•••" instead of the quantity
+ * @returns Formatted quantity or '0.00000000' or "•••" if hideAmount is true
  */
-export const formatQuantity = (quantity: number | null | undefined, decimals: number = 8): string => {
+export const formatQuantity = (quantity: number | null | undefined, decimals: number = 8, hideAmount: boolean = false): string => {
+	if (hideAmount) {
+		return "•••";
+	}
 	if (quantity === null || quantity === undefined || Number.isNaN(quantity)) {
 		return "0.00000000";
 	}
@@ -46,9 +54,13 @@ export const formatQuantity = (quantity: number | null | undefined, decimals: nu
  * Format an amount in USD safely
  * @param amount - The amount to format (can be null or undefined)
  * @param prefix - Prefix to add (default: '$')
- * @returns Formatted amount with prefix
+ * @param hideAmount - If true, returns "•••" instead of the amount
+ * @returns Formatted amount with prefix or "•••" if hideAmount is true
  */
-export const formatUSD = (amount: number | null | undefined, prefix: string = "$"): string => {
+export const formatUSD = (amount: number | null | undefined, prefix: string = "$", hideAmount: boolean = false): string => {
+	if (hideAmount) {
+		return "•••";
+	}
 	if (amount === null || amount === undefined || Number.isNaN(amount)) {
 		return `${prefix}0.00`;
 	}
@@ -60,13 +72,18 @@ export const formatUSD = (amount: number | null | undefined, prefix: string = "$
  * @param amount - The amount to format (can be null or undefined)
  * @param currency - Currency symbol (default: '€')
  * @param decimals - Number of decimals (default: 2)
- * @returns Formatted amount with currency
+ * @param hideAmount - If true, returns "•••" instead of the amount
+ * @returns Formatted amount with currency or "•••" if hideAmount is true
  */
 export const formatCurrency = (
 	amount: number | null | undefined,
 	currency: string = "€",
-	decimals: number = 2
+	decimals: number = 2,
+	hideAmount: boolean = false
 ): string => {
+	if (hideAmount) {
+		return "•••";
+	}
 	if (amount === null || amount === undefined || Number.isNaN(amount)) {
 		return `${currency}0.00`;
 	}
@@ -81,13 +98,18 @@ export const formatCurrency = (
  * @param amount - The amount to format (can be null or undefined)
  * @param currency - Currency symbol (default: '$')
  * @param decimals - Number of decimals (default: 2)
- * @returns Formatted amount with currency and compact notation
+ * @param hideAmount - If true, returns "•••" instead of the amount
+ * @returns Formatted amount with currency and compact notation or "•••" if hideAmount is true
  */
 export const formatCompactCurrency = (
 	amount: number | null | undefined,
 	currency: string = "$",
-	decimals: number = 2
+	decimals: number = 2,
+	hideAmount: boolean = false
 ): string => {
+	if (hideAmount) {
+		return "•••";
+	}
 	if (amount === null || amount === undefined || Number.isNaN(amount)) {
 		return `${currency}0.00`;
 	}

@@ -44,6 +44,7 @@ import { UserPopover } from "../user-popover";
 import { useAuth } from "@/contexts/AuthContext";
 import { WorkspacesSwitch } from "../workspaces-switch";
 import { navColorStyles } from "./styles";
+import { SecretModeButton } from "../secret-mode-button";
 
 const logoColors = {
 	dark: { blend_in: "light", discrete: "light", evident: "light" },
@@ -122,6 +123,7 @@ export function MainNav({ color = "evident", items = [] }: MainNavProps): React.
 						sx={{ alignItems: "center", flex: "1 1 auto", justifyContent: "flex-end" }}
 					>
 						<SearchButton />
+						<SecretModeButton />
 						<NotificationsButton />
 						<ContactsButton />
 						<Divider

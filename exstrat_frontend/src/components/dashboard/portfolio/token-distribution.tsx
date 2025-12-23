@@ -14,15 +14,17 @@ import { WalletIcon } from "@phosphor-icons/react/dist/ssr/Wallet";
 import { Cell, Pie, PieChart, Tooltip } from "recharts";
 
 import { NoSsr } from "@/components/core/no-ssr";
-import { formatCurrency } from "@/lib/format";
+import { formatCurrency, formatQuantity } from "@/lib/format";
 import { getTokenLogoUrl } from "@/lib/utils";
 import type { Holding } from "@/types/portfolio";
+import { useSecretMode } from "@/hooks/use-secret-mode";
 
 export interface TokenDistributionProps {
 	holdings: Holding[];
 }
 
 export function TokenDistribution({ holdings }: TokenDistributionProps): React.JSX.Element {
+	const { secretMode } = useSecretMode();
 	const chartSize = 200;
 	const chartThickness = 30;
 
@@ -155,12 +157,14 @@ export function TokenDistribution({ holdings }: TokenDistributionProps): React.J
 						</PieChart>
 					</NoSsr>
 					<Stack spacing={3} sx={{ flex: "1 1 auto" }}>
-						<Stack spacing={1}>
-							<Typography color="text.secondary" variant="overline">
-								Total balance
-							</Typography>
-							<Typography variant="h4">{formatCurrency(total, "$", 2)}</Typography>
-						</Stack>
+						{!secretMode && (
+							<Stack spacing={1}>
+								<Typography color="text.secondary" variant="overline">
+									Total balance
+								</Typography>
+								<Typography variant="h4">{formatCurrency(total, "$", 2)}</Typography>
+							</Stack>
+						)}
 						<Stack spacing={1}>
 							<Typography color="text.secondary" variant="overline">
 								Token allocation
@@ -188,10 +192,10 @@ export function TokenDistribution({ holdings }: TokenDistributionProps): React.J
 												{percentage.toFixed(1)}%
 											</Typography>
 											<Typography color="text.secondary" variant="body2" sx={{ minWidth: "80px", textAlign: "right" }}>
-												{entry.quantity.toLocaleString(undefined, { maximumFractionDigits: 8 })}
+												{formatQuantity(entry.quantity, 8, secretMode)}
 											</Typography>
 											<Typography color="text.secondary" variant="body2" sx={{ minWidth: "90px", textAlign: "right" }}>
-												{formatCurrency(entry.value, "$", 2)}
+												{formatCurrency(entry.value, "$", 2, secretMode)}
 											</Typography>
 										</Stack>
 									);
@@ -212,6 +216,8 @@ interface TooltipContentProps {
 }
 
 function TooltipContent({ active, payload }: TooltipContentProps): React.JSX.Element | null {
+	const { secretMode } = useSecretMode();
+	
 	if (!active || !payload || payload.length === 0) {
 		return null;
 	}
@@ -237,7 +243,7 @@ function TooltipContent({ active, payload }: TooltipContentProps): React.JSX.Ele
 					</Typography>
 				</Stack>
 				<Typography color="text.secondary" variant="body2">
-					{formatCurrency(entry.value, "$", 2)}
+					{formatCurrency(entry.value, "$", 2, secretMode)}
 				</Typography>
 			</Stack>
 		</Box>

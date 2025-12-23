@@ -59,7 +59,8 @@ import MuiTooltip from "@mui/material/Tooltip";
 import { usePortfolio } from "@/contexts/PortfolioContext";
 import * as portfoliosApi from "@/lib/portfolios-api";
 import { transactionsApi } from "@/lib/transactions-api";
-import { formatCurrency, formatPercentage, formatCompactCurrency } from "@/lib/format";
+import { formatCurrency, formatPercentage, formatCompactCurrency, formatQuantity } from "@/lib/format";
+import { useSecretMode } from "@/hooks/use-secret-mode";
 import { TokenSearch } from "@/components/transactions/token-search";
 import { CreateTransactionModal } from "@/components/transactions/create-transaction-modal";
 import type { Holding, CreatePortfolioDto, UpdatePortfolioDto } from "@/types/portfolio";
@@ -135,6 +136,7 @@ const getTokenLogoUrl = (symbol: string, cmcId: number | undefined): string | nu
 };
 
 export default function Page(): React.JSX.Element {
+	const { secretMode } = useSecretMode();
 	const {
 		portfolios,
 		isLoading: portfoliosLoading,
@@ -1067,7 +1069,7 @@ export default function Page(): React.JSX.Element {
 							}}
 						>
 							<Typography color="text.secondary">Total Value</Typography>
-							<Typography variant="h3">{formatCompactCurrency(globalStats.totalValue, "$", 2)}</Typography>
+							<Typography variant="h3">{formatCompactCurrency(globalStats.totalValue, "$", 2, secretMode)}</Typography>
 						</Stack>
 						<Stack
 							spacing={1}
@@ -1078,7 +1080,7 @@ export default function Page(): React.JSX.Element {
 							}}
 						>
 							<Typography color="text.secondary">Total Invested</Typography>
-							<Typography variant="h3">{formatCompactCurrency(globalStats.totalInvested, "$", 2)}</Typography>
+							<Typography variant="h3">{formatCompactCurrency(globalStats.totalInvested, "$", 2, secretMode)}</Typography>
 						</Stack>
 						<Stack
 							spacing={1}
@@ -1093,7 +1095,7 @@ export default function Page(): React.JSX.Element {
 								color={globalStats.totalPNL >= 0 ? "success.main" : "error.main"}
 								variant="h3"
 							>
-								{formatCompactCurrency(globalStats.totalPNL, "$", 2)}
+								{formatCompactCurrency(globalStats.totalPNL, "$", 2, secretMode)}
 							</Typography>
 							<Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
 								{globalStats.totalPNL >= 0 ? (
@@ -1167,18 +1169,20 @@ export default function Page(): React.JSX.Element {
 										</Box>
 										{/* Text Content */}
 										<Stack spacing={3}>
-											<Stack spacing={1}>
-												<Typography color="text.secondary" variant="overline">
-													Total balance
-												</Typography>
-												<Typography variant="h4">
-													{formatCompactCurrency(
-														allTokenData.reduce((sum, item) => sum + item.value, 0),
-														"$",
-														2
-													)}
-												</Typography>
-											</Stack>
+											{!secretMode && (
+												<Stack spacing={1}>
+													<Typography color="text.secondary" variant="overline">
+														Total balance
+													</Typography>
+													<Typography variant="h4">
+														{formatCompactCurrency(
+															allTokenData.reduce((sum, item) => sum + item.value, 0),
+															"$",
+															2
+														)}
+													</Typography>
+												</Stack>
+											)}
 											<Stack spacing={1}>
 												<Typography color="text.secondary" variant="overline">
 													Available tokens {allTokenData.length > 6 && `(showing top 6 of ${allTokenData.length})`}
@@ -1191,10 +1195,10 @@ export default function Page(): React.JSX.Element {
 																{entry.name}
 															</Typography>
 															<Typography color="text.secondary" variant="body2" sx={{ minWidth: "80px", textAlign: "right" }}>
-																{entry.quantity.toLocaleString(undefined, { maximumFractionDigits: 8 })}
+																{formatQuantity(entry.quantity, 8, secretMode)}
 															</Typography>
 															<Typography color="text.secondary" variant="body2" sx={{ minWidth: "90px", textAlign: "right" }}>
-																{formatCompactCurrency(entry.value, "$", 2)}
+																{formatCompactCurrency(entry.value, "$", 2, secretMode)}
 															</Typography>
 														</Stack>
 													))}
@@ -1217,10 +1221,13 @@ export default function Page(): React.JSX.Element {
 																+{allTokenData.length - 4} more tokens
 															</Typography>
 															<Typography color="text.secondary" variant="body2" sx={{ minWidth: "80px", textAlign: "right" }}>
-																{allTokenData
-																	.slice(4)
-																	.reduce((sum, token) => sum + token.quantity, 0)
-																	.toLocaleString(undefined, { maximumFractionDigits: 8 })}
+																{formatQuantity(
+																	allTokenData
+																		.slice(4)
+																		.reduce((sum, token) => sum + token.quantity, 0),
+																	8,
+																	secretMode
+																)}
 															</Typography>
 															<Typography color="text.secondary" variant="body2" sx={{ minWidth: "90px", textAlign: "right" }}>
 																{formatCompactCurrency(
@@ -1482,12 +1489,12 @@ export default function Page(): React.JSX.Element {
 												</TableCell>
 												<TableCell align="right">
 													<Typography variant="body2" sx={{ fontSize: "0.875rem", whiteSpace: "nowrap" }}>
-														{formatCompactCurrency(data.value, "$", 2)}
+														{formatCompactCurrency(data.value, "$", 2, secretMode)}
 													</Typography>
 												</TableCell>
 												<TableCell align="right">
 													<Typography variant="body2" sx={{ fontSize: "0.875rem", whiteSpace: "nowrap" }}>
-														{formatCompactCurrency(data.invested, "$", 2)}
+														{formatCompactCurrency(data.invested, "$", 2, secretMode)}
 													</Typography>
 												</TableCell>
 												<TableCell align="right">
@@ -1509,7 +1516,7 @@ export default function Page(): React.JSX.Element {
 																variant="body2"
 																sx={{ fontSize: "0.8rem", whiteSpace: "nowrap" }}
 															>
-																{formatCompactCurrency(data.pnl, "$", 2)}
+																{formatCompactCurrency(data.pnl, "$", 2, secretMode)}
 															</Typography>
 														</Stack>
 														<Typography
@@ -1573,8 +1580,12 @@ export default function Page(): React.JSX.Element {
 																			<TableCell sx={{ fontWeight: 600 }}>Token</TableCell>
 																			<TableCell align="right" sx={{ fontWeight: 600 }}>Type</TableCell>
 																			<TableCell align="right" sx={{ fontWeight: 600 }}>Quantity</TableCell>
-																			<TableCell align="right" sx={{ fontWeight: 600 }}>Price</TableCell>
-																			<TableCell align="right" sx={{ fontWeight: 600 }}>Amount</TableCell>
+																			{!secretMode && (
+																				<>
+																					<TableCell align="right" sx={{ fontWeight: 600 }}>Price</TableCell>
+																					<TableCell align="right" sx={{ fontWeight: 600 }}>Amount</TableCell>
+																				</>
+																			)}
 																		</TableRow>
 																	</TableHead>
 																	<TableBody>
@@ -1609,21 +1620,23 @@ export default function Page(): React.JSX.Element {
 																				</TableCell>
 																				<TableCell align="right">
 																					<Typography variant="body2">
-																						{transaction.quantity.toLocaleString(undefined, {
-																							maximumFractionDigits: 8,
-																						})}
+																						{formatQuantity(transaction.quantity, 8, secretMode)}
 																					</Typography>
 																				</TableCell>
-																				<TableCell align="right">
-																					<Typography variant="body2">
-																						{formatCurrency(transaction.averagePrice, "$", 2)}
-																					</Typography>
-																				</TableCell>
-																				<TableCell align="right">
-																					<Typography variant="body2">
-																						{formatCurrency(transaction.amountInvested, "$", 2)}
-																					</Typography>
-																				</TableCell>
+																				{!secretMode && (
+																					<>
+																						<TableCell align="right">
+																							<Typography variant="body2">
+																								{formatCurrency(transaction.averagePrice, "$", 2)}
+																							</Typography>
+																						</TableCell>
+																						<TableCell align="right">
+																							<Typography variant="body2">
+																								{formatCurrency(transaction.amountInvested, "$", 2)}
+																							</Typography>
+																						</TableCell>
+																					</>
+																				)}
 																			</TableRow>
 																		))}
 																	</TableBody>
@@ -1744,122 +1757,132 @@ export default function Page(): React.JSX.Element {
 						}
 					/>
 					<CardContent>
-						{walletPerformanceView === "global" ? (
-							<NoSsr fallback={<Box sx={{ height: "240px" }} />}>
-								<ResponsiveContainer height={240} width="100%">
-									<AreaChart data={portfolioPerformanceData} margin={{ top: 0, right: 0, bottom: 0, left: 0 }}>
-										<defs>
-											<linearGradient id="area-performance" x1="0" x2="0" y1="0" y2="1">
-												<stop offset="0" stopColor="var(--mui-palette-primary-main)" stopOpacity={0.3} />
-												<stop offset="100%" stopColor="var(--mui-palette-primary-main)" stopOpacity={0} />
-											</linearGradient>
-										</defs>
-										<CartesianGrid strokeDasharray="2 4" vertical={false} />
-										<XAxis
-											axisLine={false}
-											dataKey="name"
-											tickLine={false}
-											type="category"
-											interval="preserveStartEnd"
-										/>
-										<YAxis
-											axisLine={false}
-											tickLine={false}
-											type="number"
-											tickFormatter={(value) => formatCompactCurrency(value, "$", 0).replace("$", "")}
-										/>
-										<Area
-											animationDuration={300}
-											dataKey="value"
-											fill="url(#area-performance)"
-											fillOpacity={1}
-											name="Total Value"
-											stroke="var(--mui-palette-primary-main)"
-											strokeWidth={3}
-											type="natural"
-										/>
-										<Tooltip
-											animationDuration={50}
-											content={<PerformanceTooltipContent />}
-											cursor={false}
-										/>
-									</AreaChart>
-								</ResponsiveContainer>
-							</NoSsr>
+						{secretMode ? (
+							<Box sx={{ height: "240px", display: "flex", alignItems: "center", justifyContent: "center" }}>
+								<Typography color="text.secondary" variant="h6">
+									Secret mode activé
+								</Typography>
+							</Box>
 						) : (
-							<Stack spacing={2}>
-								<NoSsr fallback={<Box sx={{ height: "240px" }} />}>
-									<ResponsiveContainer height={240} width="100%">
-										<LineChart
-											data={walletPerformanceByWalletData.data}
-											margin={{ top: 0, right: 0, bottom: 0, left: 0 }}
-										>
-											<CartesianGrid strokeDasharray="2 4" vertical={false} />
-											<XAxis
-												axisLine={false}
-												dataKey="name"
-												tickLine={false}
-												type="category"
-												interval="preserveStartEnd"
-											/>
-											<YAxis
-												axisLine={false}
-												tickLine={false}
-												type="number"
-												tickFormatter={(value) => formatCompactCurrency(value, "$", 0).replace("$", "")}
-											/>
-											{walletPerformanceByWalletData.wallets.map((wallet, index) => {
-												const walletKey = wallet.name.replace(/\s+/g, "_");
-												const colors = [
-													"var(--mui-palette-primary-main)",
-													"var(--mui-palette-success-main)",
-													"var(--mui-palette-warning-main)",
-												];
-												return (
-													<Line
-														key={wallet.id}
-														animationDuration={300}
-														dataKey={walletKey}
-														name={wallet.name}
-														stroke={colors[index % colors.length]}
-														strokeWidth={3}
-														type="natural"
+							<>
+								{walletPerformanceView === "global" ? (
+									<NoSsr fallback={<Box sx={{ height: "240px" }} />}>
+										<ResponsiveContainer height={240} width="100%">
+											<AreaChart data={portfolioPerformanceData} margin={{ top: 0, right: 0, bottom: 0, left: 0 }}>
+												<defs>
+													<linearGradient id="area-performance" x1="0" x2="0" y1="0" y2="1">
+														<stop offset="0" stopColor="var(--mui-palette-primary-main)" stopOpacity={0.3} />
+														<stop offset="100%" stopColor="var(--mui-palette-primary-main)" stopOpacity={0} />
+													</linearGradient>
+												</defs>
+												<CartesianGrid strokeDasharray="2 4" vertical={false} />
+												<XAxis
+													axisLine={false}
+													dataKey="name"
+													tickLine={false}
+													type="category"
+													interval="preserveStartEnd"
+												/>
+												<YAxis
+													axisLine={false}
+													tickLine={false}
+													type="number"
+													tickFormatter={(value) => formatCompactCurrency(value, "$", 0).replace("$", "")}
+												/>
+												<Area
+													animationDuration={300}
+													dataKey="value"
+													fill="url(#area-performance)"
+													fillOpacity={1}
+													name="Total Value"
+													stroke="var(--mui-palette-primary-main)"
+													strokeWidth={3}
+													type="natural"
+												/>
+												<Tooltip
+													animationDuration={50}
+													content={<PerformanceTooltipContent />}
+													cursor={false}
+												/>
+											</AreaChart>
+										</ResponsiveContainer>
+									</NoSsr>
+								) : (
+									<Stack spacing={2}>
+										<NoSsr fallback={<Box sx={{ height: "240px" }} />}>
+											<ResponsiveContainer height={240} width="100%">
+												<LineChart
+													data={walletPerformanceByWalletData.data}
+													margin={{ top: 0, right: 0, bottom: 0, left: 0 }}
+												>
+													<CartesianGrid strokeDasharray="2 4" vertical={false} />
+													<XAxis
+														axisLine={false}
+														dataKey="name"
+														tickLine={false}
+														type="category"
+														interval="preserveStartEnd"
 													/>
-												);
-											})}
-											<Tooltip
-												animationDuration={50}
-												content={<WalletPerformanceTooltipContent wallets={walletPerformanceByWalletData.wallets} />}
-												cursor={false}
-											/>
-										</LineChart>
-									</ResponsiveContainer>
-								</NoSsr>
-								{walletPerformanceByWalletData.wallets.length > 0 && (
-									<Stack direction="row" spacing={2} sx={{ flexWrap: "wrap", justifyContent: "center" }}>
-										{walletPerformanceByWalletData.wallets.map((wallet, index) => {
-											const colors = [
-												"var(--mui-palette-primary-main)",
-												"var(--mui-palette-success-main)",
-												"var(--mui-palette-warning-main)",
-											];
-											return (
-												<Stack key={wallet.id} direction="row" spacing={1} sx={{ alignItems: "center" }}>
-													<Box
-														sx={{
-															bgcolor: colors[index % colors.length],
-															borderRadius: "2px",
-															height: "4px",
-															width: "16px",
-														}}
+													<YAxis
+														axisLine={false}
+														tickLine={false}
+														type="number"
+														tickFormatter={(value) => formatCompactCurrency(value, "$", 0).replace("$", "")}
 													/>
-													<Typography variant="body2">{wallet.name}</Typography>
-												</Stack>
-											);
-										})}
+													{walletPerformanceByWalletData.wallets.map((wallet, index) => {
+														const walletKey = wallet.name.replace(/\s+/g, "_");
+														const colors = [
+															"var(--mui-palette-primary-main)",
+															"var(--mui-palette-success-main)",
+															"var(--mui-palette-warning-main)",
+														];
+														return (
+															<Line
+																key={wallet.id}
+																animationDuration={300}
+																dataKey={walletKey}
+																name={wallet.name}
+																stroke={colors[index % colors.length]}
+																strokeWidth={3}
+																type="natural"
+															/>
+														);
+													})}
+													<Tooltip
+														animationDuration={50}
+														content={<WalletPerformanceTooltipContent wallets={walletPerformanceByWalletData.wallets} />}
+														cursor={false}
+													/>
+												</LineChart>
+											</ResponsiveContainer>
+										</NoSsr>
+										{walletPerformanceByWalletData.wallets.length > 0 && (
+											<Stack direction="row" spacing={2} sx={{ flexWrap: "wrap", justifyContent: "center" }}>
+												{walletPerformanceByWalletData.wallets.map((wallet, index) => {
+													const colors = [
+														"var(--mui-palette-primary-main)",
+														"var(--mui-palette-success-main)",
+														"var(--mui-palette-warning-main)",
+													];
+													return (
+														<Stack key={wallet.id} direction="row" spacing={1} sx={{ alignItems: "center" }}>
+															<Box
+																sx={{
+																	bgcolor: colors[index % colors.length],
+																	borderRadius: "2px",
+																	height: "4px",
+																	width: "16px",
+																}}
+															/>
+															<Typography variant="body2">{wallet.name}</Typography>
+														</Stack>
+													);
+												})}
+											</Stack>
+										)}
 									</Stack>
 								)}
-							</Stack>
+							</>
 						)}
 					</CardContent>
 				</Card>
@@ -2020,40 +2043,44 @@ export default function Page(): React.JSX.Element {
 												Quantity
 											</TableSortLabel>
 										</TableCell>
-										<TableCell align="right">
-											<TableSortLabel
-												active={transactionOrderBy === "averagePrice"}
-												direction={transactionOrderBy === "averagePrice" ? transactionOrder : "asc"}
-												onClick={() => {
-													if (transactionOrderBy === "averagePrice") {
-														setTransactionOrder(transactionOrder === "asc" ? "desc" : "asc");
-													} else {
-														setTransactionOrder("asc");
-														setTransactionOrderBy("averagePrice");
-													}
-													setTransactionPage(0);
-												}}
-											>
-												Price
-											</TableSortLabel>
-										</TableCell>
-										<TableCell align="right">
-											<TableSortLabel
-												active={transactionOrderBy === "amountInvested"}
-												direction={transactionOrderBy === "amountInvested" ? transactionOrder : "asc"}
-												onClick={() => {
-													if (transactionOrderBy === "amountInvested") {
-														setTransactionOrder(transactionOrder === "asc" ? "desc" : "asc");
-													} else {
-														setTransactionOrder("asc");
-														setTransactionOrderBy("amountInvested");
-													}
-													setTransactionPage(0);
-												}}
-											>
-												Amount
-											</TableSortLabel>
-										</TableCell>
+										{!secretMode && (
+											<>
+												<TableCell align="right">
+													<TableSortLabel
+														active={transactionOrderBy === "averagePrice"}
+														direction={transactionOrderBy === "averagePrice" ? transactionOrder : "asc"}
+														onClick={() => {
+															if (transactionOrderBy === "averagePrice") {
+																setTransactionOrder(transactionOrder === "asc" ? "desc" : "asc");
+															} else {
+																setTransactionOrder("asc");
+																setTransactionOrderBy("averagePrice");
+															}
+															setTransactionPage(0);
+														}}
+													>
+														Price
+													</TableSortLabel>
+												</TableCell>
+												<TableCell align="right">
+													<TableSortLabel
+														active={transactionOrderBy === "amountInvested"}
+														direction={transactionOrderBy === "amountInvested" ? transactionOrder : "asc"}
+														onClick={() => {
+															if (transactionOrderBy === "amountInvested") {
+																setTransactionOrder(transactionOrder === "asc" ? "desc" : "asc");
+															} else {
+																setTransactionOrder("asc");
+																setTransactionOrderBy("amountInvested");
+															}
+															setTransactionPage(0);
+														}}
+													>
+														Amount
+													</TableSortLabel>
+												</TableCell>
+											</>
+										)}
 										<TableCell align="right">
 											<TableSortLabel
 												active={transactionOrderBy === "wallet"}
@@ -2118,14 +2145,18 @@ export default function Page(): React.JSX.Element {
 												/>
 											</TableCell>
 											<TableCell align="right">
-												<Typography variant="body2">{transaction.quantity}</Typography>
+												<Typography variant="body2">{formatQuantity(transaction.quantity, 8, secretMode)}</Typography>
 											</TableCell>
-											<TableCell align="right">
-												<Typography variant="body2">{formatCurrency(transaction.averagePrice, "$", 2)}</Typography>
-											</TableCell>
-											<TableCell align="right">
-												<Typography variant="body2">{formatCurrency(transaction.amountInvested, "$", 2)}</Typography>
-											</TableCell>
+											{!secretMode && (
+												<>
+													<TableCell align="right">
+														<Typography variant="body2">{formatCurrency(transaction.averagePrice, "$", 2)}</Typography>
+													</TableCell>
+													<TableCell align="right">
+														<Typography variant="body2">{formatCurrency(transaction.amountInvested, "$", 2, secretMode)}</Typography>
+													</TableCell>
+												</>
+											)}
 											<TableCell align="right">
 												<Typography variant="body2">{transaction.portfolio?.name || "-"}</Typography>
 											</TableCell>
@@ -2440,14 +2471,14 @@ export default function Page(): React.JSX.Element {
 							{/* Wallet Statistics */}
 							<Box sx={{ display: "flex" }}>
 								<Box sx={{ flex: "1 1 auto", p: 3, textAlign: "center" }}>
-									<Typography variant="h5">{formatCompactCurrency(selectedWalletData.value, "$", 2)}</Typography>
+									<Typography variant="h5">{formatCompactCurrency(selectedWalletData.value, "$", 2, secretMode)}</Typography>
 									<Typography color="text.secondary" component="h4" variant="overline">
 										Current Value
 									</Typography>
 								</Box>
 								<Divider orientation="vertical" flexItem />
 								<Box sx={{ flex: "1 1 auto", p: 3, textAlign: "center" }}>
-									<Typography variant="h5">{formatCompactCurrency(selectedWalletData.invested, "$", 2)}</Typography>
+									<Typography variant="h5">{formatCompactCurrency(selectedWalletData.invested, "$", 2, secretMode)}</Typography>
 									<Typography color="text.secondary" component="h4" variant="overline">
 										Invested
 									</Typography>
@@ -2458,7 +2489,7 @@ export default function Page(): React.JSX.Element {
 										color={selectedWalletData.pnl >= 0 ? "success.main" : "error.main"}
 										variant="h5"
 									>
-										{formatCompactCurrency(selectedWalletData.pnl, "$", 2)}
+										{formatCompactCurrency(selectedWalletData.pnl, "$", 2, secretMode)}
 									</Typography>
 									<Typography color="text.secondary" component="h4" variant="overline">
 										P&L
@@ -2539,10 +2570,10 @@ export default function Page(): React.JSX.Element {
 														sx={{ whiteSpace: "nowrap" }}
 														variant="subtitle2"
 													>
-														{transaction.type === "BUY" ? "+" : "-"} {transaction.quantity} {transaction.symbol}
+														{transaction.type === "BUY" ? "+" : "-"} {formatQuantity(transaction.quantity, 8, secretMode)} {transaction.symbol}
 													</Typography>
 													<Typography color="text.secondary" variant="body2">
-														{formatCurrency(transaction.amountInvested, "$", 2)}
+														{formatCurrency(transaction.amountInvested, "$", 2, secretMode)}
 													</Typography>
 												</Box>
 											</ListItem>
@@ -2613,7 +2644,7 @@ function WalletPerformanceTooltipContent({
 								<Typography sx={{ whiteSpace: "nowrap" }}>{wallet?.name || entry.name}</Typography>
 							</Stack>
 							<Typography color="text.secondary" variant="body2">
-								{formatCompactCurrency(entry.value, "$", 2)}
+								{formatCompactCurrency(entry.value, "$", 2, secretMode)}
 							</Typography>
 						</Stack>
 					);
@@ -2659,7 +2690,7 @@ function TokenTooltipContent({ active, payload }: TokenTooltipContentProps): Rea
 							Quantity:
 						</Typography>
 						<Typography variant="body2">
-							{data.quantity?.toLocaleString(undefined, { maximumFractionDigits: 8 })} {entry.name}
+							{formatQuantity(data.quantity, 8, secretMode)} {entry.name}
 						</Typography>
 					</Stack>
 					<Stack direction="row" spacing={2} sx={{ justifyContent: "space-between" }}>
@@ -2736,6 +2767,7 @@ function AllTokensModal({
 	rowsPerPage: number;
 	onRowsPerPageChange: (rowsPerPage: number) => void;
 }): React.JSX.Element {
+	const { secretMode } = useSecretMode();
 	const totalValue = tokens.reduce((sum, token) => sum + token.value, 0);
 
 	// Filter tokens based on search query
@@ -2852,12 +2884,12 @@ function AllTokensModal({
 											</TableCell>
 											<TableCell align="right">
 												<Typography variant="body2" sx={{ fontWeight: 600 }}>
-													{formatCompactCurrency(token.value, "$", 2)}
+													{formatCompactCurrency(token.value, "$", 2, secretMode)}
 												</Typography>
 											</TableCell>
 											<TableCell align="right">
 												<Typography variant="body2" color="text.secondary">
-													{token.quantity.toLocaleString(undefined, { maximumFractionDigits: 8 })}
+													{formatQuantity(token.quantity, 8, secretMode)}
 												</Typography>
 											</TableCell>
 										</TableRow>

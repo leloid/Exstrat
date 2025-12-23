@@ -21,7 +21,7 @@ import { ArrowUpIcon } from "@phosphor-icons/react/dist/ssr/ArrowUp";
 import { CaretDownIcon } from "@phosphor-icons/react/dist/ssr/CaretDown";
 import { CaretUpIcon } from "@phosphor-icons/react/dist/ssr/CaretUp";
 
-import { formatCurrency, formatPercentage } from "@/lib/format";
+import { formatCurrency, formatPercentage, formatQuantity } from "@/lib/format";
 import { getTokenLogoUrl } from "@/lib/utils";
 import type { Holding } from "@/types/portfolio";
 import * as configurationApi from "@/lib/configuration-api";
@@ -29,6 +29,7 @@ import { getTheoreticalStrategies } from "@/lib/portfolios-api";
 import { strategiesApi } from "@/lib/strategies-api";
 import type { AlertConfiguration } from "@/types/configuration";
 import type { TheoreticalStrategyResponse, StrategyResponse } from "@/types/strategies";
+import { useSecretMode } from "@/hooks/use-secret-mode";
 
 export interface TokensTableProps {
 	holdings: Holding[];
@@ -46,6 +47,7 @@ type SortDirection = "asc" | "desc";
 
 export function TokensTable({ holdings, portfolioId, onTokenClick }: TokensTableProps): React.JSX.Element {
 	const { colorScheme = "light" } = useColorScheme();
+	const { secretMode } = useSecretMode();
 	const [sortField, setSortField] = React.useState<SortField>("currentValue");
 	const [sortDirection, setSortDirection] = React.useState<SortDirection>("desc");
 	const [alertConfigurations, setAlertConfigurations] = React.useState<AlertConfiguration[]>([]);
@@ -406,17 +408,17 @@ export function TokensTable({ holdings, portfolioId, onTokenClick }: TokensTable
 										</TableCell>
 										<TableCell align="right">
 											<Typography variant="body2" sx={{ fontWeight: 500 }}>
-												{holding.quantity.toLocaleString(undefined, { maximumFractionDigits: 8 })}
+												{formatQuantity(holding.quantity, 8, secretMode)}
 											</Typography>
 										</TableCell>
 										<TableCell align="right">
 											<Typography variant="body2" sx={{ fontWeight: 600 }}>
-												{formatCurrency(holding.investedAmount, "$", 0)}
+												{formatCurrency(holding.investedAmount, "$", 0, secretMode)}
 											</Typography>
 										</TableCell>
 										<TableCell align="right">
 											<Typography variant="body2" sx={{ fontWeight: 600 }}>
-												{formatCurrency(holding.currentValue || 0, "$", 0)}
+												{formatCurrency(holding.currentValue || 0, "$", 0, secretMode)}
 											</Typography>
 										</TableCell>
 										<TableCell align="right">
@@ -432,7 +434,7 @@ export function TokensTable({ holdings, portfolioId, onTokenClick }: TokensTable
 												)}
 												<Typography variant="body2" sx={{ fontWeight: 600, color: isPositive ? "success.main" : "error.main" }}>
 													{isPositive ? "+" : ""}
-													{formatCurrency(holding.pnl || 0, "$", 0)}
+													{formatCurrency(holding.pnl || 0, "$", 0, secretMode)}
 												</Typography>
 											</Stack>
 										</TableCell>
