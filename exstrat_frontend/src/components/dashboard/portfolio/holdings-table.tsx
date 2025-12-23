@@ -73,8 +73,8 @@ export function HoldingsTable({ holdings, onTokenClick }: HoldingsTableProps): R
 					</TableHead>
 					<TableBody>
 						{holdings.map((holding) => {
-							const currentValue =
-								holding.currentValue || (holding.currentPrice || holding.averagePrice) * holding.quantity;
+							// IMPORTANT: Utiliser currentValue du backend qui est calculé avec currentPrice (prix actuel du marché)
+							const currentValue = holding.currentValue || 0;
 							const profitLoss = holding.profitLoss || currentValue - holding.investedAmount;
 							const profitLossPercentage =
 								holding.profitLossPercentage ||

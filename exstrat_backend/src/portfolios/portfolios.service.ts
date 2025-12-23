@@ -189,19 +189,47 @@ export class PortfoliosService {
     });
 
     // Batch update prices only for holdings that need it (last updated > 5 min ago)
+    // IMPORTANT: Forcer la mise à jour si currentPrice n'est pas disponible
     const now = new Date();
     const fiveMinutesAgo = new Date(now.getTime() - 5 * 60 * 1000);
     
     const holdingsToUpdate = holdings.filter(holding => {
+      // Si currentPrice n'est pas disponible, forcer la mise à jour
+      if (!holding.currentPrice) return true;
+      // Si le prix n'a pas été mis à jour récemment, mettre à jour
       if (!holding.lastUpdated) return true;
       return new Date(holding.lastUpdated) < fiveMinutesAgo;
     });
 
     if (holdingsToUpdate.length > 0) {
-      // Update prices in background (don't block response)
-      this.updateHoldingsPrices(holdingsToUpdate).catch(error => {
-        this.logger.warn('Background price update failed:', error);
-      });
+      // IMPORTANT: Mettre à jour les prix de manière synchrone pour garantir
+      // que currentValue est calculé avec le prix actuel du marché
+      try {
+        await this.updateHoldingsPrices(holdingsToUpdate);
+        // Recharger les holdings après la mise à jour pour avoir les prix à jour
+        const updatedHoldings = await this.prisma.holding.findMany({
+          where: {
+            portfolioId: { in: targetPortfolioIds },
+            portfolio: { userId },
+          },
+          include: {
+            token: {
+              select: {
+                id: true,
+                symbol: true,
+                name: true,
+                cmcId: true,
+                logoUrl: true,
+              },
+            },
+          },
+          orderBy: { token: { symbol: 'asc' } },
+        });
+        return updatedHoldings.map(holding => this.formatHoldingResponse(holding));
+      } catch (error) {
+        // Si la mise à jour échoue, logger l'erreur mais continuer avec les prix existants
+        this.logger.warn('Batch price update failed, using existing prices:', error);
+      }
     }
 
     return holdings.map(holding => this.formatHoldingResponse(holding));
@@ -242,16 +270,42 @@ export class PortfoliosService {
       const fiveMinutesAgo = new Date(now.getTime() - 5 * 60 * 1000);
       
       // Filtrer les holdings qui ont besoin d'une mise à jour de prix
+      // IMPORTANT: Forcer la mise à jour si currentPrice n'est pas disponible
       const holdingsToUpdate = holdings.filter(holding => {
+        // Si currentPrice n'est pas disponible, forcer la mise à jour
+        if (!holding.currentPrice) return true;
+        // Si le prix n'a pas été mis à jour récemment, mettre à jour
         if (!holding.lastUpdated) return true;
         return new Date(holding.lastUpdated) < fiveMinutesAgo;
       });
 
       if (holdingsToUpdate.length > 0) {
-        // Update prices in background for better response time
-        this.updateHoldingsPrices(holdingsToUpdate).catch(error => {
-          this.logger.warn('Background price update failed:', error);
-        });
+        // IMPORTANT: Mettre à jour les prix de manière synchrone pour garantir
+        // que currentValue est calculé avec le prix actuel du marché
+        // Si la mise à jour échoue, on utilisera averagePrice comme fallback
+        try {
+          await this.updateHoldingsPrices(holdingsToUpdate);
+          // Recharger les holdings après la mise à jour pour avoir les prix à jour
+          const updatedHoldings = await this.prisma.holding.findMany({
+            where: { portfolioId },
+            include: {
+              token: {
+                select: {
+                  id: true,
+                  symbol: true,
+                  name: true,
+                  cmcId: true,
+                  logoUrl: true,
+                },
+              },
+            },
+            orderBy: { token: { symbol: 'asc' } },
+          });
+          return updatedHoldings.map(holding => this.formatHoldingResponse(holding));
+        } catch (error) {
+          // Si la mise à jour échoue, logger l'erreur mais continuer avec les prix existants
+          this.logger.warn('Price update failed, using existing prices:', error);
+        }
       }
     }
 
@@ -766,17 +820,21 @@ export class PortfoliosService {
   }
 
   private formatHoldingResponse(holding: any): HoldingResponseDto {
-    const currentPrice = holding.currentPrice || holding.averagePrice;
-    const currentValue = Number(holding.quantity) * Number(currentPrice);
+    // IMPORTANT: currentValue doit être calculé avec currentPrice (prix actuel du marché)
+    // Si currentPrice n'est pas disponible, on utilise averagePrice uniquement pour l'affichage,
+    // mais cela ne représente pas la vraie valeur actuelle du marché
+    const currentPrice = holding.currentPrice ? Number(holding.currentPrice) : undefined;
+    const priceForCalculation = currentPrice || Number(holding.averagePrice);
+    const currentValue = Number(holding.quantity) * priceForCalculation;
     const profitLoss = currentValue - Number(holding.investedAmount);
-    const profitLossPercentage = (profitLoss / Number(holding.investedAmount)) * 100;
+    const profitLossPercentage = Number(holding.investedAmount) > 0 ? (profitLoss / Number(holding.investedAmount)) * 100 : 0;
 
     return {
       id: holding.id,
       quantity: Number(holding.quantity),
       investedAmount: Number(holding.investedAmount),
       averagePrice: Number(holding.averagePrice),
-      currentPrice: holding.currentPrice ? Number(holding.currentPrice) : undefined,
+      currentPrice: currentPrice,
       lastUpdated: holding.lastUpdated,
       token: {
         id: holding.token.id,

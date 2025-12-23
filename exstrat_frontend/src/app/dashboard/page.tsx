@@ -178,8 +178,9 @@ export default function Page(): React.JSX.Element {
 
 		for (const h of holdingsToUse) {
 			capitalInvesti += h.investedAmount || 0;
-			const currentValue = h.currentValue || (h.currentPrice || h.averagePrice) * h.quantity;
-			valeurActuelle += currentValue;
+			// IMPORTANT: Utiliser currentValue du backend qui est calculé avec currentPrice (prix actuel du marché)
+			// currentValue = quantity * currentPrice (ou quantity * averagePrice si currentPrice n'est pas disponible)
+			valeurActuelle += h.currentValue || 0;
 		}
 
 		const pnlAbsolu = valeurActuelle - capitalInvesti;

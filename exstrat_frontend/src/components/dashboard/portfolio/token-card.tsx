@@ -23,7 +23,8 @@ export interface TokenCardProps {
 export function TokenCard({ holding, data: dataRaw }: TokenCardProps): React.JSX.Element {
 	const chartHeight = 100;
 	const token = holding.token;
-	const currentValue = holding.currentValue || (holding.currentPrice || holding.averagePrice) * holding.quantity;
+	// IMPORTANT: Utiliser currentValue du backend qui est calculé avec currentPrice (prix actuel du marché)
+	const currentValue = holding.currentValue || 0;
 	const profitLoss = holding.profitLoss || currentValue - holding.investedAmount;
 	const profitLossPercentage =
 		holding.profitLossPercentage || (holding.investedAmount > 0 ? (profitLoss / holding.investedAmount) * 100 : 0);

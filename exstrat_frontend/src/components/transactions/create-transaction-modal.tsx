@@ -38,6 +38,7 @@ import { formatCurrency } from "@/lib/format";
 import { getTokenLogoUrl } from "@/lib/utils";
 import type { TokenSearchResult, CreateTransactionDto } from "@/types/transactions";
 import type { Portfolio } from "@/types/portfolio";
+import { useColorScheme } from "@mui/material/styles";
 
 interface CreateTransactionModalProps {
 	onClose: () => void;
@@ -66,6 +67,7 @@ export function CreateTransactionModal({
 	portfolios,
 	editingTransaction,
 }: CreateTransactionModalProps): React.JSX.Element {
+	const { colorScheme = "light" } = useColorScheme();
 	const [selectedToken, setSelectedToken] = React.useState<TokenSearchResult | null>(null);
 	const [selectedPortfolioId, setSelectedPortfolioId] = React.useState<string>("");
 	const [transactionType, setTransactionType] = React.useState<"BUY" | "SELL">("BUY");
@@ -447,9 +449,23 @@ export function CreateTransactionModal({
 					{selectedToken && quantity && amountInvested && averagePrice && (
 						<Card
 							sx={{
-								bgcolor: transactionType === "BUY" ? "success.50" : "error.50",
+								bgcolor:
+									colorScheme === "dark"
+										? transactionType === "BUY"
+											? "rgba(76, 175, 80, 0.15)"
+											: "rgba(244, 67, 54, 0.15)"
+										: transactionType === "BUY"
+											? "success.50"
+											: "error.50",
 								border: "1px solid",
-								borderColor: transactionType === "BUY" ? "success.200" : "error.200",
+								borderColor:
+									colorScheme === "dark"
+										? transactionType === "BUY"
+											? "success.dark"
+											: "error.dark"
+										: transactionType === "BUY"
+											? "success.200"
+											: "error.200",
 							}}
 							variant="outlined"
 						>

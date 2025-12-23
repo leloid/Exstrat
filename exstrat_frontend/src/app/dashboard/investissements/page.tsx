@@ -226,7 +226,8 @@ export default function Page(): React.JSX.Element {
 		Object.values(portfolioData).forEach((portfolio) => {
 			portfolio.holdings.forEach((holding) => {
 				const symbol = holding.token.symbol.toUpperCase();
-				const currentValue = holding.currentValue || (holding.currentPrice || holding.averagePrice) * holding.quantity;
+				// IMPORTANT: Utiliser currentValue du backend qui est calculé avec currentPrice (prix actuel du marché)
+				const currentValue = holding.currentValue || 0;
 
 				if (tokenMap.has(symbol)) {
 					const existing = tokenMap.get(symbol)!;
@@ -309,10 +310,9 @@ export default function Page(): React.JSX.Element {
 					try {
 						const holdings = await portfoliosApi.getPortfolioHoldings(portfolio.id);
 						const invested = holdings.reduce((sum, h) => sum + (h.investedAmount || 0), 0);
-						const value = holdings.reduce((sum, h) => {
-							const currentValue = h.currentValue || (h.currentPrice || h.averagePrice) * h.quantity;
-							return sum + currentValue;
-						}, 0);
+						// IMPORTANT: Utiliser currentValue du backend qui est calculé avec currentPrice (prix actuel du marché)
+						// currentValue = quantity * currentPrice (ou quantity * averagePrice si currentPrice n'est pas disponible)
+						const value = holdings.reduce((sum, h) => sum + (h.currentValue || 0), 0);
 						const pnl = value - invested;
 						const pnlPercentage = invested > 0 ? (pnl / invested) * 100 : 0;
 
@@ -825,6 +825,34 @@ export default function Page(): React.JSX.Element {
 			setTransactions(response.transactions);
 			// Reload portfolios
 			await refreshPortfolios();
+			// IMPORTANT: Recharger les holdings pour mettre à jour les valeurs après la transaction
+			// Le backend recalcule déjà le holding de manière synchrone, mais on doit recharger les données
+			const data: Record<string, PortfolioData> = {};
+			const updatedPortfolios = await portfoliosApi.getUserPortfolios();
+			for (const portfolio of updatedPortfolios) {
+				try {
+					const holdings = await portfoliosApi.getPortfolioHoldings(portfolio.id);
+					const invested = holdings.reduce((sum, h) => sum + (h.investedAmount || 0), 0);
+					const value = holdings.reduce((sum, h) => sum + (h.currentValue || 0), 0);
+					const pnl = value - invested;
+					const pnlPercentage = invested > 0 ? (pnl / invested) * 100 : 0;
+					data[portfolio.id] = {
+						id: portfolio.id,
+						name: portfolio.name,
+						description: portfolio.description,
+						isDefault: portfolio.isDefault,
+						holdings,
+						invested,
+						value,
+						pnl,
+						pnlPercentage,
+						holdingsCount: holdings.length,
+					};
+				} catch (error) {
+					console.error(`Error reloading holdings for ${portfolio.name}:`, error);
+				}
+			}
+			setPortfolioData(data);
 		} catch (error: unknown) {
 			const axiosError = error as { response?: { data?: { message?: string } }; message?: string };
 			const errorMessage =

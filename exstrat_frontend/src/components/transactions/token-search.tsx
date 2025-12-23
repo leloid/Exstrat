@@ -156,7 +156,7 @@ export function TokenSearch({ onTokenSelect, selectedToken, error, helperText }:
 									last_updated: new Date().toISOString(),
 									quote: {
 										USD: {
-											...selectedToken.quote.USD,
+											price: selectedToken.quote?.USD?.price || null,
 											volume_24h: null,
 											volume_change_24h: null,
 											percent_change_1h: null,

@@ -32,10 +32,9 @@ export function TokenDistribution({ holdings }: TokenDistributionProps): React.J
 	const distribution = React.useMemo(() => {
 		if (!holdings || holdings.length === 0) return [];
 
-		const totalValue = holdings.reduce((sum, h) => {
-			const currentValue = h.currentValue || (h.currentPrice || h.averagePrice) * h.quantity;
-			return sum + currentValue;
-		}, 0);
+		// IMPORTANT: Utiliser currentValue du backend qui est calculé avec currentPrice (prix actuel du marché)
+		// currentValue = quantity * currentPrice (ou quantity * averagePrice si currentPrice n'est pas disponible)
+		const totalValue = holdings.reduce((sum, h) => sum + (h.currentValue || 0), 0);
 
 		if (totalValue === 0) return [];
 
@@ -43,7 +42,8 @@ export function TokenDistribution({ holdings }: TokenDistributionProps): React.J
 		const tokenMap = new Map<string, { symbol: string; name: string; value: number; quantity: number; color: string }>();
 
 		holdings.forEach((holding) => {
-			const currentValue = holding.currentValue || (holding.currentPrice || holding.averagePrice) * holding.quantity;
+			// IMPORTANT: Utiliser currentValue du backend qui est calculé avec currentPrice (prix actuel du marché)
+			const currentValue = holding.currentValue || 0;
 			const tokenId = holding.token.id;
 			const existing = tokenMap.get(tokenId);
 

@@ -32,7 +32,8 @@ export function GainsLossesChart({ holdings }: GainsLossesChartProps): React.JSX
 	const pnlData = React.useMemo(() => {
 		return holdings
 			.map((holding) => {
-				const currentValue = holding.currentValue || (holding.currentPrice || holding.averagePrice) * holding.quantity;
+				// IMPORTANT: Utiliser currentValue du backend qui est calculé avec currentPrice (prix actuel du marché)
+				const currentValue = holding.currentValue || 0;
 				const pnl = currentValue - holding.investedAmount;
 				const pnlPercentage = holding.investedAmount > 0 ? (pnl / holding.investedAmount) * 100 : 0;
 
@@ -52,7 +53,8 @@ export function GainsLossesChart({ holdings }: GainsLossesChartProps): React.JSX
 	const valuationData = React.useMemo(() => {
 		return holdings
 			.map((holding) => {
-				const currentValue = holding.currentValue || (holding.currentPrice || holding.averagePrice) * holding.quantity;
+				// IMPORTANT: Utiliser currentValue du backend qui est calculé avec currentPrice (prix actuel du marché)
+				const currentValue = holding.currentValue || 0;
 
 				return {
 					symbol: holding.token.symbol,

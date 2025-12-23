@@ -149,7 +149,8 @@ export function TokensTable({ holdings, portfolioId, onTokenClick }: TokensTable
 	// Calculate values for each holding
 	const holdingsWithCalculations = React.useMemo(() => {
 		return holdings.map((holding) => {
-			const currentValue = holding.currentValue || (holding.currentPrice || holding.averagePrice) * holding.quantity;
+			// IMPORTANT: Utiliser currentValue du backend qui est calculé avec currentPrice (prix actuel du marché)
+			const currentValue = holding.currentValue || 0;
 			const pnl = currentValue - holding.investedAmount;
 			const pnlPercentage = holding.investedAmount > 0 ? (pnl / holding.investedAmount) * 100 : 0;
 
