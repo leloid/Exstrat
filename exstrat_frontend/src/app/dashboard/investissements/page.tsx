@@ -2664,6 +2664,8 @@ interface TokenTooltipContentProps {
 }
 
 function TokenTooltipContent({ active, payload }: TokenTooltipContentProps): React.JSX.Element | null {
+	const { secretMode } = useSecretMode();
+	
 	if (!active || !payload || payload.length === 0) {
 		return null;
 	}
@@ -2700,7 +2702,7 @@ function TokenTooltipContent({ active, payload }: TokenTooltipContentProps): Rea
 							Value:
 						</Typography>
 						<Typography variant="body2" sx={{ fontWeight: 600 }}>
-							{formatCompactCurrency(entry.value, "$", 2)}
+							{formatCompactCurrency(entry.value, "$", 2, secretMode)}
 						</Typography>
 					</Stack>
 				</Stack>

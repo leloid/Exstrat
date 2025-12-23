@@ -21,7 +21,7 @@ export const dashboardConfig = {
 		{
 			key: "dashboards",
 			title: "Dashboards",
-			items: [{ key: "overview", title: "Overview", href: paths.dashboard.overview, icon: "house" }],
+			items: [{ key: "overview", title: "Overview", href: paths.dashboard.overview, icon: "chart-bar" }],
 		},
 		{
 			key: "wallet",

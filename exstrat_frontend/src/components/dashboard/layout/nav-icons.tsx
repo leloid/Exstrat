@@ -2,6 +2,7 @@ import type { Icon } from "@phosphor-icons/react/dist/lib/types";
 import { AddressBookIcon } from "@phosphor-icons/react/dist/ssr/AddressBook";
 import { AlignLeftIcon } from "@phosphor-icons/react/dist/ssr/AlignLeft";
 import { CalendarCheckIcon } from "@phosphor-icons/react/dist/ssr/CalendarCheck";
+import { ChartBarIcon } from "@phosphor-icons/react/dist/ssr/ChartBar";
 import { ChartLineIcon } from "@phosphor-icons/react/dist/ssr/ChartLine";
 import { ChartPieIcon } from "@phosphor-icons/react/dist/ssr/ChartPie";
 import { HorseIcon } from "@phosphor-icons/react/dist/ssr/Horse";
@@ -37,6 +38,7 @@ export const icons = {
 	"address-book": AddressBookIcon,
 	"align-left": AlignLeftIcon,
 	"calendar-check": CalendarCheckIcon,
+	"chart-bar": ChartBarIcon,
 	"chart-line": ChartLineIcon,
 	"chart-pie": ChartPieIcon,
 	horse: HorseIcon,
