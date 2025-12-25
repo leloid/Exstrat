@@ -76,6 +76,13 @@ export function CreateTransactionModal({
 	const [transactionDate, setTransactionDate] = React.useState<string>(new Date().toISOString().split("T")[0]);
 	const [notes, setNotes] = React.useState<string>("");
 	const [error, setError] = React.useState<string | null>(null);
+	const [fieldErrors, setFieldErrors] = React.useState<{
+		token?: boolean;
+		wallet?: boolean;
+		quantity?: boolean;
+		amountInvested?: boolean;
+		transactionDate?: boolean;
+	}>({});
 	const [isSubmitting, setIsSubmitting] = React.useState(false);
 
 	// Calculate average price
@@ -117,33 +124,58 @@ export function CreateTransactionModal({
 
 	const handleSubmit = async () => {
 		setError(null);
+		setFieldErrors({});
 
-		// Validation
+		// Validation des champs obligatoires
+		const errors: typeof fieldErrors = {};
+		const missingFields: string[] = [];
+
 		if (!selectedToken) {
-			setError("Please select a token");
-			return;
+			errors.token = true;
+			missingFields.push("Token");
 		}
 
 		if (!selectedPortfolioId) {
-			setError("Please select a wallet");
+			errors.wallet = true;
+			missingFields.push("Wallet");
+		}
+
+		if (!quantity || quantity.trim() === "") {
+			errors.quantity = true;
+			missingFields.push("Quantity");
+		}
+
+		if (!amountInvested || amountInvested.trim() === "") {
+			errors.amountInvested = true;
+			missingFields.push("Amount Invested");
+		}
+
+		if (!transactionDate || transactionDate.trim() === "") {
+			errors.transactionDate = true;
+			missingFields.push("Transaction Date");
+		}
+
+		// Si des champs sont manquants, afficher les erreurs
+		if (Object.keys(errors).length > 0) {
+			setFieldErrors(errors);
+			const fieldsList = missingFields.join(", ");
+			setError(`Les champs suivants sont requis : ${fieldsList}. Veuillez compléter tous les champs obligatoires avant de continuer.`);
 			return;
 		}
 
-		if (!quantity || !amountInvested || !averagePrice) {
-			setError("Please fill all required fields");
-			return;
-		}
-
+		// Validation des valeurs numériques
 		const qty = parseFloat(quantity);
 		const amount = parseFloat(amountInvested);
 
 		if (isNaN(qty) || qty <= 0) {
-			setError("Quantity must be greater than 0");
+			setFieldErrors({ quantity: true });
+			setError("La quantité doit être supérieure à 0");
 			return;
 		}
 
 		if (isNaN(amount) || amount <= 0) {
-			setError("Amount invested must be greater than 0");
+			setFieldErrors({ amountInvested: true });
+			setError("Le montant investi doit être supérieur à 0");
 			return;
 		}
 
@@ -229,11 +261,27 @@ export function CreateTransactionModal({
 								borderRadius: 2,
 								border: "1px solid",
 								borderColor: "error.200",
+								display: "flex",
+								alignItems: "flex-start",
+								gap: 1,
 							}}
 						>
-							<Typography color="error.main" variant="body2">
-								{error}
-							</Typography>
+							<Box
+								sx={{
+									mt: 0.5,
+									color: "error.main",
+								}}
+							>
+								<XIcon fontSize="small" />
+							</Box>
+							<Box sx={{ flex: 1 }}>
+								<Typography color="error.main" variant="body2" sx={{ fontWeight: 500, mb: 0.5 }}>
+									Champs manquants
+								</Typography>
+								<Typography color="error.main" variant="body2">
+									{error}
+								</Typography>
+							</Box>
 						</Box>
 					)}
 
@@ -258,10 +306,15 @@ export function CreateTransactionModal({
 									</Box>
 								</Stack>
 								<TokenSearch
-									onTokenSelect={setSelectedToken}
+									onTokenSelect={(token) => {
+										setSelectedToken(token);
+										if (token && fieldErrors.token) {
+											setFieldErrors((prev) => ({ ...prev, token: false }));
+										}
+									}}
 									selectedToken={selectedToken}
-									error={!selectedToken && error !== null}
-									helperText={!selectedToken ? "Please select a token" : undefined}
+									error={fieldErrors.token}
+									helperText={fieldErrors.token ? "Ce champ est requis" : undefined}
 								/>
 								{selectedToken && (
 									<Box
@@ -320,11 +373,16 @@ export function CreateTransactionModal({
 
 								<Grid container spacing={2}>
 									<Grid size={{ xs: 12, sm: 6 }}>
-										<FormControl fullWidth required>
+										<FormControl fullWidth required error={fieldErrors.wallet}>
 											<InputLabel>Wallet</InputLabel>
 											<Select
 												label="Wallet"
-												onChange={(e) => setSelectedPortfolioId(e.target.value)}
+												onChange={(e) => {
+													setSelectedPortfolioId(e.target.value);
+													if (e.target.value && fieldErrors.wallet) {
+														setFieldErrors((prev) => ({ ...prev, wallet: false }));
+													}
+												}}
 												value={selectedPortfolioId}
 											>
 												{portfolios.map((portfolio) => (
@@ -333,6 +391,9 @@ export function CreateTransactionModal({
 													</MenuItem>
 												))}
 											</Select>
+											{fieldErrors.wallet && (
+												<FormHelperText error>Ce champ est requis</FormHelperText>
+											)}
 										</FormControl>
 									</Grid>
 									<Grid size={{ xs: 12, sm: 6 }}>
@@ -365,7 +426,9 @@ export function CreateTransactionModal({
 								<Grid container spacing={2}>
 									<Grid size={{ xs: 12, sm: 6 }}>
 										<TextField
+											error={fieldErrors.quantity}
 											fullWidth
+											helperText={fieldErrors.quantity ? "Ce champ est requis" : undefined}
 											InputProps={{
 												startAdornment: (
 													<InputAdornment position="start">
@@ -374,7 +437,12 @@ export function CreateTransactionModal({
 												),
 											}}
 											label="Quantity"
-											onChange={(e) => setQuantity(e.target.value)}
+											onChange={(e) => {
+												setQuantity(e.target.value);
+												if (e.target.value && fieldErrors.quantity) {
+													setFieldErrors((prev) => ({ ...prev, quantity: false }));
+												}
+											}}
 											required
 											type="number"
 											inputProps={{ step: "0.00000001", min: 0 }}
@@ -383,7 +451,9 @@ export function CreateTransactionModal({
 									</Grid>
 									<Grid size={{ xs: 12, sm: 6 }}>
 										<TextField
+											error={fieldErrors.amountInvested}
 											fullWidth
+											helperText={fieldErrors.amountInvested ? "Ce champ est requis" : undefined}
 											InputProps={{
 												startAdornment: (
 													<InputAdornment position="start">
@@ -392,7 +462,12 @@ export function CreateTransactionModal({
 												),
 											}}
 											label="Amount Invested (USD)"
-											onChange={(e) => setAmountInvested(e.target.value)}
+											onChange={(e) => {
+												setAmountInvested(e.target.value);
+												if (e.target.value && fieldErrors.amountInvested) {
+													setFieldErrors((prev) => ({ ...prev, amountInvested: false }));
+												}
+											}}
 											required
 											type="number"
 											inputProps={{ step: "0.01", min: 0 }}
@@ -417,7 +492,9 @@ export function CreateTransactionModal({
 								/>
 
 								<TextField
+									error={fieldErrors.transactionDate}
 									fullWidth
+									helperText={fieldErrors.transactionDate ? "Ce champ est requis" : undefined}
 									InputProps={{
 										startAdornment: (
 											<InputAdornment position="start">
@@ -426,7 +503,12 @@ export function CreateTransactionModal({
 										),
 									}}
 									label="Transaction Date"
-									onChange={(e) => setTransactionDate(e.target.value)}
+									onChange={(e) => {
+										setTransactionDate(e.target.value);
+										if (e.target.value && fieldErrors.transactionDate) {
+											setFieldErrors((prev) => ({ ...prev, transactionDate: false }));
+										}
+									}}
 									required
 									type="date"
 									value={transactionDate}
