@@ -3,14 +3,16 @@
 import * as React from "react";
 import Autocomplete from "@mui/material/Autocomplete";
 import Box from "@mui/material/Box";
+import Chip from "@mui/material/Chip";
 import CircularProgress from "@mui/material/CircularProgress";
+import Stack from "@mui/material/Stack";
 import TextField from "@mui/material/TextField";
 import Typography from "@mui/material/Typography";
 import { MagnifyingGlassIcon } from "@phosphor-icons/react/dist/ssr/MagnifyingGlass";
 import InputAdornment from "@mui/material/InputAdornment";
 
 import { transactionsApi } from "@/lib/transactions-api";
-import { formatCurrency, formatPercentage } from "@/lib/format";
+import { formatCurrency, formatCompactCurrency, formatPercentage } from "@/lib/format";
 import type { TokenSearchResult } from "@/types/transactions";
 
 // Type partiel pour les tokens disponibles depuis les holdings
@@ -43,15 +45,16 @@ export function TokenSearch({ onTokenSelect, selectedToken, error, helperText }:
 	const debounceTimeoutRef = React.useRef<NodeJS.Timeout | null>(null);
 	const lastSearchRef = React.useRef<string>("");
 
-	// Fonction pour extraire le symbole de la recherche
-	const extractSymbol = (query: string): string => {
+	// Fonction pour préparer la requête de recherche
+	// Le backend recherche maintenant par symbole OU nom de manière intelligente
+	const prepareSearchQuery = (query: string): string => {
 		const trimmed = query.trim();
-		// Si le format est "SYMBOL - Name", extraire juste le symbole
+		// Si le format est "SYMBOL - Name", extraire juste le symbole pour une recherche plus précise
 		if (trimmed.includes(" - ")) {
-			return trimmed.split(" - ")[0].trim().toUpperCase();
+			return trimmed.split(" - ")[0].trim();
 		}
-		// Sinon, retourner la requête telle quelle (en majuscules pour les symboles)
-		return trimmed.toUpperCase();
+		// Sinon, retourner la requête telle quelle (le backend gère symbole et nom)
+		return trimmed;
 	};
 
 	const searchTokens = React.useCallback(async (searchQuery: string) => {
@@ -60,11 +63,11 @@ export function TokenSearch({ onTokenSelect, selectedToken, error, helperText }:
 			return;
 		}
 
-		// Extraire uniquement le symbole de la recherche
-		const symbol = extractSymbol(searchQuery);
+		// Préparer la requête (le backend recherche par symbole OU nom)
+		const query = prepareSearchQuery(searchQuery);
 
-		// Vérifier le cache
-		const cacheKey = symbol.toLowerCase();
+		// Vérifier le cache (utiliser la requête complète comme clé pour le cache)
+		const cacheKey = query.toLowerCase();
 		const cached = searchCache.get(cacheKey);
 		if (cached && Date.now() - cached.timestamp < CACHE_DURATION) {
 			setOptions(cached.data);
@@ -80,8 +83,8 @@ export function TokenSearch({ onTokenSelect, selectedToken, error, helperText }:
 		lastSearchRef.current = cacheKey;
 
 		try {
-			// Utiliser uniquement le symbole pour la recherche
-			const results = await transactionsApi.searchTokens(symbol);
+			// Le backend recherche maintenant par symbole OU nom et retourne TOUS les résultats
+			const results = await transactionsApi.searchTokens(query);
 			setOptions(results);
 			// Mettre en cache les résultats
 			searchCache.set(cacheKey, { data: results, timestamp: Date.now() });
@@ -201,7 +204,7 @@ export function TokenSearch({ onTokenSelect, selectedToken, error, helperText }:
 					error={error}
 					helperText={helperText}
 					label="Search Token"
-					placeholder="Search for a token (e.g., BTC, ETH, ADA...)"
+					placeholder="Rechercher par symbole ou nom (ex: BTC, Bitcoin, ETH...)"
 					InputProps={{
 						...params.InputProps,
 						endAdornment: (
@@ -220,14 +223,37 @@ export function TokenSearch({ onTokenSelect, selectedToken, error, helperText }:
 			)}
 			renderOption={(props, option) => {
 				const { key, ...otherProps } = props;
+				// Vérifier si plusieurs tokens ont le même symbole pour améliorer l'affichage
+				const hasMultipleWithSameSymbol = options.filter((opt) => opt.symbol === option.symbol).length > 1;
+				// Utiliser l'ID unique du token comme clé pour éviter les doublons
 				return (
-					<Box component="li" key={key} {...otherProps}>
+					<Box component="li" key={option.id} {...otherProps}>
 						<Box sx={{ flex: "1 1 auto", minWidth: 0 }}>
-							<Typography variant="body2" sx={{ fontWeight: 500 }}>
-								{option.symbol} - {option.name}
-							</Typography>
+							<Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
+								<Typography variant="body2" sx={{ fontWeight: 500 }}>
+									{option.symbol}
+								</Typography>
+								{hasMultipleWithSameSymbol && (
+									<Chip
+										label="Multiple"
+										size="small"
+										sx={{
+											height: 18,
+											fontSize: "0.65rem",
+											bgcolor: "action.selected",
+											color: "text.secondary",
+										}}
+									/>
+								)}
+								<Typography variant="body2" color="text.secondary">
+									- {option.name}
+								</Typography>
+							</Stack>
 							<Typography color="text.secondary" variant="caption">
-								Rank #{option.cmc_rank} • {formatCurrency(option.quote?.USD?.price || 0, "$", 2)}
+								Rank #{option.cmc_rank || "N/A"} • Market Cap:{" "}
+								{option.quote?.USD?.market_cap
+									? formatCompactCurrency(option.quote.USD.market_cap, "$", 2)
+									: "N/A"}
 							</Typography>
 						</Box>
 						<Box sx={{ ml: 2, textAlign: "right" }}>

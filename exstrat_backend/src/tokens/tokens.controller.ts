@@ -11,11 +11,11 @@ export class TokensController {
   constructor(private readonly tokensService: TokensService) {}
 
   @Get('search')
-  @ApiOperation({ summary: 'Rechercher des tokens par symbole' })
-  @ApiQuery({ name: 'symbol', description: 'Symbole du token (ex: BTC, ETH)', required: true })
+  @ApiOperation({ summary: 'Rechercher des tokens par symbole ou nom (retourne tous les résultats correspondants)' })
+  @ApiQuery({ name: 'symbol', description: 'Symbole ou nom du token (ex: BTC, Bitcoin, ETH, Ethereum). Retourne TOUS les tokens correspondants.', required: true })
   @ApiResponse({ 
     status: 200, 
-    description: 'Liste des tokens trouvés',
+    description: 'Liste de tous les tokens trouvés (triés par pertinence : correspondance exacte du symbole en premier, puis par market cap)',
     schema: {
       type: 'array',
       items: {
@@ -49,14 +49,15 @@ export class TokensController {
   @ApiResponse({ status: 401, description: 'Non autorisé' })
   @ApiResponse({ status: 429, description: 'Limite de requêtes atteinte' })
   async searchBySymbol(@Query('symbol') symbol: string): Promise<TokenSearchResult[]> {
-    console.log('🎯 [TokensController] searchBySymbol called with symbol:', symbol);
+    console.log('🎯 [TokensController] searchBySymbol called with query:', symbol);
     
     if (!symbol || symbol.trim().length === 0) {
-      console.log('❌ [TokensController] Symbol is empty or missing');
-      throw new Error('Le symbole est requis');
+      console.log('❌ [TokensController] Query is empty or missing');
+      throw new Error('Le symbole ou nom est requis');
     }
     
-    console.log('✅ [TokensController] Calling tokensService.searchTokens...');
+    console.log('✅ [TokensController] Calling tokensService.searchTokens (intelligent search by symbol OR name)...');
+    // La méthode searchTokens recherche maintenant par symbole ET nom de manière intelligente
     return this.tokensService.searchTokens(symbol.trim());
   }
 

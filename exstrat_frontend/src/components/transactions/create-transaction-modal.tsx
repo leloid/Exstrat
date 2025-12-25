@@ -179,6 +179,14 @@ export function CreateTransactionModal({
 			return;
 		}
 
+		// Vérification TypeScript : selectedToken et selectedPortfolioId ne peuvent pas être null ici
+		// car on a déjà vérifié et retourné si ils étaient null
+		if (!selectedToken || !selectedPortfolioId) {
+			// Cette vérification ne devrait jamais être atteinte, mais TypeScript l'exige
+			setError("Une erreur inattendue s'est produite. Veuillez réessayer.");
+			return;
+		}
+
 		setIsSubmitting(true);
 
 		try {
@@ -278,9 +286,9 @@ export function CreateTransactionModal({
 								<Typography color="error.main" variant="body2" sx={{ fontWeight: 500, mb: 0.5 }}>
 									Champs manquants
 								</Typography>
-								<Typography color="error.main" variant="body2">
-									{error}
-								</Typography>
+							<Typography color="error.main" variant="body2">
+								{error}
+							</Typography>
 							</Box>
 						</Box>
 					)}
