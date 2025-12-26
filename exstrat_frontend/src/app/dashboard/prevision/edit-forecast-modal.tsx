@@ -382,7 +382,7 @@ export function EditForecastModal({ onClose, onSuccess, open, forecast }: EditFo
 	};
 
 	if (!forecast) {
-		return null;
+		return <></>;
 	}
 
 	const summary = calculateGlobalSummary();
