@@ -17,7 +17,7 @@ import Typography from "@mui/material/Typography";
 import { useColorScheme } from "@mui/material/styles";
 import { CheckIcon } from "@phosphor-icons/react/dist/ssr/Check";
 import { XIcon } from "@phosphor-icons/react/dist/ssr/X";
-import { Area, AreaChart, CartesianGrid, Line, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import { Area, AreaChart, CartesianGrid, Line, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 
 import { NoSsr } from "@/components/core/no-ssr";
 import { formatCurrency, formatPercentage } from "@/lib/format";
@@ -154,26 +154,91 @@ export function TokenStrategySidebar({
 		const data = [];
 		const now = new Date();
 		const days = 30;
+		const averagePrice = holding.averagePrice || currentPrice;
 
+		// Start from current price and work backwards
 		let price = currentPrice;
 		const volatility = 0.05;
 
+		// Generate data points from past to present
 		for (let i = days; i >= 0; i--) {
 			const date = new Date(now);
 			date.setDate(date.getDate() - i);
 
-			const change = (Math.random() - 0.5) * volatility * 2;
-			price = price * (1 + change);
-			price = Math.max(price, currentPrice * 0.5);
+			// For the last point (today), use exact current price
+			if (i === 0) {
+				data.push({
+					date: date.toISOString().split("T")[0],
+					price: Number(currentPrice.toFixed(2)),
+				});
+			} else {
+				// For past dates, simulate price evolution backwards
+				// Calculate a realistic price based on distance from today
+				const daysAgo = i;
+				const progress = daysAgo / days; // 1 = 30 days ago, 0 = today
+				
+				// Simulate price evolution: start closer to average price in the past, move towards current price
+				const targetPrice = averagePrice + (currentPrice - averagePrice) * (1 - progress);
+				
+				// Add some volatility
+				const change = (Math.random() - 0.5) * volatility * 2;
+				price = targetPrice * (1 + change);
+				
+				// Ensure price stays within reasonable bounds
+				const minPrice = Math.min(averagePrice, currentPrice) * 0.5;
+				const maxPrice = Math.max(averagePrice, currentPrice) * 1.5;
+				price = Math.max(minPrice, Math.min(maxPrice, price));
 
-			data.push({
-				date: date.toISOString().split("T")[0],
-				price: Number(price.toFixed(2)),
-			});
+				data.push({
+					date: date.toISOString().split("T")[0],
+					price: Number(price.toFixed(2)),
+				});
+			}
 		}
 
 		return data;
 	}, [holding]);
+
+	// Calculate Y-axis domain to include all Target Prices (must be before conditional return)
+	const yAxisDomain = React.useMemo(() => {
+		if (!strategy || !holding) return ["auto", "auto"];
+		
+		const currentPrice = holding.currentPrice || holding.averagePrice || 0;
+		const prices: number[] = [];
+		
+		// Add current price
+		if (currentPrice > 0) prices.push(currentPrice);
+		
+		// Add average price
+		if (holding.averagePrice > 0) prices.push(holding.averagePrice);
+		
+		// Add all Target Prices
+		strategy.profitTargets.forEach((tp) => {
+			const targetPrice =
+				tp.targetType === "percentage"
+					? holding.averagePrice * (1 + tp.targetValue / 100)
+					: tp.targetValue;
+			if (targetPrice > 0) prices.push(targetPrice);
+		});
+		
+		// Add all price data points
+		priceChartData.forEach((point) => {
+			if (point.price > 0) prices.push(point.price);
+		});
+		
+		if (prices.length === 0) return ["auto", "auto"];
+		
+		const minPrice = Math.min(...prices);
+		const maxPrice = Math.max(...prices);
+		const range = maxPrice - minPrice;
+		
+		// Add 15% margin on top and bottom
+		const margin = range * 0.15;
+		const domainMin = Math.max(0, minPrice - margin);
+		const domainMax = maxPrice + margin;
+		
+		return [domainMin, domainMax];
+	}, [strategy, holding, priceChartData]);
 
 	if (!holding) {
 		return <></>;
@@ -210,6 +275,37 @@ export function TokenStrategySidebar({
 			);
 		}
 		return null;
+	};
+
+	// Custom label component for TP reference lines
+	const TPLabel = ({ viewBox, value, isReached }: any) => {
+		if (!viewBox || !value) return null;
+		const { x, y } = viewBox;
+		return (
+			<g>
+				<rect
+					x={x + 5}
+					y={y - 12}
+					width={value.length * 6 + 8}
+					height={18}
+					fill={colorScheme === "dark" ? "var(--mui-palette-background-paper)" : "rgba(255, 255, 255, 0.95)"}
+					stroke={isReached ? "var(--mui-palette-success-main)" : "var(--mui-palette-warning-main)"}
+					strokeWidth={1.5}
+					rx={4}
+					opacity={0.95}
+				/>
+				<text
+					x={x + 9}
+					y={y + 2}
+					fill={isReached ? "var(--mui-palette-success-main)" : "var(--mui-palette-warning-main)"}
+					fontSize={11}
+					fontWeight={700}
+					textAnchor="start"
+				>
+					{value}
+				</text>
+			</g>
+		);
 	};
 
 	return (
@@ -468,69 +564,142 @@ export function TokenStrategySidebar({
 						{/* Price Chart */}
 						{priceChartData.length > 0 && (
 							<Box sx={{ mt: 3, pt: 3, borderTop: "1px solid var(--mui-palette-divider)" }}>
-								<Typography variant="overline" sx={{ fontWeight: 600, display: "block", mb: 2 }}>
-									{holding.token.symbol} Price
-								</Typography>
-								<Box sx={{ height: 200, mb: 2 }}>
-									<NoSsr fallback={<Box sx={{ height: "200px" }} />}>
+								<Stack direction="row" spacing={2} sx={{ alignItems: "center", justifyContent: "space-between", mb: 2 }}>
+									<Typography variant="overline" sx={{ fontWeight: 600, display: "block" }}>
+										{holding.token.symbol} Price Evolution
+									</Typography>
+									<Stack direction="row" spacing={2}>
+										<Stack spacing={0.25} sx={{ alignItems: "flex-end" }}>
+											<Typography variant="caption" color="text.secondary" sx={{ fontSize: "0.65rem" }}>
+												Current
+											</Typography>
+											<Typography variant="body2" sx={{ fontWeight: 600, color: "primary.main" }}>
+												{formatCurrency(currentPrice, "$", 2)}
+											</Typography>
+										</Stack>
+										<Stack spacing={0.25} sx={{ alignItems: "flex-end" }}>
+											<Typography variant="caption" color="text.secondary" sx={{ fontSize: "0.65rem" }}>
+												Average
+											</Typography>
+											<Typography variant="body2" sx={{ fontWeight: 600, color: "text.secondary" }}>
+												{formatCurrency(holding.averagePrice, "$", 2)}
+											</Typography>
+										</Stack>
+									</Stack>
+								</Stack>
+								<Box sx={{ height: 240, mb: 2 }}>
+									<NoSsr fallback={<Box sx={{ height: "240px" }} />}>
 										<ResponsiveContainer width="100%" height="100%">
-											<AreaChart data={priceChartData} margin={{ top: 5, right: 5, left: 0, bottom: 5 }}>
+											<AreaChart data={priceChartData} margin={{ top: 10, right: 10, left: 10, bottom: 10 }}>
 												<defs>
-													<linearGradient id="colorPrice" x1="0" y1="0" x2="0" y2="1">
-														<stop offset="5%" stopColor="var(--mui-palette-primary-main)" stopOpacity={0.3} />
-														<stop offset="95%" stopColor="var(--mui-palette-primary-main)" stopOpacity={0} />
+													<linearGradient id="colorPriceGradient" x1="0" y1="0" x2="0" y2="1">
+														<stop offset="0%" stopColor="var(--mui-palette-primary-main)" stopOpacity={0.4} />
+														<stop offset="50%" stopColor="var(--mui-palette-primary-main)" stopOpacity={0.2} />
+														<stop offset="100%" stopColor="var(--mui-palette-primary-main)" stopOpacity={0} />
 													</linearGradient>
+													<linearGradient id="colorPriceStroke" x1="0" x2="1" y1="0" y2="0">
+														<stop offset="0%" stopColor="var(--mui-palette-primary-main)" />
+														<stop offset="100%" stopColor="var(--mui-palette-secondary-main)" />
+													</linearGradient>
+													{/* Reference lines for TP levels */}
+													{strategy.profitTargets.map((tp, index) => {
+														const targetPrice =
+															tp.targetType === "percentage"
+																? holding.averagePrice * (1 + tp.targetValue / 100)
+																: tp.targetValue;
+														const isReached = currentPrice >= targetPrice;
+														return (
+															<linearGradient key={`tp-line-${tp.order}`} id={`tpLine-${tp.order}`} x1="0" x2="1" y1="0" y2="0">
+																<stop offset="0%" stopColor={isReached ? "var(--mui-palette-success-main)" : "var(--mui-palette-warning-main)"} stopOpacity={0.6} />
+																<stop offset="100%" stopColor={isReached ? "var(--mui-palette-success-main)" : "var(--mui-palette-warning-main)"} stopOpacity={0.3} />
+															</linearGradient>
+														);
+													})}
 												</defs>
-												<CartesianGrid strokeDasharray="3 3" stroke="var(--mui-palette-divider)" opacity={0.4} />
+												<CartesianGrid 
+													strokeDasharray="3 3" 
+													stroke="var(--mui-palette-divider)" 
+													opacity={0.3}
+													vertical={false}
+												/>
 												<XAxis
 													dataKey="date"
-													tick={{ fontSize: 10 }}
+													tick={{ fontSize: 10, fill: "var(--mui-palette-text-secondary)" }}
+													tickLine={false}
+													axisLine={false}
 													tickFormatter={(value) => {
 														const date = new Date(value);
-														return date.toLocaleDateString("en-US", { day: "2-digit", month: "2-digit" });
+														return date.toLocaleDateString("en-US", { day: "2-digit", month: "short" });
 													}}
 													height={30}
 												/>
 												<YAxis
-													tick={{ fontSize: 10 }}
+													domain={yAxisDomain}
+													tick={{ fontSize: 10, fill: "var(--mui-palette-text-secondary)" }}
+													tickLine={false}
+													axisLine={false}
 													tickFormatter={(value) => {
 														if (value >= 1_000_000) return `$${(value / 1_000_000).toFixed(1)}M`;
 														if (value >= 1_000) return `$${(value / 1_000).toFixed(1)}k`;
-														return `$${value.toFixed(0)}`;
+														return `$${value.toFixed(2)}`;
 													}}
-													width={50}
+													width={60}
 												/>
-												<Tooltip content={<CustomTooltip />} />
+												{/* Reference lines for TP levels */}
+												{strategy.profitTargets.map((tp) => {
+													const targetPrice =
+														tp.targetType === "percentage"
+															? holding.averagePrice * (1 + tp.targetValue / 100)
+															: tp.targetValue;
+													const isReached = currentPrice >= targetPrice;
+													return (
+														<ReferenceLine
+															key={`tp-${tp.order}`}
+															y={targetPrice}
+															stroke={isReached ? "var(--mui-palette-success-main)" : "var(--mui-palette-warning-main)"}
+															strokeWidth={2.5}
+															strokeDasharray="6 4"
+															opacity={0.9}
+															label={{
+																value: `TP${tp.order}: ${formatCurrency(targetPrice, "$", 2)}`,
+																position: "right",
+																content: ({ viewBox, value }: any) => (
+																	<TPLabel viewBox={viewBox} value={value} isReached={isReached} />
+																),
+															}}
+														/>
+													);
+												})}
+												{/* Average price reference line */}
+												<ReferenceLine
+													y={holding.averagePrice}
+													stroke="var(--mui-palette-text-secondary)"
+													strokeWidth={1}
+													strokeDasharray="3 3"
+													opacity={0.5}
+												/>
+												<Tooltip 
+													content={<CustomTooltip />}
+													cursor={{ stroke: "var(--mui-palette-primary-main)", strokeWidth: 1, strokeDasharray: "5 5", opacity: 0.5 }}
+												/>
 												<Area
 													type="monotone"
 													dataKey="price"
-													stroke="var(--mui-palette-primary-main)"
-													strokeWidth={1.5}
-													fill="url(#colorPrice)"
-												/>
-												<Line
-													type="monotone"
-													dataKey="price"
-													stroke="var(--mui-palette-primary-main)"
-													strokeWidth={1.5}
+													stroke="url(#colorPriceStroke)"
+													strokeWidth={2.5}
+													fill="url(#colorPriceGradient)"
 													dot={false}
+													activeDot={{ 
+														r: 5, 
+														fill: "var(--mui-palette-primary-main)", 
+														strokeWidth: 2, 
+														stroke: "var(--mui-palette-background-paper)" 
+													}}
 												/>
 											</AreaChart>
 										</ResponsiveContainer>
 									</NoSsr>
 								</Box>
-								<Stack direction="row" spacing={2} sx={{ justifyContent: "space-between" }}>
-									<Typography variant="caption" color="text.secondary">
-										Current: <Typography component="span" variant="caption" sx={{ fontWeight: 600 }}>
-											{formatCurrency(currentPrice, "$", 2)}
-										</Typography>
-									</Typography>
-									<Typography variant="caption" color="text.secondary">
-										Avg: <Typography component="span" variant="caption" sx={{ fontWeight: 600 }}>
-											{formatCurrency(holding.averagePrice, "$", 2)}
-										</Typography>
-									</Typography>
-								</Stack>
 							</Box>
 						)}
 					</>

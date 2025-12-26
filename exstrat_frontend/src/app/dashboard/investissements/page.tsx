@@ -2004,120 +2004,259 @@ export default function Page(): React.JSX.Element {
 						) : (
 							<>
 						{walletPerformanceView === "global" ? (
-							<NoSsr fallback={<Box sx={{ height: "240px" }} />}>
-								<ResponsiveContainer height={240} width="100%">
-									<AreaChart data={portfolioPerformanceData} margin={{ top: 0, right: 0, bottom: 0, left: 0 }}>
-										<defs>
-											<linearGradient id="area-performance" x1="0" x2="0" y1="0" y2="1">
-												<stop offset="0" stopColor="var(--mui-palette-primary-main)" stopOpacity={0.3} />
-												<stop offset="100%" stopColor="var(--mui-palette-primary-main)" stopOpacity={0} />
-											</linearGradient>
-										</defs>
-										<CartesianGrid strokeDasharray="2 4" vertical={false} />
-										<XAxis
-											axisLine={false}
-											dataKey="name"
-											tickLine={false}
-											type="category"
-											interval="preserveStartEnd"
-										/>
-										<YAxis
-											axisLine={false}
-											tickLine={false}
-											type="number"
-											tickFormatter={(value) => formatCompactCurrency(value, "$", 0).replace("$", "")}
-										/>
-										<Area
-											animationDuration={300}
-											dataKey="value"
-											fill="url(#area-performance)"
-											fillOpacity={1}
-											name="Total Value"
-											stroke="var(--mui-palette-primary-main)"
-											strokeWidth={3}
-											type="natural"
-										/>
-										<Tooltip
-											animationDuration={50}
-											content={<PerformanceTooltipContent />}
-											cursor={false}
-										/>
-									</AreaChart>
-								</ResponsiveContainer>
-							</NoSsr>
-						) : (
-							<Stack spacing={2}>
-								<NoSsr fallback={<Box sx={{ height: "240px" }} />}>
-									<ResponsiveContainer height={240} width="100%">
-										<LineChart
-											data={walletPerformanceByWalletData.data}
-											margin={{ top: 0, right: 0, bottom: 0, left: 0 }}
+							<Stack spacing={3}>
+								{/* Stats Summary */}
+								<Stack direction="row" spacing={3} sx={{ justifyContent: "space-around", flexWrap: "wrap" }}>
+									<Stack spacing={0.5} sx={{ alignItems: "center", minWidth: "100px" }}>
+										<Typography color="text.secondary" variant="caption" sx={{ textTransform: "uppercase", letterSpacing: 0.5 }}>
+											Total Value
+										</Typography>
+										<Typography variant="h6" sx={{ fontWeight: 600 }}>
+											{formatCompactCurrency(globalStats.totalValue, "$", 2, secretMode)}
+										</Typography>
+									</Stack>
+									<Stack spacing={0.5} sx={{ alignItems: "center", minWidth: "100px" }}>
+										<Typography color="text.secondary" variant="caption" sx={{ textTransform: "uppercase", letterSpacing: 0.5 }}>
+											Total Invested
+										</Typography>
+										<Typography variant="h6" sx={{ fontWeight: 600 }}>
+											{formatCompactCurrency(globalStats.totalInvested, "$", 2, secretMode)}
+										</Typography>
+									</Stack>
+									<Stack spacing={0.5} sx={{ alignItems: "center", minWidth: "100px" }}>
+										<Typography color="text.secondary" variant="caption" sx={{ textTransform: "uppercase", letterSpacing: 0.5 }}>
+											P&L
+										</Typography>
+										<Typography 
+											variant="h6" 
+											sx={{ 
+												fontWeight: 600,
+												color: globalStats.totalPNL >= 0 ? "success.main" : "error.main"
+											}}
 										>
-											<CartesianGrid strokeDasharray="2 4" vertical={false} />
+											{formatCompactCurrency(globalStats.totalPNL, "$", 2, secretMode)}
+										</Typography>
+									</Stack>
+									<Stack spacing={0.5} sx={{ alignItems: "center", minWidth: "100px" }}>
+										<Typography color="text.secondary" variant="caption" sx={{ textTransform: "uppercase", letterSpacing: 0.5 }}>
+											Return
+										</Typography>
+										<Typography 
+											variant="h6" 
+											sx={{ 
+												fontWeight: 600,
+												color: globalStats.totalPNLPercentage >= 0 ? "success.main" : "error.main"
+											}}
+										>
+											{formatPercentage(globalStats.totalPNLPercentage, 2)}
+										</Typography>
+									</Stack>
+								</Stack>
+								<NoSsr fallback={<Box sx={{ height: "280px" }} />}>
+									<ResponsiveContainer height={280} width="100%">
+										<AreaChart data={portfolioPerformanceData} margin={{ top: 10, right: 10, bottom: 10, left: 10 }}>
+											<defs>
+												<linearGradient id="area-performance-gradient" x1="0" x2="0" y1="0" y2="1">
+													<stop offset="0%" stopColor="var(--mui-palette-primary-main)" stopOpacity={0.4} />
+													<stop offset="50%" stopColor="var(--mui-palette-primary-main)" stopOpacity={0.2} />
+													<stop offset="100%" stopColor="var(--mui-palette-primary-main)" stopOpacity={0} />
+												</linearGradient>
+												<linearGradient id="area-performance-stroke" x1="0" x2="1" y1="0" y2="0">
+													<stop offset="0%" stopColor="var(--mui-palette-primary-main)" />
+													<stop offset="100%" stopColor="var(--mui-palette-secondary-main)" />
+												</linearGradient>
+											</defs>
+											<CartesianGrid 
+												strokeDasharray="3 3" 
+												vertical={false} 
+												stroke="var(--mui-palette-divider)"
+												opacity={0.5}
+											/>
 											<XAxis
 												axisLine={false}
 												dataKey="name"
 												tickLine={false}
 												type="category"
 												interval="preserveStartEnd"
+												tick={{ fontSize: 11, fill: "var(--mui-palette-text-secondary)" }}
+												height={30}
 											/>
 											<YAxis
 												axisLine={false}
 												tickLine={false}
 												type="number"
 												tickFormatter={(value) => formatCompactCurrency(value, "$", 0).replace("$", "")}
+												tick={{ fontSize: 11, fill: "var(--mui-palette-text-secondary)" }}
+												width={60}
+											/>
+											<Area
+												animationDuration={800}
+												dataKey="value"
+												fill="url(#area-performance-gradient)"
+												fillOpacity={1}
+												name="Total Value"
+												stroke="url(#area-performance-stroke)"
+												strokeWidth={3}
+												type="monotone"
+												dot={false}
+												activeDot={{ r: 6, fill: "var(--mui-palette-primary-main)", strokeWidth: 2, stroke: "var(--mui-palette-background-paper)" }}
+											/>
+											<Tooltip
+												animationDuration={50}
+												content={<PerformanceTooltipContent />}
+												cursor={{ stroke: "var(--mui-palette-primary-main)", strokeWidth: 1, strokeDasharray: "5 5", opacity: 0.5 }}
+											/>
+										</AreaChart>
+									</ResponsiveContainer>
+								</NoSsr>
+							</Stack>
+						) : (
+							<Stack spacing={3}>
+								{/* Wallet Stats Summary */}
+								{walletPerformanceByWalletData.wallets.length > 0 && (
+									<Stack direction="row" spacing={2} sx={{ flexWrap: "wrap", justifyContent: "center", gap: 2 }}>
+										{walletPerformanceByWalletData.wallets.map((wallet, index) => {
+											const colors = [
+												"var(--mui-palette-primary-main)",
+												"var(--mui-palette-secondary-main)",
+												"var(--mui-palette-success-main)",
+											];
+											const color = colors[index % colors.length];
+											return (
+												<Card 
+													key={wallet.id} 
+													variant="outlined"
+													sx={{ 
+														minWidth: "200px",
+														flex: "1 1 auto",
+														borderLeft: `4px solid ${color}`,
+													}}
+												>
+													<CardContent sx={{ p: 2, "&:last-child": { pb: 2 } }}>
+														<Stack spacing={1}>
+															<Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
+																<Box
+																	sx={{
+																		bgcolor: color,
+																		borderRadius: "4px",
+																		height: "12px",
+																		width: "12px",
+																	}}
+																/>
+																<Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
+																	{wallet.name}
+																</Typography>
+															</Stack>
+															<Stack spacing={0.5}>
+																<Typography color="text.secondary" variant="caption">
+																	Value
+																</Typography>
+																<Typography variant="body1" sx={{ fontWeight: 600 }}>
+																	{formatCompactCurrency(wallet.value, "$", 2, secretMode)}
+																</Typography>
+															</Stack>
+															<Stack spacing={0.5}>
+																<Typography color="text.secondary" variant="caption">
+																	P&L
+																</Typography>
+																<Typography 
+																	variant="body2" 
+																	sx={{ 
+																		fontWeight: 600,
+																		color: wallet.pnl >= 0 ? "success.main" : "error.main"
+																	}}
+																>
+																	{formatCompactCurrency(wallet.pnl, "$", 2, secretMode)} ({formatPercentage(wallet.pnlPercentage, 2)})
+																</Typography>
+															</Stack>
+														</Stack>
+													</CardContent>
+												</Card>
+											);
+										})}
+									</Stack>
+								)}
+								<NoSsr fallback={<Box sx={{ height: "280px" }} />}>
+									<ResponsiveContainer height={280} width="100%">
+										<LineChart
+											data={walletPerformanceByWalletData.data}
+											margin={{ top: 10, right: 10, bottom: 10, left: 10 }}
+										>
+											<defs>
+												{walletPerformanceByWalletData.wallets.map((wallet, index) => {
+													const colors = [
+														"var(--mui-palette-primary-main)",
+														"var(--mui-palette-secondary-main)",
+														"var(--mui-palette-success-main)",
+													];
+													const color = colors[index % colors.length];
+													const walletKey = wallet.name.replace(/\s+/g, "_");
+													return (
+														<linearGradient key={`gradient-${walletKey}`} id={`gradient-${walletKey}`} x1="0" x2="1" y1="0" y2="0">
+															<stop offset="0%" stopColor={color} stopOpacity={1} />
+															<stop offset="100%" stopColor={color} stopOpacity={0.7} />
+														</linearGradient>
+													);
+												})}
+											</defs>
+											<CartesianGrid 
+												strokeDasharray="3 3" 
+												vertical={false} 
+												stroke="var(--mui-palette-divider)"
+												opacity={0.5}
+											/>
+											<XAxis
+												axisLine={false}
+												dataKey="name"
+												tickLine={false}
+												type="category"
+												interval="preserveStartEnd"
+												tick={{ fontSize: 11, fill: "var(--mui-palette-text-secondary)" }}
+												height={30}
+											/>
+											<YAxis
+												axisLine={false}
+												tickLine={false}
+												type="number"
+												tickFormatter={(value) => formatCompactCurrency(value, "$", 0).replace("$", "")}
+												tick={{ fontSize: 11, fill: "var(--mui-palette-text-secondary)" }}
+												width={60}
 											/>
 											{walletPerformanceByWalletData.wallets.map((wallet, index) => {
 												const walletKey = wallet.name.replace(/\s+/g, "_");
 												const colors = [
 													"var(--mui-palette-primary-main)",
+													"var(--mui-palette-secondary-main)",
 													"var(--mui-palette-success-main)",
-													"var(--mui-palette-warning-main)",
 												];
+												const color = colors[index % colors.length];
 												return (
 													<Line
 														key={wallet.id}
-														animationDuration={300}
+														animationDuration={800}
 														dataKey={walletKey}
 														name={wallet.name}
-														stroke={colors[index % colors.length]}
+														stroke={color}
 														strokeWidth={3}
-														type="natural"
+														type="monotone"
+														dot={false}
+														activeDot={{ 
+															r: 6, 
+															fill: color, 
+															strokeWidth: 2, 
+															stroke: "var(--mui-palette-background-paper)" 
+														}}
 													/>
 												);
 											})}
 											<Tooltip
 												animationDuration={50}
 												content={<WalletPerformanceTooltipContent wallets={walletPerformanceByWalletData.wallets} />}
-												cursor={false}
+												cursor={{ stroke: "var(--mui-palette-divider)", strokeWidth: 1, strokeDasharray: "5 5", opacity: 0.5 }}
 											/>
 										</LineChart>
 									</ResponsiveContainer>
 								</NoSsr>
-								{walletPerformanceByWalletData.wallets.length > 0 && (
-									<Stack direction="row" spacing={2} sx={{ flexWrap: "wrap", justifyContent: "center" }}>
-										{walletPerformanceByWalletData.wallets.map((wallet, index) => {
-											const colors = [
-												"var(--mui-palette-primary-main)",
-												"var(--mui-palette-success-main)",
-												"var(--mui-palette-warning-main)",
-											];
-											return (
-												<Stack key={wallet.id} direction="row" spacing={1} sx={{ alignItems: "center" }}>
-													<Box
-														sx={{
-															bgcolor: colors[index % colors.length],
-															borderRadius: "2px",
-															height: "4px",
-															width: "16px",
-														}}
-													/>
-													<Typography variant="body2">{wallet.name}</Typography>
-												</Stack>
-											);
-										})}
-									</Stack>
-								)}
 							</Stack>
 								)}
 							</>
