@@ -115,6 +115,11 @@ export function CreateStrategyModal({ onClose, onSuccess, open }: CreateStrategy
 	const [numberOfTargets, setNumberOfTargets] = React.useState<number>(0);
 	const [profitTargets, setProfitTargets] = React.useState<ProfitTarget[]>([]);
 	const [availableTokens, setAvailableTokens] = React.useState<AvailableToken[]>([]);
+	// Local states for raw input values during typing (to avoid formatting during input)
+	const [rawPercentageInputs, setRawPercentageInputs] = React.useState<Record<number, string>>({});
+	const [rawTokenInputs, setRawTokenInputs] = React.useState<Record<number, string>>({});
+	const [focusedPercentageInput, setFocusedPercentageInput] = React.useState<number | null>(null);
+	const [focusedTokenInput, setFocusedTokenInput] = React.useState<number | null>(null);
 	const [investmentData, setInvestmentData] = React.useState<{
 		numberOfTransactions: number;
 		totalInvested: number;
@@ -836,14 +841,44 @@ export function CreateStrategyModal({ onClose, onSuccess, open }: CreateStrategy
 																										<FormControl error={isMaxReached} sx={{ width: 100 }}>
 																											<TextField
 																												size="small"
-																												type="number"
-																												value={target.sellPercentage.toFixed(1)}
+																												type="text"
+																												value={
+																													focusedPercentageInput === targetIndex
+																														? rawPercentageInputs[targetIndex] ?? ""
+																														: target.sellPercentage > 0
+																															? target.sellPercentage.toFixed(1)
+																															: ""
+																												}
 																												onChange={(e) => {
-																													const value = parseFloat(e.target.value);
-																													if (!isNaN(value) && value >= 0) {
-																														handleSellPercentageChange(targetIndex, value);
+																													const inputValue = e.target.value;
+																													// Allow empty, numbers, and one decimal point
+																													if (inputValue === "" || /^\d*\.?\d*$/.test(inputValue)) {
+																														setRawPercentageInputs((prev) => ({
+																															...prev,
+																															[targetIndex]: inputValue,
+																														}));
+																														const value = parseFloat(inputValue);
+																														if (!isNaN(value) && value >= 0) {
+																															handleSellPercentageChange(targetIndex, value);
+																														} else if (inputValue === "" || inputValue === ".") {
+																															handleSellPercentageChange(targetIndex, 0);
+																														}
 																													}
 																												}}
+																												onFocus={() => {
+																													setFocusedPercentageInput(targetIndex);
+																													setRawPercentageInputs((prev) => ({
+																														...prev,
+																														[targetIndex]: target.sellPercentage > 0 ? target.sellPercentage.toString() : "",
+																													}));
+																												}}
+																												onBlur={() => {
+																													setFocusedPercentageInput(null);
+																																					const value = parseFloat(rawPercentageInputs[targetIndex] || "0");
+																																					if (!isNaN(value) && value >= 0) {
+																																						handleSellPercentageChange(targetIndex, value);
+																																					}
+																																				}}
 																												inputProps={{ step: "0.1", min: 0, max: maxValue }}
 																												disabled={isMaxReached}
 																												error={isMaxReached}
@@ -859,14 +894,41 @@ export function CreateStrategyModal({ onClose, onSuccess, open }: CreateStrategy
 																								<Typography variant="body2">%</Typography>
 																								<TextField
 																									size="small"
-																									type="number"
+																									type="text"
 																									value={
-																										qty > 0 && target.sellPercentage > 0
-																											? ((qty * target.sellPercentage) / 100).toFixed(8)
-																											: ""
+																										focusedTokenInput === targetIndex
+																											? rawTokenInputs[targetIndex] ?? ""
+																											: qty > 0 && target.sellPercentage > 0
+																												? ((qty * target.sellPercentage) / 100).toString()
+																												: ""
 																									}
 																									onChange={(e) => {
-																										const value = parseFloat(e.target.value);
+																										const inputValue = e.target.value;
+																										// Allow empty, numbers, and one decimal point
+																										if (inputValue === "" || /^\d*\.?\d*$/.test(inputValue)) {
+																											setRawTokenInputs((prev) => ({
+																												...prev,
+																												[targetIndex]: inputValue,
+																											}));
+																											const value = parseFloat(inputValue);
+																											if (!isNaN(value) && value >= 0) {
+																												handleTokensChange(targetIndex, value);
+																											} else if (inputValue === "" || inputValue === ".") {
+																												handleTokensChange(targetIndex, 0);
+																											}
+																										}
+																									}}
+																									onFocus={() => {
+																										setFocusedTokenInput(targetIndex);
+																										const tokenValue = qty > 0 && target.sellPercentage > 0 ? (qty * target.sellPercentage) / 100 : 0;
+																										setRawTokenInputs((prev) => ({
+																											...prev,
+																											[targetIndex]: tokenValue > 0 ? tokenValue.toString() : "",
+																										}));
+																									}}
+																									onBlur={() => {
+																										setFocusedTokenInput(null);
+																										const value = parseFloat(rawTokenInputs[targetIndex] || "0");
 																										if (!isNaN(value) && value >= 0) {
 																											handleTokensChange(targetIndex, value);
 																										}
