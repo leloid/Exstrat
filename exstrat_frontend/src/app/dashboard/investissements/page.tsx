@@ -63,6 +63,7 @@ import { formatCurrency, formatPercentage, formatCompactCurrency, formatQuantity
 import { useSecretMode } from "@/hooks/use-secret-mode";
 import { TokenSearch } from "@/components/transactions/token-search";
 import { CreateTransactionModal } from "@/components/transactions/create-transaction-modal";
+import { toast } from "@/components/core/toaster";
 import type { Holding, CreatePortfolioDto, UpdatePortfolioDto } from "@/types/portfolio";
 import type { TransactionResponse, CreateTransactionDto, TokenSearchResult } from "@/types/transactions";
 import { Area, AreaChart, CartesianGrid, Cell, Line, LineChart, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
@@ -691,8 +692,10 @@ export default function Page(): React.JSX.Element {
 			setPortfolioName("");
 			setPortfolioFormData({ name: "", description: "", isDefault: false });
 			await refreshPortfolios();
+			toast.success("Wallet created successfully");
 		} catch (error) {
 			console.error("Error creating portfolio:", error);
+			toast.error("Failed to create wallet. Please try again.");
 		}
 	};
 
@@ -704,8 +707,10 @@ export default function Page(): React.JSX.Element {
 			setEditingPortfolioId(null);
 			setPortfolioFormData({ name: "", description: "", isDefault: false });
 			await refreshPortfolios();
+			toast.success("Wallet updated successfully");
 		} catch (error) {
 			console.error("Error updating portfolio:", error);
+			toast.error("Failed to update wallet. Please try again.");
 		}
 	};
 
@@ -721,8 +726,10 @@ export default function Page(): React.JSX.Element {
 			await refreshPortfolios();
 			setShowDeleteWalletModal(false);
 			setWalletToDelete(null);
+			toast.success("Wallet deleted successfully");
 		} catch (error) {
 			console.error("Error deleting portfolio:", error);
+			toast.error("Failed to delete wallet. Please try again.");
 		}
 	};
 
@@ -861,12 +868,19 @@ export default function Page(): React.JSX.Element {
 				}
 			}
 			setPortfolioData(data);
+			// Show success notification
+			if (editingTransaction) {
+				toast.success("Transaction updated successfully");
+			} else {
+				toast.success("Transaction created successfully");
+			}
 		} catch (error: unknown) {
 			const axiosError = error as { response?: { data?: { message?: string } }; message?: string };
 			const errorMessage =
 				axiosError.response?.data?.message || axiosError.message || "Error saving transaction";
 			setTransactionError(errorMessage);
 			console.error("Error saving transaction:", error);
+			toast.error("Failed to save transaction. Please try again.");
 		}
 	};
 
@@ -939,8 +953,10 @@ export default function Page(): React.JSX.Element {
 			await refreshPortfolios();
 			setShowDeleteTransactionModal(false);
 			setTransactionToDelete(null);
+			toast.success("Transaction deleted successfully");
 		} catch (error) {
 			console.error("Error deleting transaction:", error);
+			toast.error("Failed to delete transaction. Please try again.");
 		}
 	};
 
@@ -975,9 +991,12 @@ export default function Page(): React.JSX.Element {
 			// Reload portfolios
 			await refreshPortfolios();
 			setShowDeleteMultipleTransactionsModal(false);
+			const count = selectedTransactionIds.size;
 			setSelectedTransactionIds(new Set());
+			toast.success(`${count} transaction${count > 1 ? "s" : ""} deleted successfully`);
 		} catch (error) {
 			console.error("Error deleting transactions:", error);
+			toast.error("Failed to delete transactions. Please try again.");
 		}
 	};
 

@@ -39,6 +39,7 @@ import { getTokenLogoUrl } from "@/lib/utils";
 import type { TokenSearchResult, CreateTransactionDto } from "@/types/transactions";
 import type { Portfolio } from "@/types/portfolio";
 import { useColorScheme } from "@mui/material/styles";
+import { toast } from "@/components/core/toaster";
 
 interface CreateTransactionModalProps {
 	onClose: () => void;
@@ -201,6 +202,7 @@ export function CreateTransactionModal({
 					notes: notes || undefined,
 				};
 				await transactionsApi.updateTransaction(editingTransaction.id, updateData);
+				toast.success("Transaction updated successfully");
 			} else {
 				// Create transaction
 				const transactionData: CreateTransactionDto = {
@@ -216,6 +218,7 @@ export function CreateTransactionModal({
 					portfolioId: selectedPortfolioId,
 				};
 				await transactionsApi.createTransaction(transactionData);
+				toast.success("Transaction created successfully");
 			}
 
 			onSuccess();
@@ -225,6 +228,7 @@ export function CreateTransactionModal({
 			const errorMessage =
 				axiosError.response?.data?.message || axiosError.message || "An error occurred while saving the transaction";
 			setError(errorMessage);
+			toast.error("Failed to save transaction. Please try again.");
 		} finally {
 			setIsSubmitting(false);
 		}

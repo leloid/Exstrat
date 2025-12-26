@@ -30,7 +30,7 @@ export function GainsLossesChart({ holdings }: GainsLossesChartProps): React.JSX
 
 	// Prepare data for PnL chart
 	const pnlData = React.useMemo(() => {
-		return holdings
+		const data = holdings
 			.map((holding) => {
 				// IMPORTANT: Utiliser currentValue du backend qui est calculé avec currentPrice (prix actuel du marché)
 				const currentValue = holding.currentValue || 0;
@@ -46,7 +46,26 @@ export function GainsLossesChart({ holdings }: GainsLossesChartProps): React.JSX
 					color: pnlPercentage >= 0 ? "var(--mui-palette-success-main)" : "var(--mui-palette-error-main)",
 				};
 			})
-			.sort((a, b) => b.pnl - a.pnl);
+			.sort((a, b) => {
+				// Sort by absolute value (largest first), then by sign (positive first for same absolute value)
+				const absA = Math.abs(a.pnl);
+				const absB = Math.abs(b.pnl);
+				if (absB !== absA) {
+					return absB - absA; // Largest absolute values first
+				}
+				return b.pnl - a.pnl; // If same absolute value, positive first
+			});
+		
+		// Calculate domain with minimum range to ensure small values are visible
+		const pnlValues = data.map(d => d.pnl);
+		const maxPnL = Math.max(...pnlValues, 0);
+		const minPnL = Math.min(...pnlValues, 0);
+		const range = maxPnL - minPnL;
+		
+		// If range is too large compared to small values, we'll use a custom domain
+		// For now, we'll handle this in the shape function
+		
+		return data;
 	}, [holdings]);
 
 	// Prepare data for Valuation chart
@@ -350,7 +369,11 @@ export function GainsLossesChart({ holdings }: GainsLossesChartProps): React.JSX
 										/>
 									</BarChart>
 								) : (
-									<BarChart data={pnlData} margin={{ top: 0, right: 0, bottom: 0, left: 0 }}>
+									<BarChart 
+										data={pnlData} 
+										margin={{ top: 0, right: 0, bottom: 0, left: 0 }}
+										barCategoryGap="10%"
+									>
 										<defs>
 											<linearGradient id="colorGain" x1="0" y1="0" x2="0" y2="1">
 												<stop offset="5%" stopColor="var(--mui-palette-success-main)" stopOpacity={0.9} />
@@ -381,7 +404,56 @@ export function GainsLossesChart({ holdings }: GainsLossesChartProps): React.JSX
 										/>
 										<Tooltip animationDuration={50} content={<CustomTooltip />} cursor={false} />
 										<ReferenceLine y={0} stroke="var(--mui-palette-divider)" strokeWidth={2} strokeDasharray="4 4" opacity={0.7} />
-										<Bar animationDuration={300} barSize={32} dataKey="pnl" radius={[5, 5, 5, 5]}>
+										<Bar 
+											animationDuration={300} 
+											barSize={32} 
+											dataKey="pnl" 
+											radius={[5, 5, 5, 5]}
+											shape={(props: any) => {
+												const { x, y, width, height, payload } = props;
+												const minBarHeight = 3; // Minimum height in pixels for visibility
+												const actualHeight = Math.abs(height);
+												const displayHeight = Math.max(actualHeight, minBarHeight);
+												const isPositive = payload.pnl >= 0;
+												
+												// In Recharts BarChart with baseline at y=0:
+												// - For positive values: y is the top of the bar (above baseline), height goes downward to baseline
+												// - For negative values: y is the bottom of the bar (below baseline), height goes upward to baseline
+												// For negative bars, we need to calculate where the baseline (y=0) is
+												// The baseline position = y + height (because y is below baseline, height goes up to baseline)
+												
+												let newY = y;
+												let newHeight = displayHeight;
+												
+												if (isPositive) {
+													// For positive: y is the top of the bar, height goes down to baseline
+													// If we increased height, we need to move y up
+													newY = y - (displayHeight - actualHeight);
+													newHeight = displayHeight;
+												} else {
+													// For negative: y is the bottom of the bar (below baseline)
+													// height goes upward to baseline, so baseline = y + height
+													// We want the bar to start at baseline and go down
+													const baselineY = y + height; // Position of y=0 (baseline)
+													
+													// Start at baseline and extend downward
+													newY = baselineY;
+													newHeight = displayHeight;
+												}
+												
+												return (
+													<rect
+														x={x}
+														y={newY}
+														width={width}
+														height={newHeight}
+														fill={payload.pnlPercentage >= 0 ? "url(#colorGain)" : "url(#colorLoss)"}
+														rx={5}
+														ry={5}
+													/>
+												);
+											}}
+										>
 											{pnlData.map((entry, index) => (
 												<Cell
 													key={`cell-${index}`}
