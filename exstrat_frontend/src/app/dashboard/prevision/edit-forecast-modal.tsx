@@ -40,6 +40,7 @@ import { usePortfolio } from "@/contexts/PortfolioContext";
 import type { ForecastResponse, CreateForecastDto } from "@/types/portfolio";
 import type { TheoreticalStrategyResponse, StrategyResponse } from "@/types/strategies";
 import { Option } from "@/components/core/option";
+import { toast } from "@/components/core/toaster";
 
 interface EditForecastModalProps {
 	onClose: () => void;
@@ -358,9 +359,10 @@ export function EditForecastModal({ onClose, onSuccess, open, forecast }: EditFo
 			await updateForecast(forecast.id, forecastData);
 			onSuccess();
 			handleClose();
+			toast.success("Forecast updated successfully");
 		} catch (error) {
 			console.error("Error updating forecast:", error);
-			alert("Failed to update forecast. Please try again.");
+			toast.error("Failed to update forecast. Please try again.");
 		} finally {
 			setIsSubmitting(false);
 		}

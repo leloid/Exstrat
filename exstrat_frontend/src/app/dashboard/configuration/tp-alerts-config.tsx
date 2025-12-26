@@ -13,6 +13,7 @@ import { PlusIcon } from "@phosphor-icons/react/dist/ssr/Plus";
 import * as configurationApi from "@/lib/configuration-api";
 import { formatCurrency } from "@/lib/format";
 import type { TokenAlert, AlertConfiguration, UpdateTPAlertDto } from "@/types/configuration";
+import { toast } from "@/components/core/toaster";
 
 interface TPAlertsConfigProps {
 	tokenAlert: TokenAlert;
@@ -42,8 +43,10 @@ export function TPAlertsConfig({
 						await configurationApi.updateTPAlert(tpAlertId, updates);
 						const updated = await configurationApi.getAlertConfigurationById(alertConfigurationId);
 						onConfigurationUpdate(updated);
+						toast.success("Alert updated successfully");
 					} catch (error) {
 						console.error("Error updating TP alert:", error);
+						toast.error("Failed to update alert. Please try again.");
 					}
 				})();
 			}

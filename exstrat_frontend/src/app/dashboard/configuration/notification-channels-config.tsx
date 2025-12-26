@@ -8,6 +8,7 @@ import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
 import * as configurationApi from "@/lib/configuration-api";
 import type { AlertConfiguration, NotificationChannels } from "@/types/configuration";
+import { toast } from "@/components/core/toaster";
 
 interface NotificationChannelsConfigProps {
 	alertConfiguration: AlertConfiguration;
@@ -27,8 +28,10 @@ export function NotificationChannelsConfig({
 				notificationChannels: channels,
 			});
 			onConfigurationUpdate(updated);
+			toast.success("Notification channels updated successfully");
 		} catch (error) {
 			console.error("Error updating notification channels:", error);
+			toast.error("Failed to update notification channels. Please try again.");
 		} finally {
 			setSaving(false);
 		}

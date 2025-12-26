@@ -250,8 +250,10 @@ function ConfigurationPageContent(): React.JSX.Element {
 					},
 				});
 				handleConfigurationUpdate(updated);
+				toast.success("Notification channel updated successfully");
 			} catch (error) {
 				console.error("Error updating notification channels:", error);
+				toast.error("Failed to update notification channel. Please try again.");
 			}
 		},
 		[alertConfigurationsDetails, handleConfigurationUpdate]

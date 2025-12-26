@@ -30,6 +30,7 @@ import { formatCurrency, formatPercentage } from "@/lib/format";
 import type { StrategyResponse, UpdateStrategyDto, TargetType } from "@/types/strategies";
 import { TargetType as TargetTypeEnum } from "@/types/strategies";
 import { Option } from "@/components/core/option";
+import { toast } from "@/components/core/toaster";
 
 interface ProfitTarget {
 	id: string;
@@ -225,9 +226,10 @@ export function EditStrategyModal({ onClose, onSuccess, open, strategy }: EditSt
 			await strategiesApi.updateStrategy(strategy.id, updateData);
 			onSuccess();
 			handleClose();
+			toast.success("Strategy updated successfully");
 		} catch (error) {
 			console.error("Error updating strategy:", error);
-			alert("Failed to update strategy. Please try again.");
+			toast.error("Failed to update strategy. Please try again.");
 		} finally {
 			setIsSubmitting(false);
 		}

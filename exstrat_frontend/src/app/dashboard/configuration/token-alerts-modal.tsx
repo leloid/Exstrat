@@ -18,6 +18,7 @@ import * as configurationApi from "@/lib/configuration-api";
 import type { TokenAlert, AlertConfiguration, UpdateTPAlertDto } from "@/types/configuration";
 import type { TheoreticalStrategyResponse } from "@/types/strategies";
 import { TPAlertsConfig } from "./tp-alerts-config";
+import { toast } from "@/components/core/toaster";
 
 interface TokenAlertsModalProps {
 	open: boolean;
@@ -126,8 +127,14 @@ export function TokenAlertsModal({
 
 			// Close modal after successful save
 			onClose();
+			toast.success(
+				pendingUpdates.size === 1
+					? "Alert updated successfully"
+					: `${pendingUpdates.size} alerts updated successfully`
+			);
 		} catch (error) {
 			console.error("Error saving TP alert updates:", error);
+			toast.error("Failed to save alert updates. Please try again.");
 		} finally {
 			setSaving(false);
 		}
@@ -216,7 +223,17 @@ export function TokenAlertsModal({
 
 			{isForecastActive && tokenAlert && pendingUpdates.size > 0 && (
 				<DialogActions sx={{ px: 3, pb: 2, pt: 1 }}>
-					<Button onClick={onClose} variant="outlined" disabled={saving}>
+					<Button
+						onClick={onClose}
+						variant="outlined"
+						disabled={saving}
+						sx={{
+							"&:hover": {
+								color: "primary.contrastText",
+								backgroundColor: "action.hover",
+							},
+						}}
+					>
 						Cancel
 					</Button>
 					<Button
