@@ -46,7 +46,7 @@ export function GainsLossesChart({ holdings }: GainsLossesChartProps): React.JSX
 					color: pnlPercentage >= 0 ? "var(--mui-palette-success-main)" : "var(--mui-palette-error-main)",
 				};
 			})
-			.sort((a, b) => b.pnlPercentage - a.pnlPercentage);
+			.sort((a, b) => b.pnl - a.pnl);
 	}, [holdings]);
 
 	// Prepare data for Valuation chart
@@ -374,12 +374,14 @@ export function GainsLossesChart({ holdings }: GainsLossesChartProps): React.JSX
 											tick={{ fontSize: 12, fill: "var(--mui-palette-text-secondary)" }}
 											tickFormatter={(value) => {
 												const sign = value >= 0 ? "+" : "";
-												return `${sign}${value.toFixed(0)}%`;
+												if (Math.abs(value) >= 1_000_000) return `${sign}$${(Math.abs(value) / 1_000_000).toFixed(1)}M`;
+												if (Math.abs(value) >= 1_000) return `${sign}$${(Math.abs(value) / 1_000).toFixed(0)}k`;
+												return `${sign}$${Math.abs(value).toFixed(0)}`;
 											}}
 										/>
 										<Tooltip animationDuration={50} content={<CustomTooltip />} cursor={false} />
 										<ReferenceLine y={0} stroke="var(--mui-palette-divider)" strokeWidth={2} strokeDasharray="4 4" opacity={0.7} />
-										<Bar animationDuration={300} barSize={32} dataKey="pnlPercentage" radius={[5, 5, 5, 5]}>
+										<Bar animationDuration={300} barSize={32} dataKey="pnl" radius={[5, 5, 5, 5]}>
 											{pnlData.map((entry, index) => (
 												<Cell
 													key={`cell-${index}`}
