@@ -22,6 +22,8 @@ import InputLabel from "@mui/material/InputLabel";
 import LinearProgress from "@mui/material/LinearProgress";
 import Select from "@mui/material/Select";
 import Stack from "@mui/material/Stack";
+import FormHelperText from "@mui/material/FormHelperText";
+import Alert from "@mui/material/Alert";
 import Table from "@mui/material/Table";
 import TableBody from "@mui/material/TableBody";
 import TableCell from "@mui/material/TableCell";
@@ -56,6 +58,15 @@ export function CreateForecastModal({ onClose, onSuccess, open }: CreateForecast
 	const [appliedStrategies, setAppliedStrategies] = React.useState<Record<string, string>>({});
 	const [expandedTokens, setExpandedTokens] = React.useState<Set<string>>(new Set());
 	const [loading, setLoading] = React.useState(false);
+	const [fieldErrors, setFieldErrors] = React.useState<{
+		portfolioId: boolean;
+		forecastName: boolean;
+		strategies: boolean;
+	}>({
+		portfolioId: false,
+		forecastName: false,
+		strategies: false,
+	});
 
 	// Load portfolios and theoretical strategies on mount
 	React.useEffect(() => {
@@ -140,10 +151,18 @@ export function CreateForecastModal({ onClose, onSuccess, open }: CreateForecast
 	};
 
 	const handleStrategyChange = (holdingId: string, strategyId: string) => {
-		setAppliedStrategies((prev) => ({
-			...prev,
-			[holdingId]: strategyId,
-		}));
+		setAppliedStrategies((prev) => {
+			const updated = {
+				...prev,
+				[holdingId]: strategyId,
+			};
+			// Check if at least one strategy is applied
+			const hasStrategy = Object.values(updated).some((sid) => sid !== "none");
+			if (hasStrategy) {
+				setFieldErrors((prevErrors) => ({ ...prevErrors, strategies: false }));
+			}
+			return updated;
+		});
 		// Close expansion when strategy is removed
 		if (strategyId === "none") {
 			setExpandedTokens((prev) => {
@@ -278,15 +297,17 @@ export function CreateForecastModal({ onClose, onSuccess, open }: CreateForecast
 	};
 
 	const handleSubmit = async () => {
-		if (!selectedPortfolioId || !forecastName.trim()) {
-			alert("Please select a wallet and enter a forecast name.");
-			return;
-		}
+		// Validate required fields
+		const errors = {
+			portfolioId: !selectedPortfolioId,
+			forecastName: !forecastName.trim(),
+			strategies: !Object.values(appliedStrategies).some((strategyId) => strategyId !== "none"),
+		};
 
-		// Check if at least one strategy is applied
-		const hasStrategy = Object.values(appliedStrategies).some((strategyId) => strategyId !== "none");
-		if (!hasStrategy) {
-			alert("Please apply at least one strategy to a token.");
+		setFieldErrors(errors);
+
+		// If there are errors, don't submit
+		if (errors.portfolioId || errors.forecastName || errors.strategies) {
 			return;
 		}
 
@@ -317,6 +338,11 @@ export function CreateForecastModal({ onClose, onSuccess, open }: CreateForecast
 		setForecastName("");
 		setHoldings([]);
 		setAppliedStrategies({});
+		setFieldErrors({
+			portfolioId: false,
+			forecastName: false,
+			strategies: false,
+		});
 		onClose();
 	};
 
@@ -334,17 +360,34 @@ export function CreateForecastModal({ onClose, onSuccess, open }: CreateForecast
 			</DialogTitle>
 			<DialogContent dividers>
 				<Stack spacing={4}>
+					{/* Error Alert */}
+					{(fieldErrors.portfolioId || fieldErrors.forecastName || fieldErrors.strategies) && (
+						<Alert severity="error">
+							Please fill in all required fields:
+							<ul style={{ margin: "8px 0 0 0", paddingLeft: "20px" }}>
+								{fieldErrors.portfolioId && <li>Select a wallet</li>}
+								{fieldErrors.forecastName && <li>Enter a forecast name</li>}
+								{fieldErrors.strategies && <li>Apply at least one strategy to a token</li>}
+							</ul>
+						</Alert>
+					)}
+
 					{/* Configuration Section */}
 					<Stack spacing={2}>
 						<Typography variant="h6">Configuration</Typography>
 						<Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
-							<FormControl fullWidth>
+							<FormControl fullWidth error={fieldErrors.portfolioId}>
 								<InputLabel>Select a wallet</InputLabel>
 								<Select
 									label="Select a wallet"
 									value={selectedPortfolioId}
 									displayEmpty
-									onChange={(e) => setSelectedPortfolioId(e.target.value)}
+									onChange={(e) => {
+										setSelectedPortfolioId(e.target.value);
+										if (e.target.value) {
+											setFieldErrors((prev) => ({ ...prev, portfolioId: false }));
+										}
+									}}
 								>
 									<Option value="" disabled>
 										<em>Select a wallet</em>
@@ -357,13 +400,21 @@ export function CreateForecastModal({ onClose, onSuccess, open }: CreateForecast
 											</Option>
 										))}
 								</Select>
+								{fieldErrors.portfolioId && <FormHelperText>This field is required</FormHelperText>}
 							</FormControl>
 							<TextField
 								fullWidth
 								label="Forecast name"
-								onChange={(e) => setForecastName(e.target.value)}
+								onChange={(e) => {
+									setForecastName(e.target.value);
+									if (e.target.value.trim()) {
+										setFieldErrors((prev) => ({ ...prev, forecastName: false }));
+									}
+								}}
 								placeholder="Ex: Bullrun 2025 Strategy"
 								value={forecastName}
+								error={fieldErrors.forecastName}
+								helperText={fieldErrors.forecastName ? "This field is required" : ""}
 							/>
 						</Stack>
 					</Stack>
@@ -386,10 +437,19 @@ export function CreateForecastModal({ onClose, onSuccess, open }: CreateForecast
 							) : (
 								<>
 									<Stack spacing={2}>
-										<Typography variant="h6">Apply Strategies to Tokens</Typography>
-										<Typography color="text.secondary" variant="body2">
-											For each token in your wallet, choose a profit-taking strategy.
-										</Typography>
+										<Stack direction="row" spacing={2} sx={{ alignItems: "center", justifyContent: "space-between" }}>
+											<Box>
+												<Typography variant="h6">Apply Strategies to Tokens</Typography>
+												<Typography color="text.secondary" variant="body2">
+													For each token in your wallet, choose a profit-taking strategy.
+												</Typography>
+											</Box>
+											{fieldErrors.strategies && (
+												<Alert severity="error" sx={{ py: 0.5 }}>
+													At least one strategy required
+												</Alert>
+											)}
+										</Stack>
 									</Stack>
 									<Box sx={{ overflowX: "auto" }}>
 										<Table>
@@ -600,12 +660,7 @@ export function CreateForecastModal({ onClose, onSuccess, open }: CreateForecast
 			<DialogActions>
 				<Button onClick={handleClose}>Cancel</Button>
 				<Button
-					disabled={
-						isSubmitting ||
-						!selectedPortfolioId ||
-						!forecastName.trim() ||
-						!Object.values(appliedStrategies).some((strategyId) => strategyId !== "none")
-					}
+					disabled={isSubmitting}
 					onClick={handleSubmit}
 					startIcon={isSubmitting ? <CircularProgress size={16} /> : undefined}
 					variant="contained"
