@@ -41,6 +41,8 @@ import type { ForecastResponse } from "@/types/portfolio";
 import type { ProfitTarget } from "@/types/strategies";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import { CreateForecastModal } from "./create-forecast-modal";
+import { EditForecastModal } from "./edit-forecast-modal";
+import { toast } from "@/components/core/toaster";
 
 export default function Page(): React.JSX.Element {
 	return (
@@ -55,6 +57,8 @@ function ForecastPageContent(): React.JSX.Element {
 	const [isLoading, setIsLoading] = React.useState(true);
 	const [searchQuery, setSearchQuery] = React.useState("");
 	const [showCreateModal, setShowCreateModal] = React.useState(false);
+	const [showEditModal, setShowEditModal] = React.useState(false);
+	const [editingForecast, setEditingForecast] = React.useState<ForecastResponse | null>(null);
 	const [expandedForecastId, setExpandedForecastId] = React.useState<string | null>(null);
 	const [expandedTokens, setExpandedTokens] = React.useState<Set<string>>(new Set());
 	const [forecastDetails, setForecastDetails] = React.useState<Record<string, any>>({});
@@ -95,8 +99,10 @@ function ForecastPageContent(): React.JSX.Element {
 			try {
 				await deleteForecast(forecastId);
 				await loadForecasts();
+				toast.success("Forecast deleted successfully");
 			} catch (error) {
 				console.error("Error deleting forecast:", error);
+				toast.error("Failed to delete forecast. Please try again.");
 			}
 		}
 	};
@@ -124,13 +130,20 @@ function ForecastPageContent(): React.JSX.Element {
 	const confirmDeleteMultipleForecasts = async () => {
 		if (selectedForecastIds.size === 0) return;
 		try {
+			const count = selectedForecastIds.size;
 			// Delete all selected forecasts in parallel
 			await Promise.all(Array.from(selectedForecastIds).map((id) => deleteForecast(id)));
 			await loadForecasts();
 			setShowDeleteMultipleForecastsModal(false);
 			setSelectedForecastIds(new Set());
+			toast.success(
+				count === 1
+					? "Forecast deleted successfully"
+					: `${count} forecasts deleted successfully`
+			);
 		} catch (error) {
 			console.error("Error deleting forecasts:", error);
+			toast.error("Failed to delete forecasts. Please try again.");
 		}
 	};
 
@@ -140,8 +153,8 @@ function ForecastPageContent(): React.JSX.Element {
 	}, [searchQuery]);
 
 	const handleEditForecast = (forecast: ForecastResponse) => {
-		// TODO: Implement edit functionality
-		console.log("Edit forecast:", forecast);
+		setEditingForecast(forecast);
+		setShowEditModal(true);
 	};
 
 	const handleToggleExpand = async (forecastId: string) => {
@@ -570,6 +583,17 @@ function ForecastPageContent(): React.JSX.Element {
 
 			{/* Create Forecast Modal */}
 			<CreateForecastModal onClose={handleCloseCreateModal} onSuccess={loadForecasts} open={showCreateModal} />
+
+			{/* Edit Forecast Modal */}
+			<EditForecastModal
+				onClose={() => {
+					setShowEditModal(false);
+					setEditingForecast(null);
+				}}
+				onSuccess={loadForecasts}
+				open={showEditModal}
+				forecast={editingForecast}
+			/>
 
 			{/* Delete Multiple Forecasts Confirmation Modal */}
 			<Dialog

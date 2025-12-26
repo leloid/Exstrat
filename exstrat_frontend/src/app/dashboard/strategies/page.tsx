@@ -36,6 +36,7 @@ import { EditStrategyModal } from "./edit-strategy-modal";
 import { StrategiesTable } from "./strategies-table";
 import { useDebounce } from "@/hooks/use-debounce";
 import { useSelection } from "@/hooks/use-selection";
+import { toast } from "@/components/core/toaster";
 
 export default function Page(): React.JSX.Element {
 	return (
@@ -219,13 +220,14 @@ function StrategiesPageContent(): React.JSX.Element {
 	const handleDeleteStrategy = React.useCallback(
 		async (strategyId: string) => {
 			if (window.confirm("Are you sure you want to delete this strategy?")) {
-			try {
-				await strategiesApi.deleteStrategy(strategyId);
-				await loadStrategies();
+				try {
+					await strategiesApi.deleteStrategy(strategyId);
+					await loadStrategies();
 					selection.deselectOne(strategyId);
-			} catch (error) {
-				console.error("Error deleting strategy:", error);
-					alert("Error deleting strategy");
+					toast.success("Strategy deleted successfully");
+				} catch (error) {
+					console.error("Error deleting strategy:", error);
+					toast.error("Failed to delete strategy. Please try again.");
 				}
 			}
 		},
@@ -247,9 +249,14 @@ function StrategiesPageContent(): React.JSX.Element {
 			selection.deselectAll();
 			setShowDeleteMultipleStrategiesModal(false);
 			await loadStrategies();
+			toast.success(
+				selectedIds.length === 1
+					? "Strategy deleted successfully"
+					: `${selectedIds.length} strategies deleted successfully`
+			);
 		} catch (error) {
 			console.error("Error deleting strategies:", error);
-			alert("Error deleting strategies");
+			toast.error("Failed to delete strategies. Please try again.");
 		} finally {
 			setIsLoading(false);
 		}

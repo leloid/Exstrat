@@ -21,10 +21,15 @@ import Typography from "@mui/material/Typography";
 import Collapse from "@mui/material/Collapse";
 import Checkbox from "@mui/material/Checkbox";
 import FormControlLabel from "@mui/material/FormControlLabel";
+import Dialog from "@mui/material/Dialog";
+import DialogActions from "@mui/material/DialogActions";
+import DialogContent from "@mui/material/DialogContent";
+import Avatar from "@mui/material/Avatar";
 import { CaretDownIcon } from "@phosphor-icons/react/dist/ssr/CaretDown";
 import { MagnifyingGlassIcon } from "@phosphor-icons/react/dist/ssr/MagnifyingGlass";
 import { PlusIcon } from "@phosphor-icons/react/dist/ssr/Plus";
 import { TrashIcon } from "@phosphor-icons/react/dist/ssr/Trash";
+import { WarningIcon } from "@phosphor-icons/react/dist/ssr/Warning";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import * as configurationApi from "@/lib/configuration-api";
 import { getForecasts } from "@/lib/portfolios-api";
@@ -32,6 +37,8 @@ import type { AlertConfiguration } from "@/types/configuration";
 import { AddAlertModal } from "./add-alert-modal";
 import { TokenAlertsList } from "./token-alerts-list";
 import { useDebounce } from "@/hooks/use-debounce";
+import { useSelection } from "@/hooks/use-selection";
+import { toast } from "@/components/core/toaster";
 
 export default function Page(): React.JSX.Element {
 	return (
@@ -51,6 +58,9 @@ function ConfigurationPageContent(): React.JSX.Element {
 	const [expandedAlertId, setExpandedAlertId] = React.useState<string | null>(null);
 	const [page, setPage] = React.useState(0);
 	const [rowsPerPage, setRowsPerPage] = React.useState(10);
+	const [showDeleteMultipleAlertsModal, setShowDeleteMultipleAlertsModal] = React.useState(false);
+	const [showDeleteSingleAlertModal, setShowDeleteSingleAlertModal] = React.useState(false);
+	const [alertToDelete, setAlertToDelete] = React.useState<string | null>(null);
 
 	// OPTIMIZATION: Load forecasts and configs in parallel
 	const [forecastNames, setForecastNames] = React.useState<Record<string, string>>({});
@@ -106,30 +116,89 @@ function ConfigurationPageContent(): React.JSX.Element {
 		return filteredConfigurations.slice(start, start + rowsPerPage);
 	}, [filteredConfigurations, page, rowsPerPage]);
 
+	// Selection management
+	const alertIds = React.useMemo(() => filteredConfigurations.map((c) => c.id), [filteredConfigurations]);
+	const selection = useSelection(alertIds);
+
 	// Reset page when search changes
 	React.useEffect(() => {
 		setPage(0);
 	}, [debouncedSearchQuery]);
 
+	// Reset selections when search query changes
+	React.useEffect(() => {
+		selection.deselectAll();
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [debouncedSearchQuery]);
+
 	// Memoized handlers
-	const handleDeleteAlert = React.useCallback(
-		async (configId: string) => {
-			if (window.confirm("Are you sure you want to delete this alert configuration?")) {
-				try {
-					await configurationApi.deleteAlertConfiguration(configId);
-					await loadAlertConfigurations();
-					// Remove from details cache
-					setAlertConfigurationsDetails((prev) => {
-						const newDetails = { ...prev };
-						delete newDetails[configId];
-						return newDetails;
-					});
-				} catch (error) {
-					console.error("Error deleting alert configuration:", error);
-				}
+	const handleDeleteAlertClick = React.useCallback((configId: string) => {
+		setAlertToDelete(configId);
+		setShowDeleteSingleAlertModal(true);
+	}, []);
+
+	const confirmDeleteSingleAlert = React.useCallback(
+		async () => {
+			if (!alertToDelete) return;
+			try {
+				setIsLoading(true);
+				await configurationApi.deleteAlertConfiguration(alertToDelete);
+				await loadAlertConfigurations();
+				// Remove from details cache
+				setAlertConfigurationsDetails((prev) => {
+					const newDetails = { ...prev };
+					delete newDetails[alertToDelete];
+					return newDetails;
+				});
+				setShowDeleteSingleAlertModal(false);
+				setAlertToDelete(null);
+				toast.success("Alert deleted successfully");
+			} catch (error) {
+				console.error("Error deleting alert configuration:", error);
+				toast.error("Failed to delete alert. Please try again.");
+			} finally {
+				setIsLoading(false);
 			}
 		},
-		[loadAlertConfigurations]
+		[alertToDelete, loadAlertConfigurations]
+	);
+
+	const confirmDeleteMultipleAlerts = React.useCallback(
+		async () => {
+			const selectedIds = Array.from(selection.selected);
+			if (selectedIds.length === 0) {
+				setShowDeleteMultipleAlertsModal(false);
+				return;
+			}
+			try {
+				setIsLoading(true);
+				const count = selectedIds.length;
+				// Delete all selected alerts in parallel
+				await Promise.all(selectedIds.map((id) => configurationApi.deleteAlertConfiguration(id)));
+				selection.deselectAll();
+				setShowDeleteMultipleAlertsModal(false);
+				await loadAlertConfigurations();
+				// Remove from details cache
+				setAlertConfigurationsDetails((prev) => {
+					const newDetails = { ...prev };
+					selectedIds.forEach((id) => {
+						delete newDetails[id];
+					});
+					return newDetails;
+				});
+				toast.success(
+					count === 1
+						? "Alert deleted successfully"
+						: `${count} alerts deleted successfully`
+				);
+			} catch (error) {
+				console.error("Error deleting alert configurations:", error);
+				toast.error("Failed to delete alerts. Please try again.");
+			} finally {
+				setIsLoading(false);
+			}
+		},
+		[loadAlertConfigurations, selection]
 	);
 
 	const handleToggleExpand = React.useCallback(
@@ -275,11 +344,37 @@ function ConfigurationPageContent(): React.JSX.Element {
 					</Card>
 				) : (
 					<Card>
+						{selection.selectedAny && (
+							<Box sx={{ p: 2, borderBottom: "1px solid var(--mui-palette-divider)" }}>
+								<Button
+									color="error"
+									onClick={() => setShowDeleteMultipleAlertsModal(true)}
+									size="small"
+									startIcon={<TrashIcon />}
+									variant="outlined"
+								>
+									Delete ({selection.selected.size})
+								</Button>
+							</Box>
+						)}
 						<CardContent sx={{ p: 0 }}>
 							<Box sx={{ overflowX: "auto" }}>
 								<Table>
 									<TableHead>
 										<TableRow>
+											<TableCell padding="checkbox" sx={{ width: "48px", fontWeight: 600 }}>
+												<Checkbox
+													checked={selection.selectedAll}
+													indeterminate={selection.selectedAny && !selection.selectedAll}
+													onChange={(e) => {
+														if (e.target.checked) {
+															selection.selectAll();
+														} else {
+															selection.deselectAll();
+														}
+													}}
+												/>
+											</TableCell>
 											<TableCell sx={{ width: "40px", fontWeight: 600 }} />
 											<TableCell sx={{ fontWeight: 600 }}>Forecast</TableCell>
 											<TableCell align="right" sx={{ fontWeight: 600 }}>
@@ -292,9 +387,6 @@ function ConfigurationPageContent(): React.JSX.Element {
 											<TableCell align="right" sx={{ fontWeight: 600 }}>
 												Created
 											</TableCell>
-											<TableCell align="right" sx={{ fontWeight: 600 }}>
-												Actions
-											</TableCell>
 										</TableRow>
 									</TableHead>
 									<TableBody>
@@ -305,6 +397,7 @@ function ConfigurationPageContent(): React.JSX.Element {
 											const forecast = forecasts.find((f) => f.id === config.forecastId);
 											const portfolioId = forecast?.portfolioId || "";
 
+											const isSelected = selection.selected.has(config.id);
 											return (
 												<React.Fragment key={config.id}>
 													<TableRow
@@ -319,8 +412,24 @@ function ConfigurationPageContent(): React.JSX.Element {
 																	bgcolor: "var(--mui-palette-primary-selected)",
 																},
 															}),
+															...(isSelected && {
+																bgcolor: "var(--mui-palette-action-selected)",
+															}),
 														}}
 													>
+														<TableCell
+															padding="checkbox"
+															onClick={(e) => {
+																e.stopPropagation();
+																if (isSelected) {
+																	selection.deselectOne(config.id);
+																} else {
+																	selection.selectOne(config.id);
+																}
+															}}
+														>
+															<Checkbox checked={isSelected} />
+														</TableCell>
 														<TableCell>
 															<IconButton
 																onClick={(e) => {
@@ -371,21 +480,6 @@ function ConfigurationPageContent(): React.JSX.Element {
 																	day: "numeric",
 																})}
 															</Typography>
-														</TableCell>
-														<TableCell align="right">
-															<Stack direction="row" spacing={1} sx={{ justifyContent: "flex-end" }}>
-																<IconButton
-																	onClick={(e) => {
-																		e.stopPropagation();
-																		handleDeleteAlert(config.id);
-																	}}
-																	color="error"
-																	size="small"
-																	title="Delete Alert"
-																>
-																	<TrashIcon fontSize="var(--icon-fontSize-md)" />
-																</IconButton>
-															</Stack>
 														</TableCell>
 													</TableRow>
 													<TableRow>
@@ -523,6 +617,116 @@ function ConfigurationPageContent(): React.JSX.Element {
 						loadAlertConfigurations();
 					}}
 				/>
+
+				{/* Delete Single Alert Confirmation Modal */}
+				<Dialog
+					fullWidth
+					maxWidth="sm"
+					onClose={() => {
+						if (!isLoading) {
+							setShowDeleteSingleAlertModal(false);
+							setAlertToDelete(null);
+						}
+					}}
+					open={showDeleteSingleAlertModal}
+				>
+					<DialogContent>
+						<Box sx={{ border: "1px solid var(--mui-palette-divider)", boxShadow: "var(--mui-shadows-16)", p: 0 }}>
+							<Stack direction="row" spacing={2} sx={{ display: "flex", p: 3 }}>
+								<Avatar sx={{ bgcolor: "var(--mui-palette-error-50)", color: "var(--mui-palette-error-main)" }}>
+									<WarningIcon fontSize="var(--icon-fontSize-lg)" />
+								</Avatar>
+								<Stack spacing={3} sx={{ flex: 1 }}>
+									<Stack spacing={1}>
+										<Typography variant="h5">Delete Alert</Typography>
+										<Typography color="text.secondary" variant="body2">
+											Are you sure you want to delete this alert configuration? This action is irreversible and will permanently delete all associated data.
+										</Typography>
+									</Stack>
+								</Stack>
+							</Stack>
+						</Box>
+					</DialogContent>
+					<DialogActions>
+						<Button
+							color="secondary"
+							onClick={() => {
+								setShowDeleteSingleAlertModal(false);
+								setAlertToDelete(null);
+							}}
+							disabled={isLoading}
+						>
+							Cancel
+						</Button>
+						<Button
+							color="error"
+							onClick={(e) => {
+								e.preventDefault();
+								e.stopPropagation();
+								confirmDeleteSingleAlert();
+							}}
+							variant="contained"
+							disabled={isLoading}
+							startIcon={isLoading ? <CircularProgress size={16} /> : undefined}
+						>
+							{isLoading ? "Deleting..." : "Delete Alert"}
+						</Button>
+					</DialogActions>
+				</Dialog>
+
+				{/* Delete Multiple Alerts Confirmation Modal */}
+				<Dialog
+					fullWidth
+					maxWidth="sm"
+					onClose={() => {
+						if (!isLoading) {
+							setShowDeleteMultipleAlertsModal(false);
+						}
+					}}
+					open={showDeleteMultipleAlertsModal}
+				>
+					<DialogContent>
+						<Box sx={{ border: "1px solid var(--mui-palette-divider)", boxShadow: "var(--mui-shadows-16)", p: 0 }}>
+							<Stack direction="row" spacing={2} sx={{ display: "flex", p: 3 }}>
+								<Avatar sx={{ bgcolor: "var(--mui-palette-error-50)", color: "var(--mui-palette-error-main)" }}>
+									<WarningIcon fontSize="var(--icon-fontSize-lg)" />
+								</Avatar>
+								<Stack spacing={3} sx={{ flex: 1 }}>
+									<Stack spacing={1}>
+										<Typography variant="h5">Delete Alerts</Typography>
+										<Typography color="text.secondary" variant="body2">
+											Are you sure you want to delete {selection.selected.size} selected alert{selection.selected.size > 1 ? "s" : ""}? This action is irreversible and will permanently delete all associated data.
+										</Typography>
+									</Stack>
+								</Stack>
+							</Stack>
+						</Box>
+					</DialogContent>
+					<DialogActions>
+						<Button
+							color="secondary"
+							onClick={() => {
+								setShowDeleteMultipleAlertsModal(false);
+							}}
+							disabled={isLoading}
+						>
+							Cancel
+						</Button>
+						<Button
+							color="error"
+							onClick={(e) => {
+								e.preventDefault();
+								e.stopPropagation();
+								confirmDeleteMultipleAlerts();
+							}}
+							variant="contained"
+							disabled={isLoading || selection.selected.size === 0}
+							startIcon={isLoading ? <CircularProgress size={16} /> : undefined}
+						>
+							{isLoading ? "Deleting..." : `Delete ${selection.selected.size} alert${selection.selected.size > 1 ? "s" : ""}`}
+						</Button>
+					</DialogActions>
+				</Dialog>
 			</Stack>
 		</Box>
 	);
