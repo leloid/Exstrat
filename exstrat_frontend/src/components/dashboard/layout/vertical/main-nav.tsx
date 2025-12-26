@@ -68,7 +68,7 @@ export function MainNav({ items }: MainNavProps): React.JSX.Element {
 							}}
 							sx={{ display: { lg: "none" } }}
 						>
-							<ListIcon />
+							<ListIcon color="var(--mui-palette-secondary-main)" />
 						</IconButton>
 						<SearchButton />
 					</Stack>
@@ -108,7 +108,7 @@ function SearchButton(): React.JSX.Element {
 		<React.Fragment>
 			<Tooltip title="Search">
 				<IconButton onClick={dialog.handleOpen} sx={{ display: { xs: "none", lg: "inline-flex" } }}>
-					<MagnifyingGlassIcon />
+					<MagnifyingGlassIcon color="var(--mui-palette-secondary-main)" />
 				</IconButton>
 			</Tooltip>
 			<SearchDialog onClose={dialog.handleClose} open={dialog.open} />
@@ -123,7 +123,7 @@ function ContactsButton(): React.JSX.Element {
 		<React.Fragment>
 			<Tooltip title="Contacts">
 				<IconButton onClick={popover.handleOpen} ref={popover.anchorRef}>
-					<UsersIcon />
+					<UsersIcon color="var(--mui-palette-secondary-main)" />
 				</IconButton>
 			</Tooltip>
 			<ContactsPopover anchorEl={popover.anchorRef.current} onClose={popover.handleClose} open={popover.open} />
@@ -143,7 +143,7 @@ function NotificationsButton(): React.JSX.Element {
 					variant="dot"
 				>
 					<IconButton onClick={popover.handleOpen} ref={popover.anchorRef}>
-						<BellIcon />
+						<BellIcon color="var(--mui-palette-secondary-main)" />
 					</IconButton>
 				</Badge>
 			</Tooltip>

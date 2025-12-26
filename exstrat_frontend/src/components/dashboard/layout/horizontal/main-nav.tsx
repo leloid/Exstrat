@@ -97,7 +97,7 @@ export function MainNav({ color = "evident", items = [] }: MainNavProps): React.
 							}}
 							sx={{ display: { md: "none" } }}
 						>
-							<ListIcon color="var(--NavItem-icon-color)" />
+							<ListIcon color="var(--mui-palette-secondary-main)" />
 						</IconButton>
 					<Box component={RouterLink} href={paths.home} sx={{ display: { xs: "none", md: "inline-block" } }}>
 						<Box
@@ -166,7 +166,7 @@ function SearchButton(): React.JSX.Element {
 		<React.Fragment>
 			<Tooltip title="Search">
 				<IconButton onClick={dialog.handleOpen} sx={{ display: { xs: "none", md: "inline-flex" } }}>
-					<MagnifyingGlassIcon color="var(--NavItem-icon-color)" />
+					<MagnifyingGlassIcon color="var(--mui-palette-secondary-main)" />
 				</IconButton>
 			</Tooltip>
 			<SearchDialog onClose={dialog.handleClose} open={dialog.open} />
@@ -186,7 +186,7 @@ function NotificationsButton(): React.JSX.Element {
 					variant="dot"
 				>
 					<IconButton onClick={popover.handleOpen} ref={popover.anchorRef}>
-						<BellIcon color="var(--NavItem-icon-color)" />
+						<BellIcon color="var(--mui-palette-secondary-main)" />
 					</IconButton>
 				</Badge>
 			</Tooltip>
@@ -202,7 +202,7 @@ function ContactsButton(): React.JSX.Element {
 		<React.Fragment>
 			<Tooltip title="Contacts">
 				<IconButton onClick={popover.handleOpen} ref={popover.anchorRef}>
-					<UsersIcon color="var(--NavItem-icon-color)" />
+					<UsersIcon color="var(--mui-palette-secondary-main)" />
 				</IconButton>
 			</Tooltip>
 			<ContactsPopover anchorEl={popover.anchorRef.current} onClose={popover.handleClose} open={popover.open} />
