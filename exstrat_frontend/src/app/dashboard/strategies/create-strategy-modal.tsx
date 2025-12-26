@@ -115,6 +115,7 @@ export function CreateStrategyModal({ onClose, onSuccess, open }: CreateStrategy
 	const [numberOfTargets, setNumberOfTargets] = React.useState<number>(0);
 	const [profitTargets, setProfitTargets] = React.useState<ProfitTarget[]>([]);
 	const [availableTokens, setAvailableTokens] = React.useState<AvailableToken[]>([]);
+	const [isLoadingTokens, setIsLoadingTokens] = React.useState(false);
 	// Local states for raw input values during typing (to avoid formatting during input)
 	const [rawPercentageInputs, setRawPercentageInputs] = React.useState<Record<number, string>>({});
 	const [rawTokenInputs, setRawTokenInputs] = React.useState<Record<number, string>>({});
@@ -144,10 +145,12 @@ export function CreateStrategyModal({ onClose, onSuccess, open }: CreateStrategy
 		const loadAvailableTokens = async () => {
 			if (!selectedPortfolioId || selectedPortfolioId === "virtual" || !portfolios.length) {
 				setAvailableTokens([]);
+				setIsLoadingTokens(false);
 				return;
 			}
 
 			try {
+				setIsLoadingTokens(true);
 				const holdings = await portfoliosApi.getPortfolioHoldings(selectedPortfolioId);
 				const tokens: AvailableToken[] = holdings.map((holding) => ({
 					id: holding.token.cmcId || 0,
@@ -163,6 +166,8 @@ export function CreateStrategyModal({ onClose, onSuccess, open }: CreateStrategy
 			} catch (error) {
 				console.error("Error loading available tokens:", error);
 				setAvailableTokens([]);
+			} finally {
+				setIsLoadingTokens(false);
 			}
 		};
 
@@ -538,25 +543,34 @@ export function CreateStrategyModal({ onClose, onSuccess, open }: CreateStrategy
 												{/* Step 2: Token Selection */}
 												{index === 1 && selectedPortfolioId && (
 													<Stack spacing={2}>
-														{availableTokens.length > 0 && !isVirtualWallet ? (
-														<FormControl fullWidth>
-															<InputLabel>Select a token</InputLabel>
-															<Select
-																label="Select a token"
-																value={selectedToken?.symbol || ""}
-																displayEmpty
-																onChange={(e) => {
-																	const token = availableTokens.find((t) => t.symbol === e.target.value);
-																	if (token) {
-																		setSelectedToken(token);
-																		// Automatically move to next step when token is selected
-																		setActiveStep(2);
-																	}
-																}}
-															>
-																<Option value="" disabled>
-																	<em>Select a token</em>
-																</Option>
+														{isLoadingTokens ? (
+															<Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", py: 4 }}>
+																<Stack spacing={2} sx={{ alignItems: "center" }}>
+																	<CircularProgress size={32} />
+																	<Typography color="text.secondary" variant="body2">
+																		Loading tokens...
+																	</Typography>
+																</Stack>
+															</Box>
+														) : availableTokens.length > 0 && !isVirtualWallet ? (
+															<FormControl fullWidth>
+																<InputLabel>Select a token</InputLabel>
+																<Select
+																	label="Select a token"
+																	value={selectedToken?.symbol || ""}
+																	displayEmpty
+																	onChange={(e) => {
+																		const token = availableTokens.find((t) => t.symbol === e.target.value);
+																		if (token) {
+																			setSelectedToken(token);
+																			// Automatically move to next step when token is selected
+																			setActiveStep(2);
+																		}
+																	}}
+																>
+																	<Option value="" disabled>
+																		<em>Select a token</em>
+																	</Option>
 																	{availableTokens.map((token) => (
 																		<Option key={token.symbol} value={token.symbol}>
 																			{token.symbol} - {token.name}
@@ -564,6 +578,19 @@ export function CreateStrategyModal({ onClose, onSuccess, open }: CreateStrategy
 																	))}
 																</Select>
 															</FormControl>
+														) : !isVirtualWallet && availableTokens.length === 0 ? (
+															<Card variant="outlined" sx={{ bgcolor: "var(--mui-palette-background-level1)" }}>
+																<CardContent>
+																	<Stack spacing={2} sx={{ alignItems: "center", textAlign: "center", py: 2 }}>
+																		<Typography variant="h6" color="text.primary">
+																			No tokens in this wallet
+																		</Typography>
+																		<Typography color="text.secondary" variant="body2">
+																			This wallet doesn't contain any tokens. Please add tokens to this wallet or select another wallet to continue.
+																		</Typography>
+																	</Stack>
+																</CardContent>
+															</Card>
 														) : (
 															<TokenSearch
 																onTokenSelect={(token) => {
