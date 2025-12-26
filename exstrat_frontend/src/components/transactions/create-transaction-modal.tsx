@@ -623,7 +623,17 @@ export function CreateTransactionModal({
 				</Stack>
 			</DialogContent>
 			<DialogActions sx={{ p: 3, pt: 0 }}>
-				<Button onClick={onClose} size="large">
+				<Button
+					onClick={onClose}
+					size="large"
+					sx={{
+						color: "text.primary",
+						"&:hover": {
+							backgroundColor: "action.hover",
+							color: "text.primary",
+						},
+					}}
+				>
 					Cancel
 				</Button>
 				<Button disabled={isSubmitting} onClick={handleSubmit} size="large" variant="contained">

@@ -204,7 +204,7 @@ export function TokenSearch({ onTokenSelect, selectedToken, error, helperText }:
 					error={error}
 					helperText={helperText}
 					label="Search Token"
-					placeholder="Rechercher par symbole ou nom (ex: BTC, Bitcoin, ETH...)"
+					placeholder="Search by symbol or name (e.g., BTC, Bitcoin, ETH...)"
 					InputProps={{
 						...params.InputProps,
 						endAdornment: (

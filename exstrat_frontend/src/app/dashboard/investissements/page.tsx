@@ -1024,6 +1024,18 @@ export default function Page(): React.JSX.Element {
 							}}
 							startIcon={<WalletIcon />}
 							variant="outlined"
+							sx={{
+								color: "primary.main",
+								borderColor: "primary.main",
+								"&:hover": {
+									backgroundColor: "primary.main",
+									borderColor: "primary.main",
+									color: "primary.contrastText",
+									"& .MuiSvgIcon-root": {
+										color: "primary.contrastText",
+									},
+								},
+							}}
 						>
 							Add Wallet
 						</Button>
@@ -1703,11 +1715,24 @@ export default function Page(): React.JSX.Element {
 							color="secondary"
 							endIcon={<ArrowUpRightIcon />}
 							size="small"
+							variant="outlined"
 							onClick={() => {
 								setEditingPortfolioId(null);
 								setPortfolioName("");
 								setPortfolioFormData({ name: "", description: "", isDefault: false });
 								setShowPortfolioDialog(true);
+							}}
+							sx={{
+								color: "primary.main",
+								borderColor: "primary.main",
+								"&:hover": {
+									backgroundColor: "primary.main",
+									borderColor: "primary.main",
+									color: "primary.contrastText",
+									"& .MuiSvgIcon-root": {
+										color: "primary.contrastText",
+									},
+								},
 							}}
 						>
 							Add Wallet

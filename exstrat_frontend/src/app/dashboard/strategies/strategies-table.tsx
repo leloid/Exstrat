@@ -102,7 +102,7 @@ export function StrategiesTable({
 						<Checkbox checked={allSelected} indeterminate={someSelected} onChange={allSelected ? onDeselectAll : onSelectAll} />
 					</TableCell>
 					<TableCell rowSpan={2} sx={{ width: "200px", minWidth: "180px" }}>
-						Stratégie
+						Strategy
 					</TableCell>
 					<TableCell colSpan={2} sx={{ textAlign: "center", borderBottom: "1px solid var(--mui-palette-divider)" }}>
 						<Typography variant="overline" sx={{ fontWeight: 600, letterSpacing: "0.1em", fontSize: "0.7rem" }}>
@@ -217,19 +217,19 @@ function StrategyRow({
 		<Box sx={{ p: 1.5, maxWidth: "300px" }}>
 			<Stack spacing={1.5}>
 				<Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 0.5 }}>
-					Détails de la stratégie
+					Strategy Details
 				</Typography>
 				<Divider />
 				<Stack spacing={1}>
 					<Stack direction="row" spacing={2} sx={{ justifyContent: "space-between" }}>
 						<Typography color="text.secondary" variant="body2">
-							Nombre d'entrées:
+							Number of entries:
 						</Typography>
 						<Typography variant="body2">1</Typography>
 					</Stack>
 					<Stack direction="row" spacing={2} sx={{ justifyContent: "space-between" }}>
 						<Typography color="text.secondary" variant="body2">
-							Total investi:
+							Total invested:
 						</Typography>
 						<Typography variant="body2" sx={{ color: "success.main" }}>
 							{formatCurrency(calculations.totalInvested, "$", 2)}
@@ -237,7 +237,7 @@ function StrategyRow({
 					</Stack>
 					<Stack direction="row" spacing={2} sx={{ justifyContent: "space-between" }}>
 						<Typography color="text.secondary" variant="body2">
-							Tokens détenus:
+							Tokens held:
 						</Typography>
 						<Typography variant="body2" sx={{ color: "warning.main" }}>
 							{row.baseQuantity.toLocaleString(undefined, { maximumFractionDigits: 8 })}
@@ -245,7 +245,7 @@ function StrategyRow({
 					</Stack>
 					<Stack direction="row" spacing={2} sx={{ justifyContent: "space-between" }}>
 						<Typography color="text.secondary" variant="body2">
-							Prix d'achat moyen:
+							Average purchase price:
 						</Typography>
 						<Typography variant="body2" sx={{ color: "primary.main" }}>
 							{formatCurrency(row.referencePrice, "$", 2)}
@@ -254,7 +254,7 @@ function StrategyRow({
 					<Divider />
 					<Stack direction="row" spacing={2} sx={{ justifyContent: "space-between" }}>
 						<Typography color="text.secondary" variant="body2">
-							PNL actuel:
+							Current PNL:
 						</Typography>
 						<Typography
 							variant="body2"
@@ -276,11 +276,11 @@ function StrategyRow({
 					</Stack>
 					<Divider />
 					<Typography variant="subtitle2" sx={{ fontWeight: 600, mt: 0.5 }}>
-						Résumé
+						Summary
 					</Typography>
 					<Stack direction="row" spacing={2} sx={{ justifyContent: "space-between" }}>
 						<Typography color="text.secondary" variant="body2">
-							Investi:
+							Invested:
 						</Typography>
 						<Typography variant="body2" sx={{ color: "success.main" }}>
 							{formatCurrency(calculations.totalInvested, "$", 2)}
@@ -288,7 +288,7 @@ function StrategyRow({
 					</Stack>
 					<Stack direction="row" spacing={2} sx={{ justifyContent: "space-between" }}>
 						<Typography color="text.secondary" variant="body2">
-							Total encaissé:
+							Total cashed out:
 						</Typography>
 						<Typography variant="body2" sx={{ color: "success.main" }}>
 							{formatCurrency(calculations.totalCashedIn, "$", 2)}
@@ -296,7 +296,7 @@ function StrategyRow({
 					</Stack>
 					<Stack direction="row" spacing={2} sx={{ justifyContent: "space-between" }}>
 						<Typography color="text.secondary" variant="body2">
-							Résultat net:
+							Net result:
 						</Typography>
 						<Typography variant="body2" sx={{ color: calculations.netResult >= 0 ? "success.main" : "error.main" }}>
 							{formatCurrency(calculations.netResult, "$", 2)}
@@ -304,7 +304,7 @@ function StrategyRow({
 					</Stack>
 					<Stack direction="row" spacing={2} sx={{ justifyContent: "space-between" }}>
 						<Typography color="text.secondary" variant="body2">
-							Tokens restants:
+							Remaining tokens:
 						</Typography>
 						<Typography variant="body2" sx={{ color: "warning.main" }}>
 							{calculations.remainingTokens.toLocaleString(undefined, { maximumFractionDigits: 8 })}

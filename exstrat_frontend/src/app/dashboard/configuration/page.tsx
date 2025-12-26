@@ -114,7 +114,7 @@ function ConfigurationPageContent(): React.JSX.Element {
 	// Memoized handlers
 	const handleDeleteAlert = React.useCallback(
 		async (configId: string) => {
-			if (window.confirm("Êtes-vous sûr de vouloir supprimer cette configuration d'alertes ?")) {
+			if (window.confirm("Are you sure you want to delete this alert configuration?")) {
 				try {
 					await configurationApi.deleteAlertConfiguration(configId);
 					await loadAlertConfigurations();
@@ -225,13 +225,13 @@ function ConfigurationPageContent(): React.JSX.Element {
 				{/* Header */}
 				<Stack direction={{ xs: "column", sm: "row" }} spacing={3} sx={{ alignItems: "flex-start" }}>
 					<Box sx={{ flex: "1 1 auto" }}>
-						<Typography variant="h4">Alertes de Prévision</Typography>
+						<Typography variant="h4">Forecast Alerts</Typography>
 						<Typography color="text.secondary" variant="body1">
-							Gérez vos alertes actives et configurez les notifications de prise de profit pour vos prévisions.
+							Manage your active alerts and configure profit-taking notifications for your forecasts.
 						</Typography>
 					</Box>
 					<Button startIcon={<PlusIcon />} variant="contained" onClick={() => setShowAddModal(true)}>
-						Ajouter une alerte
+						Add Alert
 					</Button>
 				</Stack>
 
@@ -242,7 +242,7 @@ function ConfigurationPageContent(): React.JSX.Element {
 							<OutlinedInput
 								fullWidth
 								onChange={(e) => setSearchQuery(e.target.value)}
-								placeholder="Rechercher des alertes par nom de prévision..."
+								placeholder="Search alerts by forecast name..."
 								startAdornment={
 									<InputAdornment position="start">
 										<MagnifyingGlassIcon fontSize="var(--icon-fontSize-md)" />
@@ -262,12 +262,12 @@ function ConfigurationPageContent(): React.JSX.Element {
 							<Stack spacing={2} sx={{ alignItems: "center", py: 4 }}>
 								<Typography color="text.secondary" variant="body1">
 									{searchQuery
-										? "Aucune alerte trouvée correspondant à votre recherche."
-										: "Aucune alerte active pour le moment. Créez votre première configuration d'alertes pour commencer."}
+										? "No alerts found matching your search."
+										: "No active alerts at the moment. Create your first alert configuration to get started."}
 								</Typography>
 								{!searchQuery && (
 									<Button onClick={() => setShowAddModal(true)} startIcon={<PlusIcon />} variant="contained">
-										Ajouter une alerte
+										Add Alert
 									</Button>
 								)}
 							</Stack>
@@ -281,16 +281,16 @@ function ConfigurationPageContent(): React.JSX.Element {
 									<TableHead>
 										<TableRow>
 											<TableCell sx={{ width: "40px", fontWeight: 600 }} />
-											<TableCell sx={{ fontWeight: 600 }}>Prévision</TableCell>
+											<TableCell sx={{ fontWeight: 600 }}>Forecast</TableCell>
 											<TableCell align="right" sx={{ fontWeight: 600 }}>
 												Tokens
 											</TableCell>
 											<TableCell align="right" sx={{ fontWeight: 600 }}>
-												Alertes TP
+												TP Alerts
 											</TableCell>
-											<TableCell sx={{ fontWeight: 600 }}>Canaux</TableCell>
+											<TableCell sx={{ fontWeight: 600 }}>Channels</TableCell>
 											<TableCell align="right" sx={{ fontWeight: 600 }}>
-												Créé le
+												Created
 											</TableCell>
 											<TableCell align="right" sx={{ fontWeight: 600 }}>
 												Actions
@@ -342,7 +342,7 @@ function ConfigurationPageContent(): React.JSX.Element {
 														</TableCell>
 														<TableCell>
 															<Typography variant="subtitle2">
-																{forecastNames[config.forecastId] || "Prévision inconnue"}
+																{forecastNames[config.forecastId] || "Unknown Forecast"}
 															</Typography>
 														</TableCell>
 														<TableCell align="right">
@@ -365,7 +365,7 @@ function ConfigurationPageContent(): React.JSX.Element {
 														</TableCell>
 														<TableCell align="right">
 															<Typography color="text.secondary" variant="body2">
-																{new Date(config.createdAt).toLocaleDateString("fr-FR", {
+																{new Date(config.createdAt).toLocaleDateString("en-US", {
 																	year: "numeric",
 																	month: "short",
 																	day: "numeric",
@@ -381,7 +381,7 @@ function ConfigurationPageContent(): React.JSX.Element {
 																	}}
 																	color="error"
 																	size="small"
-																	title="Supprimer l'alerte"
+																	title="Delete Alert"
 																>
 																	<TrashIcon fontSize="var(--icon-fontSize-md)" />
 																</IconButton>
@@ -423,10 +423,10 @@ function ConfigurationPageContent(): React.JSX.Element {
 																		>
 																			<Box>
 																				<Typography variant="h6" sx={{ fontWeight: 600, mb: 0.5 }}>
-																					Configuration d'Alertes
+																					Alert Configuration
 																				</Typography>
 																				<Typography color="text.secondary" variant="body2">
-																					Gérez les alertes de tokens et les préférences de notification
+																					Manage token alerts and notification preferences
 																				</Typography>
 																			</Box>
 																			{/* Notification Channels Checkboxes */}
@@ -469,10 +469,10 @@ function ConfigurationPageContent(): React.JSX.Element {
 																				<CardContent>
 																					<Stack spacing={2}>
 																						<Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
-																							Alertes de Tokens
+																							Token Alerts
 																						</Typography>
 																						<Typography color="text.secondary" variant="caption">
-																							Configurez les alertes pour chaque token avec une stratégie associée
+																							Configure alerts for each token with an associated strategy
 																						</Typography>
 																						<Box sx={{ pt: 1 }}>
 																							<TokenAlertsList
@@ -505,9 +505,9 @@ function ConfigurationPageContent(): React.JSX.Element {
 								page={page}
 								rowsPerPage={rowsPerPage}
 								rowsPerPageOptions={[5, 10, 25, 50]}
-								labelRowsPerPage="Lignes par page :"
+								labelRowsPerPage="Rows per page:"
 								labelDisplayedRows={({ from, to, count }) =>
-									`${from}-${to} sur ${count !== -1 ? count : `plus de ${to}`}`
+									`${from}-${to} of ${count !== -1 ? count : `more than ${to}`}`
 								}
 							/>
 						</CardContent>

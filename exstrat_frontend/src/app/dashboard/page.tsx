@@ -236,7 +236,7 @@ export default function Page(): React.JSX.Element {
 			>
 				<CircularProgress />
 				<Typography color="text.secondary" sx={{ mt: 2 }} variant="body2">
-					Chargement des données du portefeuille...
+					Loading portfolio data...
 				</Typography>
 			</Box>
 		);
@@ -255,9 +255,9 @@ export default function Page(): React.JSX.Element {
 				{/* Header */}
 				<Stack direction={{ xs: "column", sm: "row" }} spacing={3} sx={{ alignItems: "flex-start" }}>
 					<Box sx={{ flex: "1 1 auto" }}>
-						<Typography variant="h4">Vue d'ensemble</Typography>
+						<Typography variant="h4">Overview</Typography>
 						<Typography color="text.secondary" variant="body2" sx={{ mt: 0.5 }}>
-							Vue d'ensemble de la performance de votre portefeuille
+							Overview of your portfolio performance
 						</Typography>
 					</Box>
 					<FormControl size="small" sx={{ minWidth: 200 }}>

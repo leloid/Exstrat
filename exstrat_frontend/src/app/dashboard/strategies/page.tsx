@@ -239,14 +239,14 @@ function StrategiesPageContent(): React.JSX.Element {
 
 	const handleDeleteStrategy = React.useCallback(
 		async (strategyId: string) => {
-			if (window.confirm("Êtes-vous sûr de vouloir supprimer cette stratégie ?")) {
+			if (window.confirm("Are you sure you want to delete this strategy?")) {
 			try {
 				await strategiesApi.deleteStrategy(strategyId);
 				await loadStrategies();
 					selection.deselectOne(strategyId);
 			} catch (error) {
 				console.error("Error deleting strategy:", error);
-					alert("Erreur lors de la suppression de la stratégie");
+					alert("Error deleting strategy");
 				}
 			}
 		},
@@ -264,7 +264,7 @@ function StrategiesPageContent(): React.JSX.Element {
 			selection.deselectAll();
 		} catch (error) {
 			console.error("Error deleting strategies:", error);
-			alert("Erreur lors de la suppression des stratégies");
+			alert("Error deleting strategies");
 		}
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [loadStrategies]);
@@ -315,15 +315,15 @@ function StrategiesPageContent(): React.JSX.Element {
 				{/* Header */}
 				<Stack direction={{ xs: "column", sm: "row" }} spacing={3} sx={{ alignItems: "flex-start" }}>
 					<Box sx={{ flex: "1 1 auto" }}>
-						<Typography variant="h4">Stratégies</Typography>
+						<Typography variant="h4">Strategies</Typography>
 						<Typography color="text.secondary" variant="body1">
-							Créez et gérez vos stratégies automatisées de prise de profit par token.
+							Create and manage your automated profit-taking strategies per token.
 							<br />
-							Ces stratégies seront disponibles pour être appliquées à vos portefeuilles dans la page Prévision.
+							These strategies will be available to be applied to your portfolios in the Forecast page.
 						</Typography>
 					</Box>
 					<Button onClick={handleCreateStrategy} startIcon={<PlusIcon />} variant="contained">
-						Créer une stratégie
+						Create Strategy
 					</Button>
 				</Stack>
 
@@ -333,7 +333,7 @@ function StrategiesPageContent(): React.JSX.Element {
 						<Stack direction="row" spacing={2} sx={{ alignItems: "center", flexWrap: "wrap" }}>
 							<OutlinedInput
 								onChange={(e) => setSearchQuery(e.target.value)}
-								placeholder="Rechercher des stratégies..."
+								placeholder="Search strategies..."
 								size="small"
 								startAdornment={
 									<InputAdornment position="start">
@@ -346,19 +346,19 @@ function StrategiesPageContent(): React.JSX.Element {
 							<Stack direction="row" spacing={1}>
 								<Chip
 									color={statusFilter === "all" ? "primary" : "default"}
-									label={`Toutes (${statusCounts.all})`}
+									label={`All (${statusCounts.all})`}
 									onClick={() => setStatusFilter("all")}
 									variant={statusFilter === "all" ? "filled" : "outlined"}
 								/>
 								<Chip
 									color={statusFilter === "active" ? "primary" : "default"}
-									label={`Actives (${statusCounts.active})`}
+									label={`Active (${statusCounts.active})`}
 									onClick={() => setStatusFilter(StrategyStatus.ACTIVE)}
 									variant={statusFilter === "active" ? "filled" : "outlined"}
 								/>
 								<Chip
 									color={statusFilter === "paused" ? "primary" : "default"}
-									label={`Désactivées (${statusCounts.desactive})`}
+									label={`Paused (${statusCounts.desactive})`}
 									onClick={() => setStatusFilter(StrategyStatus.PAUSED)}
 									variant={statusFilter === "paused" ? "filled" : "outlined"}
 								/>
@@ -386,13 +386,13 @@ function StrategiesPageContent(): React.JSX.Element {
 									<ChartPieIcon fontSize="var(--icon-fontSize-xl)" />
 								</Box>
 								<Stack spacing={1}>
-									<Typography variant="h6">Aucune stratégie</Typography>
+									<Typography variant="h6">No Strategies</Typography>
 									<Typography color="text.secondary" variant="body2">
-										Créez votre première stratégie automatisée de prise de profit pour commencer.
+										Create your first automated profit-taking strategy to get started.
 									</Typography>
 								</Stack>
 									<Button onClick={handleCreateStrategy} startIcon={<PlusIcon />} variant="contained">
-									Créer une stratégie
+									Create Strategy
 									</Button>
 							</Stack>
 						</CardContent>
@@ -401,9 +401,9 @@ function StrategiesPageContent(): React.JSX.Element {
 					<Card>
 						<CardContent sx={{ py: 8, textAlign: "center" }}>
 							<Stack spacing={2} sx={{ alignItems: "center" }}>
-								<Typography variant="h6">Aucune stratégie trouvée</Typography>
+								<Typography variant="h6">No Strategies Found</Typography>
 								<Typography color="text.secondary" variant="body2">
-									Essayez d'ajuster vos critères de recherche ou de filtre.
+									Try adjusting your search or filter criteria.
 								</Typography>
 							</Stack>
 						</CardContent>
@@ -419,7 +419,7 @@ function StrategiesPageContent(): React.JSX.Element {
 									startIcon={<TrashIcon />}
 									variant="outlined"
 								>
-									Supprimer ({selection.selected.size})
+									Delete ({selection.selected.size})
 								</Button>
 							</Box>
 						)}
@@ -447,8 +447,8 @@ function StrategiesPageContent(): React.JSX.Element {
 								page={page}
 								rowsPerPage={rowsPerPage}
 								rowsPerPageOptions={[5, 10, 25, 50]}
-								labelRowsPerPage="Lignes par page :"
-								labelDisplayedRows={({ from, to, count }) => `${from}-${to} sur ${count !== -1 ? count : `plus de ${to}`}`}
+								labelRowsPerPage="Rows per page:"
+								labelDisplayedRows={({ from, to, count }) => `${from}-${to} of ${count !== -1 ? count : `more than ${to}`}`}
 							/>
 						)}
 					</Card>
@@ -475,10 +475,9 @@ function StrategiesPageContent(): React.JSX.Element {
 							</Avatar>
 							<Stack spacing={3} sx={{ flex: 1 }}>
 								<Stack spacing={1}>
-									<Typography variant="h5">Supprimer les stratégies</Typography>
+									<Typography variant="h5">Delete Strategies</Typography>
 									<Typography color="text.secondary" variant="body2">
-										Êtes-vous sûr de vouloir supprimer {selection.selected.size} stratégie
-										{selection.selected.size > 1 ? "s" : ""} sélectionnée{selection.selected.size > 1 ? "s" : ""} ? Cette action est irréversible et supprimera définitivement toutes les données associées.
+										Are you sure you want to delete {selection.selected.size} selected strateg{selection.selected.size > 1 ? "ies" : "y"}? This action is irreversible and will permanently delete all associated data.
 									</Typography>
 								</Stack>
 								<Stack direction="row" spacing={2} sx={{ justifyContent: "flex-end" }}>
@@ -488,10 +487,10 @@ function StrategiesPageContent(): React.JSX.Element {
 											setShowDeleteMultipleStrategiesModal(false);
 										}}
 									>
-										Annuler
+										Cancel
 									</Button>
 									<Button color="error" onClick={confirmDeleteMultipleStrategies} variant="contained">
-										Supprimer {selection.selected.size} stratégie{selection.selected.size > 1 ? "s" : ""}
+										Delete {selection.selected.size} strateg{selection.selected.size > 1 ? "ies" : "y"}
 									</Button>
 								</Stack>
 							</Stack>
