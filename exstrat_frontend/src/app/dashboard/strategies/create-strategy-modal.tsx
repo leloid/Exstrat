@@ -799,19 +799,28 @@ export function CreateStrategyModal({ onClose, onSuccess, open }: CreateStrategy
 																										0
 																									);
 																									const maxValue = Math.max(0, 100 - otherTargetsTotal);
+																									const isMaxReached = maxValue === 0;
 																									return (
-																										<Slider
-																											min={0}
-																											max={100}
-																											step={0.1}
-																											value={target.sellPercentage}
-																											onChange={(_, value) => {
-																												const newValue = value as number;
-																												// Limit the value based on what's available
-																												const clampedValue = Math.min(newValue, maxValue);
-																												handleTargetChange(targetIndex, "sellPercentage", clampedValue);
-																											}}
-																										/>
+																										<>
+																											<Slider
+																												min={0}
+																												max={100}
+																												step={0.1}
+																												value={target.sellPercentage}
+																												disabled={isMaxReached}
+																												onChange={(_, value) => {
+																													const newValue = value as number;
+																													// Limit the value based on what's available
+																													const clampedValue = Math.min(newValue, maxValue);
+																													handleTargetChange(targetIndex, "sellPercentage", clampedValue);
+																												}}
+																											/>
+																											{isMaxReached && (
+																												<FormHelperText error sx={{ mt: 0.5, mx: 1 }}>
+																													Maximum sell quantity reached (100%). Reduce other targets to allocate more to this one.
+																												</FormHelperText>
+																											)}
+																										</>
 																									);
 																								})()}
 																							</Box>
@@ -822,20 +831,29 @@ export function CreateStrategyModal({ onClose, onSuccess, open }: CreateStrategy
 																										0
 																									);
 																									const maxValue = Math.max(0, 100 - otherTargetsTotal);
+																									const isMaxReached = maxValue === 0;
 																									return (
-																										<TextField
-																											size="small"
-																											type="number"
-																											value={target.sellPercentage.toFixed(1)}
-																											onChange={(e) => {
-																												const value = parseFloat(e.target.value);
-																												if (!isNaN(value) && value >= 0) {
-																													handleSellPercentageChange(targetIndex, value);
-																												}
-																											}}
-																											inputProps={{ step: "0.1", min: 0, max: maxValue }}
-																											sx={{ width: 100 }}
-																										/>
+																										<FormControl error={isMaxReached} sx={{ width: 100 }}>
+																											<TextField
+																												size="small"
+																												type="number"
+																												value={target.sellPercentage.toFixed(1)}
+																												onChange={(e) => {
+																													const value = parseFloat(e.target.value);
+																													if (!isNaN(value) && value >= 0) {
+																														handleSellPercentageChange(targetIndex, value);
+																													}
+																												}}
+																												inputProps={{ step: "0.1", min: 0, max: maxValue }}
+																												disabled={isMaxReached}
+																												error={isMaxReached}
+																											/>
+																											{isMaxReached && (
+																												<FormHelperText sx={{ m: 0, mt: 0.5 }}>
+																													Maximum reached
+																												</FormHelperText>
+																											)}
+																										</FormControl>
 																									);
 																								})()}
 																								<Typography variant="body2">%</Typography>
