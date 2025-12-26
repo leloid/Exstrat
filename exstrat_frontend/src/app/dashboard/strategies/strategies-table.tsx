@@ -3,7 +3,10 @@
 import * as React from "react";
 import Avatar from "@mui/material/Avatar";
 import Box from "@mui/material/Box";
+import Card from "@mui/material/Card";
+import CardContent from "@mui/material/CardContent";
 import Checkbox from "@mui/material/Checkbox";
+import Collapse from "@mui/material/Collapse";
 import Divider from "@mui/material/Divider";
 import IconButton from "@mui/material/IconButton";
 import Stack from "@mui/material/Stack";
@@ -15,7 +18,10 @@ import TableRow from "@mui/material/TableRow";
 import Tooltip from "@mui/material/Tooltip";
 import Typography from "@mui/material/Typography";
 import CircularProgress from "@mui/material/CircularProgress";
+import Chip from "@mui/material/Chip";
 import { PencilIcon } from "@phosphor-icons/react/dist/ssr/Pencil";
+import { CaretDownIcon } from "@phosphor-icons/react/dist/ssr/CaretDown";
+import { CaretRightIcon } from "@phosphor-icons/react/dist/ssr/CaretRight";
 
 import { formatCurrency, formatPercentage } from "@/lib/format";
 import type { StrategyResponse } from "@/types/strategies";
@@ -31,6 +37,8 @@ interface StrategiesTableProps {
 	selectedIds: Set<string>;
 	tokenPrices: Map<string, number>;
 	isLoadingPrices?: boolean;
+	expandedStrategyId?: string | null;
+	onToggleExpand?: (strategyId: string) => void;
 }
 
 export function StrategiesTable({
@@ -44,6 +52,8 @@ export function StrategiesTable({
 	selectedIds,
 	tokenPrices,
 	isLoadingPrices = false,
+	expandedStrategyId = null,
+	onToggleExpand,
 }: StrategiesTableProps): React.JSX.Element {
 	const allSelected = rows.length > 0 && selectedIds.size === rows.length;
 	const someSelected = selectedIds.size > 0 && selectedIds.size < rows.length;
@@ -143,6 +153,8 @@ export function StrategiesTable({
 						tokenPrice={tokenPrices.get(row.symbol.toUpperCase())}
 						getTokenLogoUrl={getTokenLogoUrl}
 						isLoadingPrice={isLoadingPrices}
+						isExpanded={expandedStrategyId === row.id}
+						onToggleExpand={onToggleExpand}
 					/>
 				))}
 			</TableBody>
@@ -160,6 +172,8 @@ interface StrategyRowProps {
 	tokenPrice?: number;
 	getTokenLogoUrl: (symbol: string, cmcId: number | undefined) => string | null;
 	isLoadingPrice: boolean;
+	isExpanded?: boolean;
+	onToggleExpand?: (strategyId: string) => void;
 }
 
 function StrategyRow({
@@ -172,6 +186,8 @@ function StrategyRow({
 	tokenPrice,
 	getTokenLogoUrl,
 	isLoadingPrice,
+	isExpanded = false,
+	onToggleExpand,
 }: StrategyRowProps): React.JSX.Element {
 	// Memoize calculations
 	const calculations = React.useMemo(() => {
@@ -316,20 +332,52 @@ function StrategyRow({
 	);
 
 	return (
-		<Tooltip arrow title={tooltipContent} placement="right">
-			<TableRow hover>
-				<TableCell padding="checkbox">
+		<>
+			<TableRow
+				hover
+				onClick={() => onToggleExpand?.(row.id)}
+				sx={{
+					cursor: "pointer",
+					...(isExpanded && {
+						bgcolor: "var(--mui-palette-primary-selected)",
+						"&:hover": {
+							bgcolor: "var(--mui-palette-primary-selected)",
+						},
+					}),
+				}}
+			>
+				<TableCell padding="checkbox" onClick={(e) => e.stopPropagation()}>
 					<Checkbox checked={isSelected} onChange={isSelected ? () => onDeselect(row.id) : () => onSelect(row.id)} />
 				</TableCell>
 				<TableCell>
-					<Stack spacing={0.25}>
-						<Typography variant="subtitle2" sx={{ fontSize: "0.875rem", lineHeight: 1.3 }}>
-							{row.name}
-						</Typography>
-						<Typography color="text.secondary" variant="body2" sx={{ fontSize: "0.75rem", lineHeight: 1.2 }}>
-							{row.symbol} - {row.tokenName}
-						</Typography>
-					</Stack>
+					<Tooltip arrow title={tooltipContent} placement="right">
+						<Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
+							{onToggleExpand && (
+								<IconButton
+									size="small"
+									onClick={(e) => {
+										e.stopPropagation();
+										onToggleExpand(row.id);
+									}}
+									sx={{ padding: "2px", color: isExpanded ? "var(--mui-palette-primary-main)" : "var(--mui-palette-text-secondary)" }}
+								>
+									{isExpanded ? (
+										<CaretDownIcon fontSize="var(--icon-fontSize-sm)" />
+									) : (
+										<CaretRightIcon fontSize="var(--icon-fontSize-sm)" />
+									)}
+								</IconButton>
+							)}
+							<Stack spacing={0.25}>
+								<Typography variant="subtitle2" sx={{ fontSize: "0.875rem", lineHeight: 1.3 }}>
+									{row.name}
+								</Typography>
+								<Typography color="text.secondary" variant="body2" sx={{ fontSize: "0.75rem", lineHeight: 1.2 }}>
+									{row.symbol} - {row.tokenName}
+								</Typography>
+							</Stack>
+						</Stack>
+					</Tooltip>
 				</TableCell>
 				<TableCell>
 					<Typography variant="body2" sx={{ fontSize: "0.875rem", whiteSpace: "nowrap" }}>
@@ -397,7 +445,7 @@ function StrategyRow({
 						{formatPercentage(calculations.totalSellPercentage)}
 					</Typography>
 				</TableCell>
-				<TableCell align="right">
+				<TableCell align="right" onClick={(e) => e.stopPropagation()}>
 					<IconButton
 						onClick={(e) => {
 							e.stopPropagation();
@@ -410,6 +458,109 @@ function StrategyRow({
 					</IconButton>
 				</TableCell>
 			</TableRow>
-		</Tooltip>
+			{isExpanded && row.steps && row.steps.length > 0 && (
+				<TableRow>
+					<TableCell colSpan={9} sx={{ py: 0, borderBottom: "1px solid var(--mui-palette-divider)" }}>
+						<Collapse in={isExpanded} timeout="auto" unmountOnExit>
+							<Box sx={{ py: 2, px: 2, bgcolor: "var(--mui-palette-background-paper)" }}>
+								<Table size="small" sx={{ "& .MuiTableCell-root": { borderBottom: "1px solid var(--mui-palette-divider)", py: 1 } }}>
+									<TableHead>
+										<TableRow>
+											<TableCell sx={{ width: "60px", fontWeight: 600, fontSize: "0.75rem" }}>TP</TableCell>
+											<TableCell sx={{ fontWeight: 600, fontSize: "0.75rem" }}>Type</TableCell>
+											<TableCell align="right" sx={{ fontWeight: 600, fontSize: "0.75rem" }}>Target</TableCell>
+											<TableCell align="right" sx={{ fontWeight: 600, fontSize: "0.75rem" }}>Sell %</TableCell>
+											<TableCell align="right" sx={{ fontWeight: 600, fontSize: "0.75rem" }}>Quantity</TableCell>
+											<TableCell align="right" sx={{ fontWeight: 600, fontSize: "0.75rem" }}>Amount</TableCell>
+											<TableCell sx={{ width: "100px", fontWeight: 600, fontSize: "0.75rem" }}>Status</TableCell>
+										</TableRow>
+									</TableHead>
+									<TableBody>
+										{row.steps.map((step, index) => {
+											const targetPrice = step.targetPrice || 0;
+											const tokensToSell = step.sellQuantity || (row.baseQuantity * step.sellPercentage) / 100;
+											const amountCollected = tokensToSell * targetPrice;
+											const targetType = step.targetType === "percentage_of_average" ? "percentage" : "price";
+											const targetValue = targetType === "percentage"
+												? step.targetValue
+												: targetPrice;
+
+											return (
+												<TableRow key={step.id || index} hover>
+													<TableCell>
+														<Chip
+															label={`TP ${index + 1}`}
+															size="small"
+															color="primary"
+															sx={{ fontWeight: 600, fontSize: "0.7rem", height: "22px" }}
+														/>
+													</TableCell>
+													<TableCell>
+														<Typography variant="body2" sx={{ fontSize: "0.75rem" }}>
+															{targetType === "percentage" ? "Percentage" : "Price"}
+														</Typography>
+													</TableCell>
+													<TableCell align="right">
+														<Typography variant="body2" sx={{ fontSize: "0.75rem", fontWeight: 500, color: "primary.main" }}>
+															{targetType === "percentage"
+																? `${targetValue.toFixed(2)}%`
+																: formatCurrency(targetValue, "$", 2)}
+														</Typography>
+													</TableCell>
+													<TableCell align="right">
+														<Typography variant="body2" sx={{ fontSize: "0.75rem", fontWeight: 500, color: "secondary.main" }}>
+															{formatPercentage(step.sellPercentage)}
+														</Typography>
+													</TableCell>
+													<TableCell align="right">
+														<Typography variant="body2" sx={{ fontSize: "0.75rem" }}>
+															{tokensToSell.toLocaleString(undefined, { maximumFractionDigits: 6 })}
+														</Typography>
+														<Typography variant="caption" color="text.secondary" sx={{ fontSize: "0.65rem" }}>
+															{row.symbol}
+														</Typography>
+													</TableCell>
+													<TableCell align="right">
+														<Typography variant="body2" sx={{ fontSize: "0.75rem", fontWeight: 600, color: "success.main" }}>
+															{formatCurrency(amountCollected, "$", 2)}
+														</Typography>
+													</TableCell>
+													<TableCell>
+														{step.state === "triggered" ? (
+															<Chip
+																label="Triggered"
+																size="small"
+																color="success"
+																sx={{ fontSize: "0.65rem", height: "20px" }}
+															/>
+														) : (
+															<Chip
+																label="Pending"
+																size="small"
+																variant="outlined"
+																sx={{
+																	fontSize: "0.65rem",
+																	height: "20px",
+																	borderColor: "var(--mui-palette-text-secondary)",
+																	color: "var(--mui-palette-text-primary)",
+																	"&:hover": {
+																		borderColor: "var(--mui-palette-text-primary)",
+																		backgroundColor: "var(--mui-palette-action-hover)",
+																	},
+																}}
+															/>
+														)}
+													</TableCell>
+												</TableRow>
+											);
+										})}
+									</TableBody>
+								</Table>
+							</Box>
+						</Collapse>
+					</TableCell>
+				</TableRow>
+			)}
+		</>
 	);
 }

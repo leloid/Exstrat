@@ -58,6 +58,7 @@ function StrategiesPageContent(): React.JSX.Element {
 	const [editingStrategy, setEditingStrategy] = React.useState<StrategyResponse | null>(null);
 	const [tokenPrices, setTokenPrices] = React.useState<Map<string, number>>(new Map());
 	const [showDeleteMultipleStrategiesModal, setShowDeleteMultipleStrategiesModal] = React.useState(false);
+	const [expandedStrategyId, setExpandedStrategyId] = React.useState<string | null>(null);
 	
 	// Pagination states
 	const [page, setPage] = React.useState(0);
@@ -408,6 +409,10 @@ function StrategiesPageContent(): React.JSX.Element {
 								onSelectAll={selection.selectAll}
 								onDeselectAll={selection.deselectAll}
 								isLoadingPrices={isLoadingPrices}
+								expandedStrategyId={expandedStrategyId}
+								onToggleExpand={(strategyId) => {
+									setExpandedStrategyId((prev) => (prev === strategyId ? null : strategyId));
+								}}
 							/>
 						</Box>
 						{totalStrategies > 0 && (
