@@ -6,9 +6,9 @@ import Button from "@mui/material/Button";
 import Card from "@mui/material/Card";
 import CardContent from "@mui/material/CardContent";
 import Checkbox from "@mui/material/Checkbox";
-import Chip from "@mui/material/Chip";
 import CircularProgress from "@mui/material/CircularProgress";
 import Dialog from "@mui/material/Dialog";
+import DialogActions from "@mui/material/DialogActions";
 import DialogContent from "@mui/material/DialogContent";
 import Divider from "@mui/material/Divider";
 import IconButton from "@mui/material/IconButton";
@@ -30,9 +30,9 @@ import { getPortfolios, getPortfolioHoldings } from "@/lib/portfolios-api";
 import { transactionsApi } from "@/lib/transactions-api";
 import { formatCurrency, formatPercentage } from "@/lib/format";
 import type { StrategyResponse } from "@/types/strategies";
-import { StrategyStatus } from "@/types/strategies";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import { CreateStrategyModal } from "./create-strategy-modal";
+import { EditStrategyModal } from "./edit-strategy-modal";
 import { StrategiesTable } from "./strategies-table";
 import { useDebounce } from "@/hooks/use-debounce";
 import { useSelection } from "@/hooks/use-selection";
@@ -52,8 +52,9 @@ function StrategiesPageContent(): React.JSX.Element {
 	const [isLoadingPrices, setIsLoadingPrices] = React.useState(false);
 	const [searchQuery, setSearchQuery] = React.useState("");
 	const debouncedSearchQuery = useDebounce(searchQuery, 300);
-	const [statusFilter, setStatusFilter] = React.useState<StrategyStatus | "all">("all");
 	const [showCreateModal, setShowCreateModal] = React.useState(false);
+	const [showEditModal, setShowEditModal] = React.useState(false);
+	const [editingStrategy, setEditingStrategy] = React.useState<StrategyResponse | null>(null);
 	const [tokenPrices, setTokenPrices] = React.useState<Map<string, number>>(new Map());
 	const [showDeleteMultipleStrategiesModal, setShowDeleteMultipleStrategiesModal] = React.useState(false);
 	
@@ -70,7 +71,6 @@ function StrategiesPageContent(): React.JSX.Element {
 		try {
 			setIsLoading(true);
 			const response = await strategiesApi.getStrategies({
-				status: statusFilter !== "all" ? statusFilter : undefined,
 				page: page + 1, // Backend uses 1-based pagination
 				limit: rowsPerPage,
 			});
@@ -81,7 +81,7 @@ function StrategiesPageContent(): React.JSX.Element {
 		} finally {
 			setIsLoading(false);
 		}
-	}, [page, rowsPerPage, statusFilter]);
+	}, [page, rowsPerPage]);
 
 	// Load all strategies for search (when search query is active)
 	const loadAllStrategiesForSearch = React.useCallback(async () => {
@@ -90,7 +90,6 @@ function StrategiesPageContent(): React.JSX.Element {
 		}
 		try {
 			const response = await strategiesApi.getStrategies({
-				status: statusFilter !== "all" ? statusFilter : undefined,
 				page: 1,
 				limit: 1000, // Load more for search
 			});
@@ -99,7 +98,7 @@ function StrategiesPageContent(): React.JSX.Element {
 		} catch (error) {
 			console.error("Error loading strategies for search:", error);
 		}
-	}, [debouncedSearchQuery, statusFilter]);
+	}, [debouncedSearchQuery]);
 
 	// Load strategies on mount and when filters change
 	React.useEffect(() => {
@@ -197,31 +196,11 @@ function StrategiesPageContent(): React.JSX.Element {
 			);
 	}, [strategies, debouncedSearchQuery]);
 
-	// Reset page when search or filter changes
+	// Reset page when search changes
 	React.useEffect(() => {
 		setPage(0);
-	}, [searchQuery, statusFilter]);
+	}, [searchQuery]);
 
-	// Status counts
-	const statusCounts = React.useMemo(() => {
-		const counts = {
-			all: totalStrategies,
-			active: 0,
-			desactive: 0,
-		};
-
-		// We need to load all strategies to get accurate counts
-		// For now, we'll use the current page data as an approximation
-		strategies.forEach((strategy) => {
-			if (strategy.status === "active") {
-				counts.active++;
-			} else {
-				counts.desactive++;
-			}
-		});
-
-		return counts;
-	}, [strategies, totalStrategies]);
 
 	// Handlers
 	const handleCreateStrategy = React.useCallback(() => {
@@ -233,8 +212,8 @@ function StrategiesPageContent(): React.JSX.Element {
 	}, []);
 
 	const handleEditStrategy = React.useCallback((strategy: StrategyResponse) => {
-		// TODO: Open edit strategy modal
-		console.log("Edit strategy", strategy);
+		setEditingStrategy(strategy);
+		setShowEditModal(true);
 	}, []);
 
 	const handleDeleteStrategy = React.useCallback(
@@ -255,19 +234,26 @@ function StrategiesPageContent(): React.JSX.Element {
 
 	const confirmDeleteMultipleStrategies = React.useCallback(async () => {
 		const selectedIds = Array.from(selection.selected);
-		if (selectedIds.length === 0) return;
+		console.log("Deleting strategies:", selectedIds);
+		if (selectedIds.length === 0) {
+			console.warn("No strategies selected for deletion");
+			setShowDeleteMultipleStrategiesModal(false);
+			return;
+		}
 		try {
+			setIsLoading(true);
 			// Delete all selected strategies in parallel
 			await Promise.all(selectedIds.map((id) => strategiesApi.deleteStrategy(id)));
-			await loadStrategies();
-			setShowDeleteMultipleStrategiesModal(false);
 			selection.deselectAll();
+			setShowDeleteMultipleStrategiesModal(false);
+			await loadStrategies();
 		} catch (error) {
 			console.error("Error deleting strategies:", error);
 			alert("Error deleting strategies");
+		} finally {
+			setIsLoading(false);
 		}
-		// eslint-disable-next-line react-hooks/exhaustive-deps
-	}, [loadStrategies]);
+	}, [loadStrategies, selection]);
 
 	const handlePageChange = React.useCallback((_: unknown, newPage: number) => {
 		setPage(newPage);
@@ -278,11 +264,11 @@ function StrategiesPageContent(): React.JSX.Element {
 		setPage(0);
 	}, []);
 
-	// Reset selections when search query or filter changes
+	// Reset selections when search query changes
 	React.useEffect(() => {
 		selection.deselectAll();
 		// eslint-disable-next-line react-hooks/exhaustive-deps
-	}, [searchQuery, statusFilter]);
+	}, [searchQuery]);
 
 	if (isLoading) {
 		return (
@@ -327,43 +313,22 @@ function StrategiesPageContent(): React.JSX.Element {
 					</Button>
 				</Stack>
 
-				{/* Filters */}
+				{/* Search */}
 				<Card>
 					<CardContent>
-						<Stack direction="row" spacing={2} sx={{ alignItems: "center", flexWrap: "wrap" }}>
-							<OutlinedInput
-								onChange={(e) => setSearchQuery(e.target.value)}
-								placeholder="Search strategies..."
-								size="small"
-								startAdornment={
-									<InputAdornment position="start">
-										<MagnifyingGlassIcon fontSize="var(--icon-fontSize-md)" />
-									</InputAdornment>
-								}
-								sx={{ flex: "1 1 auto", maxWidth: "400px" }}
-								value={searchQuery}
-							/>
-							<Stack direction="row" spacing={1}>
-								<Chip
-									color={statusFilter === "all" ? "primary" : "default"}
-									label={`All (${statusCounts.all})`}
-									onClick={() => setStatusFilter("all")}
-									variant={statusFilter === "all" ? "filled" : "outlined"}
-								/>
-								<Chip
-									color={statusFilter === "active" ? "primary" : "default"}
-									label={`Active (${statusCounts.active})`}
-									onClick={() => setStatusFilter(StrategyStatus.ACTIVE)}
-									variant={statusFilter === "active" ? "filled" : "outlined"}
-								/>
-								<Chip
-									color={statusFilter === "paused" ? "primary" : "default"}
-									label={`Paused (${statusCounts.desactive})`}
-									onClick={() => setStatusFilter(StrategyStatus.PAUSED)}
-									variant={statusFilter === "paused" ? "filled" : "outlined"}
-								/>
-							</Stack>
-						</Stack>
+						<OutlinedInput
+							onChange={(e) => setSearchQuery(e.target.value)}
+							placeholder="Search strategies..."
+							size="small"
+							fullWidth
+							startAdornment={
+								<InputAdornment position="start">
+									<MagnifyingGlassIcon fontSize="var(--icon-fontSize-md)" />
+								</InputAdornment>
+							}
+							sx={{ maxWidth: "400px" }}
+							value={searchQuery}
+						/>
 					</CardContent>
 				</Card>
 
@@ -458,12 +423,25 @@ function StrategiesPageContent(): React.JSX.Element {
 			{/* Create Strategy Modal */}
 			<CreateStrategyModal onClose={handleCloseCreateModal} onSuccess={loadStrategies} open={showCreateModal} />
 
+			{/* Edit Strategy Modal */}
+			<EditStrategyModal
+				onClose={() => {
+					setShowEditModal(false);
+					setEditingStrategy(null);
+				}}
+				onSuccess={loadStrategies}
+				open={showEditModal}
+				strategy={editingStrategy}
+			/>
+
 			{/* Delete Multiple Strategies Confirmation Modal */}
 			<Dialog
 				fullWidth
 				maxWidth="sm"
 				onClose={() => {
-					setShowDeleteMultipleStrategiesModal(false);
+					if (!isLoading) {
+						setShowDeleteMultipleStrategiesModal(false);
+					}
 				}}
 				open={showDeleteMultipleStrategiesModal}
 			>
@@ -480,23 +458,34 @@ function StrategiesPageContent(): React.JSX.Element {
 										Are you sure you want to delete {selection.selected.size} selected strateg{selection.selected.size > 1 ? "ies" : "y"}? This action is irreversible and will permanently delete all associated data.
 									</Typography>
 								</Stack>
-								<Stack direction="row" spacing={2} sx={{ justifyContent: "flex-end" }}>
-									<Button
-										color="secondary"
-										onClick={() => {
-											setShowDeleteMultipleStrategiesModal(false);
-										}}
-									>
-										Cancel
-									</Button>
-									<Button color="error" onClick={confirmDeleteMultipleStrategies} variant="contained">
-										Delete {selection.selected.size} strateg{selection.selected.size > 1 ? "ies" : "y"}
-									</Button>
-								</Stack>
 							</Stack>
 						</Stack>
 					</Box>
 				</DialogContent>
+				<DialogActions>
+					<Button
+						color="secondary"
+						onClick={() => {
+							setShowDeleteMultipleStrategiesModal(false);
+						}}
+						disabled={isLoading}
+					>
+						Cancel
+					</Button>
+					<Button
+						color="error"
+						onClick={(e) => {
+							e.preventDefault();
+							e.stopPropagation();
+							confirmDeleteMultipleStrategies();
+						}}
+						variant="contained"
+						disabled={isLoading || selection.selected.size === 0}
+						startIcon={isLoading ? <CircularProgress size={16} /> : undefined}
+					>
+						{isLoading ? "Deleting..." : `Delete ${selection.selected.size} strateg${selection.selected.size > 1 ? "ies" : "y"}`}
+					</Button>
+				</DialogActions>
 			</Dialog>
 		</Box>
 	);
