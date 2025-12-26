@@ -53,6 +53,9 @@ export interface UpdateStrategyDto {
 	name?: string;
 	status?: StrategyStatus;
 	notes?: string;
+	baseQuantity?: number;
+	referencePrice?: number;
+	steps?: UpdateStrategyStepDto[];
 }
 
 // Strategy Response Types
