@@ -553,24 +553,24 @@ export function CreateStrategyModal({ onClose, onSuccess, open }: CreateStrategy
 																</Stack>
 															</Box>
 														) : availableTokens.length > 0 && !isVirtualWallet ? (
-															<FormControl fullWidth>
-																<InputLabel>Select a token</InputLabel>
-																<Select
-																	label="Select a token"
-																	value={selectedToken?.symbol || ""}
-																	displayEmpty
-																	onChange={(e) => {
-																		const token = availableTokens.find((t) => t.symbol === e.target.value);
-																		if (token) {
-																			setSelectedToken(token);
-																			// Automatically move to next step when token is selected
-																			setActiveStep(2);
-																		}
-																	}}
-																>
-																	<Option value="" disabled>
-																		<em>Select a token</em>
-																	</Option>
+														<FormControl fullWidth>
+															<InputLabel>Select a token</InputLabel>
+															<Select
+																label="Select a token"
+																value={selectedToken?.symbol || ""}
+																displayEmpty
+																onChange={(e) => {
+																	const token = availableTokens.find((t) => t.symbol === e.target.value);
+																	if (token) {
+																		setSelectedToken(token);
+																		// Automatically move to next step when token is selected
+																		setActiveStep(2);
+																	}
+																}}
+															>
+																<Option value="" disabled>
+																	<em>Select a token</em>
+																</Option>
 																	{availableTokens.map((token) => (
 																		<Option key={token.symbol} value={token.symbol}>
 																			{token.symbol} - {token.name}
@@ -834,19 +834,19 @@ export function CreateStrategyModal({ onClose, onSuccess, open }: CreateStrategy
 																									const isMaxReached = maxValue === 0;
 																									return (
 																										<>
-																											<Slider
-																												min={0}
-																												max={100}
-																												step={0.1}
-																												value={target.sellPercentage}
+																										<Slider
+																											min={0}
+																											max={100}
+																											step={0.1}
+																											value={target.sellPercentage}
 																												disabled={isMaxReached}
-																												onChange={(_, value) => {
-																													const newValue = value as number;
-																													// Limit the value based on what's available
-																													const clampedValue = Math.min(newValue, maxValue);
-																													handleTargetChange(targetIndex, "sellPercentage", clampedValue);
-																												}}
-																											/>
+																											onChange={(_, value) => {
+																												const newValue = value as number;
+																												// Limit the value based on what's available
+																												const clampedValue = Math.min(newValue, maxValue);
+																												handleTargetChange(targetIndex, "sellPercentage", clampedValue);
+																											}}
+																										/>
 																											{isMaxReached && (
 																												<FormHelperText error sx={{ mt: 0.5, mx: 1 }}>
 																													Maximum sell quantity reached (100%). Reduce other targets to allocate more to this one.
@@ -866,8 +866,8 @@ export function CreateStrategyModal({ onClose, onSuccess, open }: CreateStrategy
 																									const isMaxReached = maxValue === 0;
 																									return (
 																										<FormControl error={isMaxReached} sx={{ width: 100 }}>
-																											<TextField
-																												size="small"
+																										<TextField
+																											size="small"
 																												type="text"
 																												value={
 																													focusedPercentageInput === targetIndex
@@ -876,7 +876,7 @@ export function CreateStrategyModal({ onClose, onSuccess, open }: CreateStrategy
 																															? target.sellPercentage.toFixed(1)
 																															: ""
 																												}
-																												onChange={(e) => {
+																											onChange={(e) => {
 																													const inputValue = e.target.value;
 																													// Allow empty, numbers, and one decimal point
 																													if (inputValue === "" || /^\d*\.?\d*$/.test(inputValue)) {
@@ -902,11 +902,11 @@ export function CreateStrategyModal({ onClose, onSuccess, open }: CreateStrategy
 																												onBlur={() => {
 																													setFocusedPercentageInput(null);
 																																					const value = parseFloat(rawPercentageInputs[targetIndex] || "0");
-																																					if (!isNaN(value) && value >= 0) {
-																																						handleSellPercentageChange(targetIndex, value);
-																																					}
-																																				}}
-																												inputProps={{ step: "0.1", min: 0, max: maxValue }}
+																												if (!isNaN(value) && value >= 0) {
+																													handleSellPercentageChange(targetIndex, value);
+																												}
+																											}}
+																											inputProps={{ step: "0.1", min: 0, max: maxValue }}
 																												disabled={isMaxReached}
 																												error={isMaxReached}
 																											/>
@@ -927,7 +927,7 @@ export function CreateStrategyModal({ onClose, onSuccess, open }: CreateStrategy
 																											? rawTokenInputs[targetIndex] ?? ""
 																											: qty > 0 && target.sellPercentage > 0
 																												? ((qty * target.sellPercentage) / 100).toString()
-																												: ""
+																											: ""
 																									}
 																									onChange={(e) => {
 																										const inputValue = e.target.value;

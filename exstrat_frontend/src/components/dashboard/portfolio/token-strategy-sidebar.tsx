@@ -405,26 +405,40 @@ export function TokenStrategySidebar({
 															{tp.order}
 														</Avatar>
 														<Box sx={{ flex: 1, minWidth: 0 }}>
-															<Typography variant="body2" sx={{ fontWeight: 600, mb: 0.5 }}>
-																{formatCurrency(targetPrice, "$", 2)}
-															</Typography>
-															<Stack direction="row" spacing={1} sx={{ alignItems: "center", flexWrap: "wrap" }}>
-																<Typography 
-																	variant="caption" 
-																	sx={{ 
-																		display: "block",
-																		color: percentageGain >= 0 ? "success.main" : "error.main",
-																		fontWeight: 500
-																	}}
-																>
-																	{formatPercentage(percentageGain)}
-																</Typography>
-																<Typography variant="caption" color="text.secondary" sx={{ display: "block" }}>
-																	•
-																</Typography>
-																<Typography variant="caption" color="text.secondary" sx={{ display: "block" }}>
-																	{formatCurrency(tpAlert?.projectedAmount || 0, "$", 0)}
-																</Typography>
+															<Stack spacing={0.5}>
+																<Box>
+																	<Typography variant="caption" color="text.secondary" sx={{ fontSize: "0.65rem", display: "block", mb: 0.25 }}>
+																		Target Price
+																	</Typography>
+																	<Typography variant="body2" sx={{ fontWeight: 600 }}>
+																		{formatCurrency(targetPrice, "$", 2)}
+																	</Typography>
+																</Box>
+																<Stack direction="row" spacing={1.5} sx={{ alignItems: "center", flexWrap: "wrap" }}>
+																	<Box>
+																		<Typography variant="caption" color="text.secondary" sx={{ fontSize: "0.65rem", display: "block", mb: 0.25 }}>
+																			Gain
+																		</Typography>
+																		<Typography 
+																			variant="caption" 
+																			sx={{ 
+																				display: "block",
+																				color: percentageGain >= 0 ? "success.main" : "error.main",
+																				fontWeight: 600
+																			}}
+																		>
+																			{formatPercentage(percentageGain)}
+																		</Typography>
+																	</Box>
+																	<Box>
+																		<Typography variant="caption" color="text.secondary" sx={{ fontSize: "0.65rem", display: "block", mb: 0.25 }}>
+																			Amount
+																		</Typography>
+																		<Typography variant="caption" sx={{ display: "block", fontWeight: 600, color: "success.main" }}>
+																			{formatCurrency(tpAlert?.projectedAmount || 0, "$", 0)}
+																		</Typography>
+																	</Box>
+																</Stack>
 															</Stack>
 														</Box>
 													</Stack>

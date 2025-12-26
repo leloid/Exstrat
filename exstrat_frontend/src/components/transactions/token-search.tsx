@@ -230,7 +230,7 @@ export function TokenSearch({ onTokenSelect, selectedToken, error, helperText }:
 					<Box component="li" key={option.id} {...otherProps}>
 						<Box sx={{ flex: "1 1 auto", minWidth: 0 }}>
 							<Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
-								<Typography variant="body2" sx={{ fontWeight: 500 }}>
+							<Typography variant="body2" sx={{ fontWeight: 500 }}>
 									{option.symbol}
 								</Typography>
 								{hasMultipleWithSameSymbol && (
@@ -247,7 +247,7 @@ export function TokenSearch({ onTokenSelect, selectedToken, error, helperText }:
 								)}
 								<Typography variant="body2" color="text.secondary">
 									- {option.name}
-								</Typography>
+							</Typography>
 							</Stack>
 							<Typography color="text.secondary" variant="caption">
 								Rank #{option.cmc_rank || "N/A"} • Market Cap:{" "}

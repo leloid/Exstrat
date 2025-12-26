@@ -59,7 +59,7 @@ import MuiTooltip from "@mui/material/Tooltip";
 import { usePortfolio } from "@/contexts/PortfolioContext";
 import * as portfoliosApi from "@/lib/portfolios-api";
 import { transactionsApi } from "@/lib/transactions-api";
-import { formatCurrency, formatPercentage, formatCompactCurrency, formatQuantity } from "@/lib/format";
+import { formatCurrency, formatPercentage, formatCompactCurrency, formatQuantity, formatQuantityCompact } from "@/lib/format";
 import { useSecretMode } from "@/hooks/use-secret-mode";
 import { TokenSearch } from "@/components/transactions/token-search";
 import { CreateTransactionModal } from "@/components/transactions/create-transaction-modal";
@@ -74,6 +74,7 @@ import { ArrowDownRightIcon } from "@phosphor-icons/react/dist/ssr/ArrowDownRigh
 import { ArrowUpRightIcon } from "@phosphor-icons/react/dist/ssr/ArrowUpRight";
 import { CaretDownIcon } from "@phosphor-icons/react/dist/ssr/CaretDown";
 import { CaretRightIcon } from "@phosphor-icons/react/dist/ssr/CaretRight";
+import { InfoIcon } from "@phosphor-icons/react/dist/ssr/Info";
 
 interface PortfolioData {
 	id: string;
@@ -1210,18 +1211,18 @@ export default function Page(): React.JSX.Element {
 										{/* Text Content */}
 										<Stack spacing={3}>
 											{!secretMode && (
-												<Stack spacing={1}>
-													<Typography color="text.secondary" variant="overline">
-														Total balance
-													</Typography>
-													<Typography variant="h4">
-														{formatCompactCurrency(
-															allTokenData.reduce((sum, item) => sum + item.value, 0),
-															"$",
-															2
-														)}
-													</Typography>
-												</Stack>
+											<Stack spacing={1}>
+												<Typography color="text.secondary" variant="overline">
+													Total balance
+												</Typography>
+												<Typography variant="h4">
+													{formatCompactCurrency(
+														allTokenData.reduce((sum, item) => sum + item.value, 0),
+														"$",
+														2
+													)}
+												</Typography>
+											</Stack>
 											)}
 											<Stack spacing={1}>
 												<Typography color="text.secondary" variant="overline">
@@ -1263,7 +1264,7 @@ export default function Page(): React.JSX.Element {
 															<Typography color="text.secondary" variant="body2" sx={{ minWidth: "80px", textAlign: "right" }}>
 																{formatQuantity(
 																	allTokenData
-																		.slice(4)
+																	.slice(4)
 																		.reduce((sum, token) => sum + token.quantity, 0),
 																	8,
 																	secretMode
@@ -1622,8 +1623,8 @@ export default function Page(): React.JSX.Element {
 																			<TableCell align="right" sx={{ fontWeight: 600 }}>Quantity</TableCell>
 																			{!secretMode && (
 																				<>
-																					<TableCell align="right" sx={{ fontWeight: 600 }}>Price</TableCell>
-																					<TableCell align="right" sx={{ fontWeight: 600 }}>Amount</TableCell>
+																			<TableCell align="right" sx={{ fontWeight: 600 }}>Price</TableCell>
+																			<TableCell align="right" sx={{ fontWeight: 600 }}>Amount</TableCell>
 																				</>
 																			)}
 																		</TableRow>
@@ -1659,22 +1660,56 @@ export default function Page(): React.JSX.Element {
 																					/>
 																				</TableCell>
 																				<TableCell align="right">
-																					<Typography variant="body2">
-																						{formatQuantity(transaction.quantity, 8, secretMode)}
-																					</Typography>
+																					{(() => {
+																						const { display, full, showInfo } = formatQuantityCompact(transaction.quantity, 8, secretMode);
+																						return (
+																							<MuiTooltip title={full} arrow placement="top">
+																								<Stack direction="row" spacing={0.5} sx={{ alignItems: "center", justifyContent: "flex-end" }}>
+																									<Typography variant="body2">{display}</Typography>
+																									{showInfo && (
+																										<InfoIcon fontSize="var(--icon-fontSize-xs)" style={{ opacity: 0.6 }} />
+																									)}
+																								</Stack>
+																							</MuiTooltip>
+																						);
+																					})()}
 																				</TableCell>
 																				{!secretMode && (
 																					<>
-																						<TableCell align="right">
-																							<Typography variant="body2">
-																								{formatCurrency(transaction.averagePrice, "$", 2)}
-																							</Typography>
-																						</TableCell>
-																						<TableCell align="right">
-																							<Typography variant="body2">
-																								{formatCurrency(transaction.amountInvested, "$", 2)}
-																							</Typography>
-																						</TableCell>
+																				<TableCell align="right">
+																					{(() => {
+																						const price = transaction.averagePrice;
+																						const display = price < 1 && price > 0 ? "<1" : Math.round(price).toLocaleString();
+																						const full = formatCurrency(price, "$", 2);
+																						return (
+																							<MuiTooltip title={full} arrow placement="top">
+																								<Stack direction="row" spacing={0.5} sx={{ alignItems: "center", justifyContent: "flex-end" }}>
+																									<Typography variant="body2">${display}</Typography>
+																									{price < 1 && price > 0 && (
+																										<InfoIcon fontSize="var(--icon-fontSize-xs)" style={{ opacity: 0.6 }} />
+																									)}
+																								</Stack>
+																							</MuiTooltip>
+																						);
+																					})()}
+																				</TableCell>
+																				<TableCell align="right">
+																					{(() => {
+																						const amount = transaction.amountInvested;
+																						const display = amount < 1 && amount > 0 ? "<1" : Math.round(amount).toLocaleString();
+																						const full = formatCurrency(amount, "$", 2);
+																						return (
+																							<MuiTooltip title={full} arrow placement="top">
+																								<Stack direction="row" spacing={0.5} sx={{ alignItems: "center", justifyContent: "flex-end" }}>
+																									<Typography variant="body2">${display}</Typography>
+																									{amount < 1 && amount > 0 && (
+																										<InfoIcon fontSize="var(--icon-fontSize-xs)" style={{ opacity: 0.6 }} />
+																									)}
+																								</Stack>
+																							</MuiTooltip>
+																						);
+																					})()}
+																				</TableCell>
 																					</>
 																				)}
 																			</TableRow>
@@ -1818,122 +1853,122 @@ export default function Page(): React.JSX.Element {
 							</Box>
 						) : (
 							<>
-								{walletPerformanceView === "global" ? (
-									<NoSsr fallback={<Box sx={{ height: "240px" }} />}>
-										<ResponsiveContainer height={240} width="100%">
-											<AreaChart data={portfolioPerformanceData} margin={{ top: 0, right: 0, bottom: 0, left: 0 }}>
-												<defs>
-													<linearGradient id="area-performance" x1="0" x2="0" y1="0" y2="1">
-														<stop offset="0" stopColor="var(--mui-palette-primary-main)" stopOpacity={0.3} />
-														<stop offset="100%" stopColor="var(--mui-palette-primary-main)" stopOpacity={0} />
-													</linearGradient>
-												</defs>
-												<CartesianGrid strokeDasharray="2 4" vertical={false} />
-												<XAxis
-													axisLine={false}
-													dataKey="name"
-													tickLine={false}
-													type="category"
-													interval="preserveStartEnd"
-												/>
-												<YAxis
-													axisLine={false}
-													tickLine={false}
-													type="number"
-													tickFormatter={(value) => formatCompactCurrency(value, "$", 0).replace("$", "")}
-												/>
-												<Area
-													animationDuration={300}
-													dataKey="value"
-													fill="url(#area-performance)"
-													fillOpacity={1}
-													name="Total Value"
-													stroke="var(--mui-palette-primary-main)"
-													strokeWidth={3}
-													type="natural"
-												/>
-												<Tooltip
-													animationDuration={50}
-													content={<PerformanceTooltipContent />}
-													cursor={false}
-												/>
-											</AreaChart>
-										</ResponsiveContainer>
-									</NoSsr>
-								) : (
-									<Stack spacing={2}>
-										<NoSsr fallback={<Box sx={{ height: "240px" }} />}>
-											<ResponsiveContainer height={240} width="100%">
-												<LineChart
-													data={walletPerformanceByWalletData.data}
-													margin={{ top: 0, right: 0, bottom: 0, left: 0 }}
-												>
-													<CartesianGrid strokeDasharray="2 4" vertical={false} />
-													<XAxis
-														axisLine={false}
-														dataKey="name"
-														tickLine={false}
-														type="category"
-														interval="preserveStartEnd"
+						{walletPerformanceView === "global" ? (
+							<NoSsr fallback={<Box sx={{ height: "240px" }} />}>
+								<ResponsiveContainer height={240} width="100%">
+									<AreaChart data={portfolioPerformanceData} margin={{ top: 0, right: 0, bottom: 0, left: 0 }}>
+										<defs>
+											<linearGradient id="area-performance" x1="0" x2="0" y1="0" y2="1">
+												<stop offset="0" stopColor="var(--mui-palette-primary-main)" stopOpacity={0.3} />
+												<stop offset="100%" stopColor="var(--mui-palette-primary-main)" stopOpacity={0} />
+											</linearGradient>
+										</defs>
+										<CartesianGrid strokeDasharray="2 4" vertical={false} />
+										<XAxis
+											axisLine={false}
+											dataKey="name"
+											tickLine={false}
+											type="category"
+											interval="preserveStartEnd"
+										/>
+										<YAxis
+											axisLine={false}
+											tickLine={false}
+											type="number"
+											tickFormatter={(value) => formatCompactCurrency(value, "$", 0).replace("$", "")}
+										/>
+										<Area
+											animationDuration={300}
+											dataKey="value"
+											fill="url(#area-performance)"
+											fillOpacity={1}
+											name="Total Value"
+											stroke="var(--mui-palette-primary-main)"
+											strokeWidth={3}
+											type="natural"
+										/>
+										<Tooltip
+											animationDuration={50}
+											content={<PerformanceTooltipContent />}
+											cursor={false}
+										/>
+									</AreaChart>
+								</ResponsiveContainer>
+							</NoSsr>
+						) : (
+							<Stack spacing={2}>
+								<NoSsr fallback={<Box sx={{ height: "240px" }} />}>
+									<ResponsiveContainer height={240} width="100%">
+										<LineChart
+											data={walletPerformanceByWalletData.data}
+											margin={{ top: 0, right: 0, bottom: 0, left: 0 }}
+										>
+											<CartesianGrid strokeDasharray="2 4" vertical={false} />
+											<XAxis
+												axisLine={false}
+												dataKey="name"
+												tickLine={false}
+												type="category"
+												interval="preserveStartEnd"
+											/>
+											<YAxis
+												axisLine={false}
+												tickLine={false}
+												type="number"
+												tickFormatter={(value) => formatCompactCurrency(value, "$", 0).replace("$", "")}
+											/>
+											{walletPerformanceByWalletData.wallets.map((wallet, index) => {
+												const walletKey = wallet.name.replace(/\s+/g, "_");
+												const colors = [
+													"var(--mui-palette-primary-main)",
+													"var(--mui-palette-success-main)",
+													"var(--mui-palette-warning-main)",
+												];
+												return (
+													<Line
+														key={wallet.id}
+														animationDuration={300}
+														dataKey={walletKey}
+														name={wallet.name}
+														stroke={colors[index % colors.length]}
+														strokeWidth={3}
+														type="natural"
 													/>
-													<YAxis
-														axisLine={false}
-														tickLine={false}
-														type="number"
-														tickFormatter={(value) => formatCompactCurrency(value, "$", 0).replace("$", "")}
+												);
+											})}
+											<Tooltip
+												animationDuration={50}
+												content={<WalletPerformanceTooltipContent wallets={walletPerformanceByWalletData.wallets} />}
+												cursor={false}
+											/>
+										</LineChart>
+									</ResponsiveContainer>
+								</NoSsr>
+								{walletPerformanceByWalletData.wallets.length > 0 && (
+									<Stack direction="row" spacing={2} sx={{ flexWrap: "wrap", justifyContent: "center" }}>
+										{walletPerformanceByWalletData.wallets.map((wallet, index) => {
+											const colors = [
+												"var(--mui-palette-primary-main)",
+												"var(--mui-palette-success-main)",
+												"var(--mui-palette-warning-main)",
+											];
+											return (
+												<Stack key={wallet.id} direction="row" spacing={1} sx={{ alignItems: "center" }}>
+													<Box
+														sx={{
+															bgcolor: colors[index % colors.length],
+															borderRadius: "2px",
+															height: "4px",
+															width: "16px",
+														}}
 													/>
-													{walletPerformanceByWalletData.wallets.map((wallet, index) => {
-														const walletKey = wallet.name.replace(/\s+/g, "_");
-														const colors = [
-															"var(--mui-palette-primary-main)",
-															"var(--mui-palette-success-main)",
-															"var(--mui-palette-warning-main)",
-														];
-														return (
-															<Line
-																key={wallet.id}
-																animationDuration={300}
-																dataKey={walletKey}
-																name={wallet.name}
-																stroke={colors[index % colors.length]}
-																strokeWidth={3}
-																type="natural"
-															/>
-														);
-													})}
-													<Tooltip
-														animationDuration={50}
-														content={<WalletPerformanceTooltipContent wallets={walletPerformanceByWalletData.wallets} />}
-														cursor={false}
-													/>
-												</LineChart>
-											</ResponsiveContainer>
-										</NoSsr>
-										{walletPerformanceByWalletData.wallets.length > 0 && (
-											<Stack direction="row" spacing={2} sx={{ flexWrap: "wrap", justifyContent: "center" }}>
-												{walletPerformanceByWalletData.wallets.map((wallet, index) => {
-													const colors = [
-														"var(--mui-palette-primary-main)",
-														"var(--mui-palette-success-main)",
-														"var(--mui-palette-warning-main)",
-													];
-													return (
-														<Stack key={wallet.id} direction="row" spacing={1} sx={{ alignItems: "center" }}>
-															<Box
-																sx={{
-																	bgcolor: colors[index % colors.length],
-																	borderRadius: "2px",
-																	height: "4px",
-																	width: "16px",
-																}}
-															/>
-															<Typography variant="body2">{wallet.name}</Typography>
-														</Stack>
-													);
-												})}
-											</Stack>
-										)}
+													<Typography variant="body2">{wallet.name}</Typography>
+												</Stack>
+											);
+										})}
 									</Stack>
+								)}
+							</Stack>
 								)}
 							</>
 						)}
@@ -2098,40 +2133,40 @@ export default function Page(): React.JSX.Element {
 										</TableCell>
 										{!secretMode && (
 											<>
-												<TableCell align="right">
-													<TableSortLabel
-														active={transactionOrderBy === "averagePrice"}
-														direction={transactionOrderBy === "averagePrice" ? transactionOrder : "asc"}
-														onClick={() => {
-															if (transactionOrderBy === "averagePrice") {
-																setTransactionOrder(transactionOrder === "asc" ? "desc" : "asc");
-															} else {
-																setTransactionOrder("asc");
-																setTransactionOrderBy("averagePrice");
-															}
-															setTransactionPage(0);
-														}}
-													>
-														Price
-													</TableSortLabel>
-												</TableCell>
-												<TableCell align="right">
-													<TableSortLabel
-														active={transactionOrderBy === "amountInvested"}
-														direction={transactionOrderBy === "amountInvested" ? transactionOrder : "asc"}
-														onClick={() => {
-															if (transactionOrderBy === "amountInvested") {
-																setTransactionOrder(transactionOrder === "asc" ? "desc" : "asc");
-															} else {
-																setTransactionOrder("asc");
-																setTransactionOrderBy("amountInvested");
-															}
-															setTransactionPage(0);
-														}}
-													>
-														Amount
-													</TableSortLabel>
-												</TableCell>
+										<TableCell align="right">
+											<TableSortLabel
+												active={transactionOrderBy === "averagePrice"}
+												direction={transactionOrderBy === "averagePrice" ? transactionOrder : "asc"}
+												onClick={() => {
+													if (transactionOrderBy === "averagePrice") {
+														setTransactionOrder(transactionOrder === "asc" ? "desc" : "asc");
+													} else {
+														setTransactionOrder("asc");
+														setTransactionOrderBy("averagePrice");
+													}
+													setTransactionPage(0);
+												}}
+											>
+												Price
+											</TableSortLabel>
+										</TableCell>
+										<TableCell align="right">
+											<TableSortLabel
+												active={transactionOrderBy === "amountInvested"}
+												direction={transactionOrderBy === "amountInvested" ? transactionOrder : "asc"}
+												onClick={() => {
+													if (transactionOrderBy === "amountInvested") {
+														setTransactionOrder(transactionOrder === "asc" ? "desc" : "asc");
+													} else {
+														setTransactionOrder("asc");
+														setTransactionOrderBy("amountInvested");
+													}
+													setTransactionPage(0);
+												}}
+											>
+												Amount
+											</TableSortLabel>
+										</TableCell>
 											</>
 										)}
 										<TableCell align="right">
@@ -2198,16 +2233,56 @@ export default function Page(): React.JSX.Element {
 												/>
 											</TableCell>
 											<TableCell align="right">
-												<Typography variant="body2">{formatQuantity(transaction.quantity, 8, secretMode)}</Typography>
+												{(() => {
+													const { display, full, showInfo } = formatQuantityCompact(transaction.quantity, 8, secretMode);
+													return (
+														<MuiTooltip title={full} arrow placement="top">
+															<Stack direction="row" spacing={0.5} sx={{ alignItems: "center", justifyContent: "flex-end" }}>
+																<Typography variant="body2">{display}</Typography>
+																{showInfo && (
+																	<InfoIcon fontSize="var(--icon-fontSize-xs)" style={{ opacity: 0.6 }} />
+																)}
+															</Stack>
+														</MuiTooltip>
+													);
+												})()}
 											</TableCell>
 											{!secretMode && (
 												<>
-													<TableCell align="right">
-														<Typography variant="body2">{formatCurrency(transaction.averagePrice, "$", 2)}</Typography>
-													</TableCell>
-													<TableCell align="right">
-														<Typography variant="body2">{formatCurrency(transaction.amountInvested, "$", 2, secretMode)}</Typography>
-													</TableCell>
+											<TableCell align="right">
+												{(() => {
+													const price = transaction.averagePrice;
+													const display = price < 1 && price > 0 ? "<1" : Math.round(price).toLocaleString();
+													const full = formatCurrency(price, "$", 2);
+													return (
+														<MuiTooltip title={full} arrow placement="top">
+															<Stack direction="row" spacing={0.5} sx={{ alignItems: "center", justifyContent: "flex-end" }}>
+																<Typography variant="body2">${display}</Typography>
+																{price < 1 && price > 0 && (
+																	<InfoIcon fontSize="var(--icon-fontSize-xs)" style={{ opacity: 0.6 }} />
+																)}
+															</Stack>
+														</MuiTooltip>
+													);
+												})()}
+											</TableCell>
+											<TableCell align="right">
+												{(() => {
+													const amount = transaction.amountInvested;
+													const display = amount < 1 && amount > 0 ? "<1" : Math.round(amount).toLocaleString();
+													const full = formatCurrency(amount, "$", 2, secretMode);
+													return (
+														<MuiTooltip title={full} arrow placement="top">
+															<Stack direction="row" spacing={0.5} sx={{ alignItems: "center", justifyContent: "flex-end" }}>
+																<Typography variant="body2">${display}</Typography>
+																{amount < 1 && amount > 0 && (
+																	<InfoIcon fontSize="var(--icon-fontSize-xs)" style={{ opacity: 0.6 }} />
+																)}
+															</Stack>
+														</MuiTooltip>
+													);
+												})()}
+											</TableCell>
 												</>
 											)}
 											<TableCell align="right">

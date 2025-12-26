@@ -99,9 +99,9 @@ export function MainNav({ color = "evident", items = [] }: MainNavProps): React.
 						>
 							<ListIcon color="var(--mui-palette-secondary-main)" />
 						</IconButton>
-					<Box component={RouterLink} href={paths.home} sx={{ display: { xs: "none", md: "inline-block" } }}>
-						<Box
-							component="img"
+						<Box component={RouterLink} href={paths.home} sx={{ display: { xs: "none", md: "inline-block" } }}>
+							<Box
+								component="img"
 							src={
 								colorScheme === "dark"
 									? "/logo_large_dark_theme.svg"
@@ -109,10 +109,10 @@ export function MainNav({ color = "evident", items = [] }: MainNavProps): React.
 										? "/DarkFullLogo.svg"
 										: "/logo_large_dark_theme.svg"
 							}
-							alt="ExStrat"
-							sx={{ height: "auto", maxWidth: "200px", width: "auto" }}
-						/>
-					</Box>
+								alt="ExStrat"
+								sx={{ height: "auto", maxWidth: "200px", width: "auto" }}
+							/>
+						</Box>
 						<Box sx={{ display: { xs: "none", md: "block" } }}>
 							<WorkspacesSwitch />
 						</Box>

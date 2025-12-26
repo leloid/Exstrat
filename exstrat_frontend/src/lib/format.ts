@@ -133,3 +133,33 @@ export const formatCompactCurrency = (
 	return `${sign}${currency}${absAmount.toFixed(decimals)}`;
 };
 
+/**
+ * Format a quantity with compact display (integer only) and full detail on hover
+ * @param quantity - The quantity to format (can be null or undefined)
+ * @param decimals - Number of decimals for full detail (default: 8)
+ * @param hideAmount - If true, returns "•••" instead of the quantity
+ * @returns Object with display (compact) and full (detailed) values
+ */
+export const formatQuantityCompact = (
+	quantity: number | null | undefined,
+	decimals: number = 8,
+	hideAmount: boolean = false
+): { display: string; full: string; showInfo: boolean } => {
+	if (hideAmount) {
+		return { display: "•••", full: "•••", showInfo: false };
+	}
+	if (quantity === null || quantity === undefined || Number.isNaN(quantity)) {
+		return { display: "0", full: "0.00000000", showInfo: false };
+	}
+
+	const rounded = Math.round(quantity);
+	const full = quantity.toFixed(decimals);
+	const showInfo = quantity < 1 && quantity > 0;
+
+	if (showInfo) {
+		return { display: "<1", full, showInfo: true };
+	}
+
+	return { display: rounded.toLocaleString(), full, showInfo: false };
+};
+

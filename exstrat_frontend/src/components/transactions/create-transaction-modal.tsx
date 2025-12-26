@@ -278,8 +278,8 @@ export function CreateTransactionModal({
 								sx={{
 									mt: 0.5,
 									color: "error.main",
-								}}
-							>
+							}}
+						>
 								<XIcon fontSize="small" />
 							</Box>
 							<Box sx={{ flex: 1 }}>

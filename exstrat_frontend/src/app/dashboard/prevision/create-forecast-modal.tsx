@@ -153,8 +153,8 @@ export function CreateForecastModal({ onClose, onSuccess, open }: CreateForecast
 	const handleStrategyChange = (holdingId: string, strategyId: string) => {
 		setAppliedStrategies((prev) => {
 			const updated = {
-				...prev,
-				[holdingId]: strategyId,
+			...prev,
+			[holdingId]: strategyId,
 			};
 			// Check if at least one strategy is applied
 			const hasStrategy = Object.values(updated).some((sid) => sid !== "none");
@@ -439,10 +439,10 @@ export function CreateForecastModal({ onClose, onSuccess, open }: CreateForecast
 									<Stack spacing={2}>
 										<Stack direction="row" spacing={2} sx={{ alignItems: "center", justifyContent: "space-between" }}>
 											<Box>
-												<Typography variant="h6">Apply Strategies to Tokens</Typography>
-												<Typography color="text.secondary" variant="body2">
-													For each token in your wallet, choose a profit-taking strategy.
-												</Typography>
+										<Typography variant="h6">Apply Strategies to Tokens</Typography>
+										<Typography color="text.secondary" variant="body2">
+											For each token in your wallet, choose a profit-taking strategy.
+										</Typography>
 											</Box>
 											{fieldErrors.strategies && (
 												<Alert severity="error" sx={{ py: 0.5 }}>
