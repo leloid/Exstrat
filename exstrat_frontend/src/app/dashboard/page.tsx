@@ -12,17 +12,32 @@ import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
 import { useRouter } from "next/navigation";
 
+import Avatar from "@mui/material/Avatar";
+import Card from "@mui/material/Card";
+import CardContent from "@mui/material/CardContent";
+import CardHeader from "@mui/material/CardHeader";
+import Paper from "@mui/material/Paper";
+import Divider from "@mui/material/Divider";
+import Tooltip from "@mui/material/Tooltip";
+import { WalletIcon } from "@phosphor-icons/react/dist/ssr/Wallet";
+import { InfoIcon } from "@phosphor-icons/react/dist/ssr/Info";
+import { Cell, Pie, PieChart, Tooltip as RechartsTooltip } from "recharts";
+
 import { usePortfolio } from "@/contexts/PortfolioContext";
 import { QuickStats } from "@/components/dashboard/portfolio/quick-stats";
 import { GainsLossesChart } from "@/components/dashboard/portfolio/gains-losses-chart";
-import { TokenDistribution } from "@/components/dashboard/portfolio/token-distribution";
 import { TokensTable } from "@/components/dashboard/portfolio/tokens-table";
 import { TokenStrategySidebar } from "@/components/dashboard/portfolio/token-strategy-sidebar";
+import { NoSsr } from "@/components/core/no-ssr";
+import { formatCurrency, formatQuantity, formatQuantityCompactWithK, formatCompactCurrency } from "@/lib/format";
+import { getTokenLogoUrl } from "@/lib/utils";
+import { useSecretMode } from "@/hooks/use-secret-mode";
 import type { Holding } from "@/types/portfolio";
 import * as portfoliosApi from "@/lib/portfolios-api";
 
 export default function Page(): React.JSX.Element {
 	const router = useRouter();
+	const { secretMode } = useSecretMode();
 	const {
 		portfolios,
 		currentPortfolio,
@@ -158,6 +173,84 @@ export default function Page(): React.JSX.Element {
 	const displayHoldings = React.useMemo(() => {
 		return isGlobalView ? globalHoldings : holdings;
 	}, [isGlobalView, globalHoldings, holdings]);
+
+	// Calculate aggregated token data for chart (similar to investissements page)
+	const allTokenData = React.useMemo(() => {
+		const tokenMap = new Map<string, { symbol: string; name: string; quantity: number; value: number; color: string }>();
+
+		displayHoldings.forEach((holding) => {
+			const symbol = holding.token.symbol.toUpperCase();
+			// IMPORTANT: Utiliser currentValue du backend qui est calculé avec currentPrice (prix actuel du marché)
+			const currentValue = holding.currentValue || 0;
+
+			if (tokenMap.has(symbol)) {
+				const existing = tokenMap.get(symbol)!;
+				existing.quantity += holding.quantity;
+				existing.value += currentValue;
+			} else {
+				// Generate a color based on symbol using vibrant colors that work well in dark mode
+				const colors = [
+					"var(--mui-palette-primary-main)", // #047DD5 - Exstrat Blue
+					"var(--mui-palette-secondary-main)", // #F6851B - Exstrat Orange
+					"var(--mui-palette-success-main)", // Green
+					"var(--mui-palette-warning-main)", // Yellow/Orange
+					"var(--mui-palette-error-main)", // Red
+					"var(--mui-palette-info-main)", // Cyan/Blue
+					"#9C27B0", // Purple
+					"#E91E63", // Pink
+					"#00BCD4", // Cyan
+					"#4CAF50", // Green
+					"#FF9800", // Orange
+					"#2196F3", // Blue
+				];
+				const colorIndex = symbol.charCodeAt(0) % colors.length;
+
+				tokenMap.set(symbol, {
+					symbol,
+					name: holding.token.name,
+					quantity: holding.quantity,
+					value: currentValue,
+					color: colors[colorIndex],
+				});
+			}
+		});
+
+		// Convert to array and sort by value (descending)
+		return Array.from(tokenMap.values())
+			.sort((a, b) => b.value - a.value)
+			.map((item) => ({
+				name: item.symbol,
+				value: item.value,
+				color: item.color,
+				quantity: item.quantity,
+				tokenName: item.name,
+			}));
+	}, [displayHoldings]);
+
+	// Token data for chart (limited to top 10, with "Others" for the rest)
+	const aggregatedTokenData = React.useMemo(() => {
+		// Limit to top 10 for chart display, group the rest as "Others"
+		const MAX_TOKENS_FOR_CHART = 10;
+		if (allTokenData.length <= MAX_TOKENS_FOR_CHART) {
+			return allTokenData;
+		}
+
+		const topTokens = allTokenData.slice(0, MAX_TOKENS_FOR_CHART);
+		const othersValue = allTokenData.slice(MAX_TOKENS_FOR_CHART).reduce((sum, token) => sum + token.value, 0);
+		const othersQuantity = allTokenData.slice(MAX_TOKENS_FOR_CHART).reduce((sum, token) => sum + token.quantity, 0);
+
+		if (othersValue > 0) {
+			topTokens.push({
+				name: "Others",
+				value: othersValue,
+				color: "var(--mui-palette-text-secondary)",
+				quantity: othersQuantity,
+				tokenName: `+${allTokenData.length - MAX_TOKENS_FOR_CHART} more tokens`,
+			});
+		}
+
+		return topTokens;
+	}, [allTokenData]);
 
 	// Calculate portfolio statistics - MEMOIZED with optimized calculations
 	const portfolioStats = React.useMemo(() => {
@@ -307,7 +400,198 @@ export default function Page(): React.JSX.Element {
 								<GainsLossesChart holdings={displayHoldings} />
 							</Grid>
 							<Grid size={{ xs: 12, lg: 4 }}>
-								<TokenDistribution holdings={displayHoldings} />
+								{aggregatedTokenData.length > 0 ? (
+									<Card sx={{ height: "100%" }}>
+										<CardHeader
+											avatar={
+												<Avatar>
+													<WalletIcon fontSize="var(--Icon-fontSize)" />
+												</Avatar>
+											}
+											subheader="Balance across all your wallets"
+											title="Token Distribution"
+										/>
+										<CardContent>
+											<Stack spacing={3}>
+												{/* Centered Chart */}
+												<Box
+													sx={{
+														display: "flex",
+														justifyContent: "center",
+														alignItems: "center",
+														width: "100%",
+													}}
+												>
+													<NoSsr fallback={<Box sx={{ height: "200px", width: "200px" }} />}>
+														<PieChart height={200} margin={{ top: 0, right: 0, bottom: 0, left: 0 }} width={200}>
+															<Pie
+																animationDuration={300}
+																cx={100}
+																cy={100}
+																data={aggregatedTokenData}
+																dataKey="value"
+																innerRadius={70}
+																nameKey="name"
+																outerRadius={100}
+																strokeWidth={0}
+															>
+																{aggregatedTokenData.map(
+																	(entry): React.JSX.Element => (
+																		<Cell fill={entry.color} key={entry.name} />
+																	)
+																)}
+															</Pie>
+															<RechartsTooltip animationDuration={50} content={<TokenTooltipContent />} />
+														</PieChart>
+													</NoSsr>
+												</Box>
+												{/* Text Content */}
+												<Stack spacing={3}>
+													{!secretMode && (
+														<Stack spacing={1}>
+															<Typography color="text.secondary" variant="overline">
+																Total balance
+															</Typography>
+															<Typography variant="h4">
+																{formatCompactCurrency(
+																	allTokenData.reduce((sum, item) => sum + item.value, 0),
+																	"$",
+																	2
+																)}
+															</Typography>
+														</Stack>
+													)}
+													<Stack spacing={1}>
+														<Typography color="text.secondary" variant="overline">
+															Available tokens {allTokenData.length > 6 && `(showing top 6 of ${allTokenData.length})`}
+														</Typography>
+														<Stack component="ul" spacing={2} sx={{ listStyle: "none", m: 0, p: 0 }}>
+															{aggregatedTokenData.slice(0, 6).map((entry) => (
+																<Stack component="li" direction="row" key={entry.name} spacing={1} sx={{ alignItems: "center" }}>
+																	<Box sx={{ bgcolor: entry.color, borderRadius: "2px", height: "4px", width: "16px" }} />
+																	<Typography sx={{ flex: "1 1 auto" }} variant="subtitle2">
+																		{entry.name}
+																	</Typography>
+																	<Tooltip title={formatQuantity(entry.quantity, 8, secretMode)} arrow placement="top">
+																		<Stack direction="row" spacing={0.5} sx={{ alignItems: "center", justifyContent: "flex-end", minWidth: "80px" }}>
+																			{(() => {
+																				const { display, showInfo } = formatQuantityCompactWithK(entry.quantity, 8, secretMode);
+																				return (
+																					<>
+																						<Typography color="text.secondary" variant="body2" sx={{ textAlign: "right" }}>
+																							{display}
+																						</Typography>
+																						{showInfo && (
+																							<InfoIcon fontSize="var(--icon-fontSize-xs)" style={{ opacity: 0.6 }} />
+																						)}
+																					</>
+																				);
+																			})()}
+																		</Stack>
+																	</Tooltip>
+																	<Tooltip title={formatCurrency(entry.value, "$", 2, secretMode)} arrow placement="top">
+																		<Typography color="text.secondary" variant="body2" sx={{ minWidth: "90px", textAlign: "right", cursor: "help" }}>
+																			{formatCompactCurrency(entry.value, "$", 2, secretMode)}
+																		</Typography>
+																	</Tooltip>
+																</Stack>
+															))}
+															{allTokenData.length > 6 && (
+																<Stack
+																	component="li"
+																	direction="row"
+																	spacing={1}
+																	sx={{ alignItems: "center", opacity: 0.6 }}
+																>
+																	<Box
+																		sx={{
+																			bgcolor: "var(--mui-palette-text-secondary)",
+																			borderRadius: "2px",
+																			height: "4px",
+																			width: "16px",
+																		}}
+																	/>
+																	<Typography color="text.secondary" sx={{ flex: "1 1 auto" }} variant="subtitle2">
+																		+{allTokenData.length - 6} more tokens
+																	</Typography>
+																	<Tooltip
+																		title={formatQuantity(
+																			allTokenData
+																				.slice(6)
+																				.reduce((sum, token) => sum + token.quantity, 0),
+																			8,
+																			secretMode
+																		)}
+																		arrow
+																		placement="top"
+																	>
+																		<Stack direction="row" spacing={0.5} sx={{ alignItems: "center", justifyContent: "flex-end", minWidth: "80px" }}>
+																			{(() => {
+																				const { display, showInfo } = formatQuantityCompactWithK(
+																					allTokenData.slice(6).reduce((sum, token) => sum + token.quantity, 0),
+																					8,
+																					secretMode
+																				);
+																				return (
+																					<>
+																						<Typography color="text.secondary" variant="body2" sx={{ textAlign: "right" }}>
+																							{display}
+																						</Typography>
+																						{showInfo && (
+																							<InfoIcon fontSize="var(--icon-fontSize-xs)" style={{ opacity: 0.6 }} />
+																						)}
+																					</>
+																				);
+																			})()}
+																		</Stack>
+																	</Tooltip>
+																	<Tooltip
+																		title={formatCurrency(
+																			allTokenData.slice(6).reduce((sum, token) => sum + token.value, 0),
+																			"$",
+																			2,
+																			secretMode
+																		)}
+																		arrow
+																		placement="top"
+																	>
+																		<Typography color="text.secondary" variant="body2" sx={{ minWidth: "90px", textAlign: "right", cursor: "help" }}>
+																			{formatCompactCurrency(
+																				allTokenData.slice(6).reduce((sum, token) => sum + token.value, 0),
+																				"$",
+																				2,
+																				secretMode
+																			)}
+																		</Typography>
+																	</Tooltip>
+																</Stack>
+															)}
+														</Stack>
+													</Stack>
+												</Stack>
+											</Stack>
+										</CardContent>
+									</Card>
+								) : (
+									<Card>
+										<CardHeader
+											avatar={
+												<Avatar>
+													<WalletIcon fontSize="var(--Icon-fontSize)" />
+												</Avatar>
+											}
+											subheader="Token distribution across your portfolio"
+											title="Token Distribution"
+										/>
+										<CardContent>
+											<Box sx={{ py: 4, textAlign: "center" }}>
+												<Typography color="text.secondary" variant="body2">
+													No tokens to display
+												</Typography>
+											</Box>
+										</CardContent>
+									</Card>
+								)}
 							</Grid>
 						</Grid>
 
@@ -329,5 +613,60 @@ export default function Page(): React.JSX.Element {
 				/>
 			</Stack>
 		</Box>
+	);
+}
+
+// Token Tooltip Component
+interface TokenTooltipContentProps {
+	active?: boolean;
+	payload?: { name: string; payload: { fill: string; quantity: number; tokenName: string }; value: number }[];
+	label?: string;
+}
+
+function TokenTooltipContent({ active, payload }: TokenTooltipContentProps): React.JSX.Element | null {
+	const { secretMode } = useSecretMode();
+	
+	if (!active || !payload || payload.length === 0) {
+		return null;
+	}
+
+	const entry = payload[0];
+	const data = entry.payload;
+
+	return (
+		<Paper sx={{ border: "1px solid var(--mui-palette-divider)", boxShadow: "var(--mui-shadows-16)", p: 1.5 }}>
+			<Stack spacing={1.5}>
+				<Stack direction="row" spacing={2} sx={{ alignItems: "center" }}>
+					<Box sx={{ bgcolor: entry.payload.fill, borderRadius: "2px", height: "8px", width: "8px" }} />
+					<Typography sx={{ whiteSpace: "nowrap" }} variant="subtitle2">
+						{entry.name}
+					</Typography>
+				</Stack>
+				{data.tokenName && (
+					<Typography color="text.secondary" variant="caption">
+						{data.tokenName}
+					</Typography>
+				)}
+				<Divider />
+				<Stack spacing={1}>
+					<Stack direction="row" spacing={2} sx={{ justifyContent: "space-between" }}>
+						<Typography color="text.secondary" variant="body2">
+							Quantity:
+						</Typography>
+						<Typography variant="body2">
+							{formatQuantity(data.quantity, 8, secretMode)} {entry.name}
+						</Typography>
+					</Stack>
+					<Stack direction="row" spacing={2} sx={{ justifyContent: "space-between" }}>
+						<Typography color="text.secondary" variant="body2">
+							Value:
+						</Typography>
+						<Typography variant="body2" sx={{ fontWeight: 600 }}>
+							{formatCompactCurrency(entry.value, "$", 2, secretMode)}
+						</Typography>
+					</Stack>
+				</Stack>
+			</Stack>
+		</Paper>
 	);
 }

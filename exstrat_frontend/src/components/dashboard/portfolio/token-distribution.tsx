@@ -10,11 +10,13 @@ import CardHeader from "@mui/material/CardHeader";
 import Divider from "@mui/material/Divider";
 import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
+import Tooltip from "@mui/material/Tooltip";
 import { WalletIcon } from "@phosphor-icons/react/dist/ssr/Wallet";
-import { Cell, Pie, PieChart, Tooltip } from "recharts";
+import { InfoIcon } from "@phosphor-icons/react/dist/ssr/Info";
+import { Cell, Pie, PieChart, Tooltip as RechartsTooltip } from "recharts";
 
 import { NoSsr } from "@/components/core/no-ssr";
-import { formatCurrency, formatQuantity } from "@/lib/format";
+import { formatCurrency, formatQuantity, formatQuantityCompactWithK, formatCompactCurrency } from "@/lib/format";
 import { getTokenLogoUrl } from "@/lib/utils";
 import type { Holding } from "@/types/portfolio";
 import { useSecretMode } from "@/hooks/use-secret-mode";
@@ -28,13 +30,17 @@ export function TokenDistribution({ holdings }: TokenDistributionProps): React.J
 	const chartSize = 200;
 	const chartThickness = 30;
 
+	// Calculate total value from all holdings (before grouping)
+	// IMPORTANT: Utiliser currentValue du backend qui est calculé avec currentPrice (prix actuel du marché)
+	// currentValue = quantity * currentPrice (ou quantity * averagePrice si currentPrice n'est pas disponible)
+	const totalValue = React.useMemo(() => {
+		if (!holdings || holdings.length === 0) return 0;
+		return holdings.reduce((sum, h) => sum + (h.currentValue || 0), 0);
+	}, [holdings]);
+
 	// Calculate distribution
 	const distribution = React.useMemo(() => {
 		if (!holdings || holdings.length === 0) return [];
-
-		// IMPORTANT: Utiliser currentValue du backend qui est calculé avec currentPrice (prix actuel du marché)
-		// currentValue = quantity * currentPrice (ou quantity * averagePrice si currentPrice n'est pas disponible)
-		const totalValue = holdings.reduce((sum, h) => sum + (h.currentValue || 0), 0);
 
 		if (totalValue === 0) return [];
 
@@ -93,10 +99,18 @@ export function TokenDistribution({ holdings }: TokenDistributionProps): React.J
 			});
 		}
 
-		return sorted;
-	}, [holdings]);
+		// Verify that the sum of distribution equals totalValue (for debugging)
+		const distributionSum = sorted.reduce((sum, token) => sum + token.value, 0);
+		if (Math.abs(distributionSum - totalValue) > 0.01) {
+			console.warn("Token Distribution: Sum mismatch", {
+				totalValue,
+				distributionSum,
+				diff: totalValue - distributionSum,
+			});
+		}
 
-	const total = distribution.reduce((acc, curr) => acc + curr.value, 0);
+		return sorted;
+	}, [holdings, totalValue]);
 
 	if (distribution.length === 0) {
 		return (
@@ -153,7 +167,7 @@ export function TokenDistribution({ holdings }: TokenDistributionProps): React.J
 									)
 								)}
 							</Pie>
-							<Tooltip animationDuration={50} content={<TooltipContent />} />
+							<RechartsTooltip animationDuration={50} content={<TooltipContent />} />
 						</PieChart>
 					</NoSsr>
 					<Stack spacing={3} sx={{ flex: "1 1 auto" }}>
@@ -162,7 +176,7 @@ export function TokenDistribution({ holdings }: TokenDistributionProps): React.J
 								<Typography color="text.secondary" variant="overline">
 									Total balance
 								</Typography>
-								<Typography variant="h4">{formatCurrency(total, "$", 2)}</Typography>
+								<Typography variant="h4">{formatCurrency(totalValue, "$", 2)}</Typography>
 							</Stack>
 						)}
 						<Stack spacing={1}>
@@ -170,8 +184,8 @@ export function TokenDistribution({ holdings }: TokenDistributionProps): React.J
 								Token allocation
 							</Typography>
 							<Stack component="ul" spacing={2} sx={{ listStyle: "none", m: 0, p: 0 }}>
-								{distribution.map((entry) => {
-									const percentage = total > 0 ? (entry.value / total) * 100 : 0;
+							{distribution.map((entry) => {
+								const percentage = totalValue > 0 ? (entry.value / totalValue) * 100 : 0;
 									return (
 										<Stack component="li" direction="row" key={entry.symbol} spacing={1} sx={{ alignItems: "center" }}>
 											<Box sx={{ bgcolor: entry.color, borderRadius: "2px", height: "4px", width: "16px" }} />
@@ -191,12 +205,28 @@ export function TokenDistribution({ holdings }: TokenDistributionProps): React.J
 											<Typography color="text.secondary" variant="body2">
 												{percentage.toFixed(1)}%
 											</Typography>
-											<Typography color="text.secondary" variant="body2" sx={{ minWidth: "80px", textAlign: "right" }}>
-												{formatQuantity(entry.quantity, 8, secretMode)}
-											</Typography>
-											<Typography color="text.secondary" variant="body2" sx={{ minWidth: "90px", textAlign: "right" }}>
-												{formatCurrency(entry.value, "$", 2, secretMode)}
-											</Typography>
+											<Tooltip title={formatQuantity(entry.quantity, 8, secretMode)} arrow placement="top">
+												<Stack direction="row" spacing={0.5} sx={{ alignItems: "center", justifyContent: "flex-end", minWidth: "80px" }}>
+													{(() => {
+														const { display, showInfo } = formatQuantityCompactWithK(entry.quantity, 8, secretMode);
+														return (
+															<>
+																<Typography color="text.secondary" variant="body2" sx={{ textAlign: "right" }}>
+																	{display}
+																</Typography>
+																{showInfo && (
+																	<InfoIcon fontSize="var(--icon-fontSize-xs)" style={{ opacity: 0.6 }} />
+																)}
+															</>
+														);
+													})()}
+												</Stack>
+											</Tooltip>
+											<Tooltip title={formatCurrency(entry.value, "$", 2, secretMode)} arrow placement="top">
+												<Typography color="text.secondary" variant="body2" sx={{ minWidth: "90px", textAlign: "right", cursor: "help" }}>
+													{formatCompactCurrency(entry.value, "$", 2, secretMode)}
+												</Typography>
+											</Tooltip>
 										</Stack>
 									);
 								})}
@@ -243,7 +273,7 @@ function TooltipContent({ active, payload }: TooltipContentProps): React.JSX.Ele
 					</Typography>
 				</Stack>
 				<Typography color="text.secondary" variant="body2">
-					{formatCurrency(entry.value, "$", 2, secretMode)}
+					{formatCompactCurrency(entry.value, "$", 2, secretMode)}
 				</Typography>
 			</Stack>
 		</Box>

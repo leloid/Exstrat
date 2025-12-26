@@ -15,13 +15,15 @@ import TableHead from "@mui/material/TableHead";
 import TableRow from "@mui/material/TableRow";
 import TableSortLabel from "@mui/material/TableSortLabel";
 import Typography from "@mui/material/Typography";
+import Tooltip from "@mui/material/Tooltip";
 import { useColorScheme } from "@mui/material/styles";
 import { ArrowDownIcon } from "@phosphor-icons/react/dist/ssr/ArrowDown";
 import { ArrowUpIcon } from "@phosphor-icons/react/dist/ssr/ArrowUp";
 import { CaretDownIcon } from "@phosphor-icons/react/dist/ssr/CaretDown";
 import { CaretUpIcon } from "@phosphor-icons/react/dist/ssr/CaretUp";
+import { InfoIcon } from "@phosphor-icons/react/dist/ssr/Info";
 
-import { formatCurrency, formatPercentage, formatQuantity } from "@/lib/format";
+import { formatCurrency, formatPercentage, formatQuantity, formatQuantityCompact } from "@/lib/format";
 import { getTokenLogoUrl } from "@/lib/utils";
 import type { Holding } from "@/types/portfolio";
 import * as configurationApi from "@/lib/configuration-api";
@@ -408,36 +410,88 @@ export function TokensTable({ holdings, portfolioId, onTokenClick }: TokensTable
 											</Stack>
 										</TableCell>
 										<TableCell align="right">
-											<Typography variant="body2" sx={{ fontWeight: 500 }}>
-												{formatQuantity(holding.quantity, 8, secretMode)}
-											</Typography>
+											{(() => {
+												const { display, full, showInfo } = formatQuantityCompact(holding.quantity, 8, secretMode);
+												return (
+													<Tooltip title={full} arrow placement="top">
+														<Stack direction="row" spacing={0.5} sx={{ alignItems: "center", justifyContent: "flex-end" }}>
+															<Typography variant="body2" sx={{ fontWeight: 500 }}>
+																{display}
+															</Typography>
+															{showInfo && (
+																<InfoIcon fontSize="var(--icon-fontSize-xs)" style={{ opacity: 0.6 }} />
+															)}
+														</Stack>
+													</Tooltip>
+												);
+											})()}
 										</TableCell>
 										<TableCell align="right">
-											<Typography variant="body2" sx={{ fontWeight: 600 }}>
-												{formatCurrency(holding.investedAmount, "$", 0, secretMode)}
-											</Typography>
+											{(() => {
+												const amount = holding.investedAmount;
+												const display = amount < 1 && amount > 0 ? "<1" : Math.round(amount).toLocaleString();
+												const full = formatCurrency(amount, "$", 0, secretMode);
+												return (
+													<Tooltip title={full} arrow placement="top">
+														<Stack direction="row" spacing={0.5} sx={{ alignItems: "center", justifyContent: "flex-end" }}>
+															<Typography variant="body2" sx={{ fontWeight: 600 }}>
+																${display}
+															</Typography>
+															{amount < 1 && amount > 0 && (
+																<InfoIcon fontSize="var(--icon-fontSize-xs)" style={{ opacity: 0.6 }} />
+															)}
+														</Stack>
+													</Tooltip>
+												);
+											})()}
 										</TableCell>
 										<TableCell align="right">
-											<Typography variant="body2" sx={{ fontWeight: 600 }}>
-												{formatCurrency(holding.currentValue || 0, "$", 0, secretMode)}
-											</Typography>
+											{(() => {
+												const value = holding.currentValue || 0;
+												const display = value < 1 && value > 0 ? "<1" : Math.round(value).toLocaleString();
+												const full = formatCurrency(value, "$", 0, secretMode);
+												return (
+													<Tooltip title={full} arrow placement="top">
+														<Stack direction="row" spacing={0.5} sx={{ alignItems: "center", justifyContent: "flex-end" }}>
+															<Typography variant="body2" sx={{ fontWeight: 600 }}>
+																${display}
+															</Typography>
+															{value < 1 && value > 0 && (
+																<InfoIcon fontSize="var(--icon-fontSize-xs)" style={{ opacity: 0.6 }} />
+															)}
+														</Stack>
+													</Tooltip>
+												);
+											})()}
 										</TableCell>
 										<TableCell align="right">
-											<Stack direction="row" spacing={0.5} sx={{ alignItems: "center", justifyContent: "flex-end" }}>
-												{isPositive ? (
-													<Box sx={{ color: "success.main" }}>
-														<ArrowUpIcon size={16} />
-													</Box>
-												) : (
-													<Box sx={{ color: "error.main" }}>
-														<ArrowDownIcon size={16} />
-													</Box>
-												)}
-												<Typography variant="body2" sx={{ fontWeight: 600, color: isPositive ? "success.main" : "error.main" }}>
-													{isPositive ? "+" : ""}
-													{formatCurrency(holding.pnl || 0, "$", 0, secretMode)}
-												</Typography>
-											</Stack>
+											{(() => {
+												const pnl = holding.pnl || 0;
+												const absPnl = Math.abs(pnl);
+												const display = absPnl < 1 && absPnl > 0 ? "<1" : Math.round(absPnl).toLocaleString();
+												const full = formatCurrency(pnl, "$", 0, secretMode);
+												return (
+													<Tooltip title={full} arrow placement="top">
+														<Stack direction="row" spacing={0.5} sx={{ alignItems: "center", justifyContent: "flex-end" }}>
+															{isPositive ? (
+																<Box sx={{ color: "success.main" }}>
+																	<ArrowUpIcon size={16} />
+																</Box>
+															) : (
+																<Box sx={{ color: "error.main" }}>
+																	<ArrowDownIcon size={16} />
+																</Box>
+															)}
+															<Typography variant="body2" sx={{ fontWeight: 600, color: isPositive ? "success.main" : "error.main" }}>
+																{isPositive ? "+" : "-"}${display}
+															</Typography>
+															{absPnl < 1 && absPnl > 0 && (
+																<InfoIcon fontSize="var(--icon-fontSize-xs)" style={{ opacity: 0.6 }} />
+															)}
+														</Stack>
+													</Tooltip>
+												);
+											})()}
 										</TableCell>
 										<TableCell align="right">
 											<Chip

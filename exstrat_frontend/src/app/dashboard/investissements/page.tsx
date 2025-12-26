@@ -59,7 +59,7 @@ import MuiTooltip from "@mui/material/Tooltip";
 import { usePortfolio } from "@/contexts/PortfolioContext";
 import * as portfoliosApi from "@/lib/portfolios-api";
 import { transactionsApi } from "@/lib/transactions-api";
-import { formatCurrency, formatPercentage, formatCompactCurrency, formatQuantity, formatQuantityCompact } from "@/lib/format";
+import { formatCurrency, formatPercentage, formatCompactCurrency, formatQuantity, formatQuantityCompact, formatQuantityCompactWithK } from "@/lib/format";
 import { useSecretMode } from "@/hooks/use-secret-mode";
 import { TokenSearch } from "@/components/transactions/token-search";
 import { CreateTransactionModal } from "@/components/transactions/create-transaction-modal";
@@ -160,6 +160,11 @@ export default function Page(): React.JSX.Element {
 	const [showDeleteMultipleTransactionsModal, setShowDeleteMultipleTransactionsModal] = React.useState(false);
 	const [showWalletDetailsModal, setShowWalletDetailsModal] = React.useState(false);
 	const [selectedWalletId, setSelectedWalletId] = React.useState<string | null>(null);
+	
+	// Wallet Transactions pagination and search states (per wallet)
+	const [walletTransactionsSearch, setWalletTransactionsSearch] = React.useState<Record<string, string>>({});
+	const [walletTransactionsPage, setWalletTransactionsPage] = React.useState<Record<string, number>>({});
+	const [walletTransactionsRowsPerPage, setWalletTransactionsRowsPerPage] = React.useState<Record<string, number>>({});
 	const [portfolioFormData, setPortfolioFormData] = React.useState<CreatePortfolioDto>({
 		name: "",
 		description: "",
@@ -235,20 +240,22 @@ export default function Page(): React.JSX.Element {
 					existing.quantity += holding.quantity;
 					existing.value += currentValue;
 				} else {
-					// Generate a color based on symbol using Exstrat palette
-					const colors = [
-						"var(--mui-palette-primary-main)", // #047DD5 - Exstrat Blue
-						"var(--mui-palette-secondary-main)", // #F6851B - Exstrat Orange
-						"var(--mui-palette-success-main)",
-						"var(--mui-palette-warning-main)",
-						"var(--mui-palette-error-main)",
-						"var(--mui-palette-info-main)",
-						"#25292E", // Exstrat Black
-						"#1665C0", // Exstrat Blue Pressed
-						"#3C3D3E", // Exstrat Black Pressed
-						"#047DD6", // Exstrat Blue Hover
-					];
-					const colorIndex = symbol.charCodeAt(0) % colors.length;
+				// Generate a color based on symbol using vibrant colors that work well in dark mode
+				const colors = [
+					"var(--mui-palette-primary-main)", // #047DD5 - Exstrat Blue
+					"var(--mui-palette-secondary-main)", // #F6851B - Exstrat Orange
+					"var(--mui-palette-success-main)", // Green
+					"var(--mui-palette-warning-main)", // Yellow/Orange
+					"var(--mui-palette-error-main)", // Red
+					"var(--mui-palette-info-main)", // Cyan/Blue
+					"#9C27B0", // Purple
+					"#E91E63", // Pink
+					"#00BCD4", // Cyan
+					"#4CAF50", // Green
+					"#FF9800", // Orange
+					"#2196F3", // Blue
+				];
+				const colorIndex = symbol.charCodeAt(0) % colors.length;
 
 					tokenMap.set(symbol, {
 						symbol,
@@ -1235,12 +1242,28 @@ export default function Page(): React.JSX.Element {
 															<Typography sx={{ flex: "1 1 auto" }} variant="subtitle2">
 																{entry.name}
 															</Typography>
-															<Typography color="text.secondary" variant="body2" sx={{ minWidth: "80px", textAlign: "right" }}>
-																{formatQuantity(entry.quantity, 8, secretMode)}
-															</Typography>
-															<Typography color="text.secondary" variant="body2" sx={{ minWidth: "90px", textAlign: "right" }}>
-																{formatCompactCurrency(entry.value, "$", 2, secretMode)}
-															</Typography>
+															<MuiTooltip title={formatQuantity(entry.quantity, 8, secretMode)} arrow placement="top">
+																<Stack direction="row" spacing={0.5} sx={{ alignItems: "center", justifyContent: "flex-end", minWidth: "80px" }}>
+																	{(() => {
+																		const { display, showInfo } = formatQuantityCompactWithK(entry.quantity, 8, secretMode);
+																		return (
+																			<>
+																				<Typography color="text.secondary" variant="body2" sx={{ textAlign: "right" }}>
+																					{display}
+																				</Typography>
+																				{showInfo && (
+																					<InfoIcon fontSize="var(--icon-fontSize-xs)" style={{ opacity: 0.6 }} />
+																				)}
+																			</>
+																		);
+																	})()}
+																</Stack>
+															</MuiTooltip>
+															<MuiTooltip title={formatCurrency(entry.value, "$", 2, secretMode)} arrow placement="top">
+																<Typography color="text.secondary" variant="body2" sx={{ minWidth: "90px", textAlign: "right", cursor: "help" }}>
+																	{formatCompactCurrency(entry.value, "$", 2, secretMode)}
+																</Typography>
+															</MuiTooltip>
 														</Stack>
 													))}
 													{allTokenData.length > 6 && (
@@ -1259,26 +1282,58 @@ export default function Page(): React.JSX.Element {
 																}}
 															/>
 															<Typography color="text.secondary" sx={{ flex: "1 1 auto" }} variant="subtitle2">
-																+{allTokenData.length - 4} more tokens
+																+{allTokenData.length - 6} more tokens
 															</Typography>
-															<Typography color="text.secondary" variant="body2" sx={{ minWidth: "80px", textAlign: "right" }}>
-																{formatQuantity(
+															<MuiTooltip
+																title={formatQuantity(
 																	allTokenData
-																	.slice(4)
+																		.slice(6)
 																		.reduce((sum, token) => sum + token.quantity, 0),
 																	8,
 																	secretMode
 																)}
-															</Typography>
-															<Typography color="text.secondary" variant="body2" sx={{ minWidth: "90px", textAlign: "right" }}>
-																{formatCompactCurrency(
-																	allTokenData
-																		.slice(4)
-																		.reduce((sum, token) => sum + token.value, 0),
+																arrow
+																placement="top"
+															>
+																<Stack direction="row" spacing={0.5} sx={{ alignItems: "center", justifyContent: "flex-end", minWidth: "80px" }}>
+																	{(() => {
+																		const { display, showInfo } = formatQuantityCompactWithK(
+																			allTokenData.slice(6).reduce((sum, token) => sum + token.quantity, 0),
+																			8,
+																			secretMode
+																		);
+																		return (
+																			<>
+																				<Typography color="text.secondary" variant="body2" sx={{ textAlign: "right" }}>
+																					{display}
+																				</Typography>
+																				{showInfo && (
+																					<InfoIcon fontSize="var(--icon-fontSize-xs)" style={{ opacity: 0.6 }} />
+																				)}
+																			</>
+																		);
+																	})()}
+																</Stack>
+															</MuiTooltip>
+															<MuiTooltip
+																title={formatCurrency(
+																	allTokenData.slice(6).reduce((sum, token) => sum + token.value, 0),
 																	"$",
-																	2
+																	2,
+																	secretMode
 																)}
-															</Typography>
+																arrow
+																placement="top"
+															>
+																<Typography color="text.secondary" variant="body2" sx={{ minWidth: "90px", textAlign: "right", cursor: "help" }}>
+																	{formatCompactCurrency(
+																		allTokenData.slice(6).reduce((sum, token) => sum + token.value, 0),
+																		"$",
+																		2,
+																		secretMode
+																	)}
+																</Typography>
+															</MuiTooltip>
 														</Stack>
 													)}
 												</Stack>
@@ -1606,31 +1661,80 @@ export default function Page(): React.JSX.Element {
 												>
 													<Collapse in={isExpanded} timeout="auto" unmountOnExit>
 														<Box sx={{ py: 3 }}>
-															<Typography variant="h6" sx={{ mb: 2 }}>
-																Wallet Transactions
-															</Typography>
-															{walletTransactions.length === 0 ? (
-																<Typography color="text.secondary" variant="body2">
-																	No transactions in this wallet yet.
+															<Stack direction="row" spacing={2} sx={{ alignItems: "center", justifyContent: "space-between", mb: 2 }}>
+																<Typography variant="h6">
+																	Wallet Transactions
 																</Typography>
-															) : (
-																<Table size="small">
-																	<TableHead>
-																		<TableRow>
-																			<TableCell sx={{ fontWeight: 600 }}>Date</TableCell>
-																			<TableCell sx={{ fontWeight: 600 }}>Token</TableCell>
-																			<TableCell align="right" sx={{ fontWeight: 600 }}>Type</TableCell>
-																			<TableCell align="right" sx={{ fontWeight: 600 }}>Quantity</TableCell>
-																			{!secretMode && (
-																				<>
-																			<TableCell align="right" sx={{ fontWeight: 600 }}>Price</TableCell>
-																			<TableCell align="right" sx={{ fontWeight: 600 }}>Amount</TableCell>
-																				</>
-																			)}
-																		</TableRow>
-																	</TableHead>
-																	<TableBody>
-																		{walletTransactions.map((transaction) => (
+																<TextField
+																	placeholder="Search transactions..."
+																	size="small"
+																	value={walletTransactionsSearch[portfolio.id] || ""}
+																	onChange={(e) => {
+																		setWalletTransactionsSearch((prev) => ({
+																			...prev,
+																			[portfolio.id]: e.target.value,
+																		}));
+																		// Reset to first page when searching
+																		setWalletTransactionsPage((prev) => ({
+																			...prev,
+																			[portfolio.id]: 0,
+																		}));
+																	}}
+																	InputProps={{
+																		startAdornment: (
+																			<InputAdornment position="start">
+																				<MagnifyingGlassIcon fontSize="var(--icon-fontSize-sm)" />
+																			</InputAdornment>
+																		),
+																	}}
+																	sx={{ width: 250 }}
+																/>
+															</Stack>
+															{(() => {
+																const searchQuery = walletTransactionsSearch[portfolio.id] || "";
+																const filtered = searchQuery
+																	? walletTransactions.filter(
+																			(tx) =>
+																				tx.symbol.toLowerCase().includes(searchQuery.toLowerCase()) ||
+																				tx.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+																				tx.type.toLowerCase().includes(searchQuery.toLowerCase())
+																		)
+																	: walletTransactions;
+																
+																const page = walletTransactionsPage[portfolio.id] || 0;
+																const rowsPerPage = walletTransactionsRowsPerPage[portfolio.id] || 5;
+																const start = page * rowsPerPage;
+																const paginated = filtered.slice(start, start + rowsPerPage);
+																
+																if (filtered.length === 0) {
+																	return (
+																		<Typography color="text.secondary" variant="body2">
+																			{searchQuery
+																				? "No transactions found matching your search."
+																				: "No transactions in this wallet yet."}
+																		</Typography>
+																	);
+																}
+																
+																return (
+																	<>
+																		<Table size="small">
+																			<TableHead>
+																				<TableRow>
+																					<TableCell sx={{ fontWeight: 600 }}>Date</TableCell>
+																					<TableCell sx={{ fontWeight: 600 }}>Token</TableCell>
+																					<TableCell align="right" sx={{ fontWeight: 600 }}>Type</TableCell>
+																					<TableCell align="right" sx={{ fontWeight: 600 }}>Quantity</TableCell>
+																					{!secretMode && (
+																						<>
+																					<TableCell align="right" sx={{ fontWeight: 600 }}>Price</TableCell>
+																					<TableCell align="right" sx={{ fontWeight: 600 }}>Amount</TableCell>
+																						</>
+																					)}
+																				</TableRow>
+																			</TableHead>
+																			<TableBody>
+																				{paginated.map((transaction) => (
 																			<TableRow key={transaction.id}>
 																				<TableCell>
 																					<Typography variant="body2">
@@ -1713,10 +1817,37 @@ export default function Page(): React.JSX.Element {
 																					</>
 																				)}
 																			</TableRow>
-																		))}
-																	</TableBody>
-																</Table>
-															)}
+																				))}
+																			</TableBody>
+																		</Table>
+																		<TablePagination
+																			component="div"
+																			count={filtered.length}
+																			page={page}
+																			onPageChange={(_, newPage) => {
+																				setWalletTransactionsPage((prev) => ({
+																					...prev,
+																					[portfolio.id]: newPage,
+																				}));
+																			}}
+																			rowsPerPage={rowsPerPage}
+																			onRowsPerPageChange={(e) => {
+																				const newRowsPerPage = parseInt(e.target.value, 10);
+																				setWalletTransactionsRowsPerPage((prev) => ({
+																					...prev,
+																					[portfolio.id]: newRowsPerPage,
+																				}));
+																				setWalletTransactionsPage((prev) => ({
+																					...prev,
+																					[portfolio.id]: 0,
+																				}));
+																			}}
+																			rowsPerPageOptions={[5, 10, 15, 20]}
+																			labelRowsPerPage="Rows per page:"
+																		/>
+																	</>
+																);
+															})()}
 														</Box>
 													</Collapse>
 												</TableCell>

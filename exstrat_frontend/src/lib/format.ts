@@ -163,3 +163,47 @@ export const formatQuantityCompact = (
 	return { display: rounded.toLocaleString(), full, showInfo: false };
 };
 
+/**
+ * Format a quantity with compact display using K notation for large values
+ * @param quantity - The quantity to format (can be null or undefined)
+ * @param decimals - Number of decimals for full detail (default: 8)
+ * @param hideAmount - If true, returns "•••" instead of the quantity
+ * @returns Object with display (compact with K notation) and full (detailed) values
+ */
+export const formatQuantityCompactWithK = (
+	quantity: number | null | undefined,
+	decimals: number = 8,
+	hideAmount: boolean = false
+): { display: string; full: string; showInfo: boolean } => {
+	if (hideAmount) {
+		return { display: "•••", full: "•••", showInfo: false };
+	}
+	if (quantity === null || quantity === undefined || Number.isNaN(quantity)) {
+		return { display: "0", full: "0.00000000", showInfo: false };
+	}
+
+	const absQuantity = Math.abs(quantity);
+	const full = quantity.toFixed(decimals);
+	const showInfo = quantity < 1 && quantity > 0;
+
+	if (showInfo) {
+		return { display: "<1", full, showInfo: true };
+	}
+
+	// For quantities >= 1 million, use "M" notation
+	if (absQuantity >= 1_000_000) {
+		const millions = absQuantity / 1_000_000;
+		return { display: `${millions.toFixed(2)}M`, full, showInfo: false };
+	}
+
+	// For quantities >= 1,000, use "K" notation
+	if (absQuantity >= 1000) {
+		const thousands = absQuantity / 1000;
+		return { display: `${thousands.toFixed(2)}K`, full, showInfo: false };
+	}
+
+	// For quantities < 1,000, display rounded to unit
+	const rounded = Math.round(quantity);
+	return { display: rounded.toLocaleString(), full, showInfo: false };
+};
+
