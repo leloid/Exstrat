@@ -236,7 +236,7 @@ export function EditStrategyModal({ onClose, onSuccess, open, strategy }: EditSt
 	};
 
 	if (!strategy) {
-		return null;
+		return <></>;
 	}
 
 	const qty = parseFloat(strategyQuantity) || 0;
