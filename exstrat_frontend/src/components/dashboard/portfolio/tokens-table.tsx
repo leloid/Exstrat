@@ -448,10 +448,17 @@ export function TokensTable({ holdings, portfolioId, onTokenClick }: TokensTable
 										<TableCell align="right">
 											{(() => {
 												const value = holding.currentValue || 0;
+												const formatted = formatCurrency(value, "$", 0, secretMode);
+												if (secretMode) {
+													return (
+														<Typography variant="body2" sx={{ fontWeight: 600 }}>
+															{formatted}
+														</Typography>
+													);
+												}
 												const display = value < 1 && value > 0 ? "<1" : Math.round(value).toLocaleString();
-												const full = formatCurrency(value, "$", 0, secretMode);
 												return (
-													<Tooltip title={full} arrow placement="top">
+													<Tooltip title={formatted} arrow placement="top">
 														<Stack direction="row" spacing={0.5} sx={{ alignItems: "center", justifyContent: "flex-end" }}>
 															<Typography variant="body2" sx={{ fontWeight: 600 }}>
 																${display}

@@ -568,23 +568,13 @@ export function TokenStrategySidebar({
 									<Typography variant="overline" sx={{ fontWeight: 600, display: "block" }}>
 										{holding.token.symbol} Price Evolution
 									</Typography>
-									<Stack direction="row" spacing={2}>
-										<Stack spacing={0.25} sx={{ alignItems: "flex-end" }}>
-											<Typography variant="caption" color="text.secondary" sx={{ fontSize: "0.65rem" }}>
-												Current
-											</Typography>
-											<Typography variant="body2" sx={{ fontWeight: 600, color: "primary.main" }}>
-												{formatCurrency(currentPrice, "$", 2)}
-											</Typography>
-										</Stack>
-										<Stack spacing={0.25} sx={{ alignItems: "flex-end" }}>
-											<Typography variant="caption" color="text.secondary" sx={{ fontSize: "0.65rem" }}>
-												Average
-											</Typography>
-											<Typography variant="body2" sx={{ fontWeight: 600, color: "text.secondary" }}>
-												{formatCurrency(holding.averagePrice, "$", 2)}
-											</Typography>
-										</Stack>
+									<Stack spacing={0.25} sx={{ alignItems: "flex-end" }}>
+										<Typography variant="caption" color="text.secondary" sx={{ fontSize: "0.65rem" }}>
+											Current
+										</Typography>
+										<Typography variant="body2" sx={{ fontWeight: 600, color: "primary.main" }}>
+											{formatCurrency(currentPrice, "$", 2)}
+										</Typography>
 									</Stack>
 								</Stack>
 								<Box sx={{ height: 240, mb: 2 }}>
@@ -670,14 +660,6 @@ export function TokenStrategySidebar({
 														/>
 													);
 												})}
-												{/* Average price reference line */}
-												<ReferenceLine
-													y={holding.averagePrice}
-													stroke="var(--mui-palette-text-secondary)"
-													strokeWidth={1}
-													strokeDasharray="3 3"
-													opacity={0.5}
-												/>
 												<Tooltip 
 													content={<CustomTooltip />}
 													cursor={{ stroke: "var(--mui-palette-primary-main)", strokeWidth: 1, strokeDasharray: "5 5", opacity: 0.5 }}
