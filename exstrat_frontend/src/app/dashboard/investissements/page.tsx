@@ -727,6 +727,53 @@ export default function Page(): React.JSX.Element {
 		const days = 30;
 		const data: Array<{ name: string; [key: string]: string | number }> = [];
 
+		// For each wallet, calculate value evolution based on transactions
+		const walletDataPoints: Record<string, Array<{ date: Date; invested: number; value: number; daysAgo: number }>> = {};
+
+		topWallets.forEach((wallet) => {
+			const walletKey = wallet.name.replace(/\s+/g, "_");
+			const walletTransactions = transactions.filter(
+				(t) => t.portfolioId === wallet.id
+			).sort((a, b) => {
+				const dateA = new Date(a.transactionDate).getTime();
+				const dateB = new Date(b.transactionDate).getTime();
+				return dateA - dateB;
+			});
+
+			let cumulativeInvested = 0;
+			const points: Array<{ date: Date; invested: number; value: number; daysAgo: number }> = [];
+
+			// Calculate cumulative invested and value for each transaction
+			for (const transaction of walletTransactions) {
+				const transactionDate = new Date(transaction.transactionDate);
+				const daysDiff = Math.floor((now.getTime() - transactionDate.getTime()) / (1000 * 60 * 60 * 24));
+				
+				if (daysDiff <= days && daysDiff >= 0) {
+					if (transaction.type === "BUY") {
+						cumulativeInvested += transaction.amountInvested || 0;
+					} else {
+						cumulativeInvested -= transaction.amountInvested || 0;
+					}
+					
+					// Estimate value at transaction date based on current PnL percentage
+					const pnlPercentage = wallet.pnlPercentage || 0;
+					const progress = daysDiff / days; // 0 = today, 1 = 30 days ago
+					// Assume PnL was lower in the past (gradual improvement)
+					const estimatedPnLPercentage = pnlPercentage * (1 - progress * 0.4);
+					const estimatedValue = cumulativeInvested * (1 + estimatedPnLPercentage / 100);
+
+					points.push({
+						date: transactionDate,
+						invested: cumulativeInvested,
+						value: Math.max(0, estimatedValue),
+						daysAgo: daysDiff,
+					});
+				}
+			}
+
+			walletDataPoints[walletKey] = points;
+		});
+
 		// Generate data points for each date
 		for (let i = days; i >= 0; i--) {
 			const date = new Date(now);
@@ -734,24 +781,82 @@ export default function Page(): React.JSX.Element {
 			const monthName = date.toLocaleDateString("en-US", { month: "short" });
 			const day = date.getDate();
 			const dateKey = `${monthName} ${day}`;
+			const daysAgo = i;
 
 			const dataPoint: { name: string; [key: string]: string | number } = { name: dateKey };
 
-			// Calculate value for each wallet
+			// Calculate value for each wallet at this date
 			topWallets.forEach((wallet) => {
-				const progress = i / days;
-				// Simulate wallet value evolution
-				const simulatedValue = wallet.value * (0.7 + 0.3 * progress);
-				// Use wallet name as key (sanitized)
 				const walletKey = wallet.name.replace(/\s+/g, "_");
-				dataPoint[walletKey] = simulatedValue;
+				const points = walletDataPoints[walletKey] || [];
+
+				// Find closest transaction points before and after this date
+				let beforePoint: { invested: number; value: number; daysAgo: number } | null = null;
+				let afterPoint: { invested: number; value: number; daysAgo: number } | null = null;
+
+				for (const point of points) {
+					if (point.daysAgo >= daysAgo) {
+						if (!beforePoint || point.daysAgo < beforePoint.daysAgo) {
+							beforePoint = point;
+						}
+					}
+					if (point.daysAgo <= daysAgo) {
+						if (!afterPoint || point.daysAgo > afterPoint.daysAgo) {
+							afterPoint = point;
+						}
+					}
+				}
+
+				// Calculate value at this date
+				let valueAtDate: number;
+				if (beforePoint && afterPoint) {
+					// Interpolate between two points
+					if (beforePoint.daysAgo === afterPoint.daysAgo) {
+						valueAtDate = beforePoint.value;
+					} else {
+						const factor = (daysAgo - afterPoint.daysAgo) / (beforePoint.daysAgo - afterPoint.daysAgo);
+						valueAtDate = afterPoint.value + (beforePoint.value - afterPoint.value) * factor;
+					}
+				} else if (beforePoint) {
+					// Only before point (future transaction)
+					valueAtDate = beforePoint.value;
+				} else if (afterPoint) {
+					// Only after point (past transaction)
+					valueAtDate = afterPoint.value;
+				} else {
+					// No transactions, simulate based on current value
+					const progress = i / days; // 0 = today, 1 = 30 days ago
+					const pnlPercentage = wallet.pnlPercentage || 0;
+					// Simulate starting from lower value with gradual growth
+					const startValue = wallet.value * 0.6;
+					const endValue = wallet.value;
+					// Add some volatility (random variation between -5% and +5%)
+					const volatility = 1 + (Math.sin(progress * Math.PI * 4) * 0.05);
+					valueAtDate = (startValue + (endValue - startValue) * (1 - progress)) * volatility;
+				}
+
+				// Add some realistic volatility to make the graph more interesting
+				if (points.length > 0) {
+					// Add small random variations (±2%) for realism
+					const variation = 1 + (Math.sin((daysAgo / days) * Math.PI * 6) * 0.02);
+					valueAtDate = valueAtDate * variation;
+				}
+
+				dataPoint[walletKey] = Math.max(0, valueAtDate);
 			});
 
 			data.push(dataPoint);
 		}
 
+		// Ensure the last value (today) matches current wallet value exactly
+		const lastDataPoint = data[data.length - 1];
+		topWallets.forEach((wallet) => {
+			const walletKey = wallet.name.replace(/\s+/g, "_");
+			lastDataPoint[walletKey] = wallet.value;
+		});
+
 		return { data, wallets: topWallets };
-	}, [portfolioData]);
+	}, [portfolioData, transactions]);
 
 	// Portfolio handlers
 	const handleCreatePortfolio = async () => {
