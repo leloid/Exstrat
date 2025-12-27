@@ -40,9 +40,10 @@ export function SelectExchangeModal({
 	const [selectedExchange, setSelectedExchange] = React.useState<ExchangeType | null>(null);
 	const [searchQuery, setSearchQuery] = React.useState("");
 
-	const allExchanges: Array<{ id: ExchangeType; name: string; logo: string; color: string }> = [
-		{ id: "coinbase", name: "Coinbase", logo: "/CoinbaseLogo.jpeg", color: "#0052FF" },
-		{ id: "crypto.com", name: "Crypto.com", logo: "/Cryptocomlogo.jpeg", color: "#103F68" },
+	const allExchanges: Array<{ id: ExchangeType | "binance"; name: string; logo: string; color: string; available: boolean }> = [
+		{ id: "coinbase", name: "Coinbase", logo: "/CoinbaseLogo.jpeg", color: "#0052FF", available: true },
+		{ id: "crypto.com", name: "Crypto.com", logo: "/Cryptocomlogo.jpeg", color: "#103F68", available: true },
+		{ id: "binance", name: "Binance", logo: "/binance.jpeg", color: "#F0B90B", available: false },
 	];
 
 	// Filter exchanges based on search query
@@ -80,7 +81,7 @@ export function SelectExchangeModal({
 							</IconButton>
 						)}
 						<Typography variant="h6" fontWeight={600}>
-							{selectedExchange ? exchanges.find((e) => e.id === selectedExchange)?.name : "Add my first account"}
+							{selectedExchange ? exchanges.find((e) => e.id === selectedExchange)?.name : "Add my exchange"}
 						</Typography>
 					</Stack>
 					<IconButton onClick={onClose} size="small">
@@ -163,17 +164,24 @@ export function SelectExchangeModal({
 								key={exchange.id}
 								variant="outlined"
 								sx={{
-									cursor: "pointer",
+									cursor: exchange.available ? "pointer" : "not-allowed",
 									transition: "all 0.2s",
 									borderRadius: 3,
-									"&:hover": {
+									opacity: exchange.available ? 1 : 0.6,
+									position: "relative",
+									"&:hover": exchange.available ? {
 										boxShadow: 6,
 										transform: "translateY(-2px)",
 										borderColor: "var(--mui-palette-primary-main)",
+									} : {
+										boxShadow: 2,
 									},
 								}}
 							>
-								<CardActionArea onClick={() => handleExchangeClick(exchange.id)}>
+								<CardActionArea 
+									onClick={() => exchange.available && handleExchangeClick(exchange.id as ExchangeType)} 
+									disabled={!exchange.available}
+								>
 									<CardContent sx={{ py: 2.5, px: 3 }}>
 										<Stack direction="row" spacing={2.5} sx={{ alignItems: "center" }}>
 											<Box
@@ -205,10 +213,30 @@ export function SelectExchangeModal({
 													{exchange.name}
 												</Typography>
 											</Box>
-											<ArrowRightIcon size={24} color="var(--mui-palette-text-secondary)" />
+											{exchange.available && (
+												<ArrowRightIcon size={24} color="var(--mui-palette-text-secondary)" />
+											)}
 										</Stack>
 									</CardContent>
 								</CardActionArea>
+								{!exchange.available && (
+									<Box
+										sx={{
+											position: "absolute",
+											top: 8,
+											right: 8,
+											bgcolor: "warning.main",
+											color: "white",
+											px: 1,
+											py: 0.5,
+											borderRadius: 1,
+											fontSize: "0.7rem",
+											fontWeight: 600,
+										}}
+									>
+										SOON
+									</Box>
+								)}
 							</Card>
 							))
 						) : (
