@@ -7,6 +7,7 @@ import Button from "@mui/material/Button";
 import Card from "@mui/material/Card";
 import CardContent from "@mui/material/CardContent";
 import Chip from "@mui/material/Chip";
+import CircularProgress from "@mui/material/CircularProgress";
 import Dialog from "@mui/material/Dialog";
 import DialogActions from "@mui/material/DialogActions";
 import DialogContent from "@mui/material/DialogContent";
@@ -31,6 +32,12 @@ import { WalletIcon } from "@phosphor-icons/react/dist/ssr/Wallet";
 import { CalendarIcon } from "@phosphor-icons/react/dist/ssr/Calendar";
 import { CurrencyDollarIcon } from "@phosphor-icons/react/dist/ssr/CurrencyDollar";
 import { CoinsIcon } from "@phosphor-icons/react/dist/ssr/Coins";
+import Step from "@mui/material/Step";
+import StepContent from "@mui/material/StepContent";
+import type { StepIconProps } from "@mui/material/StepIcon";
+import StepLabel from "@mui/material/StepLabel";
+import Stepper from "@mui/material/Stepper";
+import LinearProgress from "@mui/material/LinearProgress";
 
 import { TokenSearch } from "@/components/transactions/token-search";
 import { transactionsApi } from "@/lib/transactions-api";
@@ -85,6 +92,40 @@ export function CreateTransactionModal({
 		transactionDate?: boolean;
 	}>({});
 	const [isSubmitting, setIsSubmitting] = React.useState(false);
+	const [activeStep, setActiveStep] = React.useState(0);
+
+	function StepIcon({ active, completed, icon }: StepIconProps & { icon: number }): React.JSX.Element {
+		const highlight = active || completed;
+
+		return (
+			<Avatar
+				sx={{
+					...(highlight && {
+						bgcolor: "var(--mui-palette-primary-main)",
+						color: "var(--mui-palette-primary-contrastText)",
+					}),
+					variant: "rounded",
+				}}
+			>
+				{completed ? <CheckIcon /> : icon}
+			</Avatar>
+		);
+	}
+
+	const steps = [
+		{
+			label: "Select Token",
+			description: "Choose the cryptocurrency for this transaction",
+		},
+		{
+			label: "Transaction Details",
+			description: "Configure your transaction parameters",
+		},
+		{
+			label: "Review & Confirm",
+			description: "Review your transaction before submitting",
+		},
+	];
 
 	// Calculate average price
 	const averagePrice = React.useMemo(() => {
@@ -282,367 +323,530 @@ export function CreateTransactionModal({
 								sx={{
 									mt: 0.5,
 									color: "error.main",
-							}}
-						>
+								}}
+							>
 								<XIcon fontSize="small" />
 							</Box>
 							<Box sx={{ flex: 1 }}>
 								<Typography color="error.main" variant="body2" sx={{ fontWeight: 500, mb: 0.5 }}>
 									Champs manquants
 								</Typography>
-							<Typography color="error.main" variant="body2">
-								{error}
-							</Typography>
+								<Typography color="error.main" variant="body2">
+									{error}
+								</Typography>
 							</Box>
 						</Box>
 					)}
 
-					{/* Token Selection Card */}
-					<Card variant="outlined">
-						<CardContent>
-							<Stack spacing={2}>
-								<Stack direction="row" spacing={2} sx={{ alignItems: "center" }}>
-									<Avatar
-										sx={{
-											bgcolor: "primary.main",
-											color: "white",
-										}}
-									>
-										<CoinsIcon fontSize="var(--icon-fontSize-lg)" />
-									</Avatar>
-									<Box sx={{ flex: 1 }}>
-										<Typography variant="h6">Select Token</Typography>
-										<Typography color="text.secondary" variant="body2">
-											Choose the cryptocurrency for this transaction
-										</Typography>
-									</Box>
-								</Stack>
-								<TokenSearch
-									onTokenSelect={(token) => {
-										setSelectedToken(token);
-										if (token && fieldErrors.token) {
-											setFieldErrors((prev) => ({ ...prev, token: false }));
+					{/* Stepper */}
+					<Stepper activeStep={activeStep} orientation="vertical">
+						{steps.map((step, index) => (
+							<Step key={step.label}>
+								<StepLabel
+									StepIconComponent={(props) => <StepIcon {...props} icon={index + 1} />}
+									optional={<Typography variant="caption">{step.description}</Typography>}
+									onClick={() => {
+										// Allow clicking on completed or current step to navigate
+										if (index <= activeStep) {
+											setActiveStep(index);
 										}
 									}}
-									selectedToken={selectedToken}
-									error={fieldErrors.token}
-									helperText={fieldErrors.token ? "Ce champ est requis" : undefined}
-								/>
-								{selectedToken && (
-									<Box
-										sx={{
-											p: 2,
-											bgcolor: "action.hover",
-											borderRadius: 2,
-											display: "flex",
-											alignItems: "center",
-											gap: 2,
-										}}
-									>
-										{tokenLogoUrl ? (
-											<Avatar src={tokenLogoUrl} sx={{ width: 40, height: 40 }} />
-										) : (
-											<Avatar sx={{ width: 40, height: 40, bgcolor: "primary.main" }}>
-												{selectedToken.symbol.charAt(0)}
-											</Avatar>
+									sx={{
+										cursor: index <= activeStep ? "pointer" : "default",
+										"&:hover": index <= activeStep ? {
+											opacity: 0.7,
+										} : {},
+									}}
+								>
+									{step.label}
+								</StepLabel>
+								<StepContent>
+									<Box sx={{ mt: 2 }}>
+										{index === 0 && (
+											<Card variant="outlined" sx={{ mb: 3 }}>
+												<CardContent>
+													<Stack spacing={3}>
+														<Stack direction="row" spacing={2} sx={{ alignItems: "center" }}>
+															<Avatar
+																sx={{
+																	bgcolor: "primary.main",
+																	color: "white",
+																	width: 48,
+																	height: 48,
+																}}
+															>
+																<CoinsIcon fontSize="var(--icon-fontSize-lg)" />
+															</Avatar>
+															<Box sx={{ flex: 1 }}>
+																<Typography variant="h6" fontWeight={600}>
+																	Select Token
+																</Typography>
+																<Typography color="text.secondary" variant="body2">
+																	Choose the cryptocurrency for this transaction
+																</Typography>
+															</Box>
+														</Stack>
+														<TokenSearch
+															onTokenSelect={(token) => {
+																setSelectedToken(token);
+																if (token && fieldErrors.token) {
+																	setFieldErrors((prev) => ({ ...prev, token: false }));
+																}
+																if (token) {
+																	setActiveStep(1);
+																}
+															}}
+															selectedToken={selectedToken}
+															error={fieldErrors.token}
+															helperText={fieldErrors.token ? "Ce champ est requis" : undefined}
+														/>
+														{selectedToken && (
+															<>
+																<Box
+																	onClick={() => setActiveStep(1)}
+																	sx={{
+																		p: 2.5,
+																		bgcolor: "action.hover",
+																		borderRadius: 2,
+																		display: "flex",
+																		alignItems: "center",
+																		gap: 2,
+																		border: "1px solid",
+																		borderColor: "divider",
+																		cursor: "pointer",
+																		transition: "all 0.2s",
+																		"&:hover": {
+																			bgcolor: "action.selected",
+																			borderColor: "primary.main",
+																			transform: "translateY(-2px)",
+																			boxShadow: 2,
+																		},
+																	}}
+																>
+																	{tokenLogoUrl ? (
+																		<Avatar src={tokenLogoUrl} sx={{ width: 48, height: 48 }} />
+																	) : (
+																		<Avatar sx={{ width: 48, height: 48, bgcolor: "primary.main" }}>
+																			{selectedToken.symbol.charAt(0)}
+																		</Avatar>
+																	)}
+																	<Box sx={{ flex: 1 }}>
+																		<Typography variant="subtitle1" fontWeight={600}>
+																			{selectedToken.symbol} - {selectedToken.name}
+																		</Typography>
+																		{selectedToken.quote?.USD?.price && (
+																			<Typography color="text.secondary" variant="body2" sx={{ mt: 0.5 }}>
+																				Current price: {formatCurrency(selectedToken.quote.USD.price, "$", 2)}
+																			</Typography>
+																		)}
+																	</Box>
+																	<Chip
+																		icon={<CheckIcon />}
+																		label="Selected"
+																		color="success"
+																		size="small"
+																	/>
+																</Box>
+																<Button
+																	variant="contained"
+																	fullWidth
+																	size="large"
+																	onClick={() => setActiveStep(1)}
+																	endIcon={<CheckIcon />}
+																	sx={{ mt: 2 }}
+																>
+																	Continue with {selectedToken.symbol}
+																</Button>
+															</>
+														)}
+													</Stack>
+												</CardContent>
+											</Card>
 										)}
-										<Box sx={{ flex: 1 }}>
-											<Typography variant="subtitle1">
-												{selectedToken.symbol} - {selectedToken.name}
-											</Typography>
-											{selectedToken.quote?.USD?.price && (
-												<Typography color="text.secondary" variant="body2">
-													Current price: {formatCurrency(selectedToken.quote.USD.price, "$", 2)}
-												</Typography>
-											)}
-										</Box>
-									</Box>
-								)}
-							</Stack>
-						</CardContent>
-					</Card>
 
-					{/* Transaction Details Card */}
-					<Card variant="outlined">
-						<CardContent>
-							<Stack spacing={3}>
-								<Stack direction="row" spacing={2} sx={{ alignItems: "center" }}>
-									<Avatar
-										sx={{
-											bgcolor: "primary.main",
-											color: "white",
-										}}
-									>
-										<WalletIcon fontSize="var(--icon-fontSize-lg)" />
-									</Avatar>
-									<Box sx={{ flex: 1 }}>
-										<Typography variant="h6">Transaction Details</Typography>
-										<Typography color="text.secondary" variant="body2">
-											Configure your transaction parameters
-										</Typography>
-									</Box>
-								</Stack>
+										{index === 1 && (
+											<Card variant="outlined" sx={{ mb: 3 }}>
+												<CardContent>
+													<Stack spacing={3}>
+														<Stack direction="row" spacing={2} sx={{ alignItems: "center" }}>
+															<Avatar
+																sx={{
+																	bgcolor: "primary.main",
+																	color: "white",
+																	width: 48,
+																	height: 48,
+																}}
+															>
+																<WalletIcon fontSize="var(--icon-fontSize-lg)" />
+															</Avatar>
+															<Box sx={{ flex: 1 }}>
+																<Typography variant="h6" fontWeight={600}>
+																	Transaction Details
+																</Typography>
+																<Typography color="text.secondary" variant="body2">
+																	Configure your transaction parameters
+																</Typography>
+															</Box>
+														</Stack>
 
-								<Grid container spacing={2}>
-									<Grid size={{ xs: 12, sm: 6 }}>
-										<FormControl fullWidth required error={fieldErrors.wallet}>
-											<InputLabel>Wallet</InputLabel>
-											<Select
-												label="Wallet"
-												onChange={(e) => {
-													setSelectedPortfolioId(e.target.value);
-													if (e.target.value && fieldErrors.wallet) {
-														setFieldErrors((prev) => ({ ...prev, wallet: false }));
-													}
+														<Divider />
+
+														<Grid container spacing={2.5}>
+															<Grid size={{ xs: 12, sm: 6 }}>
+																<FormControl fullWidth required error={fieldErrors.wallet}>
+																	<InputLabel>Wallet</InputLabel>
+																	<Select
+																		label="Wallet"
+																		onChange={(e) => {
+																			setSelectedPortfolioId(e.target.value);
+																			if (e.target.value && fieldErrors.wallet) {
+																				setFieldErrors((prev) => ({ ...prev, wallet: false }));
+																			}
+																		}}
+																		value={selectedPortfolioId}
+																	>
+																		{portfolios.map((portfolio) => (
+																			<MenuItem key={portfolio.id} value={portfolio.id}>
+																				<Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
+																					<WalletIcon size={18} />
+																					<span>{portfolio.name}</span>
+																					{portfolio.isDefault && (
+																						<Chip label="Default" size="small" color="primary" sx={{ ml: 1, height: 20 }} />
+																					)}
+																				</Stack>
+																			</MenuItem>
+																		))}
+																	</Select>
+																	{fieldErrors.wallet && (
+																		<FormHelperText error>Ce champ est requis</FormHelperText>
+																	)}
+																</FormControl>
+															</Grid>
+															<Grid size={{ xs: 12, sm: 6 }}>
+																<FormControl fullWidth required>
+																	<InputLabel>Transaction Type</InputLabel>
+																	<Select
+																		label="Transaction Type"
+																		onChange={(e) => setTransactionType(e.target.value as "BUY" | "SELL")}
+																		value={transactionType}
+																	>
+																		<MenuItem value="BUY">
+																			<Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
+																				<TrendUpIcon />
+																				<span>BUY</span>
+																			</Stack>
+																		</MenuItem>
+																		<MenuItem value="SELL">
+																			<Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
+																				<TrendDownIcon />
+																				<span>SELL</span>
+																			</Stack>
+																		</MenuItem>
+																	</Select>
+																</FormControl>
+															</Grid>
+														</Grid>
+
+														<Divider />
+
+														<Grid container spacing={2.5}>
+															<Grid size={{ xs: 12, sm: 6 }}>
+																<TextField
+																	error={fieldErrors.quantity}
+																	fullWidth
+																	helperText={fieldErrors.quantity ? "Ce champ est requis" : undefined}
+																	InputProps={{
+																		startAdornment: (
+																			<InputAdornment position="start">
+																				<CoinsIcon />
+																			</InputAdornment>
+																		),
+																	}}
+																	label="Quantity"
+																	onChange={(e) => {
+																		setQuantity(e.target.value);
+																		if (e.target.value && fieldErrors.quantity) {
+																			setFieldErrors((prev) => ({ ...prev, quantity: false }));
+																		}
+																	}}
+																	required
+																	type="number"
+																	inputProps={{ step: "0.00000001", min: 0 }}
+																	value={quantity}
+																/>
+															</Grid>
+															<Grid size={{ xs: 12, sm: 6 }}>
+																<TextField
+																	error={fieldErrors.amountInvested}
+																	fullWidth
+																	helperText={fieldErrors.amountInvested ? "Ce champ est requis" : undefined}
+																	InputProps={{
+																		startAdornment: (
+																			<InputAdornment position="start">
+																				<CurrencyDollarIcon />
+																			</InputAdornment>
+																		),
+																	}}
+																	label="Amount Invested (USD)"
+																	onChange={(e) => {
+																		setAmountInvested(e.target.value);
+																		if (e.target.value && fieldErrors.amountInvested) {
+																			setFieldErrors((prev) => ({ ...prev, amountInvested: false }));
+																		}
+																	}}
+																	required
+																	type="number"
+																	inputProps={{ step: "0.01", min: 0 }}
+																	value={amountInvested}
+																/>
+															</Grid>
+														</Grid>
+
+														<TextField
+															fullWidth
+															InputProps={{
+																startAdornment: (
+																	<InputAdornment position="start">
+																		<CurrencyDollarIcon />
+																	</InputAdornment>
+																),
+															}}
+															disabled
+															helperText="Calculated automatically from quantity and amount invested"
+															label="Average Price (USD)"
+															value={averagePrice}
+														/>
+
+														<TextField
+															error={fieldErrors.transactionDate}
+															fullWidth
+															helperText={fieldErrors.transactionDate ? "Ce champ est requis" : undefined}
+															InputProps={{
+																startAdornment: (
+																	<InputAdornment position="start">
+																		<CalendarIcon />
+																	</InputAdornment>
+																),
+															}}
+															label="Transaction Date"
+															onChange={(e) => {
+																setTransactionDate(e.target.value);
+																if (e.target.value && fieldErrors.transactionDate) {
+																	setFieldErrors((prev) => ({ ...prev, transactionDate: false }));
+																}
+															}}
+															required
+															type="date"
+															value={transactionDate}
+														/>
+
+														<TextField
+															fullWidth
+															label="Notes (optional)"
+															multiline
+															onChange={(e) => setNotes(e.target.value)}
+															placeholder="Add any additional notes about this transaction..."
+															rows={3}
+															value={notes}
+														/>
+
+														{selectedToken && quantity && amountInvested && averagePrice && (
+															<Button
+																variant="contained"
+																fullWidth
+																size="large"
+																onClick={() => setActiveStep(2)}
+																endIcon={<CheckIcon />}
+															>
+																Continue to Review
+															</Button>
+														)}
+													</Stack>
+												</CardContent>
+											</Card>
+										)}
+
+										{index === 2 && (
+											<Card
+												variant="outlined"
+												sx={{
+													bgcolor:
+														colorScheme === "dark"
+															? transactionType === "BUY"
+																? "rgba(76, 175, 80, 0.15)"
+																: "rgba(244, 67, 54, 0.15)"
+															: transactionType === "BUY"
+																? "success.50"
+																: "error.50",
+													border: "1px solid",
+													borderColor:
+														colorScheme === "dark"
+															? transactionType === "BUY"
+																? "success.dark"
+																: "error.dark"
+															: transactionType === "BUY"
+																? "success.200"
+																: "error.200",
 												}}
-												value={selectedPortfolioId}
 											>
-												{portfolios.map((portfolio) => (
-													<MenuItem key={portfolio.id} value={portfolio.id}>
-														{portfolio.name} {portfolio.isDefault && "(Default)"}
-													</MenuItem>
-												))}
-											</Select>
-											{fieldErrors.wallet && (
-												<FormHelperText error>Ce champ est requis</FormHelperText>
-											)}
-										</FormControl>
-									</Grid>
-									<Grid size={{ xs: 12, sm: 6 }}>
-										<FormControl fullWidth required>
-											<InputLabel>Type</InputLabel>
-											<Select
-												label="Type"
-												onChange={(e) => setTransactionType(e.target.value as "BUY" | "SELL")}
-												value={transactionType}
-											>
-												<MenuItem value="BUY">
-													<Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
-														<TrendUpIcon />
-														<span>BUY</span>
+												<CardContent>
+													<Stack spacing={3}>
+														<Stack direction="row" spacing={2} sx={{ alignItems: "center" }}>
+															<Avatar
+																sx={{
+																	bgcolor: transactionType === "BUY" ? "success.main" : "error.main",
+																	color: "white",
+																	width: 48,
+																	height: 48,
+																}}
+															>
+																{transactionType === "BUY" ? (
+																	<TrendUpIcon fontSize="var(--icon-fontSize-lg)" />
+																) : (
+																	<TrendDownIcon fontSize="var(--icon-fontSize-lg)" />
+																)}
+															</Avatar>
+															<Box sx={{ flex: 1 }}>
+																<Typography variant="h6" fontWeight={600}>
+																	Transaction Summary
+																</Typography>
+																<Typography color="text.secondary" variant="body2">
+																	Review your transaction before submitting
+																</Typography>
+															</Box>
+														</Stack>
+														<Divider />
+														{selectedToken && (
+															<Grid container spacing={3}>
+																<Grid size={{ xs: 12, sm: 6 }}>
+																	<Typography color="text.secondary" variant="caption" sx={{ fontWeight: 600, mb: 0.5, display: "block" }}>
+																		Token
+																	</Typography>
+																	<Stack direction="row" spacing={1.5} sx={{ alignItems: "center" }}>
+																		{tokenLogoUrl ? (
+																			<Avatar src={tokenLogoUrl} sx={{ width: 32, height: 32 }} />
+																		) : (
+																			<Avatar sx={{ width: 32, height: 32, bgcolor: "primary.main" }}>
+																				{selectedToken.symbol.charAt(0)}
+																			</Avatar>
+																		)}
+																		<Box>
+																			<Typography variant="subtitle1" fontWeight={600}>
+																				{selectedToken.symbol}
+																			</Typography>
+																			<Typography color="text.secondary" variant="body2">
+																				{selectedToken.name}
+																			</Typography>
+																		</Box>
+																	</Stack>
+																</Grid>
+																<Grid size={{ xs: 12, sm: 6 }}>
+																	<Typography color="text.secondary" variant="caption" sx={{ fontWeight: 600, mb: 0.5, display: "block" }}>
+																		Type
+																	</Typography>
+																	<Chip
+																		color={transactionType === "BUY" ? "success" : "error"}
+																		icon={transactionType === "BUY" ? <TrendUpIcon /> : <TrendDownIcon />}
+																		label={transactionType}
+																		size="medium"
+																		sx={{ fontWeight: 600 }}
+																	/>
+																</Grid>
+																<Grid size={{ xs: 12, sm: 4 }}>
+																	<Typography color="text.secondary" variant="caption" sx={{ fontWeight: 600, mb: 0.5, display: "block" }}>
+																		Quantity
+																	</Typography>
+																	<Typography variant="h6" fontWeight={600}>
+																		{quantity}
+																	</Typography>
+																</Grid>
+																<Grid size={{ xs: 12, sm: 4 }}>
+																	<Typography color="text.secondary" variant="caption" sx={{ fontWeight: 600, mb: 0.5, display: "block" }}>
+																		Amount Invested
+																	</Typography>
+																	<Typography variant="h6" fontWeight={600}>
+																		{formatCurrency(parseFloat(amountInvested), "$", 2)}
+																	</Typography>
+																</Grid>
+																<Grid size={{ xs: 12, sm: 4 }}>
+																	<Typography color="text.secondary" variant="caption" sx={{ fontWeight: 600, mb: 0.5, display: "block" }}>
+																		Average Price
+																	</Typography>
+																	<Typography variant="h6" fontWeight={600}>
+																		{formatCurrency(parseFloat(averagePrice), "$", 8)}
+																	</Typography>
+																</Grid>
+																{notes && (
+																	<Grid size={{ xs: 12 }}>
+																		<Typography color="text.secondary" variant="caption" sx={{ fontWeight: 600, mb: 0.5, display: "block" }}>
+																			Notes
+																		</Typography>
+																		<Typography variant="body2" sx={{ p: 1.5, bgcolor: "action.hover", borderRadius: 1 }}>
+																			{notes}
+																		</Typography>
+																	</Grid>
+																)}
+															</Grid>
+														)}
 													</Stack>
-												</MenuItem>
-												<MenuItem value="SELL">
-													<Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
-														<TrendDownIcon />
-														<span>SELL</span>
-													</Stack>
-												</MenuItem>
-											</Select>
-										</FormControl>
-									</Grid>
-								</Grid>
+												</CardContent>
+											</Card>
+										)}
+									</Box>
+								</StepContent>
+							</Step>
+						))}
+					</Stepper>
 
-								<Divider />
-
-								<Grid container spacing={2}>
-									<Grid size={{ xs: 12, sm: 6 }}>
-										<TextField
-											error={fieldErrors.quantity}
-											fullWidth
-											helperText={fieldErrors.quantity ? "Ce champ est requis" : undefined}
-											InputProps={{
-												startAdornment: (
-													<InputAdornment position="start">
-														<CoinsIcon />
-													</InputAdornment>
-												),
-											}}
-											label="Quantity"
-											onChange={(e) => {
-												setQuantity(e.target.value);
-												if (e.target.value && fieldErrors.quantity) {
-													setFieldErrors((prev) => ({ ...prev, quantity: false }));
-												}
-											}}
-											required
-											type="number"
-											inputProps={{ step: "0.00000001", min: 0 }}
-											value={quantity}
-										/>
-									</Grid>
-									<Grid size={{ xs: 12, sm: 6 }}>
-										<TextField
-											error={fieldErrors.amountInvested}
-											fullWidth
-											helperText={fieldErrors.amountInvested ? "Ce champ est requis" : undefined}
-											InputProps={{
-												startAdornment: (
-													<InputAdornment position="start">
-														<CurrencyDollarIcon />
-													</InputAdornment>
-												),
-											}}
-											label="Amount Invested (USD)"
-											onChange={(e) => {
-												setAmountInvested(e.target.value);
-												if (e.target.value && fieldErrors.amountInvested) {
-													setFieldErrors((prev) => ({ ...prev, amountInvested: false }));
-												}
-											}}
-											required
-											type="number"
-											inputProps={{ step: "0.01", min: 0 }}
-											value={amountInvested}
-										/>
-									</Grid>
-								</Grid>
-
-								<TextField
-									fullWidth
-									InputProps={{
-										startAdornment: (
-											<InputAdornment position="start">
-												<CurrencyDollarIcon />
-											</InputAdornment>
-										),
-									}}
-									disabled
-									helperText="Calculated automatically from quantity and amount invested"
-									label="Average Price (USD)"
-									value={averagePrice}
-								/>
-
-								<TextField
-									error={fieldErrors.transactionDate}
-									fullWidth
-									helperText={fieldErrors.transactionDate ? "Ce champ est requis" : undefined}
-									InputProps={{
-										startAdornment: (
-											<InputAdornment position="start">
-												<CalendarIcon />
-											</InputAdornment>
-										),
-									}}
-									label="Transaction Date"
-									onChange={(e) => {
-										setTransactionDate(e.target.value);
-										if (e.target.value && fieldErrors.transactionDate) {
-											setFieldErrors((prev) => ({ ...prev, transactionDate: false }));
-										}
-									}}
-									required
-									type="date"
-									value={transactionDate}
-								/>
-
-								<TextField
-									fullWidth
-									label="Notes (optional)"
-									multiline
-									onChange={(e) => setNotes(e.target.value)}
-									placeholder="Add any additional notes about this transaction..."
-									rows={3}
-									value={notes}
-								/>
-							</Stack>
-						</CardContent>
-					</Card>
-
-					{/* Summary Card */}
-					{selectedToken && quantity && amountInvested && averagePrice && (
-						<Card
-							sx={{
-								bgcolor:
-									colorScheme === "dark"
-										? transactionType === "BUY"
-											? "rgba(76, 175, 80, 0.15)"
-											: "rgba(244, 67, 54, 0.15)"
-										: transactionType === "BUY"
-											? "success.50"
-											: "error.50",
-								border: "1px solid",
-								borderColor:
-									colorScheme === "dark"
-										? transactionType === "BUY"
-											? "success.dark"
-											: "error.dark"
-										: transactionType === "BUY"
-											? "success.200"
-											: "error.200",
-							}}
-							variant="outlined"
-						>
-							<CardContent>
-								<Stack spacing={2}>
-									<Stack direction="row" spacing={2} sx={{ alignItems: "center" }}>
-										<Avatar
-											sx={{
-												bgcolor: transactionType === "BUY" ? "success.main" : "error.main",
-												color: "white",
-											}}
-										>
-											{transactionType === "BUY" ? (
-												<TrendUpIcon fontSize="var(--icon-fontSize-lg)" />
-											) : (
-												<TrendDownIcon fontSize="var(--icon-fontSize-lg)" />
-											)}
-										</Avatar>
-										<Typography variant="h6">Transaction Summary</Typography>
-									</Stack>
-									<Divider />
-									<Grid container spacing={2}>
-										<Grid size={{ xs: 6 }}>
-											<Typography color="text.secondary" variant="caption">
-												Token
-											</Typography>
-											<Typography variant="subtitle1">
-												{selectedToken.symbol} - {selectedToken.name}
-											</Typography>
-										</Grid>
-										<Grid size={{ xs: 6 }}>
-											<Typography color="text.secondary" variant="caption">
-												Type
-											</Typography>
-											<Chip
-												color={transactionType === "BUY" ? "success" : "error"}
-												icon={transactionType === "BUY" ? <TrendUpIcon /> : <TrendDownIcon />}
-												label={transactionType}
-												size="small"
-											/>
-										</Grid>
-										<Grid size={{ xs: 4 }}>
-											<Typography color="text.secondary" variant="caption">
-												Quantity
-											</Typography>
-											<Typography variant="subtitle1">{quantity}</Typography>
-										</Grid>
-										<Grid size={{ xs: 4 }}>
-											<Typography color="text.secondary" variant="caption">
-												Amount Invested
-											</Typography>
-											<Typography variant="subtitle1">{formatCurrency(parseFloat(amountInvested), "$", 2)}</Typography>
-										</Grid>
-										<Grid size={{ xs: 4 }}>
-											<Typography color="text.secondary" variant="caption">
-												Average Price
-											</Typography>
-											<Typography variant="subtitle1">{formatCurrency(parseFloat(averagePrice), "$", 8)}</Typography>
-										</Grid>
-									</Grid>
-								</Stack>
-							</CardContent>
-						</Card>
-					)}
 				</Stack>
 			</DialogContent>
 			<DialogActions sx={{ p: 3, pt: 0 }}>
-				<Button
-					onClick={onClose}
-					size="large"
-					sx={{
-						color: "text.primary",
-						"&:hover": {
-							backgroundColor: "action.hover",
+				<Stack direction="row" spacing={2} sx={{ width: "100%", justifyContent: "space-between" }}>
+					<Button
+						onClick={() => {
+							if (activeStep > 0) {
+								setActiveStep(activeStep - 1);
+							} else {
+								onClose();
+							}
+						}}
+						size="large"
+						sx={{
 							color: "text.primary",
-						},
-					}}
-				>
-					Cancel
-				</Button>
-				<Button disabled={isSubmitting} onClick={handleSubmit} size="large" variant="contained">
-					{isSubmitting ? "Processing..." : editingTransaction ? "Update Transaction" : "Create Transaction"}
-				</Button>
+							"&:hover": {
+								backgroundColor: "action.hover",
+								color: "text.primary",
+							},
+						}}
+					>
+						{activeStep > 0 ? "Back" : "Cancel"}
+					</Button>
+					<Stack direction="row" spacing={2}>
+						{activeStep < steps.length - 1 ? (
+							<Button
+								disabled={!selectedToken || activeStep === 0}
+								onClick={() => setActiveStep(activeStep + 1)}
+								size="large"
+								variant="outlined"
+							>
+								Next
+							</Button>
+						) : (
+							<Button disabled={isSubmitting} onClick={handleSubmit} size="large" variant="contained">
+								{isSubmitting ? (
+									<>
+										<CircularProgress size={20} sx={{ mr: 1 }} />
+										Processing...
+									</>
+								) : editingTransaction ? (
+									"Update Transaction"
+								) : (
+									"Create Transaction"
+								)}
+							</Button>
+						)}
+					</Stack>
+				</Stack>
 			</DialogActions>
 		</Dialog>
 	);

@@ -247,7 +247,7 @@ export default function Page(): React.JSX.Element {
 					existing.value += currentValue;
 				} else {
 				// Generate a color based on symbol using vibrant colors that work well in dark mode
-				const colors = [
+					const colors = [
 					"var(--mui-palette-primary-main)", // #047DD5 - Exstrat Blue
 					"var(--mui-palette-secondary-main)", // #F6851B - Exstrat Orange
 					"var(--mui-palette-success-main)", // Green
@@ -260,8 +260,8 @@ export default function Page(): React.JSX.Element {
 					"#4CAF50", // Green
 					"#FF9800", // Orange
 					"#2196F3", // Blue
-				];
-				const colorIndex = symbol.charCodeAt(0) % colors.length;
+					];
+					const colorIndex = symbol.charCodeAt(0) % colors.length;
 
 					tokenMap.set(symbol, {
 						symbol,
@@ -318,55 +318,55 @@ export default function Page(): React.JSX.Element {
 		const portfoliosList = portfoliosToLoad || portfolios;
 		if (portfoliosList.length === 0 || loadingPortfolios) return;
 
-		setLoadingPortfolios(true);
-		try {
-			const data: Record<string, PortfolioData> = {};
+			setLoadingPortfolios(true);
+			try {
+				const data: Record<string, PortfolioData> = {};
 
 			for (const portfolio of portfoliosList) {
-				try {
-					const holdings = await portfoliosApi.getPortfolioHoldings(portfolio.id);
-					const invested = holdings.reduce((sum, h) => sum + (h.investedAmount || 0), 0);
+					try {
+						const holdings = await portfoliosApi.getPortfolioHoldings(portfolio.id);
+						const invested = holdings.reduce((sum, h) => sum + (h.investedAmount || 0), 0);
 					// IMPORTANT: Utiliser currentValue du backend qui est calculé avec currentPrice (prix actuel du marché)
 					// currentValue = quantity * currentPrice (ou quantity * averagePrice si currentPrice n'est pas disponible)
 					const value = holdings.reduce((sum, h) => sum + (h.currentValue || 0), 0);
-					const pnl = value - invested;
-					const pnlPercentage = invested > 0 ? (pnl / invested) * 100 : 0;
+						const pnl = value - invested;
+						const pnlPercentage = invested > 0 ? (pnl / invested) * 100 : 0;
 
-					data[portfolio.id] = {
-						id: portfolio.id,
-						name: portfolio.name,
-						description: portfolio.description,
-						isDefault: portfolio.isDefault,
-						holdings,
-						invested,
-						value,
-						pnl,
-						pnlPercentage,
-						holdingsCount: holdings.length,
-					};
-				} catch (error) {
-					console.error(`Error loading holdings for ${portfolio.name}:`, error);
-					data[portfolio.id] = {
-						id: portfolio.id,
-						name: portfolio.name,
-						description: portfolio.description,
-						isDefault: portfolio.isDefault,
-						holdings: [],
-						invested: 0,
-						value: 0,
-						pnl: 0,
-						pnlPercentage: 0,
-						holdingsCount: 0,
-					};
+						data[portfolio.id] = {
+							id: portfolio.id,
+							name: portfolio.name,
+							description: portfolio.description,
+							isDefault: portfolio.isDefault,
+							holdings,
+							invested,
+							value,
+							pnl,
+							pnlPercentage,
+							holdingsCount: holdings.length,
+						};
+					} catch (error) {
+						console.error(`Error loading holdings for ${portfolio.name}:`, error);
+						data[portfolio.id] = {
+							id: portfolio.id,
+							name: portfolio.name,
+							description: portfolio.description,
+							isDefault: portfolio.isDefault,
+							holdings: [],
+							invested: 0,
+							value: 0,
+							pnl: 0,
+							pnlPercentage: 0,
+							holdingsCount: 0,
+						};
+					}
 				}
-			}
 
-			setPortfolioData(data);
-		} catch (error) {
-			console.error("Error loading portfolio data:", error);
-		} finally {
-			setLoadingPortfolios(false);
-		}
+				setPortfolioData(data);
+			} catch (error) {
+				console.error("Error loading portfolio data:", error);
+			} finally {
+				setLoadingPortfolios(false);
+			}
 	}, [portfolios]);
 
 	// Store the function in ref for stable reference
@@ -382,15 +382,15 @@ export default function Page(): React.JSX.Element {
 
 	// Load transactions function (extracted for reuse)
 	const loadTransactions = React.useCallback(async () => {
-		setLoadingTransactions(true);
-		try {
-			const response = await transactionsApi.getTransactions({ limit: 100 });
-			setTransactions(response.transactions);
-		} catch (error) {
-			console.error("Error loading transactions:", error);
-		} finally {
-			setLoadingTransactions(false);
-		}
+			setLoadingTransactions(true);
+			try {
+				const response = await transactionsApi.getTransactions({ limit: 100 });
+				setTransactions(response.transactions);
+			} catch (error) {
+				console.error("Error loading transactions:", error);
+			} finally {
+				setLoadingTransactions(false);
+			}
 	}, []);
 
 	// Load transactions on mount
@@ -668,7 +668,7 @@ export default function Page(): React.JSX.Element {
 				// Interpolate between two points
 				if (beforePoint.daysAgo === afterPoint.daysAgo) {
 					investedAtDate = beforePoint.invested;
-				} else {
+			} else {
 					const factor = (daysAgo - afterPoint.daysAgo) / (beforePoint.daysAgo - afterPoint.daysAgo);
 					investedAtDate = afterPoint.invested + (beforePoint.invested - afterPoint.invested) * factor;
 				}
@@ -690,11 +690,11 @@ export default function Page(): React.JSX.Element {
 			const estimatedPnLPercentage = globalStats.totalPNLPercentage * (1 - progress * 0.3); // PnL was 30% lower 30 days ago
 			const valueAtDate = investedAtDate * (1 + estimatedPnLPercentage / 100);
 
-			data.push({
-				name: dateKey,
+				data.push({
+					name: dateKey,
 				value: Math.max(0, valueAtDate), // Ensure non-negative
-			});
-		}
+				});
+			}
 
 		// Ensure the last value (today) matches current total value exactly
 		if (data.length > 0) {
@@ -1335,7 +1335,7 @@ export default function Page(): React.JSX.Element {
 																			<>
 																				<Typography color="text.secondary" variant="body2" sx={{ textAlign: "right" }}>
 																					{display}
-																				</Typography>
+															</Typography>
 																				{showInfo && (
 																					<InfoIcon fontSize="var(--icon-fontSize-xs)" style={{ opacity: 0.6 }} />
 																				)}
@@ -1347,7 +1347,7 @@ export default function Page(): React.JSX.Element {
 															<MuiTooltip title={formatCurrency(entry.value, "$", 2, secretMode)} arrow placement="top">
 																<Typography color="text.secondary" variant="body2" sx={{ minWidth: "90px", textAlign: "right", cursor: "help" }}>
 																	{formatCompactCurrency(entry.value, "$", 2, secretMode)}
-																</Typography>
+															</Typography>
 															</MuiTooltip>
 														</Stack>
 													))}
@@ -1391,7 +1391,7 @@ export default function Page(): React.JSX.Element {
 																			<>
 																				<Typography color="text.secondary" variant="body2" sx={{ textAlign: "right" }}>
 																					{display}
-																				</Typography>
+															</Typography>
 																				{showInfo && (
 																					<InfoIcon fontSize="var(--icon-fontSize-xs)" style={{ opacity: 0.6 }} />
 																				)}
@@ -1411,13 +1411,13 @@ export default function Page(): React.JSX.Element {
 																placement="top"
 															>
 																<Typography color="text.secondary" variant="body2" sx={{ minWidth: "90px", textAlign: "right", cursor: "help" }}>
-																	{formatCompactCurrency(
+																{formatCompactCurrency(
 																		allTokenData.slice(6).reduce((sum, token) => sum + token.value, 0),
-																		"$",
+																	"$",
 																		2,
 																		secretMode
-																	)}
-																</Typography>
+																)}
+															</Typography>
 															</MuiTooltip>
 														</Stack>
 													)}
@@ -1748,8 +1748,8 @@ export default function Page(): React.JSX.Element {
 														<Box sx={{ py: 3 }}>
 															<Stack direction="row" spacing={2} sx={{ alignItems: "center", justifyContent: "space-between", mb: 2 }}>
 																<Typography variant="h6">
-																	Wallet Transactions
-																</Typography>
+																Wallet Transactions
+															</Typography>
 																<TextField
 																	placeholder="Search transactions..."
 																	size="small"
@@ -1793,32 +1793,32 @@ export default function Page(): React.JSX.Element {
 																
 																if (filtered.length === 0) {
 																	return (
-																		<Typography color="text.secondary" variant="body2">
+																<Typography color="text.secondary" variant="body2">
 																			{searchQuery
 																				? "No transactions found matching your search."
 																				: "No transactions in this wallet yet."}
-																		</Typography>
+																</Typography>
 																	);
 																}
 																
 																return (
 																	<>
-																		<Table size="small">
-																			<TableHead>
-																				<TableRow>
-																					<TableCell sx={{ fontWeight: 600 }}>Date</TableCell>
-																					<TableCell sx={{ fontWeight: 600 }}>Token</TableCell>
-																					<TableCell align="right" sx={{ fontWeight: 600 }}>Type</TableCell>
-																					<TableCell align="right" sx={{ fontWeight: 600 }}>Quantity</TableCell>
+																<Table size="small">
+																	<TableHead>
+																		<TableRow>
+																			<TableCell sx={{ fontWeight: 600 }}>Date</TableCell>
+																			<TableCell sx={{ fontWeight: 600 }}>Token</TableCell>
+																			<TableCell align="right" sx={{ fontWeight: 600 }}>Type</TableCell>
+																			<TableCell align="right" sx={{ fontWeight: 600 }}>Quantity</TableCell>
 																					{!secretMode && (
 																						<>
-																					<TableCell align="right" sx={{ fontWeight: 600 }}>Price</TableCell>
-																					<TableCell align="right" sx={{ fontWeight: 600 }}>Amount</TableCell>
+																			<TableCell align="right" sx={{ fontWeight: 600 }}>Price</TableCell>
+																			<TableCell align="right" sx={{ fontWeight: 600 }}>Amount</TableCell>
 																						</>
 																					)}
-																				</TableRow>
-																			</TableHead>
-																			<TableBody>
+																		</TableRow>
+																	</TableHead>
+																	<TableBody>
 																				{paginated.map((transaction) => (
 																			<TableRow key={transaction.id}>
 																				<TableCell>
@@ -1902,9 +1902,9 @@ export default function Page(): React.JSX.Element {
 																					</>
 																				)}
 																			</TableRow>
-																				))}
-																			</TableBody>
-																		</Table>
+																		))}
+																	</TableBody>
+																</Table>
 																		<TablePagination
 																			component="div"
 																			count={filtered.length}
@@ -2121,60 +2121,60 @@ export default function Page(): React.JSX.Element {
 								<NoSsr fallback={<Box sx={{ height: "280px" }} />}>
 									<ResponsiveContainer height={280} width="100%">
 										<AreaChart data={portfolioPerformanceData} margin={{ top: 10, right: 10, bottom: 10, left: 10 }}>
-											<defs>
+										<defs>
 												<linearGradient id="area-performance-gradient" x1="0" x2="0" y1="0" y2="1">
 													<stop offset="0%" stopColor="var(--mui-palette-primary-main)" stopOpacity={0.4} />
 													<stop offset="50%" stopColor="var(--mui-palette-primary-main)" stopOpacity={0.2} />
-													<stop offset="100%" stopColor="var(--mui-palette-primary-main)" stopOpacity={0} />
-												</linearGradient>
+												<stop offset="100%" stopColor="var(--mui-palette-primary-main)" stopOpacity={0} />
+											</linearGradient>
 												<linearGradient id="area-performance-stroke" x1="0" x2="1" y1="0" y2="0">
 													<stop offset="0%" stopColor="var(--mui-palette-primary-main)" />
 													<stop offset="100%" stopColor="var(--mui-palette-secondary-main)" />
 												</linearGradient>
-											</defs>
+										</defs>
 											<CartesianGrid 
 												strokeDasharray="3 3" 
 												vertical={false} 
 												stroke="var(--mui-palette-divider)"
 												opacity={0.5}
 											/>
-											<XAxis
-												axisLine={false}
-												dataKey="name"
-												tickLine={false}
-												type="category"
-												interval="preserveStartEnd"
+										<XAxis
+											axisLine={false}
+											dataKey="name"
+											tickLine={false}
+											type="category"
+											interval="preserveStartEnd"
 												tick={{ fontSize: 11, fill: "var(--mui-palette-text-secondary)" }}
 												height={30}
-											/>
-											<YAxis
-												axisLine={false}
-												tickLine={false}
-												type="number"
-												tickFormatter={(value) => formatCompactCurrency(value, "$", 0).replace("$", "")}
+										/>
+										<YAxis
+											axisLine={false}
+											tickLine={false}
+											type="number"
+											tickFormatter={(value) => formatCompactCurrency(value, "$", 0).replace("$", "")}
 												tick={{ fontSize: 11, fill: "var(--mui-palette-text-secondary)" }}
 												width={60}
-											/>
-											<Area
+										/>
+										<Area
 												animationDuration={800}
-												dataKey="value"
+											dataKey="value"
 												fill="url(#area-performance-gradient)"
-												fillOpacity={1}
-												name="Total Value"
+											fillOpacity={1}
+											name="Total Value"
 												stroke="url(#area-performance-stroke)"
-												strokeWidth={3}
+											strokeWidth={3}
 												type="monotone"
 												dot={false}
 												activeDot={{ r: 6, fill: "var(--mui-palette-primary-main)", strokeWidth: 2, stroke: "var(--mui-palette-background-paper)" }}
-											/>
-											<Tooltip
-												animationDuration={50}
-												content={<PerformanceTooltipContent />}
+										/>
+										<Tooltip
+											animationDuration={50}
+											content={<PerformanceTooltipContent />}
 												cursor={{ stroke: "var(--mui-palette-primary-main)", strokeWidth: 1, strokeDasharray: "5 5", opacity: 0.5 }}
-											/>
-										</AreaChart>
-									</ResponsiveContainer>
-								</NoSsr>
+										/>
+									</AreaChart>
+								</ResponsiveContainer>
+							</NoSsr>
 							</Stack>
 						) : (
 							<Stack spacing={3}>
@@ -2344,7 +2344,7 @@ export default function Page(): React.JSX.Element {
 										</LineChart>
 									</ResponsiveContainer>
 								</NoSsr>
-							</Stack>
+									</Stack>
 								)}
 							</>
 						)}
