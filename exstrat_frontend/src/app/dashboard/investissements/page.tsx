@@ -576,57 +576,102 @@ export default function Page(): React.JSX.Element {
 			return data;
 		}
 
-		// Group transactions by date and calculate cumulative value
-		const transactionsByDate = new Map<string, number>();
+		// Group transactions by date and calculate portfolio value evolution
+		const transactionPoints: Array<{ date: Date; invested: number; daysAgo: number }> = [];
 		const sortedTransactions = [...transactions].sort((a, b) => {
 			const dateA = new Date(a.transactionDate).getTime();
 			const dateB = new Date(b.transactionDate).getTime();
 			return dateA - dateB;
 		});
 
-		let cumulativeValue = 0;
+		let cumulativeInvested = 0;
 		const now = new Date();
 		const days = 30;
-		const data: Array<{ name: string; value: number }> = [];
 
-		// Calculate cumulative value for each transaction date
+		// Calculate cumulative invested amount for each transaction date
 		for (const transaction of sortedTransactions) {
 			const transactionDate = new Date(transaction.transactionDate);
 			const daysDiff = Math.floor((now.getTime() - transactionDate.getTime()) / (1000 * 60 * 60 * 24));
-			if (daysDiff <= days) {
+			if (daysDiff <= days && daysDiff >= 0) {
 				if (transaction.type === "BUY") {
-					cumulativeValue += transaction.amountInvested || 0;
+					cumulativeInvested += transaction.amountInvested || 0;
 				} else {
-					cumulativeValue -= transaction.amountInvested || 0;
+					// For SELL, subtract the cost basis (amountInvested represents what was sold)
+					cumulativeInvested -= transaction.amountInvested || 0;
 				}
-				const monthName = transactionDate.toLocaleDateString("en-US", { month: "short" });
-				const day = transactionDate.getDate();
-				transactionsByDate.set(`${monthName} ${day}`, cumulativeValue);
+				transactionPoints.push({
+					date: transactionDate,
+					invested: cumulativeInvested,
+					daysAgo: daysDiff,
+				});
 			}
 		}
 
-		// Fill in missing dates with interpolated values
+		// Generate data points for all dates with smooth interpolation
+		const data: Array<{ name: string; value: number }> = [];
+		
 		for (let i = days; i >= 0; i--) {
 			const date = new Date(now);
 			date.setDate(date.getDate() - i);
 			const monthName = date.toLocaleDateString("en-US", { month: "short" });
 			const day = date.getDate();
 			const dateKey = `${monthName} ${day}`;
+			const daysAgo = i;
 
-			if (transactionsByDate.has(dateKey)) {
-				data.push({
-					name: dateKey,
-					value: transactionsByDate.get(dateKey)!,
-				});
-			} else {
-				// Interpolate based on current total value
-				const progress = i / days;
-				const simulatedValue = globalStats.totalValue * (0.7 + 0.3 * progress);
-				data.push({
-					name: dateKey,
-					value: simulatedValue,
-				});
+			// Find the closest transaction points before and after this date
+			let beforePoint: { invested: number; daysAgo: number } | null = null;
+			let afterPoint: { invested: number; daysAgo: number } | null = null;
+
+			for (const point of transactionPoints) {
+				if (point.daysAgo >= daysAgo) {
+					if (!beforePoint || point.daysAgo < beforePoint.daysAgo) {
+						beforePoint = point;
+					}
+				}
+				if (point.daysAgo <= daysAgo) {
+					if (!afterPoint || point.daysAgo > afterPoint.daysAgo) {
+						afterPoint = point;
+					}
+				}
 			}
+
+			// Calculate invested amount for this date
+			let investedAtDate: number;
+			if (beforePoint && afterPoint) {
+				// Interpolate between two points
+				if (beforePoint.daysAgo === afterPoint.daysAgo) {
+					investedAtDate = beforePoint.invested;
+				} else {
+					const factor = (daysAgo - afterPoint.daysAgo) / (beforePoint.daysAgo - afterPoint.daysAgo);
+					investedAtDate = afterPoint.invested + (beforePoint.invested - afterPoint.invested) * factor;
+				}
+			} else if (beforePoint) {
+				// Only before point (future transaction)
+				investedAtDate = beforePoint.invested;
+			} else if (afterPoint) {
+				// Only after point (past transaction)
+				investedAtDate = afterPoint.invested;
+			} else {
+				// No transactions, estimate based on current invested
+				const progress = i / days;
+				investedAtDate = globalStats.totalInvested * (0.7 + 0.3 * (1 - progress));
+			}
+
+			// Calculate value by applying PnL percentage
+			// Estimate PnL percentage at this point in time (assume it was lower in the past)
+			const progress = i / days; // 0 = today, 1 = 30 days ago
+			const estimatedPnLPercentage = globalStats.totalPNLPercentage * (1 - progress * 0.3); // PnL was 30% lower 30 days ago
+			const valueAtDate = investedAtDate * (1 + estimatedPnLPercentage / 100);
+
+			data.push({
+				name: dateKey,
+				value: Math.max(0, valueAtDate), // Ensure non-negative
+			});
+		}
+
+		// Ensure the last value (today) matches current total value exactly
+		if (data.length > 0) {
+			data[data.length - 1].value = globalStats.totalValue;
 		}
 
 		return data;
