@@ -12,6 +12,8 @@ import {
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
 import { TransactionsService } from './transactions.service';
 import { CreateTransactionDto, UpdateTransactionDto, TransactionSearchDto, TransactionResponseDto } from './dto/transaction.dto';
+import { ParseCsvDto, ParseCsvResponseDto, CreateBatchTransactionsDto, CreateBatchTransactionsResponseDto } from './dto/csv-import.dto';
+import { CsvParserService } from './csv-parser.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 
@@ -20,7 +22,10 @@ import { CurrentUser } from '../auth/decorators/current-user.decorator';
 @UseGuards(JwtAuthGuard)
 @Controller('transactions')
 export class TransactionsController {
-  constructor(private readonly transactionsService: TransactionsService) {}
+  constructor(
+    private readonly transactionsService: TransactionsService,
+    private readonly csvParserService: CsvParserService,
+  ) {}
 
   @Post()
   @ApiOperation({ summary: 'Créer une nouvelle transaction' })
@@ -170,5 +175,56 @@ export class TransactionsController {
   ): Promise<{ message: string }> {
     await this.transactionsService.remove(userId, id);
     return { message: 'Transaction supprimée avec succès' };
+  }
+
+  @Post('parse-csv')
+  @ApiOperation({ summary: 'Parser et valider un fichier CSV de transactions' })
+  @ApiResponse({ 
+    status: 200, 
+    description: 'CSV parsé avec succès',
+    type: ParseCsvResponseDto
+  })
+  @ApiResponse({ status: 400, description: 'Erreur lors du parsing du CSV' })
+  @ApiResponse({ status: 401, description: 'Non autorisé' })
+  async parseCsv(
+    @CurrentUser('id') userId: string,
+    @Body() parseCsvDto: ParseCsvDto
+  ): Promise<ParseCsvResponseDto> {
+    return this.csvParserService.parseCsv(parseCsvDto);
+  }
+
+  @Post('batch')
+  @ApiOperation({ summary: 'Créer plusieurs transactions en batch' })
+  @ApiResponse({ 
+    status: 200, 
+    description: 'Transactions créées avec succès',
+    type: CreateBatchTransactionsResponseDto
+  })
+  @ApiResponse({ status: 400, description: 'Données invalides' })
+  @ApiResponse({ status: 401, description: 'Non autorisé' })
+  async createBatch(
+    @CurrentUser('id') userId: string,
+    @Body() createBatchDto: CreateBatchTransactionsDto
+  ): Promise<CreateBatchTransactionsResponseDto> {
+    // Convertir les transactions parsées en CreateTransactionDto
+    const transactions: CreateTransactionDto[] = createBatchDto.transactions.map(tx => ({
+      symbol: tx.symbol,
+      name: tx.name,
+      cmcId: tx.cmcId,
+      quantity: tx.quantity,
+      amountInvested: tx.amountInvested,
+      averagePrice: tx.averagePrice,
+      type: tx.type as any, // TransactionType
+      transactionDate: tx.transactionDate,
+      notes: tx.notes,
+      exchangeId: tx.exchangeId,
+      portfolioId: tx.portfolioId || createBatchDto.defaultPortfolioId,
+    }));
+
+    return this.transactionsService.createBatchTransactions(
+      userId,
+      transactions,
+      createBatchDto.defaultPortfolioId
+    );
   }
 }

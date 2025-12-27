@@ -1,6 +1,7 @@
-import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
+import { Injectable, NotFoundException, ForbiddenException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateTransactionDto, UpdateTransactionDto, TransactionSearchDto, TransactionResponseDto } from './dto/transaction.dto';
+import { CreateBatchTransactionsResponseDto } from './dto/csv-import.dto';
 import { Decimal } from '@prisma/client/runtime/library';
 
 @Injectable()
@@ -34,6 +35,89 @@ export class TransactionsService {
       include: { portfolio: { select: { id: true, name: true, isDefault: true } } },
     });
     return this.mapToResponseDto(txWithPortfolio);
+  }
+
+  async createBatchTransactions(
+    userId: string,
+    transactions: CreateTransactionDto[],
+    defaultPortfolioId?: string
+  ): Promise<CreateBatchTransactionsResponseDto> {
+    if (!transactions || transactions.length === 0) {
+      throw new BadRequestException('Aucune transaction à créer');
+    }
+
+    if (transactions.length > 1000) {
+      throw new BadRequestException('Le nombre maximum de transactions par batch est de 1000');
+    }
+
+    const created: Array<{ id: string; symbol: string; name: string }> = [];
+    const failed: Array<{ index: number; transaction: any; error: string }> = [];
+
+    // Traiter chaque transaction
+    for (let i = 0; i < transactions.length; i++) {
+      const txDto = transactions[i];
+      
+      try {
+        // Utiliser le portfolioId de la transaction ou le defaultPortfolioId
+        const portfolioId = txDto.portfolioId || defaultPortfolioId;
+
+        // Valider les champs requis
+        if (!txDto.symbol || !txDto.name || !txDto.cmcId) {
+          throw new BadRequestException('Champs requis manquants: symbol, name, cmcId');
+        }
+
+        if (!txDto.quantity || txDto.quantity <= 0) {
+          throw new BadRequestException('La quantité doit être supérieure à 0');
+        }
+
+        if (!txDto.amountInvested || txDto.amountInvested <= 0) {
+          throw new BadRequestException('Le montant investi doit être supérieur à 0');
+        }
+
+        // Créer la transaction
+        const transaction = await this.prisma.transaction.create({
+          data: {
+            userId,
+            symbol: txDto.symbol,
+            name: txDto.name,
+            cmcId: txDto.cmcId,
+            quantity: txDto.quantity,
+            amountInvested: txDto.amountInvested,
+            averagePrice: txDto.averagePrice || (txDto.amountInvested / txDto.quantity),
+            type: txDto.type || 'BUY',
+            transactionDate: txDto.transactionDate ? new Date(txDto.transactionDate) : new Date(),
+            notes: txDto.notes,
+            exchangeId: txDto.exchangeId,
+            portfolioId: portfolioId,
+          },
+        });
+
+        // Synchroniser avec le système de portfolios (en arrière-plan, ne pas bloquer)
+        this.syncTransactionWithPortfolio(userId, transaction, portfolioId).catch(error => {
+          console.error(`Erreur lors de la synchronisation du portfolio pour la transaction ${transaction.id}:`, error);
+        });
+
+        created.push({
+          id: transaction.id,
+          symbol: transaction.symbol,
+          name: transaction.name,
+        });
+      } catch (error) {
+        failed.push({
+          index: i,
+          transaction: txDto,
+          error: error.message || 'Erreur inconnue lors de la création de la transaction',
+        });
+      }
+    }
+
+    return {
+      created,
+      failed,
+      total: transactions.length,
+      successCount: created.length,
+      failedCount: failed.length,
+    };
   }
 
   async findAll(userId: string, searchDto: TransactionSearchDto): Promise<{ transactions: TransactionResponseDto[], total: number, page: number, limit: number }> {

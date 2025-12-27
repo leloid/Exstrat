@@ -1,0 +1,5 @@
+Timestamp (UTC),Transaction Description,Currency,Amount,To Currency,To Amount,Native Currency,Native Amount,Native Amount (in USD),Transaction Kind,Transaction Hash
+2023-12-17 18:27:41,Withdraw BNB (BSC),BNB,-0.06625,,,EUR,14.513332031094980659754260516,17.30344660404625319551497544487148646,crypto_withdrawal,0x4f972f68008ef64e34c7b58bce2f4f8c4963b8063add3e6817a1c0507e2ea675
+2023-12-17 18:19:26,Bought BNB,BNB,0.06625,,,EUR,15.0,17.883674025,crypto_purchase,
+2023-12-16 23:04:22,Bought ETH,EUR,80.00,ETH,0.038540104177433035,EUR,80.0,95.3795948,recurring_buy_order,
+2023-12-05 22:25:06,Bought ETH,EUR,80.00,ETH,0.035736808408809158,EUR,80.0,95.3795948,recurring_buy_order,

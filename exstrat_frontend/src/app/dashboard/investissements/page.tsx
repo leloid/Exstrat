@@ -63,6 +63,8 @@ import { formatCurrency, formatPercentage, formatCompactCurrency, formatQuantity
 import { useSecretMode } from "@/hooks/use-secret-mode";
 import { TokenSearch } from "@/components/transactions/token-search";
 import { CreateTransactionModal } from "@/components/transactions/create-transaction-modal";
+import { SelectExchangeModal, type ExchangeType } from "@/components/exchanges/select-exchange-modal";
+import { ImportCsvModal } from "@/components/exchanges/import-csv-modal";
 import { toast } from "@/components/core/toaster";
 import type { Holding, CreatePortfolioDto, UpdatePortfolioDto } from "@/types/portfolio";
 import type { TransactionResponse, CreateTransactionDto, TokenSearchResult } from "@/types/transactions";
@@ -155,6 +157,9 @@ export default function Page(): React.JSX.Element {
 	const [editingPortfolioId, setEditingPortfolioId] = React.useState<string | null>(null);
 	const [showDeleteWalletModal, setShowDeleteWalletModal] = React.useState(false);
 	const [walletToDelete, setWalletToDelete] = React.useState<string | null>(null);
+	const [showSelectExchangeModal, setShowSelectExchangeModal] = React.useState(false);
+	const [showImportCsvModal, setShowImportCsvModal] = React.useState(false);
+	const [selectedExchange, setSelectedExchange] = React.useState<ExchangeType | null>(null);
 	const [showDeleteTransactionModal, setShowDeleteTransactionModal] = React.useState(false);
 	const [transactionToDelete, setTransactionToDelete] = React.useState<string | null>(null);
 	const [selectedTransactionIds, setSelectedTransactionIds] = React.useState<Set<string>>(new Set());
@@ -306,83 +311,105 @@ export default function Page(): React.JSX.Element {
 		return topTokens;
 	}, [allTokenData]);
 
+	// Load portfolio data function (extracted for reuse)
+	const loadPortfolioDataRef = React.useRef<((portfoliosToLoad?: typeof portfolios) => Promise<void>) | null>(null);
+	
+	const loadPortfolioData = React.useCallback(async (portfoliosToLoad?: typeof portfolios) => {
+		const portfoliosList = portfoliosToLoad || portfolios;
+		if (portfoliosList.length === 0 || loadingPortfolios) return;
+
+		setLoadingPortfolios(true);
+		try {
+			const data: Record<string, PortfolioData> = {};
+
+			for (const portfolio of portfoliosList) {
+				try {
+					const holdings = await portfoliosApi.getPortfolioHoldings(portfolio.id);
+					const invested = holdings.reduce((sum, h) => sum + (h.investedAmount || 0), 0);
+					// IMPORTANT: Utiliser currentValue du backend qui est calculé avec currentPrice (prix actuel du marché)
+					// currentValue = quantity * currentPrice (ou quantity * averagePrice si currentPrice n'est pas disponible)
+					const value = holdings.reduce((sum, h) => sum + (h.currentValue || 0), 0);
+					const pnl = value - invested;
+					const pnlPercentage = invested > 0 ? (pnl / invested) * 100 : 0;
+
+					data[portfolio.id] = {
+						id: portfolio.id,
+						name: portfolio.name,
+						description: portfolio.description,
+						isDefault: portfolio.isDefault,
+						holdings,
+						invested,
+						value,
+						pnl,
+						pnlPercentage,
+						holdingsCount: holdings.length,
+					};
+				} catch (error) {
+					console.error(`Error loading holdings for ${portfolio.name}:`, error);
+					data[portfolio.id] = {
+						id: portfolio.id,
+						name: portfolio.name,
+						description: portfolio.description,
+						isDefault: portfolio.isDefault,
+						holdings: [],
+						invested: 0,
+						value: 0,
+						pnl: 0,
+						pnlPercentage: 0,
+						holdingsCount: 0,
+					};
+				}
+			}
+
+			setPortfolioData(data);
+		} catch (error) {
+			console.error("Error loading portfolio data:", error);
+		} finally {
+			setLoadingPortfolios(false);
+		}
+	}, [portfolios]);
+
+	// Store the function in ref for stable reference
+	loadPortfolioDataRef.current = loadPortfolioData;
+
 	// Load portfolio data
 	React.useEffect(() => {
-		const loadPortfolioData = async () => {
-			if (portfolios.length === 0 || loadingPortfolios) return;
-
-			setLoadingPortfolios(true);
-			try {
-				const data: Record<string, PortfolioData> = {};
-
-				for (const portfolio of portfolios) {
-					try {
-						const holdings = await portfoliosApi.getPortfolioHoldings(portfolio.id);
-						const invested = holdings.reduce((sum, h) => sum + (h.investedAmount || 0), 0);
-						// IMPORTANT: Utiliser currentValue du backend qui est calculé avec currentPrice (prix actuel du marché)
-						// currentValue = quantity * currentPrice (ou quantity * averagePrice si currentPrice n'est pas disponible)
-						const value = holdings.reduce((sum, h) => sum + (h.currentValue || 0), 0);
-						const pnl = value - invested;
-						const pnlPercentage = invested > 0 ? (pnl / invested) * 100 : 0;
-
-						data[portfolio.id] = {
-							id: portfolio.id,
-							name: portfolio.name,
-							description: portfolio.description,
-							isDefault: portfolio.isDefault,
-							holdings,
-							invested,
-							value,
-							pnl,
-							pnlPercentage,
-							holdingsCount: holdings.length,
-						};
-					} catch (error) {
-						console.error(`Error loading holdings for ${portfolio.name}:`, error);
-						data[portfolio.id] = {
-							id: portfolio.id,
-							name: portfolio.name,
-							description: portfolio.description,
-							isDefault: portfolio.isDefault,
-							holdings: [],
-							invested: 0,
-							value: 0,
-							pnl: 0,
-							pnlPercentage: 0,
-							holdingsCount: 0,
-						};
-					}
-				}
-
-				setPortfolioData(data);
-			} catch (error) {
-				console.error("Error loading portfolio data:", error);
-			} finally {
-				setLoadingPortfolios(false);
-			}
-		};
-
-		if (!portfoliosLoading && portfolios.length > 0) {
+		if (!portfoliosLoading && portfolios.length > 0 && !loadingPortfolios) {
 			loadPortfolioData();
 		}
+		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [portfolios, portfoliosLoading]);
 
-	// Load transactions
-	React.useEffect(() => {
-		const loadTransactions = async () => {
-			setLoadingTransactions(true);
-			try {
-				const response = await transactionsApi.getTransactions({ limit: 100 });
-				setTransactions(response.transactions);
-			} catch (error) {
-				console.error("Error loading transactions:", error);
-			} finally {
-				setLoadingTransactions(false);
-			}
-		};
-
-		loadTransactions();
+	// Load transactions function (extracted for reuse)
+	const loadTransactions = React.useCallback(async () => {
+		setLoadingTransactions(true);
+		try {
+			const response = await transactionsApi.getTransactions({ limit: 100 });
+			setTransactions(response.transactions);
+		} catch (error) {
+			console.error("Error loading transactions:", error);
+		} finally {
+			setLoadingTransactions(false);
+		}
 	}, []);
+
+	// Load transactions on mount
+	React.useEffect(() => {
+		loadTransactions();
+	}, [loadTransactions]);
+
+	// Refresh all data function (for use after imports/updates)
+	const refreshAllData = React.useCallback(async () => {
+		// First refresh portfolios list
+		await refreshPortfolios();
+		// Get the updated portfolios directly from API
+		const updatedPortfolios = await portfoliosApi.getPortfolios();
+		// Then reload transactions and portfolio data with updated portfolios
+		await Promise.all([
+			loadTransactions(),
+			loadPortfolioDataRef.current?.(updatedPortfolios) || Promise.resolve()
+		]);
+	}, [refreshPortfolios, loadTransactions]);
 
 	// Filtered, sorted and paginated wallets
 	const filteredWallets = React.useMemo(() => {
@@ -1111,6 +1138,25 @@ export default function Page(): React.JSX.Element {
 						>
 							Add Wallet
 						</Button>
+						<Button
+							onClick={() => setShowSelectExchangeModal(true)}
+							startIcon={<PlugsConnectedIcon />}
+							variant="outlined"
+							sx={{
+								color: "secondary.main",
+								borderColor: "secondary.main",
+								"&:hover": {
+									backgroundColor: "secondary.main",
+									borderColor: "secondary.main",
+									color: "secondary.contrastText",
+									"& .MuiSvgIcon-root": {
+										color: "secondary.contrastText",
+									},
+								},
+							}}
+						>
+							Add Exchange
+						</Button>
 						{portfolios.length > 0 && (
 							<Button
 								onClick={() => {
@@ -1134,31 +1180,6 @@ export default function Page(): React.JSX.Element {
 								Add Transaction
 							</Button>
 						)}
-						<MuiTooltip title="Coming soon - Exchange integration will be available in a future update">
-							<span>
-								<Button
-									disabled
-									startIcon={<PlugsConnectedIcon />}
-									variant="outlined"
-									sx={{ position: "relative" }}
-								>
-									Add Exchange
-									<Chip
-										label="Soon"
-										size="small"
-										color="primary"
-										sx={{
-											ml: 1,
-											height: "18px",
-											fontSize: "0.65rem",
-											"& .MuiChip-label": {
-												px: 0.75,
-											},
-										}}
-									/>
-								</Button>
-							</span>
-						</MuiTooltip>
 					</Stack>
 				</Stack>
 
@@ -2175,8 +2196,29 @@ export default function Page(): React.JSX.Element {
 														minWidth: "200px",
 														flex: "1 1 auto",
 														borderLeft: `4px solid ${color}`,
+														position: "relative",
 													}}
 												>
+													{/* Rank Badge */}
+													<Box
+														sx={{
+															position: "absolute",
+															top: 8,
+															right: 8,
+															bgcolor: color,
+															color: "white",
+															borderRadius: "50%",
+															width: 24,
+															height: 24,
+															display: "flex",
+															alignItems: "center",
+															justifyContent: "center",
+															fontWeight: 700,
+															fontSize: "0.75rem",
+														}}
+													>
+														{index + 1}
+													</Box>
 													<CardContent sx={{ p: 2, "&:last-child": { pb: 2 } }}>
 														<Stack spacing={1}>
 															<Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
@@ -3060,6 +3102,36 @@ export default function Page(): React.JSX.Element {
 				rowsPerPage={allTokensRowsPerPage}
 				onRowsPerPageChange={setAllTokensRowsPerPage}
 			/>
+
+			{/* Exchange Modals */}
+			<SelectExchangeModal
+				open={showSelectExchangeModal}
+				onClose={() => setShowSelectExchangeModal(false)}
+				onSelectExchange={(exchange, method) => {
+					if (method === "csv") {
+						setSelectedExchange(exchange);
+						setShowSelectExchangeModal(false);
+						setShowImportCsvModal(true);
+					} else {
+						// API connection - coming soon
+						toast.info("API connection coming soon!");
+					}
+				}}
+			/>
+			{selectedExchange && (
+				<ImportCsvModal
+					open={showImportCsvModal}
+					onClose={() => {
+						setShowImportCsvModal(false);
+						setSelectedExchange(null);
+					}}
+					exchange={selectedExchange}
+					onSuccess={async () => {
+						// Refresh all data: portfolios, transactions, and holdings
+						await refreshAllData();
+					}}
+				/>
+			)}
 		</Box>
 	);
 }

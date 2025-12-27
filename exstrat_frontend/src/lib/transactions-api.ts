@@ -84,5 +84,75 @@ export const transactionsApi = {
 		const response = await api.get<PortfolioSummary>("/transactions/portfolio");
 		return response.data;
 	},
+
+	/**
+	 * Parse CSV file content
+	 */
+	async parseCsv(data: {
+		exchange: "coinbase" | "crypto.com";
+		csvContent: string;
+		portfolioId?: string;
+	}): Promise<{
+		validTransactions: Array<{
+			symbol: string;
+			name?: string;
+			cmcId?: number;
+			quantity: number;
+			amountInvested: number;
+			averagePrice: number;
+			type: string;
+			transactionDate: string;
+			notes?: string;
+			exchangeId: string;
+		}>;
+		invalidTransactions: Array<{
+			row: number;
+			data: any;
+			errors: string[];
+		}>;
+		totalRows: number;
+		validCount: number;
+		invalidCount: number;
+	}> {
+		const response = await api.post("/transactions/parse-csv", data);
+		return response.data;
+	},
+
+	/**
+	 * Create transactions in batch
+	 */
+	async createBatchTransactions(data: {
+		transactions: Array<{
+			symbol: string;
+			name: string;
+			cmcId: number;
+			quantity: number;
+			amountInvested: number;
+			averagePrice: number;
+			type: string;
+			transactionDate: string;
+			notes?: string;
+			exchangeId?: string;
+			portfolioId?: string;
+		}>;
+		defaultPortfolioId?: string;
+	}): Promise<{
+		created: Array<{
+			id: string;
+			symbol: string;
+			name: string;
+		}>;
+		failed: Array<{
+			index: number;
+			transaction: any;
+			error: string;
+		}>;
+		total: number;
+		successCount: number;
+		failedCount: number;
+	}> {
+		const response = await api.post("/transactions/batch", data);
+		return response.data;
+	},
 };
 
