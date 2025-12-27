@@ -14,6 +14,7 @@ import TableCell from "@mui/material/TableCell";
 import TableHead from "@mui/material/TableHead";
 import TableRow from "@mui/material/TableRow";
 import TableSortLabel from "@mui/material/TableSortLabel";
+import TablePagination from "@mui/material/TablePagination";
 import Typography from "@mui/material/Typography";
 import Tooltip from "@mui/material/Tooltip";
 import { useColorScheme } from "@mui/material/styles";
@@ -55,6 +56,8 @@ export function TokensTable({ holdings, portfolioId, onTokenClick }: TokensTable
 	const [alertConfigurations, setAlertConfigurations] = React.useState<AlertConfiguration[]>([]);
 	const [strategiesMap, setStrategiesMap] = React.useState<Map<string, TheoreticalStrategyResponse>>(new Map());
 	const [loadingAlerts, setLoadingAlerts] = React.useState(false);
+	const [page, setPage] = React.useState(0);
+	const [rowsPerPage, setRowsPerPage] = React.useState(5);
 
 	// Load alert configurations and strategies
 	React.useEffect(() => {
@@ -223,6 +226,22 @@ export function TokensTable({ holdings, portfolioId, onTokenClick }: TokensTable
 		return sorted;
 	}, [holdingsWithCalculations, sortField, sortDirection, getTokenAlertInfo]);
 
+	// Paginate sorted holdings
+	const paginatedHoldings = React.useMemo(() => {
+		const startIndex = page * rowsPerPage;
+		const endIndex = startIndex + rowsPerPage;
+		return sortedHoldings.slice(startIndex, endIndex);
+	}, [sortedHoldings, page, rowsPerPage]);
+
+	const handleChangePage = React.useCallback((_: unknown, newPage: number) => {
+		setPage(newPage);
+	}, []);
+
+	const handleChangeRowsPerPage = React.useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
+		setRowsPerPage(parseInt(event.target.value, 10));
+		setPage(0);
+	}, []);
+
 	const handleSort = (field: SortField) => {
 		if (sortField === field) {
 			setSortDirection(sortDirection === "asc" ? "desc" : "asc");
@@ -376,7 +395,7 @@ export function TokensTable({ holdings, portfolioId, onTokenClick }: TokensTable
 							</TableRow>
 						</TableHead>
 						<TableBody>
-							{sortedHoldings.map((holding) => {
+							{paginatedHoldings.map((holding) => {
 								const isPositive = (holding.pnl || 0) >= 0;
 								const alertInfo = getTokenAlertInfo(holding);
 
@@ -559,6 +578,16 @@ export function TokensTable({ holdings, portfolioId, onTokenClick }: TokensTable
 							})}
 						</TableBody>
 					</Table>
+					<TablePagination
+						component="div"
+						count={sortedHoldings.length}
+						onPageChange={handleChangePage}
+						onRowsPerPageChange={handleChangeRowsPerPage}
+						page={page}
+						rowsPerPage={rowsPerPage}
+						rowsPerPageOptions={[5, 10, 15, 20]}
+						labelRowsPerPage="Rows per page:"
+					/>
 				</Box>
 			</CardContent>
 		</Card>
