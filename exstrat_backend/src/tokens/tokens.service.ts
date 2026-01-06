@@ -289,6 +289,78 @@ export class TokensService {
     }
   }
 
+  /**
+   * Récupère les tokens par leurs IDs CoinMarketCap (batch)
+   * Utilisé pour récupérer les prix de plusieurs tokens en une seule requête
+   */
+  async searchTokensByIds(ids: number[]): Promise<TokenSearchResult[]> {
+    if (ids.length === 0) {
+      return [];
+    }
+
+    try {
+      // CoinMarketCap permet jusqu'à 100 IDs par requête
+      const BATCH_SIZE = 100;
+      const results: TokenSearchResult[] = [];
+
+      for (let i = 0; i < ids.length; i += BATCH_SIZE) {
+        const batch = ids.slice(i, i + BATCH_SIZE);
+        const tokenIds = batch.join(',');
+
+        const response = await axios.get<TokenSearchResponse>(
+          `${this.baseUrl}/cryptocurrency/quotes/latest`,
+          {
+            headers: {
+              'X-CMC_PRO_API_KEY': this.apiKey,
+              'Accept': 'application/json',
+            },
+            params: {
+              id: tokenIds,
+              convert: 'USD',
+            },
+          }
+        );
+
+        if (response.data.status.error_code === 0) {
+          const batchResults = Object.values(response.data.data);
+          results.push(...batchResults);
+        } else {
+          console.error(`Error fetching batch: ${response.data.status.error_message}`);
+        }
+
+        // Petite pause entre les batches pour respecter les rate limits
+        if (i + BATCH_SIZE < ids.length) {
+          await new Promise(resolve => setTimeout(resolve, 200));
+        }
+      }
+
+      return results;
+    } catch (error) {
+      if (axios.isAxiosError(error)) {
+        if (error.response?.status === 401) {
+          throw new HttpException(
+            'API Key CoinMarketCap invalide',
+            HttpStatus.UNAUTHORIZED
+          );
+        }
+        if (error.response?.status === 429) {
+          throw new HttpException(
+            'Limite de requêtes CoinMarketCap atteinte',
+            HttpStatus.TOO_MANY_REQUESTS
+          );
+        }
+        throw new HttpException(
+          `Erreur API CoinMarketCap: ${error.message}`,
+          HttpStatus.BAD_GATEWAY
+        );
+      }
+      throw new HttpException(
+        'Erreur interne lors de la récupération des tokens',
+        HttpStatus.INTERNAL_SERVER_ERROR
+      );
+    }
+  }
+
   async searchTokensByName(query: string): Promise<TokenSearchResult[]> {
     try {
       // Pour la recherche par nom, on utilise l'endpoint de mapping

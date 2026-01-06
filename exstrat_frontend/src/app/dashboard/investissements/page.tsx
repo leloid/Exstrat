@@ -2235,7 +2235,7 @@ export default function Page(): React.JSX.Element {
 												<linearGradient id="area-performance-stroke" x1="0" x2="1" y1="0" y2="0">
 													<stop offset="0%" stopColor="var(--mui-palette-primary-main)" />
 													<stop offset="100%" stopColor="var(--mui-palette-secondary-main)" />
-												</linearGradient>
+											</linearGradient>
 										</defs>
 											<CartesianGrid 
 												strokeDasharray="3 3" 
