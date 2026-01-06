@@ -122,27 +122,56 @@ export class PortfoliosService {
       throw new NotFoundException('Portfolio non trouvé');
     }
 
-    // Supprimer dans l'ordre pour respecter les contraintes de clés étrangères
-    // 1. Supprimer les holdings associés
-    await this.prisma.holding.deleteMany({
-      where: { portfolioId },
-    });
+    // Utiliser une transaction pour garantir l'atomicité
+    await this.prisma.$transaction(async (tx) => {
+      // 1. Récupérer les Forecast associés pour vérifier et supprimer leurs AlertConfiguration
+      const forecasts = await tx.forecast.findMany({
+        where: { portfolioId },
+        select: {
+          id: true,
+        },
+      });
 
-    // 2. Supprimer les transactions associées (ou les réassigner à null)
-    // Option 1: Supprimer les transactions
-    await this.prisma.transaction.deleteMany({
-      where: { portfolioId },
-    });
-    
-    // Option 2 (alternative): Réassigner les transactions à null
-    // await this.prisma.transaction.updateMany({
-    //   where: { portfolioId },
-    //   data: { portfolioId: null },
-    // });
+      this.logger.log(`Found ${forecasts.length} forecast(s) for portfolio ${portfolioId}`);
 
-    // 3. Supprimer le portfolio
-    await this.prisma.portfolio.delete({
-      where: { id: portfolioId },
+      // 2. Supprimer les AlertConfiguration associées (et leurs TokenAlert/TPAlert en cascade)
+      // On doit les supprimer manuellement avant de supprimer les Forecast
+      // car onDelete: Cascade ne fonctionne que si on supprime directement le Forecast
+      if (forecasts.length > 0) {
+        const forecastIds = forecasts.map(f => f.id);
+        const deletedAlerts = await tx.alertConfiguration.deleteMany({
+          where: { forecastId: { in: forecastIds } },
+        });
+        this.logger.log(`Deleted ${deletedAlerts.count} alert configuration(s)`);
+      }
+
+      // 3. Supprimer les Forecast associés
+      const deletedForecasts = await tx.forecast.deleteMany({
+        where: { portfolioId },
+      });
+      this.logger.log(`Deleted ${deletedForecasts.count} forecast(s)`);
+
+      // 4. Supprimer les UserStrategy associés
+      await tx.userStrategy.deleteMany({
+        where: { portfolioId },
+      });
+
+      // 5. Supprimer les holdings associés
+      await tx.holding.deleteMany({
+        where: { portfolioId },
+      });
+
+      // 6. Supprimer les transactions associées
+      await tx.transaction.deleteMany({
+        where: { portfolioId },
+      });
+
+      // 7. Supprimer le portfolio
+      await tx.portfolio.delete({
+        where: { id: portfolioId },
+      });
+
+      this.logger.log(`Portfolio ${portfolioId} deleted successfully`);
     });
   }
 
