@@ -15,10 +15,19 @@ import { SettingsButton } from "@/components/core/settings/settings-button";
 import { SettingsProvider } from "@/components/core/settings/settings-context";
 import { ThemeProvider } from "@/components/core/theme-provider";
 import { Toaster } from "@/components/core/toaster";
+import { DynamicFavicon } from "@/components/core/dynamic-favicon";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { PortfolioProvider } from "@/contexts/PortfolioContext";
 
-export const metadata = { title: appConfig.name } satisfies Metadata;
+export const metadata = { 
+	title: appConfig.name,
+	icons: {
+		icon: [
+			{ url: "/logo_light.svg", media: "(prefers-color-scheme: light)" },
+			{ url: "/logo_dark.svg", media: "(prefers-color-scheme: dark)" },
+		],
+	},
+} satisfies Metadata;
 
 export const viewport = {
 	width: "device-width",
@@ -81,6 +90,7 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
 									<EmotionCacheProvider options={{ key: "mui" }}>
 										<Rtl direction={direction}>
 											<ThemeProvider>
+												<DynamicFavicon />
 												{children}
 												<SettingsButton />
 												<Toaster position="bottom-right" />

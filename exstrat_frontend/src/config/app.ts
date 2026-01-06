@@ -19,7 +19,7 @@ export interface AppConfig {
 }
 
 export const appConfig: AppConfig = {
-	name: "ExStrat",
+	name: "exStrat",
 	description: "",
 	direction: "ltr",
 	language: "en",
