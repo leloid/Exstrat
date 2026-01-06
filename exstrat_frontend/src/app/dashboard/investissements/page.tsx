@@ -79,6 +79,8 @@ import { ArrowUpRightIcon } from "@phosphor-icons/react/dist/ssr/ArrowUpRight";
 import { CaretDownIcon } from "@phosphor-icons/react/dist/ssr/CaretDown";
 import { CaretRightIcon } from "@phosphor-icons/react/dist/ssr/CaretRight";
 import { InfoIcon } from "@phosphor-icons/react/dist/ssr/Info";
+import useMediaQuery from "@mui/material/useMediaQuery";
+import { useTheme } from "@mui/material/styles";
 
 interface PortfolioData {
 	id: string;
@@ -1575,7 +1577,7 @@ export default function Page(): React.JSX.Element {
 											</TableRow>
 											<TableRow>
 												<TableCell
-													colSpan={{ xs: 3, md: 5 }}
+													colSpan={isMobile ? 3 : 5}
 													sx={{
 														py: 0,
 														borderBottom: isExpanded ? "1px solid var(--mui-palette-divider)" : "none",
