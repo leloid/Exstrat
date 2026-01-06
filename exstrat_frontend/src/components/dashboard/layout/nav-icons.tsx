@@ -6,6 +6,7 @@ import { ChartBarIcon } from "@phosphor-icons/react/dist/ssr/ChartBar";
 import { ChartLineIcon } from "@phosphor-icons/react/dist/ssr/ChartLine";
 import { ChartPieIcon } from "@phosphor-icons/react/dist/ssr/ChartPie";
 import { HorseIcon } from "@phosphor-icons/react/dist/ssr/Horse";
+import { CrownIcon } from "@phosphor-icons/react/dist/ssr/Crown";
 import { PencilIcon } from "@phosphor-icons/react/dist/ssr/Pencil";
 import { ChatsCircleIcon } from "@phosphor-icons/react/dist/ssr/ChatsCircle";
 import { CreditCardIcon } from "@phosphor-icons/react/dist/ssr/CreditCard";
@@ -16,6 +17,8 @@ import { FileIcon } from "@phosphor-icons/react/dist/ssr/File";
 import { FileDashedIcon } from "@phosphor-icons/react/dist/ssr/FileDashed";
 import { FileXIcon } from "@phosphor-icons/react/dist/ssr/FileX";
 import { GearIcon } from "@phosphor-icons/react/dist/ssr/Gear";
+import { SlidersIcon } from "@phosphor-icons/react/dist/ssr/Sliders";
+import { BellRingingIcon } from "@phosphor-icons/react/dist/ssr/BellRinging";
 import { GraduationCapIcon } from "@phosphor-icons/react/dist/ssr/GraduationCap";
 import { HouseIcon } from "@phosphor-icons/react/dist/ssr/House";
 import { KanbanIcon } from "@phosphor-icons/react/dist/ssr/Kanban";
@@ -42,6 +45,7 @@ export const icons = {
 	"chart-line": ChartLineIcon,
 	"chart-pie": ChartPieIcon,
 	horse: HorseIcon,
+	"chess-knight": HorseIcon, // Utilise l'icône Horse de Phosphor comme cavalier d'échecs
 	pencil: PencilIcon,
 	"chats-circle": ChatsCircleIcon,
 	"credit-card": CreditCardIcon,
@@ -60,6 +64,8 @@ export const icons = {
 	cube: CubeIcon,
 	file: FileIcon,
 	gear: GearIcon,
+	"sliders": SlidersIcon,
+	"bell-ringing": BellRingingIcon,
 	house: HouseIcon,
 	kanban: KanbanIcon,
 	link: LinkIcon,

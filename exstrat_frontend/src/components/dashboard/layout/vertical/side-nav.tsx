@@ -17,7 +17,6 @@ import { isNavItemActive } from "@/lib/is-nav-item-active";
 import type { ColorScheme } from "@/styles/theme/types";
 
 import { icons } from "../nav-icons";
-import { WorkspacesSwitch } from "../workspaces-switch";
 import { navColorStyles } from "./styles";
 
 const logoColors = {
@@ -28,9 +27,10 @@ const logoColors = {
 export interface SideNavProps {
 	color?: DashboardNavColor;
 	items?: NavItemConfig[];
+	gettingStartedItem?: NavItemConfig;
 }
 
-export function SideNav({ color = "evident", items = [] }: SideNavProps): React.JSX.Element {
+export function SideNav({ color = "evident", items = [], gettingStartedItem }: SideNavProps): React.JSX.Element {
 	const pathname = usePathname();
 
 	const { colorScheme = "light" } = useColorScheme();
@@ -67,12 +67,11 @@ export function SideNav({ color = "evident", items = [] }: SideNavProps): React.
 										? "/DarkFullLogo.svg"
 										: "/logo_large_dark_theme.svg"
 							}
-							alt="ExStrat"
+							alt="exStrat"
 							sx={{ height: "auto", maxWidth: "160px", width: "auto" }}
 						/>
 					</Box>
 				</div>
-				<WorkspacesSwitch />
 			</Stack>
 			<Box
 				component="nav"
@@ -82,9 +81,19 @@ export function SideNav({ color = "evident", items = [] }: SideNavProps): React.
 					p: 2,
 					scrollbarWidth: "none",
 					"&::-webkit-scrollbar": { display: "none" },
+					display: "flex",
+					flexDirection: "column",
 				}}
 			>
-				{renderNavGroups({ items, pathname })}
+				<Box sx={{ flex: "1 1 auto" }}>
+					{renderNavGroups({ items, pathname })}
+				</Box>
+				{/* Getting Started en bas */}
+				{gettingStartedItem && (
+					<Box sx={{ pt: 2, borderTop: "1px solid var(--NavItem-children-border)", mt: "auto" }}>
+						{renderNavItems({ depth: 0, items: [gettingStartedItem], pathname })}
+					</Box>
+				)}
 			</Box>
 		</Box>
 	);
@@ -94,13 +103,7 @@ function renderNavGroups({ items, pathname }: { items: NavItemConfig[]; pathname
 	const children = items.reduce((acc: React.ReactNode[], curr: NavItemConfig): React.ReactNode[] => {
 		acc.push(
 			<Stack component="li" key={curr.key} spacing={1.5}>
-				{curr.title ? (
-					<div>
-						<Typography sx={{ color: "var(--NavGroup-title-color)", fontSize: "0.875rem", fontWeight: 500 }}>
-							{curr.title}
-						</Typography>
-					</div>
-				) : null}
+				{/* Ne plus afficher les titres de sections */}
 				<div>{renderNavItems({ depth: 0, items: curr.items, pathname })}</div>
 			</Stack>
 		);
@@ -109,7 +112,7 @@ function renderNavGroups({ items, pathname }: { items: NavItemConfig[]; pathname
 	}, []);
 
 	return (
-		<Stack component="ul" spacing={2} sx={{ listStyle: "none", m: 0, p: 0 }}>
+		<Stack component="ul" spacing={1} sx={{ listStyle: "none", m: 0, p: 0 }}>
 			{children}
 		</Stack>
 	);

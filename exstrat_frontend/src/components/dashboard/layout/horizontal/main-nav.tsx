@@ -42,7 +42,6 @@ import { icons } from "../nav-icons";
 import { NotificationsPopover } from "../notifications-popover";
 import { UserPopover } from "../user-popover";
 import { useAuth } from "@/contexts/AuthContext";
-import { WorkspacesSwitch } from "../workspaces-switch";
 import { navColorStyles } from "./styles";
 import { SecretModeButton } from "../secret-mode-button";
 
@@ -54,9 +53,10 @@ const logoColors = {
 export interface MainNavProps {
 	color?: DashboardNavColor;
 	items?: NavItemConfig[];
+	gettingStartedItem?: NavItemConfig;
 }
 
-export function MainNav({ color = "evident", items = [] }: MainNavProps): React.JSX.Element {
+export function MainNav({ color = "evident", items = [], gettingStartedItem }: MainNavProps): React.JSX.Element {
 	const pathname = usePathname();
 
 	const [openNav, setOpenNav] = React.useState<boolean>(false);
@@ -109,12 +109,9 @@ export function MainNav({ color = "evident", items = [] }: MainNavProps): React.
 										? "/DarkFullLogo.svg"
 										: "/logo_large_dark_theme.svg"
 							}
-								alt="ExStrat"
+								alt="exStrat"
 								sx={{ height: "auto", maxWidth: "200px", width: "auto" }}
 							/>
-						</Box>
-						<Box sx={{ display: { xs: "none", md: "block" } }}>
-							<WorkspacesSwitch />
 						</Box>
 					</Stack>
 					<Stack
@@ -139,12 +136,23 @@ export function MainNav({ color = "evident", items = [] }: MainNavProps): React.
 					component="nav"
 					sx={{
 						borderTop: "1px solid var(--MainNav-divider)",
-						display: { xs: "none", md: "block" },
+						display: { xs: "none", md: "flex" },
 						minHeight: "56px",
 						overflowX: "auto",
+						justifyContent: "space-between",
+						alignItems: "center",
+						px: 2,
 					}}
 				>
-					{renderNavGroups({ items, pathname })}
+					<Box sx={{ flex: "1 1 auto" }}>
+						{renderNavGroups({ items, pathname })}
+					</Box>
+					{/* Getting Started tout à droite */}
+					{gettingStartedItem && (
+						<Box sx={{ ml: "auto" }}>
+							{renderNavItems({ items: [gettingStartedItem], pathname })}
+						</Box>
+					)}
 				</Box>
 			</Box>
 			<MobileNav
@@ -272,17 +280,19 @@ function UserButton(): React.JSX.Element {
 
 function renderNavGroups({ items = [], pathname }: { items?: NavItemConfig[]; pathname: string }): React.JSX.Element {
 	const children = items.reduce((acc: React.ReactNode[], curr: NavItemConfig): React.ReactNode[] => {
-		acc.push(
-			<Box component="li" key={curr.key} sx={{ flex: "0 0 auto" }}>
-				{renderNavItems({ pathname, items: curr.items })}
-			</Box>
-		);
+		// Aplatir tous les items sans afficher les titres de sections
+		if (curr.items) {
+			curr.items.forEach((item) => {
+				const { key, ...itemProps } = item;
+				acc.push(<NavItem key={key} pathname={pathname} {...itemProps} />);
+			});
+		}
 
 		return acc;
 	}, []);
 
 	return (
-		<Stack component="ul" direction="row" spacing={2} sx={{ listStyle: "none", m: 0, p: "8px 12px" }}>
+		<Stack component="ul" direction="row" spacing={1.5} sx={{ listStyle: "none", m: 0, p: 0 }}>
 			{children}
 		</Stack>
 	);

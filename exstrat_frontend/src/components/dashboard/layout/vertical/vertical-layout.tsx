@@ -42,7 +42,7 @@ export function VerticalLayout({ children }: VerticalLayoutProps): React.JSX.Ele
 					minHeight: "100%",
 				}}
 			>
-				<SideNav color={navColor} items={dashboardConfig.navItems} />
+				<SideNav color={navColor} items={dashboardConfig.navItems} gettingStartedItem={dashboardConfig.gettingStartedItem} />
 				<Box sx={{ display: "flex", flex: "1 1 auto", flexDirection: "column", pl: { lg: "var(--SideNav-width)" } }}>
 					<MainNav items={dashboardConfig.navItems} />
 					<Box

@@ -32,7 +32,7 @@ export function HorizontalLayout({ children }: HorizontalLayoutProps): React.JSX
 					minHeight: "100%",
 				}}
 			>
-				<MainNav color={navColor} items={dashboardConfig.navItems} />
+				<MainNav color={navColor} items={dashboardConfig.navItems} gettingStartedItem={dashboardConfig.gettingStartedItem} />
 				<Box
 					component="main"
 					sx={{
