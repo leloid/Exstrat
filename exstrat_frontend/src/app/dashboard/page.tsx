@@ -26,6 +26,7 @@ import { Cell, Pie, PieChart, Tooltip as RechartsTooltip } from "recharts";
 import { usePortfolio } from "@/contexts/PortfolioContext";
 import { QuickStats } from "@/components/dashboard/portfolio/quick-stats";
 import { GainsLossesChart } from "@/components/dashboard/portfolio/gains-losses-chart";
+import { WalletPerformance } from "@/components/dashboard/portfolio/wallet-performance";
 import { TokensTable } from "@/components/dashboard/portfolio/tokens-table";
 import { TokenStrategySidebar } from "@/components/dashboard/portfolio/token-strategy-sidebar";
 import { NoSsr } from "@/components/core/no-ssr";
@@ -34,6 +35,8 @@ import { getTokenLogoUrl } from "@/lib/utils";
 import { useSecretMode } from "@/hooks/use-secret-mode";
 import type { Holding } from "@/types/portfolio";
 import * as portfoliosApi from "@/lib/portfolios-api";
+import { transactionsApi } from "@/lib/transactions-api";
+import type { TransactionResponse } from "@/types/transactions";
 
 export default function Page(): React.JSX.Element {
 	const router = useRouter();
@@ -52,6 +55,8 @@ export default function Page(): React.JSX.Element {
 	const [selectedToken, setSelectedToken] = React.useState<Holding | null>(null);
 	const loadingRef = React.useRef(false);
 	const abortControllerRef = React.useRef<AbortController | null>(null);
+	const [transactions, setTransactions] = React.useState<TransactionResponse[]>([]);
+	const [portfolioData, setPortfolioData] = React.useState<Record<string, any>>({});
 
 	// Stabilize portfolio IDs to avoid unnecessary reloads
 	const portfoliosIds = React.useMemo(() => portfolios.map((p) => p.id).join(","), [portfolios]);
@@ -294,6 +299,60 @@ export default function Page(): React.JSX.Element {
 		}
 	}, [isGlobalView, currentPortfolio, portfolios.length]);
 
+	// Load transactions
+	React.useEffect(() => {
+		const loadTransactions = async () => {
+			try {
+				const response = await transactionsApi.getTransactions({ limit: 100 });
+				setTransactions(response.transactions);
+			} catch (error) {
+				console.error("Error loading transactions:", error);
+			}
+		};
+		loadTransactions();
+	}, []);
+
+	// Load portfolio data
+	React.useEffect(() => {
+		const loadPortfolioData = async () => {
+			if (portfolios.length === 0) {
+				setPortfolioData({});
+				return;
+			}
+
+			const data: Record<string, any> = {};
+			for (const portfolio of portfolios) {
+				try {
+					const holdings = await portfoliosApi.getPortfolioHoldings(portfolio.id);
+					const invested = holdings.reduce((sum, h) => sum + (h.investedAmount || 0), 0);
+					const value = holdings.reduce((sum, h) => sum + (h.currentValue || 0), 0);
+					const pnl = value - invested;
+					const pnlPercentage = invested > 0 ? (pnl / invested) * 100 : 0;
+
+					data[portfolio.id] = {
+						id: portfolio.id,
+						name: portfolio.name,
+						description: portfolio.description,
+						isDefault: portfolio.isDefault,
+						holdings,
+						invested,
+						value,
+						pnl,
+						pnlPercentage,
+						holdingsCount: holdings.length,
+					};
+				} catch (error) {
+					console.error(`Error loading portfolio ${portfolio.id}:`, error);
+				}
+			}
+			setPortfolioData(data);
+		};
+
+		if (!portfoliosLoading && portfolios.length > 0) {
+			loadPortfolioData();
+		}
+	}, [portfolios, portfoliosLoading]);
+
 	// Memoize handlers to prevent unnecessary re-renders
 	const handlePortfolioChange = React.useCallback(
 		(e: SelectChangeEvent<string>) => {
@@ -394,14 +453,30 @@ export default function Page(): React.JSX.Element {
 							pnlRelatif={portfolioStats.pnlRelatif}
 						/>
 
-						{/* Gains and Losses Chart and Token Distribution */}
-						<Grid container spacing={3}>
+						{/* Wallet Performance, Gains and Losses Chart and Token Distribution */}
+						<Grid container spacing={3} sx={{ alignItems: "stretch" }}>
 							<Grid size={{ xs: 12, lg: 8 }}>
-								<GainsLossesChart holdings={displayHoldings} />
+								<Stack spacing={3} sx={{ height: "100%" }}>
+									{/* Wallet Performance */}
+									{portfolios.length > 0 && transactions.length > 0 && (
+										<Box sx={{ flex: "1 1 auto" }}>
+											<WalletPerformance 
+												portfolios={portfolios} 
+												transactions={transactions} 
+												portfolioData={portfolioData}
+												selectedPortfolioId={isGlobalView ? null : currentPortfolio?.id}
+											/>
+										</Box>
+									)}
+									{/* Gains and Losses Chart */}
+									<Box sx={{ flex: "1 1 auto" }}>
+										<GainsLossesChart holdings={displayHoldings} />
+									</Box>
+								</Stack>
 							</Grid>
 							<Grid size={{ xs: 12, lg: 4 }}>
 								{aggregatedTokenData.length > 0 ? (
-									<Card sx={{ height: "100%" }}>
+									<Card sx={{ height: "100%", display: "flex", flexDirection: "column" }}>
 										<CardHeader
 											avatar={
 												<Avatar>
