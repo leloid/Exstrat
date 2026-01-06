@@ -5,11 +5,12 @@ import { Type } from 'class-transformer';
 export enum ExchangeType {
   COINBASE = 'coinbase',
   CRYPTO_COM = 'crypto.com',
+  EXSTRAT = 'exstrat',
 }
 
 export class ParseCsvDto {
   @ApiProperty({
-    description: 'Type d\'exchange (coinbase ou crypto.com)',
+    description: 'Type d\'exchange (coinbase, crypto.com ou exstrat)',
     enum: ExchangeType,
     example: ExchangeType.COINBASE,
   })

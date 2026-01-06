@@ -74,6 +74,8 @@ export class CsvParserService {
         symbol = row['Asset']?.trim();
       } else if (exchange === ExchangeType.CRYPTO_COM) {
         symbol = row['Currency']?.trim();
+      } else if (exchange === ExchangeType.EXSTRAT) {
+        symbol = row['Symbol']?.trim() || row['symbol']?.trim();
       }
       if (symbol) {
         uniqueSymbols.add(symbol.toUpperCase());
@@ -119,6 +121,8 @@ export class CsvParserService {
           parsedTransaction = await this.parseCoinbaseRow(row, portfolioId, tokenCache);
         } else if (exchange === ExchangeType.CRYPTO_COM) {
           parsedTransaction = await this.parseCryptoComRow(row, portfolioId, tokenCache);
+        } else if (exchange === ExchangeType.EXSTRAT) {
+          parsedTransaction = await this.parseExstratRow(row, portfolioId, tokenCache);
         }
 
         if (parsedTransaction && parsedTransaction.errors && parsedTransaction.errors.length > 0) {
@@ -412,6 +416,160 @@ export class CsvParserService {
       errors.push(`Type de transaction non reconnu: ${description || kind}. Utilisation de BUY par défaut.`);
       return TransactionType.BUY;
     }
+  }
+
+  private async parseExstratRow(row: any, portfolioId: string | undefined, tokenCache: Map<string, { name: string; cmcId: number } | null>): Promise<ParsedTransaction | null> {
+    const errors: string[] = [];
+
+    // Vérifier les colonnes requises (insensible à la casse)
+    const requiredColumns = ['Date', 'Symbol', 'Type', 'Quantity', 'Price', 'Amount'];
+    const rowKeys = Object.keys(row).map(k => k.trim());
+    const rowKeysLower = rowKeys.map(k => k.toLowerCase());
+    
+    // Vérifier que toutes les colonnes requises sont présentes (insensible à la casse)
+    const missingColumns: string[] = [];
+    for (const requiredCol of requiredColumns) {
+      const found = rowKeysLower.includes(requiredCol.toLowerCase());
+      if (!found) {
+        missingColumns.push(requiredCol);
+      }
+    }
+
+    if (missingColumns.length > 0) {
+      errors.push(`Colonnes manquantes: ${missingColumns.join(', ')}`);
+      return { errors } as ParsedTransaction;
+    }
+
+    // Trouver les clés réelles (insensible à la casse)
+    const getKey = (key: string): string | undefined => {
+      const keyLower = key.toLowerCase();
+      const index = rowKeysLower.indexOf(keyLower);
+      return index >= 0 ? rowKeys[index] : undefined;
+    };
+
+    const dateKey = getKey('Date') || 'Date';
+    const symbolKey = getKey('Symbol') || 'Symbol';
+    const typeKey = getKey('Type') || 'Type';
+    const quantityKey = getKey('Quantity') || 'Quantity';
+    const priceKey = getKey('Price') || 'Price';
+    const amountKey = getKey('Amount') || 'Amount';
+    const notesKey = getKey('Notes') || 'Notes';
+
+    const dateStr = row[dateKey]?.trim();
+    const symbol = row[symbolKey]?.trim();
+    const typeStr = row[typeKey]?.trim();
+    const quantityStr = row[quantityKey]?.trim();
+    const priceStr = row[priceKey]?.trim();
+    const amountStr = row[amountKey]?.trim();
+    const notes = row[notesKey]?.trim();
+
+    // Valider et convertir les valeurs numériques
+    const quantity = this.parseNumber(quantityStr, 'Quantity', errors);
+    const price = this.parseNumber(priceStr, 'Price', errors);
+    const amountInvested = this.parseNumber(amountStr, 'Amount', errors);
+
+    // Utiliser le prix fourni ou calculer à partir du montant et de la quantité
+    const averagePrice = price > 0 ? price : (quantity > 0 ? amountInvested / quantity : 0);
+
+    // Parser la date (supporter plusieurs formats)
+    let transactionDate: string | undefined;
+    try {
+      let date: Date;
+      // Essayer de parser directement
+      date = new Date(dateStr);
+      if (isNaN(date.getTime())) {
+        // Essayer avec format DD/MM/YYYY ou DD-MM-YYYY
+        const parts = dateStr.split(/[\/\-]/);
+        if (parts.length === 3) {
+          const day = parseInt(parts[0], 10);
+          const month = parseInt(parts[1], 10) - 1; // Les mois commencent à 0
+          const year = parseInt(parts[2], 10);
+          date = new Date(year, month, day);
+        } else {
+          throw new Error('Format de date non reconnu');
+        }
+      }
+      if (isNaN(date.getTime())) {
+        errors.push(`Date invalide: ${dateStr}`);
+      } else {
+        transactionDate = date.toISOString();
+      }
+    } catch (error) {
+      errors.push(`Erreur lors du parsing de la date: ${dateStr}`);
+    }
+
+    // Mapper le type de transaction (doit être exactement BUY, SELL, etc.)
+    let type: TransactionType;
+    const typeUpper = typeStr?.toUpperCase().trim();
+    switch (typeUpper) {
+      case 'BUY':
+        type = TransactionType.BUY;
+        break;
+      case 'SELL':
+        type = TransactionType.SELL;
+        break;
+      case 'TRANSFER_IN':
+      case 'TRANSFERIN':
+      case 'DEPOSIT':
+        type = TransactionType.TRANSFER_IN;
+        break;
+      case 'TRANSFER_OUT':
+      case 'TRANSFEROUT':
+      case 'WITHDRAWAL':
+      case 'WITHDRAW':
+        type = TransactionType.TRANSFER_OUT;
+        break;
+      case 'STAKING':
+        type = TransactionType.STAKING;
+        break;
+      case 'REWARD':
+        type = TransactionType.REWARD;
+        break;
+      default:
+        errors.push(`Type de transaction non reconnu: ${typeStr}. Types valides: BUY, SELL, TRANSFER_IN, TRANSFER_OUT, STAKING, REWARD`);
+        type = TransactionType.BUY; // Par défaut
+    }
+
+    // Si erreurs critiques, retourner avec erreurs
+    if (errors.length > 0 || !transactionDate) {
+      return { errors } as ParsedTransaction;
+    }
+
+    // Rechercher le token dans le cache
+    const symbolUpper = symbol.toUpperCase();
+    const cachedToken = tokenCache.get(symbolUpper);
+    
+    let name: string | undefined;
+    let cmcId: number | undefined;
+
+    if (cachedToken) {
+      name = cachedToken.name;
+      cmcId = cachedToken.cmcId;
+    } else if (cachedToken === null) {
+      // Le token a été recherché mais n'a pas été trouvé
+      errors.push(`Token non trouvé: ${symbol}`);
+    } else {
+      // Le token n'a pas encore été recherché (ne devrait pas arriver)
+      errors.push(`Token non trouvé dans le cache: ${symbol}`);
+    }
+
+    if (errors.length > 0) {
+      return { errors } as ParsedTransaction;
+    }
+
+    return {
+      symbol,
+      name,
+      cmcId,
+      quantity: Math.abs(quantity), // Toujours positif
+      amountInvested: Math.abs(amountInvested), // Toujours positif
+      averagePrice: averagePrice || (quantity > 0 ? amountInvested / quantity : 0),
+      type,
+      transactionDate: transactionDate as string,
+      notes: notes || undefined,
+      exchangeId: 'exstrat',
+      rawData: row,
+    };
   }
 }
 

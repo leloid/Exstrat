@@ -7,8 +7,10 @@ import {
   Param, 
   Delete, 
   Query, 
-  UseGuards
+  UseGuards,
+  Res
 } from '@nestjs/common';
+import { Response } from 'express';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
 import { TransactionsService } from './transactions.service';
 import { CreateTransactionDto, UpdateTransactionDto, TransactionSearchDto, TransactionResponseDto } from './dto/transaction.dto';
@@ -175,6 +177,31 @@ export class TransactionsController {
   ): Promise<{ message: string }> {
     await this.transactionsService.remove(userId, id);
     return { message: 'Transaction supprimée avec succès' };
+  }
+
+  @Get('csv-template')
+  @ApiOperation({ summary: 'Télécharger le template CSV ExStrat pour l\'import de transactions' })
+  @ApiResponse({ 
+    status: 200, 
+    description: 'Template CSV téléchargé avec succès',
+    content: {
+      'text/csv': {
+        schema: {
+          type: 'string',
+          example: 'Date,Symbol,Type,Quantity,Price,Amount,Notes\n2024-01-15,BTC,BUY,0.5,50000,25000,Initial purchase'
+        }
+      }
+    }
+  })
+  async downloadCsvTemplate(@Res() res: Response): Promise<void> {
+    // Créer le template CSV avec les colonnes requises
+    const csvHeader = 'Date,Symbol,Type,Quantity,Price,Amount,Notes\n';
+    const csvExample = '2024-01-15,BTC,BUY,0.5,50000,25000,Initial purchase\n';
+    const csvContent = csvHeader + csvExample;
+
+    res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+    res.setHeader('Content-Disposition', 'attachment; filename="exstrat-transactions-template.csv"');
+    res.send(csvContent);
   }
 
   @Post('parse-csv')
