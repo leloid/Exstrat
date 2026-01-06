@@ -144,6 +144,8 @@ const getTokenLogoUrl = (symbol: string, cmcId: number | undefined): string | nu
 
 export default function Page(): React.JSX.Element {
 	const { secretMode } = useSecretMode();
+	const theme = useTheme();
+	const isMobile = useMediaQuery(theme.breakpoints.down("md"));
 	const {
 		portfolios,
 		isLoading: portfoliosLoading,
