@@ -116,6 +116,8 @@ export function getTokenLogoUrl(symbol: string, cmcId?: number | null): string {
 		bcna: 15_630,
 		boot: 15_631,
 		xprt: 7281,
+		bat: 1697, // Basic Attention Token
+		strk: 22691, // Starknet
 	};
 
 	const commonCmcId = commonTokenIds[symbolLower];
@@ -123,10 +125,8 @@ export function getTokenLogoUrl(symbol: string, cmcId?: number | null): string {
 		return `https://s2.coinmarketcap.com/static/img/coins/64x64/${commonCmcId}.png`;
 	}
 
-	// Priority 3: Binance Assets CDN (commented out as fallback, but not used directly)
-	// const binanceUrl = `https://assets.binance.com/files/logo/${symbolLower}.svg`;
-
-	// Priority 4: cryptologos.cc (general fallback)
-	return `https://cryptologos.cc/logos/${symbolLower}-logo.svg`;
+	// Priority 3: cryptologos.cc with PNG format (better coverage for less known tokens)
+	// Using the format: symbol-symbol-logo.png which works better for many tokens
+	return `https://cryptologos.cc/logos/${symbolLower}-${symbolLower}-logo.png`;
 }
 
