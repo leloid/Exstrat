@@ -459,7 +459,7 @@ export default function Page(): React.JSX.Element {
 								<Stack spacing={{ xs: 2, sm: 3 }} sx={{ height: "100%" }}>
 									{/* Wallet Performance */}
 									{portfolios.length > 0 && transactions.length > 0 && (
-										<Box sx={{ flex: "1 1 auto" }}>
+										<Box sx={{ flex: "1 1 auto", minHeight: { xs: "300px", sm: "350px", md: "400px" }, display: "flex", flexDirection: "column" }}>
 											<WalletPerformance 
 												portfolios={portfolios} 
 												transactions={transactions} 
@@ -469,14 +469,14 @@ export default function Page(): React.JSX.Element {
 										</Box>
 									)}
 									{/* Gains and Losses Chart */}
-									<Box sx={{ flex: "1 1 auto" }}>
+									<Box sx={{ flex: "1 1 auto", minHeight: { xs: "300px", sm: "350px", md: "400px" }, display: "flex", flexDirection: "column" }}>
 										<GainsLossesChart holdings={displayHoldings} />
 									</Box>
 								</Stack>
 							</Grid>
 							<Grid size={{ xs: 12, lg: 4 }}>
 								{aggregatedTokenData.length > 0 ? (
-									<Card sx={{ height: "100%", display: "flex", flexDirection: "column" }}>
+									<Card sx={{ height: "100%", minHeight: { xs: "400px", sm: "500px", md: "600px" }, display: "flex", flexDirection: "column" }}>
 										<CardHeader
 											avatar={
 												<Avatar>

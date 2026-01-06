@@ -480,7 +480,7 @@ export function WalletPerformance({ portfolios, transactions, portfolioData, sel
 		: "Wallet Performance";
 
 	return (
-		<Card>
+		<Card sx={{ height: "100%", minHeight: { xs: "400px", sm: "450px", md: "500px" }, display: "flex", flexDirection: "column" }}>
 			<CardHeader
 				title={displayTitle}
 				action={
@@ -532,7 +532,7 @@ export function WalletPerformance({ portfolios, transactions, portfolioData, sel
 					</Stack>
 				}
 			/>
-			<CardContent>
+			<CardContent sx={{ flex: "1 1 auto", display: "flex", flexDirection: "column" }}>
 				{secretMode ? (
 					<Box sx={{ height: { xs: "200px", sm: "240px" }, display: "flex", alignItems: "center", justifyContent: "center" }}>
 						<Typography color="text.secondary" variant="h6">

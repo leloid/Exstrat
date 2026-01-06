@@ -242,7 +242,7 @@ export function GainsLossesChart({ holdings }: GainsLossesChartProps): React.JSX
 	}
 
 	return (
-		<Card>
+		<Card sx={{ height: "100%", minHeight: { xs: "400px", sm: "450px", md: "500px" }, display: "flex", flexDirection: "column" }}>
 			<CardHeader
 				title={chartType === "valuation" ? "Asset Valuation" : "Gains and Losses per token"}
 				action={
@@ -272,8 +272,8 @@ export function GainsLossesChart({ holdings }: GainsLossesChartProps): React.JSX
 					</ToggleButtonGroup>
 				}
 			/>
-			<CardContent>
-				<Stack direction={{ xs: "column", sm: "row" }} spacing={3}>
+			<CardContent sx={{ flex: "1 1 auto", display: "flex", flexDirection: "column" }}>
+				<Stack direction={{ xs: "column", sm: "row" }} spacing={3} sx={{ flex: "1 1 auto" }}>
 					{/* Stats Section */}
 					<Stack spacing={3} sx={{ flex: "0 0 auto", justifyContent: "space-between", width: { xs: "100%", sm: "240px" } }}>
 						{chartType === "pnl" ? (

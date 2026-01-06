@@ -38,7 +38,7 @@ export function QuickStats({
 
 	return (
 		<Box>
-			<Grid container spacing={3}>
+			<Grid container spacing={{ xs: 2, sm: 3 }} sx={{ alignItems: "stretch" }}>
 				{/* Current Value */}
 				<Grid
 					size={{
@@ -47,14 +47,14 @@ export function QuickStats({
 						xs: 12,
 					}}
 				>
-					<Card sx={{ overflow: "visible" }}>
-						<Stack direction="row" spacing={2} sx={{ alignItems: "center", p: 3 }}>
+					<Card sx={{ height: "100%", display: "flex", flexDirection: "column", overflow: "visible" }}>
+						<Stack direction="row" spacing={2} sx={{ alignItems: "center", p: { xs: 2, sm: 3 }, flex: "1 1 auto" }}>
 							<Stack spacing={1} sx={{ flex: "1 1 auto", minWidth: 0 }}>
 								<Typography color="text.secondary" variant="overline">
 									Current Value
 								</Typography>
-								<Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
-									<Typography variant="h5">{formatCompactCurrency(valeurActuelle, "$", 0, secretMode)}</Typography>
+								<Stack direction="row" spacing={1} sx={{ alignItems: "center", flexWrap: "wrap" }}>
+									<Typography variant="h5" sx={{ fontSize: { xs: "1.25rem", sm: "1.5rem" } }}>{formatCompactCurrency(valeurActuelle, "$", 0, secretMode)}</Typography>
 									<Chip
 										color={isPositive ? "success" : "error"}
 										label={formatPercentage(pnlRelatif)}
@@ -67,8 +67,8 @@ export function QuickStats({
 								sx={{
 									bgcolor: "var(--mui-palette-primary-main)",
 									color: "var(--mui-palette-primary-contrastText)",
-									height: "48px",
-									width: "48px",
+									height: { xs: "40px", sm: "48px" },
+									width: { xs: "40px", sm: "48px" },
 									flexShrink: 0,
 								}}
 							>
@@ -86,20 +86,21 @@ export function QuickStats({
 						xs: 12,
 					}}
 				>
-					<Card>
-						<Stack direction="row" spacing={2} sx={{ alignItems: "center", p: 3 }}>
-							<Stack spacing={1} sx={{ flex: "1 1 auto" }}>
+					<Card sx={{ height: "100%", display: "flex", flexDirection: "column" }}>
+						<Stack direction="row" spacing={2} sx={{ alignItems: "center", p: { xs: 2, sm: 3 }, flex: "1 1 auto" }}>
+							<Stack spacing={1} sx={{ flex: "1 1 auto", minWidth: 0 }}>
 								<Typography color="text.secondary" variant="overline">
 									Invested Capital
 								</Typography>
-								<Typography variant="h5">{formatCompactCurrency(capitalInvesti, "$", 0, secretMode)}</Typography>
+								<Typography variant="h5" sx={{ fontSize: { xs: "1.25rem", sm: "1.5rem" } }}>{formatCompactCurrency(capitalInvesti, "$", 0, secretMode)}</Typography>
 							</Stack>
 							<Avatar
 								sx={{
 									bgcolor: "var(--mui-palette-primary-main)",
 									color: "var(--mui-palette-primary-contrastText)",
-									height: "48px",
-									width: "48px",
+									height: { xs: "40px", sm: "48px" },
+									width: { xs: "40px", sm: "48px" },
+									flexShrink: 0,
 								}}
 							>
 								<CurrencyDollarIcon fontSize="var(--Icon-fontSize)" />
@@ -116,16 +117,16 @@ export function QuickStats({
 						xs: 12,
 					}}
 				>
-					<Card>
-						<Stack spacing={1} sx={{ p: 3 }}>
+					<Card sx={{ height: "100%", display: "flex", flexDirection: "column" }}>
+						<Stack spacing={1} sx={{ p: { xs: 2, sm: 3 }, flex: "1 1 auto", justifyContent: "space-between" }}>
 							<Typography color="text.secondary" variant="overline">
 								Portfolio Health
 							</Typography>
 							<Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
-								<Typography variant="h5">{formatPercentage(pnlRelatif)}</Typography>
+								<Typography variant="h5" sx={{ fontSize: { xs: "1.25rem", sm: "1.5rem" } }}>{formatPercentage(pnlRelatif)}</Typography>
 								<LinearProgress
 									color={isPositive ? "success" : "error"}
-									sx={{ flex: "1 1 auto" }}
+									sx={{ flex: "1 1 auto", minWidth: "60px" }}
 									value={healthPercentage}
 									variant="determinate"
 								/>
@@ -144,19 +145,20 @@ export function QuickStats({
 				>
 					<Card
 						sx={{
-							alignItems: "center",
+							height: "100%",
+							display: "flex",
+							flexDirection: "column",
+							alignItems: "stretch",
 							bgcolor: isPositive ? "var(--mui-palette-success-main)" : "var(--mui-palette-error-main)",
 							color: "var(--mui-palette-success-contrastText)",
-							display: "flex",
-							justifyContent: "space-between",
 						}}
 					>
-						<Stack direction="row" spacing={2} sx={{ alignItems: "center", p: 3 }}>
-							<Stack spacing={1} sx={{ flex: "1 1 auto" }}>
+						<Stack direction="row" spacing={2} sx={{ alignItems: "center", p: { xs: 2, sm: 3 }, flex: "1 1 auto" }}>
+							<Stack spacing={1} sx={{ flex: "1 1 auto", minWidth: 0 }}>
 								<Typography color="inherit" variant="overline">
 									Profit / Loss
 								</Typography>
-								<Typography color="inherit" variant="h5">
+								<Typography color="inherit" variant="h5" sx={{ fontSize: { xs: "1.25rem", sm: "1.5rem" } }}>
 									{isPositive ? "+" : ""}
 									{formatCompactCurrency(pnlAbsolu, "$", 2, secretMode)}
 								</Typography>
@@ -165,8 +167,9 @@ export function QuickStats({
 								sx={{
 									bgcolor: "var(--mui-palette-success-contrastText)",
 									color: isPositive ? "var(--mui-palette-success-main)" : "var(--mui-palette-error-main)",
-									height: "48px",
-									width: "48px",
+									height: { xs: "40px", sm: "48px" },
+									width: { xs: "40px", sm: "48px" },
+									flexShrink: 0,
 								}}
 							>
 								{isPositive ? (
