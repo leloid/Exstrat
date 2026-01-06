@@ -19,7 +19,6 @@ import { isNavItemActive } from "@/lib/is-nav-item-active";
 import { useColorScheme } from "@mui/material/styles";
 
 import { icons } from "./nav-icons";
-import { WorkspacesSwitch } from "./workspaces-switch";
 
 export interface MobileNavProps {
 	onClose?: () => void;
@@ -86,7 +85,6 @@ export function MobileNav({ items = [], open, onClose, color = "evident" }: Mobi
 						/>
 					</Box>
 				</div>
-				<WorkspacesSwitch />
 			</Stack>
 			<Box component="nav" sx={{ flex: "1 1 auto", p: 2 }}>
 				{renderNavGroups({ items, onClose, pathname })}
