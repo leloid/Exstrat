@@ -25,5 +25,5 @@ export function getAppUrl(): URL {
 	// correctly and it could be a security risk if you're not careful.
 
 	// Fallback to localhost. Change this to your local dev URL.
-	return new URL(`http://localhost:${process.env.PORT || 3000}`);
+	return new URL(`http://localhost:${process.env.PORT || 3001}`);
 }
