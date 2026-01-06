@@ -322,18 +322,20 @@ export function TokensTable({ holdings, portfolioId, onTokenClick }: TokensTable
 										</Typography>
 									</TableSortLabel>
 								</TableCell>
-								<TableCell align="right">
-									<TableSortLabel
-										active={sortField === "investedAmount"}
-										direction={sortField === "investedAmount" ? sortDirection : "asc"}
-										onClick={() => handleSort("investedAmount")}
-										IconComponent={() => <SortIcon field="investedAmount" />}
-									>
-										<Typography variant="caption" sx={{ fontWeight: 600 }}>
-											Invested
-										</Typography>
-									</TableSortLabel>
-								</TableCell>
+								{!secretMode && (
+									<TableCell align="right">
+										<TableSortLabel
+											active={sortField === "investedAmount"}
+											direction={sortField === "investedAmount" ? sortDirection : "asc"}
+											onClick={() => handleSort("investedAmount")}
+											IconComponent={() => <SortIcon field="investedAmount" />}
+										>
+											<Typography variant="caption" sx={{ fontWeight: 600 }}>
+												Invested
+											</Typography>
+										</TableSortLabel>
+									</TableCell>
+								)}
 								<TableCell align="right">
 									<TableSortLabel
 										active={sortField === "currentValue"}
@@ -346,18 +348,20 @@ export function TokensTable({ holdings, portfolioId, onTokenClick }: TokensTable
 										</Typography>
 									</TableSortLabel>
 								</TableCell>
-								<TableCell align="right">
-									<TableSortLabel
-										active={sortField === "pnl"}
-										direction={sortField === "pnl" ? sortDirection : "asc"}
-										onClick={() => handleSort("pnl")}
-										IconComponent={() => <SortIcon field="pnl" />}
-									>
-										<Typography variant="caption" sx={{ fontWeight: 600 }}>
-											P/L
-										</Typography>
-									</TableSortLabel>
-								</TableCell>
+								{!secretMode && (
+									<TableCell align="right">
+										<TableSortLabel
+											active={sortField === "pnl"}
+											direction={sortField === "pnl" ? sortDirection : "asc"}
+											onClick={() => handleSort("pnl")}
+											IconComponent={() => <SortIcon field="pnl" />}
+										>
+											<Typography variant="caption" sx={{ fontWeight: 600 }}>
+												P/L
+											</Typography>
+										</TableSortLabel>
+									</TableCell>
+								)}
 								<TableCell align="right">
 									<TableSortLabel
 										active={sortField === "pnlPercentage"}
@@ -447,25 +451,27 @@ export function TokensTable({ holdings, portfolioId, onTokenClick }: TokensTable
 												);
 											})()}
 										</TableCell>
-										<TableCell align="right">
-											{(() => {
-												const amount = holding.investedAmount;
-												const display = amount < 1 && amount > 0 ? "<1" : Math.round(amount).toLocaleString();
-												const full = formatCurrency(amount, "$", 0, secretMode);
-												return (
-													<Tooltip title={full} arrow placement="top">
-														<Stack direction="row" spacing={0.5} sx={{ alignItems: "center", justifyContent: "flex-end" }}>
-															<Typography variant="body2" sx={{ fontWeight: 600 }}>
-																${display}
-															</Typography>
-															{amount < 1 && amount > 0 && (
-																<InfoIcon fontSize="var(--icon-fontSize-xs)" style={{ opacity: 0.6 }} />
-															)}
-														</Stack>
-													</Tooltip>
-												);
-											})()}
-										</TableCell>
+										{!secretMode && (
+											<TableCell align="right">
+												{(() => {
+													const amount = holding.investedAmount;
+													const display = amount < 1 && amount > 0 ? "<1" : Math.round(amount).toLocaleString();
+													const full = formatCurrency(amount, "$", 0, secretMode);
+													return (
+														<Tooltip title={full} arrow placement="top">
+															<Stack direction="row" spacing={0.5} sx={{ alignItems: "center", justifyContent: "flex-end" }}>
+																<Typography variant="body2" sx={{ fontWeight: 600 }}>
+																	${display}
+																</Typography>
+																{amount < 1 && amount > 0 && (
+																	<InfoIcon fontSize="var(--icon-fontSize-xs)" style={{ opacity: 0.6 }} />
+																)}
+															</Stack>
+														</Tooltip>
+													);
+												})()}
+											</TableCell>
+										)}
 										<TableCell align="right">
 											{(() => {
 												const value = holding.currentValue || 0;
@@ -492,35 +498,37 @@ export function TokensTable({ holdings, portfolioId, onTokenClick }: TokensTable
 												);
 											})()}
 										</TableCell>
-										<TableCell align="right">
-											{(() => {
-												const pnl = holding.pnl || 0;
-												const absPnl = Math.abs(pnl);
-												const display = absPnl < 1 && absPnl > 0 ? "<1" : Math.round(absPnl).toLocaleString();
-												const full = formatCurrency(pnl, "$", 0, secretMode);
-												return (
-													<Tooltip title={full} arrow placement="top">
-														<Stack direction="row" spacing={0.5} sx={{ alignItems: "center", justifyContent: "flex-end" }}>
-															{isPositive ? (
-																<Box sx={{ color: "success.main" }}>
-																	<ArrowUpIcon size={16} />
-																</Box>
-															) : (
-																<Box sx={{ color: "error.main" }}>
-																	<ArrowDownIcon size={16} />
-																</Box>
-															)}
-															<Typography variant="body2" sx={{ fontWeight: 600, color: isPositive ? "success.main" : "error.main" }}>
-																{isPositive ? "+" : "-"}${display}
-															</Typography>
-															{absPnl < 1 && absPnl > 0 && (
-																<InfoIcon fontSize="var(--icon-fontSize-xs)" style={{ opacity: 0.6 }} />
-															)}
-														</Stack>
-													</Tooltip>
-												);
-											})()}
-										</TableCell>
+										{!secretMode && (
+											<TableCell align="right">
+												{(() => {
+													const pnl = holding.pnl || 0;
+													const absPnl = Math.abs(pnl);
+													const display = absPnl < 1 && absPnl > 0 ? "<1" : Math.round(absPnl).toLocaleString();
+													const full = formatCurrency(pnl, "$", 0, secretMode);
+													return (
+														<Tooltip title={full} arrow placement="top">
+															<Stack direction="row" spacing={0.5} sx={{ alignItems: "center", justifyContent: "flex-end" }}>
+																{isPositive ? (
+																	<Box sx={{ color: "success.main" }}>
+																		<ArrowUpIcon size={16} />
+																	</Box>
+																) : (
+																	<Box sx={{ color: "error.main" }}>
+																		<ArrowDownIcon size={16} />
+																	</Box>
+																)}
+																<Typography variant="body2" sx={{ fontWeight: 600, color: isPositive ? "success.main" : "error.main" }}>
+																	{isPositive ? "+" : "-"}${display}
+																</Typography>
+																{absPnl < 1 && absPnl > 0 && (
+																	<InfoIcon fontSize="var(--icon-fontSize-xs)" style={{ opacity: 0.6 }} />
+																)}
+															</Stack>
+														</Tooltip>
+													);
+												})()}
+											</TableCell>
+										)}
 										<TableCell align="right">
 											<Chip
 												label={formatPercentage(holding.pnlPercentage || 0)}

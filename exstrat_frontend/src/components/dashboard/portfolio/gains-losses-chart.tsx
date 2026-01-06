@@ -18,6 +18,7 @@ import { Bar, BarChart, CartesianGrid, Cell, ReferenceLine, ResponsiveContainer,
 import { NoSsr } from "@/components/core/no-ssr";
 import { formatCurrency, formatPercentage } from "@/lib/format";
 import type { Holding } from "@/types/portfolio";
+import { useSecretMode } from "@/hooks/use-secret-mode";
 
 export interface GainsLossesChartProps {
 	holdings: Holding[];
@@ -26,6 +27,7 @@ export interface GainsLossesChartProps {
 type ChartType = "pnl" | "valuation";
 
 export function GainsLossesChart({ holdings }: GainsLossesChartProps): React.JSX.Element {
+	const { secretMode } = useSecretMode();
 	const [chartType, setChartType] = React.useState<ChartType>("pnl");
 
 	// Prepare data for PnL chart
@@ -165,15 +167,17 @@ export function GainsLossesChart({ holdings }: GainsLossesChartProps): React.JSX
 								{formatPercentage(data.pnlPercentage)}
 							</Typography>
 						</Stack>
-						<Stack direction="row" spacing={2} sx={{ justifyContent: "space-between" }}>
-							<Typography variant="caption" color="text.secondary">
-								Amount
-							</Typography>
-							<Typography variant="body2" sx={{ fontWeight: 600, color: data.pnl >= 0 ? "success.main" : "error.main" }}>
-								{data.pnl >= 0 ? "+" : ""}
-								{formatCurrency(data.pnl, "$", 2)}
-							</Typography>
-						</Stack>
+						{!secretMode && (
+							<Stack direction="row" spacing={2} sx={{ justifyContent: "space-between" }}>
+								<Typography variant="caption" color="text.secondary">
+									Amount
+								</Typography>
+								<Typography variant="body2" sx={{ fontWeight: 600, color: data.pnl >= 0 ? "success.main" : "error.main" }}>
+									{data.pnl >= 0 ? "+" : ""}
+									{formatCurrency(data.pnl, "$", 2)}
+								</Typography>
+							</Stack>
+						)}
 					</Stack>
 				</Paper>
 			);
@@ -201,9 +205,11 @@ export function GainsLossesChart({ holdings }: GainsLossesChartProps): React.JSX
 									{entry.name}
 								</Typography>
 							</Stack>
-							<Typography variant="body2" sx={{ fontWeight: 600 }}>
-								{formatCurrency(entry.value, "$", 2)}
-							</Typography>
+							{!secretMode && (
+								<Typography variant="body2" sx={{ fontWeight: 600 }}>
+									{formatCurrency(entry.value, "$", 2)}
+								</Typography>
+							)}
 						</Stack>
 					))}
 				</Stack>
@@ -270,12 +276,12 @@ export function GainsLossesChart({ holdings }: GainsLossesChartProps): React.JSX
 							<>
 								<Stack spacing={2}>
 									<Typography color={pnlStats.totalPnLPercentage >= 0 ? "success.main" : "error.main"} variant="h2">
-										{formatPercentage(pnlStats.totalPnLPercentage)}
+										{secretMode ? "***" : formatPercentage(pnlStats.totalPnLPercentage)}
 									</Typography>
 									<Typography color="text.secondary">
 										total portfolio performance with{" "}
 										<Typography color="text.primary" component="span" sx={{ fontWeight: 600 }}>
-											{formatCurrency(Math.abs(pnlStats.totalPnL), "$", 0)}
+											{secretMode ? "***" : formatCurrency(Math.abs(pnlStats.totalPnL), "$", 0)}
 										</Typography>{" "}
 										{pnlStats.totalPnL >= 0 ? "gained" : "lost"}
 									</Typography>
@@ -303,12 +309,12 @@ export function GainsLossesChart({ holdings }: GainsLossesChartProps): React.JSX
 							<>
 								<Stack spacing={2}>
 									<Typography color="primary.main" variant="h2">
-										{formatCurrency(valuationStats.totalMarketValue, "$", 0)}
+										{secretMode ? "***" : formatCurrency(valuationStats.totalMarketValue, "$", 0)}
 									</Typography>
 									<Typography color="text.secondary">
 										total market value from{" "}
 										<Typography color="text.primary" component="span" sx={{ fontWeight: 600 }}>
-											{formatCurrency(valuationStats.totalInvested, "$", 0)}
+											{secretMode ? "***" : formatCurrency(valuationStats.totalInvested, "$", 0)}
 										</Typography>{" "}
 										invested
 									</Typography>
@@ -319,7 +325,7 @@ export function GainsLossesChart({ holdings }: GainsLossesChartProps): React.JSX
 											<Typography color="primary.main" component="span" variant="subtitle2" sx={{ fontWeight: 600 }}>
 												{valuationStats.topToken.symbol}
 											</Typography>{" "}
-											is your top holding with {formatCurrency(valuationStats.topToken.value, "$", 0)} value
+											is your top holding with {secretMode ? "***" : formatCurrency(valuationStats.topToken.value, "$", 0)} value
 										</Typography>
 									)}
 								</Box>

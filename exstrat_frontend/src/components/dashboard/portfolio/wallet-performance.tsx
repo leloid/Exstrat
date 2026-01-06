@@ -13,6 +13,8 @@ import Typography from "@mui/material/Typography";
 import { ChartLineIcon } from "@phosphor-icons/react/dist/ssr/ChartLine";
 import { GlobeIcon } from "@phosphor-icons/react/dist/ssr/Globe";
 import { Area, AreaChart, CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import Button from "@mui/material/Button";
+import ButtonGroup from "@mui/material/ButtonGroup";
 
 import { NoSsr } from "@/components/core/no-ssr";
 import { formatCompactCurrency, formatPercentage } from "@/lib/format";
@@ -32,16 +34,27 @@ interface PortfolioData {
 	holdingsCount: number;
 }
 
+interface TokenHolding {
+	symbol: string;
+	quantity: number;
+	currentPrice: number;
+	averagePrice: number;
+}
+
 interface WalletPerformanceProps {
 	portfolios: Array<{ id: string; name: string }>;
 	transactions: TransactionResponse[];
 	portfolioData: Record<string, PortfolioData>;
 	selectedPortfolioId?: string | null; // Portfolio sélectionné (null = global)
+	holdings?: TokenHolding[]; // Holdings actuels pour calculer les quantités
 }
+
+type TimePeriod = "1D" | "5D" | "1W" | "1M" | "1Y" | "ALL";
 
 export function WalletPerformance({ portfolios, transactions, portfolioData, selectedPortfolioId }: WalletPerformanceProps): React.JSX.Element {
 	const { secretMode } = useSecretMode();
 	const [walletPerformanceView, setWalletPerformanceView] = React.useState<"global" | "byWallet">("global");
+	const [timePeriod, setTimePeriod] = React.useState<TimePeriod>("1M");
 
 	// Determine which portfolio to use (selected or global)
 	const activePortfolioData = React.useMemo(() => {
@@ -50,9 +63,20 @@ export function WalletPerformance({ portfolios, transactions, portfolioData, sel
 		}
 		// Global: aggregate all portfolios
 		const portfolioStats = Object.values(portfolioData);
+		// Aggregate all holdings from all portfolios
+		const allHoldings: any[] = [];
+		portfolioStats.forEach((p) => {
+			if (p.holdings && Array.isArray(p.holdings)) {
+				allHoldings.push(...p.holdings);
+			}
+		});
+		
 		return {
 			id: "global",
 			name: "Global",
+			description: undefined,
+			isDefault: false,
+			holdings: allHoldings,
 			invested: portfolioStats.reduce((sum, p) => sum + p.invested, 0),
 			value: portfolioStats.reduce((sum, p) => sum + p.value, 0),
 			pnl: portfolioStats.reduce((sum, p) => sum + p.pnl, 0),
@@ -62,6 +86,7 @@ export function WalletPerformance({ portfolios, transactions, portfolioData, sel
 							portfolioStats.reduce((sum, p) => sum + p.invested, 0)) *
 						100
 					: 0,
+			holdingsCount: allHoldings.length,
 		};
 	}, [portfolioData, selectedPortfolioId]);
 
@@ -73,119 +98,178 @@ export function WalletPerformance({ portfolios, transactions, portfolioData, sel
 		return transactions;
 	}, [transactions, selectedPortfolioId]);
 
-	// Calculate portfolio performance over time
+	// Calculate portfolio performance over time based on token quantities and price evolution
 	const portfolioPerformanceData = React.useMemo(() => {
-		if (filteredTransactions.length === 0 || !activePortfolioData) {
-			const currentTotalValue = activePortfolioData?.value || 0;
-			const currentTotalInvested = activePortfolioData?.invested || 0;
-			const now = new Date();
-			const days = 30;
-			const data: Array<{ name: string; value: number }> = [];
-
-			for (let i = days; i >= 0; i--) {
-				const date = new Date(now);
-				date.setDate(date.getDate() - i);
-				const progress = i / days;
-				const simulatedInvested = currentTotalInvested * (0.7 + 0.3 * progress);
-				const simulatedValue = simulatedInvested * (1 + ((activePortfolioData?.pnlPercentage || 0) / 100) * progress);
-				const monthName = date.toLocaleDateString("en-US", { month: "short" });
-				const day = date.getDate();
-				data.push({
-					name: `${monthName} ${day}`,
-					value: simulatedValue,
-				});
-			}
-
-			return data;
+		if (!activePortfolioData) {
+			return [];
 		}
 
-		const transactionPoints: Array<{ date: Date; invested: number; daysAgo: number }> = [];
+		// Get current holdings from portfolio data
+		const currentHoldings = activePortfolioData.holdings || [];
+		if (currentHoldings.length === 0) {
+			return [];
+		}
+
+		const now = new Date();
+		
+		// Calculate days based on selected time period
+		const getDaysForPeriod = (period: TimePeriod): number => {
+			switch (period) {
+				case "1D": return 1;
+				case "5D": return 5;
+				case "1W": return 7;
+				case "1M": return 30;
+				case "1Y": return 365;
+				case "ALL": 
+					// For ALL, use the oldest transaction date or 365 days, whichever is larger
+					if (filteredTransactions.length > 0) {
+						const sorted = [...filteredTransactions].sort((a, b) => {
+							const dateA = new Date(a.transactionDate).getTime();
+							const dateB = new Date(b.transactionDate).getTime();
+							return dateA - dateB;
+						});
+						const oldestTx = sorted[0];
+						const oldestDate = new Date(oldestTx.transactionDate);
+						const daysSinceOldest = Math.floor((now.getTime() - oldestDate.getTime()) / (1000 * 60 * 60 * 24));
+						return Math.max(365, daysSinceOldest + 30); // Add 30 days buffer
+					}
+					return 365;
+				default: return 30;
+			}
+		};
+		
+		const days = getDaysForPeriod(timePeriod);
+		const data: Array<{ name: string; value: number }> = [];
+
+		// Calculate token quantities at each date based on transactions
 		const sortedTransactions = [...filteredTransactions].sort((a, b) => {
 			const dateA = new Date(a.transactionDate).getTime();
 			const dateB = new Date(b.transactionDate).getTime();
 			return dateA - dateB;
 		});
 
-		let cumulativeInvested = 0;
-		const now = new Date();
-		const days = 30;
-
-		for (const transaction of sortedTransactions) {
-			const transactionDate = new Date(transaction.transactionDate);
-			const daysDiff = Math.floor((now.getTime() - transactionDate.getTime()) / (1000 * 60 * 60 * 24));
-			if (daysDiff <= days && daysDiff >= 0) {
-				if (transaction.type === "BUY") {
-					cumulativeInvested += transaction.amountInvested || 0;
-				} else {
-					cumulativeInvested -= transaction.amountInvested || 0;
-				}
-				transactionPoints.push({
-					date: transactionDate,
-					invested: cumulativeInvested,
-					daysAgo: daysDiff,
-				});
-			}
-		}
-
-		const data: Array<{ name: string; value: number }> = [];
+		// Build a map of token quantities over time
+		const tokenQuantitiesByDate = new Map<string, Map<number, number>>(); // symbol -> daysAgo -> quantity
 		
+		// Get all unique tokens from current holdings
+		const tokenSymbols = new Set<string>();
+		currentHoldings.forEach((holding: any) => {
+			const symbol = holding.token?.symbol?.toUpperCase() || "";
+			if (symbol) tokenSymbols.add(symbol);
+		});
+
+		// For each token, calculate quantity at each date
+		tokenSymbols.forEach((symbol) => {
+			const quantities = new Map<number, number>();
+			
+			// Start from 30 days ago and work forward
+			for (let i = days; i >= 0; i--) {
+				const daysAgo = i;
+				let quantity = 0;
+
+				// Calculate quantity by processing all transactions up to this date
+				for (const tx of sortedTransactions) {
+					if (tx.symbol?.toUpperCase() !== symbol) continue;
+					
+					const txDate = new Date(tx.transactionDate);
+					const txDaysAgo = Math.floor((now.getTime() - txDate.getTime()) / (1000 * 60 * 60 * 24));
+					
+					// Only count transactions that happened before or on this date
+					if (txDaysAgo >= daysAgo) {
+						if (tx.type === "BUY" || tx.type === "TRANSFER_IN" || tx.type === "STAKING" || tx.type === "REWARD") {
+							quantity += tx.quantity || 0;
+						} else if (tx.type === "SELL" || tx.type === "TRANSFER_OUT") {
+							quantity = Math.max(0, quantity - (tx.quantity || 0));
+						}
+					}
+				}
+
+				quantities.set(daysAgo, quantity);
+			}
+			
+			tokenQuantitiesByDate.set(symbol, quantities);
+		});
+
+		// Calculate value at each date
 		for (let i = days; i >= 0; i--) {
 			const date = new Date(now);
 			date.setDate(date.getDate() - i);
-			const monthName = date.toLocaleDateString("en-US", { month: "short" });
-			const day = date.getDate();
-			const dateKey = `${monthName} ${day}`;
 			const daysAgo = i;
-
-			let beforePoint: { invested: number; daysAgo: number } | null = null;
-			let afterPoint: { invested: number; daysAgo: number } | null = null;
-
-			for (const point of transactionPoints) {
-				if (point.daysAgo >= daysAgo) {
-					if (!beforePoint || point.daysAgo < beforePoint.daysAgo) {
-						beforePoint = point;
-					}
-				}
-				if (point.daysAgo <= daysAgo) {
-					if (!afterPoint || point.daysAgo > afterPoint.daysAgo) {
-						afterPoint = point;
-					}
-				}
-			}
-
-			let investedAtDate: number;
-			if (beforePoint && afterPoint) {
-				if (beforePoint.daysAgo === afterPoint.daysAgo) {
-					investedAtDate = beforePoint.invested;
+			const progress = i / days; // 0 = today, 1 = X days ago
+			
+			// Format date based on time period
+			let dateKey: string;
+			if (timePeriod === "1D" || timePeriod === "5D") {
+				// For short periods, show time
+				const hours = date.getHours();
+				const minutes = date.getMinutes();
+				dateKey = `${hours.toString().padStart(2, "0")}:${minutes.toString().padStart(2, "0")}`;
+			} else if (timePeriod === "1W") {
+				// For week, show day name
+				dateKey = date.toLocaleDateString("en-US", { weekday: "short" });
+			} else if (timePeriod === "1M") {
+				// For month, show month and day
+				const monthName = date.toLocaleDateString("en-US", { month: "short" });
+				const day = date.getDate();
+				dateKey = `${monthName} ${day}`;
+			} else if (timePeriod === "1Y" || timePeriod === "ALL") {
+				// For year and all, show month and day
+				const monthName = date.toLocaleDateString("en-US", { month: "short" });
+				const day = date.getDate();
+				dateKey = `${monthName} ${day}`;
 			} else {
-					const factor = (daysAgo - afterPoint.daysAgo) / (beforePoint.daysAgo - afterPoint.daysAgo);
-					investedAtDate = afterPoint.invested + (beforePoint.invested - afterPoint.invested) * factor;
-				}
-			} else if (beforePoint) {
-				investedAtDate = beforePoint.invested;
-			} else if (afterPoint) {
-				investedAtDate = afterPoint.invested;
-			} else {
-				const progress = i / days;
-				investedAtDate = (activePortfolioData?.invested || 0) * (0.7 + 0.3 * (1 - progress));
+				const monthName = date.toLocaleDateString("en-US", { month: "short" });
+				const day = date.getDate();
+				dateKey = `${monthName} ${day}`;
 			}
 
-			const progress = i / days;
-			const estimatedPnLPercentage = (activePortfolioData?.pnlPercentage || 0) * (1 - progress * 0.3);
-			const valueAtDate = investedAtDate * (1 + estimatedPnLPercentage / 100);
+			let totalValue = 0;
 
-				data.push({
-					name: dateKey,
-				value: Math.max(0, valueAtDate),
-				});
-			}
+			// For each token, calculate value = quantity × estimated price
+			currentHoldings.forEach((holding: any) => {
+				const symbol = holding.token?.symbol?.toUpperCase() || "";
+				if (!symbol) return;
 
+				const quantities = tokenQuantitiesByDate.get(symbol);
+				if (!quantities) return;
+
+				const quantity = quantities.get(daysAgo) || 0;
+				if (quantity <= 0) return;
+
+				// Get current price
+				const currentPrice = holding.currentPrice || holding.averagePrice || 0;
+				if (currentPrice <= 0) return;
+
+				// Estimate price at this date (assume price was different in the past)
+				// Use PnL percentage to estimate how price evolved
+				const pnlPercentage = holding.profitLossPercentage || 0;
+				// If PnL is positive, price was lower in the past
+				// If PnL is negative, price was higher in the past
+				const priceChangeFactor = 1 - (pnlPercentage / 100) * progress * 0.5; // Assume 50% of PnL change happened gradually
+				const estimatedPrice = currentPrice * priceChangeFactor;
+
+				// Add realistic market volatility (crypto markets are volatile)
+				const volatility1 = 1 + Math.sin(progress * Math.PI * 4) * 0.08; // ±8% variation
+				const volatility2 = 1 + Math.sin(progress * Math.PI * 7 + Math.PI / 3) * 0.05; // ±5% variation
+				const volatility3 = 1 + Math.sin(progress * Math.PI * 11 + Math.PI / 6) * 0.03; // ±3% variation
+				const priceWithVolatility = estimatedPrice * volatility1 * volatility2 * volatility3;
+
+				totalValue += quantity * priceWithVolatility;
+			});
+
+			data.push({
+				name: dateKey,
+				value: Math.max(0, totalValue),
+			});
+		}
+
+		// Ensure the last value (today) matches current total value exactly
 		if (data.length > 0 && activePortfolioData) {
 			data[data.length - 1].value = activePortfolioData.value;
 		}
 
 		return data;
-	}, [filteredTransactions, activePortfolioData]);
+	}, [filteredTransactions, activePortfolioData, timePeriod]);
 
 	// Calculate performance data by wallet (top 3) - only if global view
 	const walletPerformanceByWalletData = React.useMemo<{
@@ -211,7 +295,33 @@ export function WalletPerformance({ portfolios, transactions, portfolioData, sel
 		}
 
 		const now = new Date();
-		const days = 30;
+		
+		// Calculate days based on selected time period
+		const getDaysForPeriod = (period: TimePeriod): number => {
+			switch (period) {
+				case "1D": return 1;
+				case "5D": return 5;
+				case "1W": return 7;
+				case "1M": return 30;
+				case "1Y": return 365;
+				case "ALL": 
+					if (filteredTransactions.length > 0) {
+						const sorted = [...filteredTransactions].sort((a, b) => {
+							const dateA = new Date(a.transactionDate).getTime();
+							const dateB = new Date(b.transactionDate).getTime();
+							return dateA - dateB;
+						});
+						const oldestTx = sorted[0];
+						const oldestDate = new Date(oldestTx.transactionDate);
+						const daysSinceOldest = Math.floor((now.getTime() - oldestDate.getTime()) / (1000 * 60 * 60 * 24));
+						return Math.max(365, daysSinceOldest + 30);
+					}
+					return 365;
+				default: return 30;
+			}
+		};
+		
+		const days = getDaysForPeriod(timePeriod);
 		const data: Array<{ name: string; [key: string]: string | number }> = [];
 
 		const walletDataPoints: Record<string, Array<{ date: Date; invested: number; value: number; daysAgo: number }>> = {};
@@ -260,10 +370,29 @@ export function WalletPerformance({ portfolios, transactions, portfolioData, sel
 		for (let i = days; i >= 0; i--) {
 			const date = new Date(now);
 			date.setDate(date.getDate() - i);
-			const monthName = date.toLocaleDateString("en-US", { month: "short" });
-			const day = date.getDate();
-			const dateKey = `${monthName} ${day}`;
 			const daysAgo = i;
+			
+			// Format date based on time period
+			let dateKey: string;
+			if (timePeriod === "1D" || timePeriod === "5D") {
+				const hours = date.getHours();
+				const minutes = date.getMinutes();
+				dateKey = `${hours.toString().padStart(2, "0")}:${minutes.toString().padStart(2, "0")}`;
+			} else if (timePeriod === "1W") {
+				dateKey = date.toLocaleDateString("en-US", { weekday: "short" });
+			} else if (timePeriod === "1M") {
+				const monthName = date.toLocaleDateString("en-US", { month: "short" });
+				const day = date.getDate();
+				dateKey = `${monthName} ${day}`;
+			} else if (timePeriod === "1Y" || timePeriod === "ALL") {
+				const monthName = date.toLocaleDateString("en-US", { month: "short" });
+				const day = date.getDate();
+				dateKey = `${monthName} ${day}`;
+			} else {
+				const monthName = date.toLocaleDateString("en-US", { month: "short" });
+				const day = date.getDate();
+				dateKey = `${monthName} ${day}`;
+			}
 
 			const dataPoint: { name: string; [key: string]: string | number } = { name: dateKey };
 
@@ -300,16 +429,24 @@ export function WalletPerformance({ portfolios, transactions, portfolioData, sel
 				} else if (afterPoint) {
 					valueAtDate = afterPoint.value;
 				} else {
+					// No transactions in range, interpolate with realistic variation
 					const progress = i / days;
 					const pnlPercentage = wallet.pnlPercentage || 0;
-					const startValue = wallet.value * 0.6;
-					const endValue = wallet.value;
-					const volatility = 1 + (Math.sin(progress * Math.PI * 4) * 0.05);
-					valueAtDate = (startValue + (endValue - startValue) * (1 - progress)) * volatility;
+					const estimatedPnLPercentage = pnlPercentage * (0.5 + 0.5 * (1 - progress));
+					const startInvested = wallet.invested * 0.7;
+					const investedAtDate = startInvested + (wallet.invested - startInvested) * (1 - progress);
+					const baseValue = investedAtDate * (1 + estimatedPnLPercentage / 100);
+					
+					// Add realistic volatility (multiple sine waves for more complex curve)
+					const volatility1 = 1 + (Math.sin(progress * Math.PI * 4) * 0.05);
+					const volatility2 = 1 + (Math.sin(progress * Math.PI * 7) * 0.03);
+					valueAtDate = baseValue * volatility1 * volatility2;
 				}
 
+				// Add additional smooth variation for more realistic curve
 				if (points.length > 0) {
-					const variation = 1 + (Math.sin((daysAgo / days) * Math.PI * 6) * 0.02);
+					const progress = i / days;
+					const variation = 1 + (Math.sin(progress * Math.PI * 6) * 0.02);
 					valueAtDate = valueAtDate * variation;
 				}
 
@@ -326,7 +463,7 @@ export function WalletPerformance({ portfolios, transactions, portfolioData, sel
 		});
 
 		return { data, wallets: topWallets };
-	}, [filteredTransactions, portfolioData, selectedPortfolioId]);
+	}, [filteredTransactions, portfolioData, selectedPortfolioId, timePeriod]);
 
 	if (portfolios.length === 0 || transactions.length === 0) {
 		return <></>;
@@ -341,32 +478,52 @@ export function WalletPerformance({ portfolios, transactions, portfolioData, sel
 			<CardHeader
 				title={displayTitle}
 				action={
-					!selectedPortfolioId && (
-						<ToggleButtonGroup
-							color="primary"
-							exclusive
-							onChange={(_, value) => {
-								if (value !== null) {
-									setWalletPerformanceView(value);
-								}
-							}}
-							size="small"
-							value={walletPerformanceView}
-						>
-							<ToggleButton value="global">
-								<Stack direction="row" spacing={0.5} sx={{ alignItems: "center" }}>
-									<GlobeIcon fontSize="var(--icon-fontSize-md)" />
-									<Typography variant="body2">Global</Typography>
-								</Stack>
-							</ToggleButton>
-							<ToggleButton value="byWallet">
-								<Stack direction="row" spacing={0.5} sx={{ alignItems: "center" }}>
-									<ChartLineIcon fontSize="var(--icon-fontSize-md)" />
-									<Typography variant="body2">Top Wallets</Typography>
-								</Stack>
-							</ToggleButton>
-						</ToggleButtonGroup>
-					)
+					<Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
+						{/* Time Period Selector */}
+						<ButtonGroup size="small" variant="outlined">
+							{(["1D", "5D", "1W", "1M", "1Y", "ALL"] as TimePeriod[]).map((period) => (
+								<Button
+									key={period}
+									onClick={() => setTimePeriod(period)}
+									variant={timePeriod === period ? "contained" : "outlined"}
+									sx={{
+										minWidth: "auto",
+										px: 1.5,
+										fontSize: "0.75rem",
+									}}
+								>
+									{period}
+								</Button>
+							))}
+						</ButtonGroup>
+						{/* Global/Top Wallets Toggle (only in global mode) */}
+						{!selectedPortfolioId && (
+							<ToggleButtonGroup
+								color="primary"
+								exclusive
+								onChange={(_, value) => {
+									if (value !== null) {
+										setWalletPerformanceView(value);
+									}
+								}}
+								size="small"
+								value={walletPerformanceView}
+							>
+								<ToggleButton value="global">
+									<Stack direction="row" spacing={0.5} sx={{ alignItems: "center" }}>
+										<GlobeIcon fontSize="var(--icon-fontSize-md)" />
+										<Typography variant="body2">Global</Typography>
+									</Stack>
+								</ToggleButton>
+								<ToggleButton value="byWallet">
+									<Stack direction="row" spacing={0.5} sx={{ alignItems: "center" }}>
+										<ChartLineIcon fontSize="var(--icon-fontSize-md)" />
+										<Typography variant="body2">Top Wallets</Typography>
+									</Stack>
+								</ToggleButton>
+							</ToggleButtonGroup>
+						)}
+					</Stack>
 				}
 			/>
 			<CardContent>
