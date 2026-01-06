@@ -21,7 +21,7 @@ import Divider from "@mui/material/Divider";
 import Tooltip from "@mui/material/Tooltip";
 import { WalletIcon } from "@phosphor-icons/react/dist/ssr/Wallet";
 import { InfoIcon } from "@phosphor-icons/react/dist/ssr/Info";
-import { Cell, Pie, PieChart, Tooltip as RechartsTooltip } from "recharts";
+import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip as RechartsTooltip } from "recharts";
 
 import { usePortfolio } from "@/contexts/PortfolioContext";
 import { QuickStats } from "@/components/dashboard/portfolio/quick-stats";
@@ -397,22 +397,22 @@ export default function Page(): React.JSX.Element {
 	return (
 		<Box
 			sx={{
-				maxWidth: "var(--Content-maxWidth)",
-				m: "var(--Content-margin)",
-				p: "var(--Content-padding)",
-				width: "var(--Content-width)",
+				width: "100%",
+				maxWidth: { xs: "100%", sm: "100%", md: "var(--Content-maxWidth)", lg: "var(--Content-maxWidth)" },
+				m: { xs: 0, sm: 1, md: "var(--Content-margin)" },
+				p: { xs: 2, sm: 2, md: "var(--Content-padding)" },
 			}}
 		>
-			<Stack spacing={4}>
+			<Stack spacing={{ xs: 2, sm: 3, md: 4 }}>
 				{/* Header */}
-				<Stack direction={{ xs: "column", sm: "row" }} spacing={3} sx={{ alignItems: "flex-start" }}>
-					<Box sx={{ flex: "1 1 auto" }}>
-						<Typography variant="h4">Overview</Typography>
+				<Stack direction={{ xs: "column", sm: "row" }} spacing={{ xs: 2, sm: 3 }} sx={{ alignItems: "flex-start" }}>
+					<Box sx={{ flex: "1 1 auto", width: { xs: "100%", sm: "auto" } }}>
+						<Typography variant="h4" sx={{ fontSize: { xs: "1.5rem", sm: "2rem" } }}>Overview</Typography>
 						<Typography color="text.secondary" variant="body2" sx={{ mt: 0.5 }}>
 							Overview of your portfolio performance
 						</Typography>
 					</Box>
-					<FormControl size="small" sx={{ minWidth: 200 }}>
+					<FormControl size="small" sx={{ minWidth: { xs: "100%", sm: 200 }, width: { xs: "100%", sm: "auto" } }}>
 						<Select value={isGlobalView ? "global" : currentPortfolio?.id || ""} onChange={handlePortfolioChange}>
 							<MenuItem value="global">🌐 Portefeuille Global</MenuItem>
 							{portfolios.map((portfolio) => (
@@ -454,9 +454,9 @@ export default function Page(): React.JSX.Element {
 						/>
 
 						{/* Wallet Performance, Gains and Losses Chart and Token Distribution */}
-						<Grid container spacing={3} sx={{ alignItems: "stretch" }}>
+						<Grid container spacing={{ xs: 2, sm: 3 }} sx={{ alignItems: "stretch" }}>
 							<Grid size={{ xs: 12, lg: 8 }}>
-								<Stack spacing={3} sx={{ height: "100%" }}>
+								<Stack spacing={{ xs: 2, sm: 3 }} sx={{ height: "100%" }}>
 									{/* Wallet Performance */}
 									{portfolios.length > 0 && transactions.length > 0 && (
 										<Box sx={{ flex: "1 1 auto" }}>
@@ -497,28 +497,32 @@ export default function Page(): React.JSX.Element {
 														width: "100%",
 													}}
 												>
-													<NoSsr fallback={<Box sx={{ height: "200px", width: "200px" }} />}>
-														<PieChart height={200} margin={{ top: 0, right: 0, bottom: 0, left: 0 }} width={200}>
-															<Pie
-																animationDuration={300}
-																cx={100}
-																cy={100}
-																data={aggregatedTokenData}
-																dataKey="value"
-																innerRadius={70}
-																nameKey="name"
-																outerRadius={100}
-																strokeWidth={0}
-															>
+													<Box sx={{ height: { xs: "180px", sm: "200px", md: "220px" }, width: "100%", display: "flex", justifyContent: "center", alignItems: "center" }}>
+														<NoSsr fallback={<Box sx={{ height: "100%", aspectRatio: "1" }} />}>
+															<ResponsiveContainer width="100%" height="100%">
+																<PieChart>
+																	<Pie
+																		animationDuration={300}
+																		cx="50%"
+																		cy="50%"
+																		data={aggregatedTokenData}
+																		dataKey="value"
+																		innerRadius="35%"
+																		nameKey="name"
+																		outerRadius="50%"
+																		strokeWidth={0}
+																	>
 																{aggregatedTokenData.map(
 																	(entry): React.JSX.Element => (
 																		<Cell fill={entry.color} key={entry.name} />
 																	)
 																)}
-															</Pie>
-															<RechartsTooltip animationDuration={50} content={<TokenTooltipContent />} />
-														</PieChart>
-													</NoSsr>
+																	</Pie>
+																	<RechartsTooltip animationDuration={50} content={<TokenTooltipContent />} />
+																</PieChart>
+															</ResponsiveContainer>
+														</NoSsr>
+													</Box>
 												</Box>
 												{/* Text Content */}
 												<Stack spacing={3}>

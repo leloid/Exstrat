@@ -1206,22 +1206,22 @@ export default function Page(): React.JSX.Element {
 	return (
 		<Box
 			sx={{
-				maxWidth: "var(--Content-maxWidth)",
-				m: "var(--Content-margin)",
-				p: "var(--Content-padding)",
-				width: "var(--Content-width)",
+				width: "100%",
+				maxWidth: { xs: "100%", sm: "100%", md: "var(--Content-maxWidth)", lg: "var(--Content-maxWidth)" },
+				m: { xs: 0, sm: 1, md: "var(--Content-margin)" },
+				p: { xs: 2, sm: 2, md: "var(--Content-padding)" },
 			}}
 		>
-			<Stack spacing={4}>
+			<Stack spacing={{ xs: 2, sm: 3, md: 4 }}>
 				{/* Header */}
-				<Stack direction={{ xs: "column", sm: "row" }} spacing={3} sx={{ alignItems: "flex-start" }}>
-					<Box sx={{ flex: "1 1 auto" }}>
-						<Typography variant="h4">Investments</Typography>
+				<Stack direction={{ xs: "column", sm: "row" }} spacing={{ xs: 2, sm: 3 }} sx={{ alignItems: "flex-start" }}>
+					<Box sx={{ flex: "1 1 auto", width: { xs: "100%", sm: "auto" } }}>
+						<Typography variant="h4" sx={{ fontSize: { xs: "1.5rem", sm: "2rem" } }}>Investments</Typography>
 						<Typography color="text.secondary" variant="body1">
 							Manage your wallets and transactions
 						</Typography>
 					</Box>
-					<Stack direction="row" spacing={2}>
+					<Stack direction={{ xs: "column", sm: "row" }} spacing={{ xs: 1, sm: 2 }} sx={{ width: { xs: "100%", sm: "auto" } }}>
 						<Button
 							onClick={() => {
 								setEditingPortfolioId(null);
@@ -1230,6 +1230,7 @@ export default function Page(): React.JSX.Element {
 							}}
 							startIcon={<WalletIcon />}
 							variant="outlined"
+							fullWidth={{ xs: true, sm: false }}
 							sx={{
 								color: "primary.main",
 								borderColor: "primary.main",
@@ -1249,6 +1250,7 @@ export default function Page(): React.JSX.Element {
 							onClick={() => setShowSelectExchangeModal(true)}
 							startIcon={<PlugsConnectedIcon />}
 							variant="outlined"
+							fullWidth={{ xs: true, sm: false }}
 							sx={{
 								color: "secondary.main",
 								borderColor: "secondary.main",
@@ -1271,6 +1273,7 @@ export default function Page(): React.JSX.Element {
 								}}
 								startIcon={<PlusIcon />}
 								variant="contained"
+								fullWidth={{ xs: true, sm: false }}
 							>
 								Add Transaction
 							</Button>
@@ -1279,12 +1282,12 @@ export default function Page(): React.JSX.Element {
 				</Stack>
 
 				{/* Wallets Section */}
-				<Grid container spacing={3}>
+				<Grid container spacing={{ xs: 2, sm: 3 }}>
 					{/* Wallets Section */}
 					<Grid size={{ xs: 12 }}>
 				<Card>
 					<CardContent>
-						<Stack direction="row" spacing={2} sx={{ alignItems: "center", justifyContent: "space-between", mb: 3 }}>
+						<Stack direction={{ xs: "column", sm: "row" }} spacing={{ xs: 2, sm: 2 }} sx={{ alignItems: { xs: "stretch", sm: "center" }, justifyContent: "space-between", mb: 3 }}>
 							<Stack direction="row" spacing={2} sx={{ alignItems: "center" }}>
 								<WalletIcon fontSize="var(--icon-fontSize-lg)" />
 								<Typography variant="h6">Wallets</Typography>
@@ -1301,7 +1304,7 @@ export default function Page(): React.JSX.Element {
 										<MagnifyingGlassIcon fontSize="var(--icon-fontSize-md)" />
 									</InputAdornment>
 								}
-								sx={{ maxWidth: "300px" }}
+								sx={{ maxWidth: { xs: "100%", sm: "300px" }, width: { xs: "100%", sm: "auto" } }}
 								value={walletSearchQuery}
 							/>
 						</Stack>
@@ -1331,11 +1334,11 @@ export default function Page(): React.JSX.Element {
 							</Box>
 						) : (
 							<Box sx={{ overflowX: "auto", width: "100%" }}>
-								<Table sx={{ tableLayout: "fixed", width: "100%" }}>
+								<Table sx={{ tableLayout: { xs: "auto", sm: "fixed" }, width: "100%" }}>
 									<TableHead>
 										<TableRow>
-											<TableCell sx={{ width: "40px" }} />
-											<TableCell sx={{ width: "30%", minWidth: "150px", maxWidth: "200px" }}>
+											<TableCell sx={{ width: { xs: "40px", sm: "40px" } }} />
+											<TableCell sx={{ width: { xs: "auto", sm: "30%" }, minWidth: { xs: "120px", sm: "150px" }, maxWidth: { xs: "none", sm: "200px" } }}>
 												<TableSortLabel
 													active={walletOrderBy === "name"}
 													direction={walletOrderBy === "name" ? walletOrder : "asc"}
@@ -1352,7 +1355,7 @@ export default function Page(): React.JSX.Element {
 													Wallet
 												</TableSortLabel>
 											</TableCell>
-											<TableCell align="right" sx={{ width: "15%", minWidth: "100px" }}>
+											<TableCell align="right" sx={{ width: { xs: "auto", sm: "15%" }, minWidth: { xs: "80px", sm: "100px" }, display: { xs: "none", md: "table-cell" } }}>
 												<TableSortLabel
 													active={walletOrderBy === "value"}
 													direction={walletOrderBy === "value" ? walletOrder : "asc"}
@@ -1369,7 +1372,7 @@ export default function Page(): React.JSX.Element {
 													Value
 												</TableSortLabel>
 											</TableCell>
-											<TableCell align="right" sx={{ width: "15%", minWidth: "100px" }}>
+											<TableCell align="right" sx={{ width: { xs: "auto", sm: "15%" }, minWidth: { xs: "80px", sm: "100px" }, display: { xs: "none", md: "table-cell" } }}>
 												<TableSortLabel
 													active={walletOrderBy === "invested"}
 													direction={walletOrderBy === "invested" ? walletOrder : "asc"}
@@ -1386,7 +1389,7 @@ export default function Page(): React.JSX.Element {
 													Invested
 												</TableSortLabel>
 											</TableCell>
-											<TableCell align="right" sx={{ width: "20%", minWidth: "120px" }}>
+											<TableCell align="right" sx={{ width: { xs: "auto", sm: "20%" }, minWidth: { xs: "100px", sm: "120px" } }}>
 												<TableSortLabel
 													active={walletOrderBy === "pnl"}
 													direction={walletOrderBy === "pnl" ? walletOrder : "asc"}
@@ -1403,7 +1406,7 @@ export default function Page(): React.JSX.Element {
 													P&L
 												</TableSortLabel>
 											</TableCell>
-											<TableCell align="right" sx={{ width: "10%", minWidth: "80px" }}>Actions</TableCell>
+											<TableCell align="right" sx={{ width: { xs: "auto", sm: "10%" }, minWidth: { xs: "60px", sm: "80px" } }}>Actions</TableCell>
 										</TableRow>
 									</TableHead>
 								<TableBody>
@@ -1503,13 +1506,13 @@ export default function Page(): React.JSX.Element {
 														</Box>
 													</Stack>
 												</TableCell>
-												<TableCell align="right">
-													<Typography variant="body2" sx={{ fontSize: "0.875rem", whiteSpace: "nowrap" }}>
+												<TableCell align="right" sx={{ display: { xs: "none", md: "table-cell" } }}>
+													<Typography variant="body2" sx={{ fontSize: { xs: "0.75rem", sm: "0.875rem" }, whiteSpace: "nowrap" }}>
 														{formatCompactCurrency(data.value, "$", 2, secretMode)}
 													</Typography>
 												</TableCell>
-												<TableCell align="right">
-													<Typography variant="body2" sx={{ fontSize: "0.875rem", whiteSpace: "nowrap" }}>
+												<TableCell align="right" sx={{ display: { xs: "none", md: "table-cell" } }}>
+													<Typography variant="body2" sx={{ fontSize: { xs: "0.75rem", sm: "0.875rem" }, whiteSpace: "nowrap" }}>
 														{formatCompactCurrency(data.invested, "$", 2, secretMode)}
 													</Typography>
 												</TableCell>
@@ -1530,7 +1533,7 @@ export default function Page(): React.JSX.Element {
 															<Typography
 																color={data.pnl >= 0 ? "success.main" : "error.main"}
 																variant="body2"
-																sx={{ fontSize: "0.8rem", whiteSpace: "nowrap" }}
+																sx={{ fontSize: { xs: "0.75rem", sm: "0.8rem" }, whiteSpace: "nowrap" }}
 															>
 																{formatCompactCurrency(data.pnl, "$", 2, secretMode)}
 															</Typography>
@@ -1538,7 +1541,7 @@ export default function Page(): React.JSX.Element {
 														<Typography
 															color={data.pnlPercentage >= 0 ? "success.main" : "error.main"}
 															variant="caption"
-															sx={{ fontSize: "0.65rem" }}
+															sx={{ fontSize: { xs: "0.6rem", sm: "0.65rem" } }}
 														>
 															{formatPercentage(data.pnlPercentage)}
 														</Typography>
@@ -1572,7 +1575,7 @@ export default function Page(): React.JSX.Element {
 											</TableRow>
 											<TableRow>
 												<TableCell
-													colSpan={5}
+													colSpan={{ xs: 3, md: 5 }}
 													sx={{
 														py: 0,
 														borderBottom: isExpanded ? "1px solid var(--mui-palette-divider)" : "none",
@@ -1859,7 +1862,7 @@ export default function Page(): React.JSX.Element {
 				{portfolios.length > 0 && (
 					<Card>
 					<CardContent>
-						<Stack direction="row" spacing={2} sx={{ alignItems: "center", justifyContent: "space-between", mb: 3 }}>
+						<Stack direction={{ xs: "column", sm: "row" }} spacing={{ xs: 2, sm: 2 }} sx={{ alignItems: { xs: "stretch", sm: "center" }, justifyContent: "space-between", mb: 3 }}>
 							<Stack direction="row" spacing={2} sx={{ alignItems: "center" }}>
 								<PlusIcon fontSize="var(--icon-fontSize-lg)" />
 								<Typography variant="h6">Transactions</Typography>
@@ -1917,8 +1920,9 @@ export default function Page(): React.JSX.Element {
 								</Typography>
 							</Box>
 						) : (
-							<Table>
-								<TableHead>
+							<Box sx={{ overflowX: "auto", width: "100%" }}>
+								<Table>
+									<TableHead>
 									<TableRow>
 										<TableCell padding="checkbox">
 											<Checkbox
@@ -2161,6 +2165,7 @@ export default function Page(): React.JSX.Element {
 									))}
 								</TableBody>
 							</Table>
+							</Box>
 						)}
 						{sortedTransactions.length > 0 && (
 							<TablePagination

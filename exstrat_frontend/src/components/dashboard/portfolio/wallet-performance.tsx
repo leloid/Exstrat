@@ -10,6 +10,8 @@ import Stack from "@mui/material/Stack";
 import ToggleButton from "@mui/material/ToggleButton";
 import ToggleButtonGroup from "@mui/material/ToggleButtonGroup";
 import Typography from "@mui/material/Typography";
+import useMediaQuery from "@mui/material/useMediaQuery";
+import { useTheme } from "@mui/material/styles";
 import { ChartLineIcon } from "@phosphor-icons/react/dist/ssr/ChartLine";
 import { GlobeIcon } from "@phosphor-icons/react/dist/ssr/Globe";
 import { Area, AreaChart, CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
@@ -53,6 +55,10 @@ type TimePeriod = "1D" | "5D" | "1W" | "1M" | "1Y" | "ALL";
 
 export function WalletPerformance({ portfolios, transactions, portfolioData, selectedPortfolioId }: WalletPerformanceProps): React.JSX.Element {
 	const { secretMode } = useSecretMode();
+	const theme = useTheme();
+	const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
+	const isTablet = useMediaQuery(theme.breakpoints.between("sm", "md"));
+	const chartHeight = isMobile ? 250 : isTablet ? 280 : 300;
 	const [walletPerformanceView, setWalletPerformanceView] = React.useState<"global" | "byWallet">("global");
 	const [timePeriod, setTimePeriod] = React.useState<TimePeriod>("1M");
 
@@ -528,7 +534,7 @@ export function WalletPerformance({ portfolios, transactions, portfolioData, sel
 			/>
 			<CardContent>
 				{secretMode ? (
-					<Box sx={{ height: "240px", display: "flex", alignItems: "center", justifyContent: "center" }}>
+					<Box sx={{ height: { xs: "200px", sm: "240px" }, display: "flex", alignItems: "center", justifyContent: "center" }}>
 						<Typography color="text.secondary" variant="h6">
 							Secret mode activé
 						</Typography>
@@ -617,21 +623,22 @@ export function WalletPerformance({ portfolios, transactions, portfolioData, sel
 										})}
 									</Stack>
 								)}
-								<NoSsr fallback={<Box sx={{ height: "280px" }} />}>
-									<ResponsiveContainer height={280} width="100%">
-										<LineChart data={walletPerformanceByWalletData.data} margin={{ top: 10, right: 10, bottom: 10, left: 10 }}>
-											<CartesianGrid 
-												strokeDasharray="3 3" 
-												vertical={false} 
-												stroke="var(--mui-palette-divider)"
-												opacity={0.5}
-											/>
-											<XAxis
-												axisLine={false}
-												dataKey="name"
-												tickLine={false}
-												type="category"
-												interval="preserveStartEnd"
+								<Box sx={{ height: { xs: "250px", sm: "280px", md: "300px" }, width: "100%" }}>
+									<NoSsr fallback={<Box sx={{ height: { xs: "250px", sm: "280px", md: "300px" } }} />}>
+										<ResponsiveContainer width="100%" height={chartHeight}>
+											<LineChart data={walletPerformanceByWalletData.data} margin={{ top: 10, right: 10, bottom: 30, left: 10 }}>
+												<CartesianGrid 
+													strokeDasharray="3 3" 
+													vertical={false} 
+													stroke="var(--mui-palette-divider)"
+													opacity={0.5}
+												/>
+												<XAxis
+													axisLine={false}
+													dataKey="name"
+													tickLine={false}
+													type="category"
+													interval="preserveStartEnd"
 												tick={{ fontSize: 11, fill: "var(--mui-palette-text-secondary)" }}
 												height={30}
 											/>
@@ -678,11 +685,13 @@ export function WalletPerformance({ portfolios, transactions, portfolioData, sel
 										</LineChart>
 									</ResponsiveContainer>
 								</NoSsr>
+								</Box>
 							</Stack>
 						) : (
-							<NoSsr fallback={<Box sx={{ height: "280px" }} />}>
-									<ResponsiveContainer height={280} width="100%">
-										<AreaChart data={portfolioPerformanceData} margin={{ top: 10, right: 10, bottom: 10, left: 10 }}>
+							<Box sx={{ height: { xs: "250px", sm: "280px", md: "300px" }, width: "100%" }}>
+								<NoSsr fallback={<Box sx={{ height: { xs: "250px", sm: "280px", md: "300px" } }} />}>
+									<ResponsiveContainer width="100%" height={chartHeight}>
+										<AreaChart data={portfolioPerformanceData} margin={{ top: 10, right: 10, bottom: 30, left: 10 }}>
 											<defs>
 												<linearGradient id="area-performance-gradient" x1="0" x2="0" y1="0" y2="1">
 													<stop offset="0%" stopColor="var(--mui-palette-primary-main)" stopOpacity={0.4} />
@@ -737,6 +746,7 @@ export function WalletPerformance({ portfolios, transactions, portfolioData, sel
 										</AreaChart>
 									</ResponsiveContainer>
 								</NoSsr>
+							</Box>
 						)}
 					</>
 				)}

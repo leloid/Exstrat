@@ -11,6 +11,8 @@ import Stack from "@mui/material/Stack";
 import ToggleButton from "@mui/material/ToggleButton";
 import ToggleButtonGroup from "@mui/material/ToggleButtonGroup";
 import Typography from "@mui/material/Typography";
+import useMediaQuery from "@mui/material/useMediaQuery";
+import { useTheme } from "@mui/material/styles";
 import { ChartLineIcon } from "@phosphor-icons/react/dist/ssr/ChartLine";
 import { TrendUpIcon } from "@phosphor-icons/react/dist/ssr/TrendUp";
 import { Bar, BarChart, CartesianGrid, Cell, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
@@ -28,6 +30,10 @@ type ChartType = "pnl" | "valuation";
 
 export function GainsLossesChart({ holdings }: GainsLossesChartProps): React.JSX.Element {
 	const { secretMode } = useSecretMode();
+	const theme = useTheme();
+	const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
+	const isTablet = useMediaQuery(theme.breakpoints.between("sm", "md"));
+	const chartHeight = isMobile ? 250 : isTablet ? 300 : 350;
 	const [chartType, setChartType] = React.useState<ChartType>("pnl");
 
 	// Prepare data for PnL chart
@@ -217,8 +223,6 @@ export function GainsLossesChart({ holdings }: GainsLossesChartProps): React.JSX
 		);
 	};
 
-	const chartHeight = 300;
-
 	if (holdings.length === 0) {
 		return (
 			<Card>
@@ -335,27 +339,29 @@ export function GainsLossesChart({ holdings }: GainsLossesChartProps): React.JSX
 
 					{/* Chart Section */}
 					<Stack divider={<Divider />} spacing={2} sx={{ flex: "1 1 auto" }}>
-						<NoSsr fallback={<Box sx={{ height: `${chartHeight}px` }} />}>
-							<ResponsiveContainer height={chartHeight} width="100%">
-								{chartType === "valuation" ? (
-									<BarChart data={valuationData} margin={{ top: 0, right: 0, bottom: 0, left: 0 }}>
-										<CartesianGrid strokeDasharray="2 4" stroke="var(--mui-palette-divider)" vertical={false} />
-										<XAxis
-											axisLine={false}
-											dataKey="symbol"
-											tickLine={false}
-											tick={{ fontSize: 12, fill: "var(--mui-palette-text-secondary)" }}
-										/>
-										<YAxis
-											axisLine={false}
-											hide
-											tick={{ fontSize: 12, fill: "var(--mui-palette-text-secondary)" }}
-											tickFormatter={(value) => {
-												if (value >= 1_000_000) return `$${(value / 1_000_000).toFixed(1)}M`;
-												if (value >= 1_000) return `$${(value / 1_000).toFixed(0)}k`;
-												return `$${value.toFixed(0)}`;
-											}}
-										/>
+						<Box sx={{ height: { xs: "250px", sm: "300px", md: "350px" }, width: "100%" }}>
+							<NoSsr fallback={<Box sx={{ height: { xs: "250px", sm: "300px", md: "350px" } }} />}>
+								<ResponsiveContainer width="100%" height={chartHeight}>
+									{chartType === "valuation" ? (
+										<BarChart data={valuationData} margin={{ top: 0, right: 0, bottom: 20, left: 0 }}>
+											<CartesianGrid strokeDasharray="2 4" stroke="var(--mui-palette-divider)" vertical={false} />
+											<XAxis
+												axisLine={false}
+												dataKey="symbol"
+												tickLine={false}
+												tick={{ fontSize: 12, fill: "var(--mui-palette-text-secondary)" }}
+												height={30}
+											/>
+											<YAxis
+												axisLine={false}
+												hide
+												tick={{ fontSize: 12, fill: "var(--mui-palette-text-secondary)" }}
+												tickFormatter={(value) => {
+													if (value >= 1_000_000) return `$${(value / 1_000_000).toFixed(1)}M`;
+													if (value >= 1_000) return `$${(value / 1_000).toFixed(0)}k`;
+													return `$${value.toFixed(0)}`;
+												}}
+											/>
 										<Tooltip animationDuration={50} content={<CustomTooltip />} cursor={false} />
 										<Bar
 											animationDuration={300}
@@ -396,6 +402,7 @@ export function GainsLossesChart({ holdings }: GainsLossesChartProps): React.JSX
 											dataKey="symbol"
 											tickLine={false}
 											tick={{ fontSize: 12, fill: "var(--mui-palette-text-secondary)" }}
+											height={30}
 										/>
 										<YAxis
 											axisLine={false}
@@ -471,6 +478,7 @@ export function GainsLossesChart({ holdings }: GainsLossesChartProps): React.JSX
 								)}
 							</ResponsiveContainer>
 						</NoSsr>
+						</Box>
 						{/* Legend */}
 						<Stack direction="row" spacing={2}>
 							{chartType === "valuation" ? (
