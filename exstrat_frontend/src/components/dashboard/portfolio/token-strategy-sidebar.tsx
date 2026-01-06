@@ -205,6 +205,7 @@ export function TokenStrategySidebar({
 		
 		const currentPrice = holding.currentPrice || holding.averagePrice || 0;
 		const prices: number[] = [];
+		const targetPrices: number[] = [];
 		
 		// Add current price
 		if (currentPrice > 0) prices.push(currentPrice);
@@ -212,13 +213,16 @@ export function TokenStrategySidebar({
 		// Add average price
 		if (holding.averagePrice > 0) prices.push(holding.averagePrice);
 		
-		// Add all Target Prices
+		// Add all Target Prices separately to track them
 		strategy.profitTargets.forEach((tp) => {
 			const targetPrice =
 				tp.targetType === "percentage"
 					? holding.averagePrice * (1 + tp.targetValue / 100)
 					: tp.targetValue;
-			if (targetPrice > 0) prices.push(targetPrice);
+			if (targetPrice > 0) {
+				prices.push(targetPrice);
+				targetPrices.push(targetPrice);
+			}
 		});
 		
 		// Add all price data points
@@ -232,10 +236,53 @@ export function TokenStrategySidebar({
 		const maxPrice = Math.max(...prices);
 		const range = maxPrice - minPrice;
 		
-		// Add 15% margin on top and bottom
-		const margin = range * 0.15;
-		const domainMin = Math.max(0, minPrice - margin);
-		const domainMax = maxPrice + margin;
+		// Calculate margins intelligently based on TP positions
+		let marginBottom = 0;
+		let marginTop = 0;
+		
+		if (targetPrices.length > 0 && currentPrice > 0) {
+			const minTP = Math.min(...targetPrices);
+			const maxTP = Math.max(...targetPrices);
+			
+			// Calculate ratio between TP and current price
+			const minTPRatio = minTP / currentPrice;
+			const maxTPRatio = maxTP / currentPrice;
+			
+			// If TP is very low compared to current price (e.g., $200 vs $3206)
+			if (minTPRatio < 0.5) {
+				// TP is less than 50% of current price - ensure TP is visible with good margin
+				// Use at least 20% of current price as bottom margin, or 50% of the TP value
+				marginBottom = Math.max(
+					currentPrice * 0.2,  // At least 20% of current price
+					minTP * 0.5,         // Or 50% of the lowest TP
+					range * 0.25         // Or 25% of the total range
+				);
+			} else {
+				// Normal case - use proportional margin
+				marginBottom = Math.max(range * 0.15, currentPrice * 0.05);
+			}
+			
+			// If TP is very high compared to current price (e.g., $200k vs $80k)
+			if (maxTPRatio > 1.5) {
+				// TP is more than 150% of current price - ensure TP is visible with good margin
+				// Use at least 20% of current price as top margin, or 30% of the gap to max TP
+				marginTop = Math.max(
+					currentPrice * 0.2,           // At least 20% of current price
+					(maxTP - currentPrice) * 0.3,  // Or 30% of the gap to max TP
+					range * 0.25                  // Or 25% of the total range
+				);
+			} else {
+				// Normal case - use proportional margin
+				marginTop = Math.max(range * 0.15, currentPrice * 0.05);
+			}
+		} else {
+			// No TP, use standard margins
+			marginBottom = Math.max(range * 0.15, currentPrice * 0.05);
+			marginTop = Math.max(range * 0.15, currentPrice * 0.05);
+		}
+		
+		const domainMin = Math.max(0, minPrice - marginBottom);
+		const domainMax = maxPrice + marginTop;
 		
 		return [domainMin, domainMax];
 	}, [strategy, holding, priceChartData]);
@@ -249,7 +296,9 @@ export function TokenStrategySidebar({
 	const tpAlerts = tokenAlert?.tpAlerts || [];
 
 	const totalTP = strategy?.profitTargets.length || 0;
-	const tpReached = tpAlerts.filter((tp) => tp.isActive && currentPrice >= tp.targetPrice).length;
+	// Compter les TP atteints basé uniquement sur le prix, pas sur isActive
+	// Un TP atteint reste atteint même s'il est désactivé après l'envoi de l'email
+	const tpReached = tpAlerts.filter((tp) => currentPrice >= Number(tp.targetPrice)).length;
 	const completionPercentage = totalTP > 0 ? (tpReached / totalTP) * 100 : 0;
 	const projectedValue = tpAlerts.reduce((sum, tp) => sum + (tp.projectedAmount || 0), 0);
 
@@ -562,22 +611,43 @@ export function TokenStrategySidebar({
 						</Box>
 
 						{/* Price Chart */}
-						{priceChartData.length > 0 && (
-							<Box sx={{ mt: 3, pt: 3, borderTop: "1px solid var(--mui-palette-divider)" }}>
-								<Stack direction="row" spacing={2} sx={{ alignItems: "center", justifyContent: "space-between", mb: 2 }}>
-									<Typography variant="overline" sx={{ fontWeight: 600, display: "block" }}>
-										{holding.token.symbol} Price Evolution
-									</Typography>
-									<Stack spacing={0.25} sx={{ alignItems: "flex-end" }}>
-										<Typography variant="caption" color="text.secondary" sx={{ fontSize: "0.65rem" }}>
-											Current
+						{priceChartData.length > 0 && (() => {
+							// Séparer les TP en deux groupes : normaux et très bas
+							const lowTPs: Array<{ tp: any; targetPrice: number; isReached: boolean }> = [];
+							const normalTPs: Array<{ tp: any; targetPrice: number; isReached: boolean }> = [];
+							
+							strategy.profitTargets.forEach((tp) => {
+								const targetPrice =
+									tp.targetType === "percentage"
+										? holding.averagePrice * (1 + tp.targetValue / 100)
+										: tp.targetValue;
+								const isReached = currentPrice >= targetPrice;
+								const tpRatio = currentPrice > 0 ? targetPrice / currentPrice : 1;
+								
+								// TP très bas si < 30% du prix actuel
+								if (tpRatio < 0.3) {
+									lowTPs.push({ tp, targetPrice, isReached });
+								} else {
+									normalTPs.push({ tp, targetPrice, isReached });
+								}
+							});
+							
+							return (
+								<Box sx={{ mt: 3, pt: 3, borderTop: "1px solid var(--mui-palette-divider)" }}>
+									<Stack direction="row" spacing={2} sx={{ alignItems: "center", justifyContent: "space-between", mb: 2 }}>
+										<Typography variant="overline" sx={{ fontWeight: 600, display: "block" }}>
+											{holding.token.symbol} Price Evolution
 										</Typography>
-										<Typography variant="body2" sx={{ fontWeight: 600, color: "primary.main" }}>
-											{formatCurrency(currentPrice, "$", 2)}
-										</Typography>
+										<Stack spacing={0.25} sx={{ alignItems: "flex-end" }}>
+											<Typography variant="caption" color="text.secondary" sx={{ fontSize: "0.65rem" }}>
+												Current
+											</Typography>
+											<Typography variant="body2" sx={{ fontWeight: 600, color: "primary.main" }}>
+												{formatCurrency(currentPrice, "$", 2)}
+											</Typography>
+										</Stack>
 									</Stack>
-								</Stack>
-								<Box sx={{ height: 240, mb: 2 }}>
+									<Box sx={{ height: 240, mb: 2 }}>
 									<NoSsr fallback={<Box sx={{ height: "240px" }} />}>
 										<ResponsiveContainer width="100%" height="100%">
 											<AreaChart data={priceChartData} margin={{ top: 10, right: 10, left: 10, bottom: 10 }}>
@@ -635,13 +705,8 @@ export function TokenStrategySidebar({
 													}}
 													width={60}
 												/>
-												{/* Reference lines for TP levels */}
-												{strategy.profitTargets.map((tp) => {
-													const targetPrice =
-														tp.targetType === "percentage"
-															? holding.averagePrice * (1 + tp.targetValue / 100)
-															: tp.targetValue;
-													const isReached = currentPrice >= targetPrice;
+												{/* Reference lines for normal TP levels (only those in visible range) */}
+												{normalTPs.map(({ tp, targetPrice, isReached }) => {
 													return (
 														<ReferenceLine
 															key={`tp-${tp.order}`}
@@ -682,8 +747,66 @@ export function TokenStrategySidebar({
 										</ResponsiveContainer>
 									</NoSsr>
 								</Box>
+								
+								{/* Zone séparée pour les TP très bas */}
+								{lowTPs.length > 0 && (
+									<Box 
+										sx={{ 
+											mt: 2, 
+											pt: 2, 
+											borderTop: "2px dashed var(--mui-palette-divider)",
+											bgcolor: colorScheme === "dark" 
+												? "rgba(255, 193, 7, 0.05)" 
+												: "rgba(255, 193, 7, 0.08)",
+											borderRadius: 1,
+											px: 1.5,
+											py: 1.5,
+										}}
+									>
+										<Stack direction="row" spacing={1} sx={{ alignItems: "center", mb: 1 }}>
+											<Box
+												sx={{
+													width: 4,
+													height: 4,
+													borderRadius: "50%",
+													bgcolor: "warning.main",
+													animation: "pulse 2s ease-in-out infinite",
+													"@keyframes pulse": {
+														"0%, 100%": { opacity: 1 },
+														"50%": { opacity: 0.5 },
+													},
+												}}
+											/>
+											<Typography variant="caption" color="text.secondary" sx={{ fontSize: "0.7rem", fontWeight: 600 }}>
+												Low Target Prices (Below 30% of current price)
+											</Typography>
+										</Stack>
+										<Stack direction="row" spacing={1.5} sx={{ flexWrap: "wrap", gap: 1 }}>
+											{lowTPs.map(({ tp, targetPrice, isReached }) => (
+												<Chip
+													key={`low-tp-${tp.order}`}
+													label={`TP${tp.order}: ${formatCurrency(targetPrice, "$", 2)}`}
+													size="small"
+													color={isReached ? "success" : "warning"}
+													variant={isReached ? "filled" : "outlined"}
+													sx={{
+														fontWeight: 600,
+														fontSize: "0.7rem",
+														height: "24px",
+														borderWidth: isReached ? 0 : 1.5,
+														...(isReached && {
+															bgcolor: "success.main",
+															color: "white",
+														}),
+													}}
+												/>
+											))}
+										</Stack>
+									</Box>
+								)}
 							</Box>
-						)}
+							);
+						})()}
 					</>
 				)}
 			</Box>

@@ -133,7 +133,9 @@ export function TokensTable({ holdings, portfolioId, onTokenClick }: TokensTable
 					}
 
 					const currentPrice = holding.currentPrice || holding.averagePrice || 0;
-					const tpReached = tokenAlert.tpAlerts?.filter((tp) => tp.isActive && currentPrice >= tp.targetPrice).length || 0;
+					// Compter les TP atteints basé uniquement sur le prix, pas sur isActive
+					// Un TP atteint reste atteint même s'il est désactivé après l'envoi de l'email
+					const tpReached = tokenAlert.tpAlerts?.filter((tp) => currentPrice >= Number(tp.targetPrice)).length || 0;
 					const totalTP = tokenAlert.numberOfTargets || tokenAlert.tpAlerts?.length || 0;
 
 					return {
