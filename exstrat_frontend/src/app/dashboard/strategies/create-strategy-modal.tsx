@@ -32,9 +32,6 @@ import Stepper from "@mui/material/Stepper";
 import Switch from "@mui/material/Switch";
 import TextField from "@mui/material/TextField";
 import Typography from "@mui/material/Typography";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { Controller, useForm } from "react-hook-form";
-import { z as zod } from "zod";
 import { CheckIcon } from "@phosphor-icons/react/dist/ssr/Check";
 import { XIcon } from "@phosphor-icons/react/dist/ssr/X";
 import { MinusIcon } from "@phosphor-icons/react/dist/ssr/Minus";
@@ -45,6 +42,7 @@ import { strategiesApi } from "@/lib/strategies-api";
 import * as portfoliosApi from "@/lib/portfolios-api";
 import { transactionsApi } from "@/lib/transactions-api";
 import { formatCurrency, formatPercentage } from "@/lib/format";
+import { getTokenLogoUrl } from "@/lib/utils";
 import type { CreateStrategyDto, TargetType } from "@/types/strategies";
 import { StrategyStatus } from "@/types/strategies";
 import { TokenSearch } from "@/components/transactions/token-search";
@@ -553,7 +551,8 @@ export function CreateStrategyModal({ onClose, onSuccess, open }: CreateStrategy
 																</Stack>
 															</Box>
 														) : availableTokens.length > 0 && !isVirtualWallet ? (
-														<FormControl fullWidth>
+															<>
+																<FormControl fullWidth>
 															<InputLabel>Select a token</InputLabel>
 															<Select
 																label="Select a token"
@@ -563,8 +562,16 @@ export function CreateStrategyModal({ onClose, onSuccess, open }: CreateStrategy
 																	const token = availableTokens.find((t) => t.symbol === e.target.value);
 																	if (token) {
 																		setSelectedToken(token);
-																		// Automatically move to next step when token is selected
-																		setActiveStep(2);
+																		// If changing token from a later step, reset quantity and price
+																		if (activeStep > 2) {
+																			setStrategyQuantity("");
+																			setStrategyAveragePrice("");
+																		}
+																		// Automatically move to next step when token is selected (only if we're at step 1 or earlier)
+																		if (activeStep <= 1) {
+																			setActiveStep(2);
+																		}
+																		// If already at step 2 or beyond, stay at current step
 																	}
 																}}
 															>
@@ -578,6 +585,17 @@ export function CreateStrategyModal({ onClose, onSuccess, open }: CreateStrategy
 																	))}
 																</Select>
 															</FormControl>
+															{selectedToken && (
+																<Stack direction="row" spacing={2} sx={{ mt: 2 }}>
+																	<Button onClick={handleBack} variant="outlined">
+																		Previous
+																	</Button>
+																	<Button onClick={handleNext} variant="contained">
+																		Next
+																	</Button>
+																</Stack>
+															)}
+															</>
 														) : !isVirtualWallet && availableTokens.length === 0 ? (
 															<Card variant="outlined" sx={{ bgcolor: "var(--mui-palette-background-level1)" }}>
 																<CardContent>
@@ -592,16 +610,36 @@ export function CreateStrategyModal({ onClose, onSuccess, open }: CreateStrategy
 																</CardContent>
 															</Card>
 														) : (
-															<TokenSearch
-																onTokenSelect={(token) => {
-																	setSelectedToken(token);
-																	// Automatically move to next step when token is selected
-																	if (token) {
-																		setActiveStep(2);
-																	}
-																}}
-																selectedToken={selectedToken}
-															/>
+															<>
+																<TokenSearch
+																	onTokenSelect={(token) => {
+																		if (token) {
+																			setSelectedToken(token);
+																			// If changing token from a later step, reset quantity and price
+																			if (activeStep > 2) {
+																				setStrategyQuantity("");
+																				setStrategyAveragePrice("");
+																			}
+																			// Automatically move to next step when token is selected (only if we're at step 1 or earlier)
+																			if (activeStep <= 1) {
+																				setActiveStep(2);
+																			}
+																			// If already at step 2 or beyond, stay at current step
+																		}
+																	}}
+																	selectedToken={selectedToken}
+																/>
+																{selectedToken && (
+																	<Stack direction="row" spacing={2} sx={{ mt: 2 }}>
+																		<Button onClick={handleBack} variant="outlined">
+																			Previous
+																		</Button>
+																		<Button onClick={handleNext} variant="contained">
+																			Next
+																		</Button>
+																	</Stack>
+																)}
+															</>
 														)}
 													</Stack>
 												)}
@@ -1076,6 +1114,45 @@ export function CreateStrategyModal({ onClose, onSuccess, open }: CreateStrategy
 					>
 						<Stack spacing={3}>
 							<Typography variant="h6">Your Investment Data</Typography>
+							
+							{/* Token Display */}
+							{selectedToken && (
+								<Card variant="outlined" sx={{ bgcolor: "var(--mui-palette-background-level1)" }}>
+									<CardContent>
+										<Stack direction="row" spacing={2} sx={{ alignItems: "center" }}>
+											<Avatar
+												sx={{
+													height: { xs: 40, sm: 48 },
+													width: { xs: 40, sm: 48 },
+													bgcolor: "var(--mui-palette-primary-main)",
+												}}
+												src={getTokenLogoUrl(selectedToken.symbol, selectedToken.id)}
+											>
+												{selectedToken.symbol?.charAt(0)?.toUpperCase() || "?"}
+											</Avatar>
+											<Stack spacing={0.5} sx={{ flex: "1 1 auto", minWidth: 0 }}>
+												<Typography variant="subtitle1" sx={{ fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+													{selectedToken.name}
+												</Typography>
+												<Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
+													<Typography color="text.secondary" variant="body2">
+														{selectedToken.symbol}
+													</Typography>
+													{selectedToken.quote?.USD?.price && (
+														<>
+															<Typography color="text.secondary" variant="body2">•</Typography>
+															<Typography color="text.secondary" variant="body2">
+																{formatCurrency(selectedToken.quote.USD.price, "$", 2)}
+															</Typography>
+														</>
+													)}
+												</Stack>
+											</Stack>
+										</Stack>
+									</CardContent>
+								</Card>
+							)}
+							
 							<Card variant="outlined">
 								<CardContent>
 									<Stack spacing={2}>
