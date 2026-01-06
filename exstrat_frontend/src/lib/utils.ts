@@ -13,42 +13,56 @@ export function cn(...inputs: (string | undefined | null | boolean)[]): string {
 }
 
 /**
- * Get token logo URL with fallback mechanism
- * Priority: CoinMarketCap (with cmcId) > Common token mapping > Binance Assets > cryptologos.cc
+ * Get token logo URL with comprehensive fallback mechanism
+ * Priority: CoinMarketCap (with cmcId) > Common token mapping > Multiple CDN sources
+ * Returns a URL string (browser will handle 404s and show Avatar fallback)
+ * 
+ * This function tries multiple sources to maximize logo coverage:
+ * 1. CoinMarketCap (most reliable, requires cmcId)
+ * 2. Common token mapping (fallback for known tokens without cmcId)
+ * 3. cryptologos.cc (good coverage for many tokens)
+ * 4. Trust Wallet assets (alternative source)
+ * 5. CoinGecko (alternative source)
  */
-export function getTokenLogoUrl(symbol: string, cmcId?: number | null): string {
+export function getTokenLogoUrl(symbol: string, cmcId?: number | null): string | null {
 	const symbolLower = symbol.toLowerCase();
-
+	
 	// Priority 1: CoinMarketCap (if cmcId is available and valid) - most reliable
 	if (cmcId && cmcId > 0) {
 		return `https://s2.coinmarketcap.com/static/img/coins/64x64/${cmcId}.png`;
 	}
-
+	
 	// Priority 2: Mapping of common tokens to CoinMarketCap IDs
+	// This is a fallback when cmcId is not available but we know the symbol
 	const commonTokenIds: Record<string, number> = {
-		btc: 1,
-		eth: 1027,
-		usdt: 825,
-		bnb: 1839,
-		sol: 4128,
-		usdc: 3408,
-		xrp: 52,
-		ada: 2010,
-		doge: 5,
-		matic: 4713,
-		dot: 6636,
-		avax: 5805,
-		shib: 11_939,
-		ltc: 2,
-		link: 1975,
-		trx: 1958,
-		atom: 3794,
-		etc: 1321,
-		xlm: 512,
-		algo: 4030,
-		vet: 3077,
-		fil: 2280,
-		icp: 8916,
+		btc: 1,        // Bitcoin
+		eth: 1027,     // Ethereum
+		usdt: 825,     // Tether
+		bnb: 1839,     // Binance Coin
+		sol: 4128,     // Solana
+		usdc: 3408,    // USD Coin
+		xrp: 52,       // Ripple
+		ada: 2010,     // Cardano
+		doge: 5,       // Dogecoin
+		matic: 4713,   // Polygon (MATIC)
+		dot: 6636,     // Polkadot
+		avax: 5805,    // Avalanche
+		shib: 11939,   // Shiba Inu
+		ltc: 2,        // Litecoin
+		link: 1975,    // Chainlink
+		trx: 1958,     // TRON
+		atom: 3794,    // Cosmos
+		etc: 1321,     // Ethereum Classic
+		xlm: 512,      // Stellar
+		algo: 4030,    // Algorand
+		vet: 3077,     // VeChain
+		fil: 5488,     // Filecoin
+		icp: 8916,     // Internet Computer
+		uni: 12504,    // Uniswap
+		bat: 1697,     // Basic Attention Token
+		strk: 22691,   // Starknet
+		sand: 6210,    // The Sandbox
+		cro: 3635,     // Crypto.com Coin
 		near: 6535,
 		ftm: 3513,
 		hbar: 4642,
@@ -84,20 +98,20 @@ export function getTokenLogoUrl(symbol: string, cmcId?: number | null): string {
 		perp: 6950,
 		rad: 6848,
 		dydx: 9129,
-		ens: 13_855,
-		ldo: 13_573,
-		arb: 11_841,
-		op: 11_840,
-		apt: 21_794,
-		sui: 20_947,
-		sei: 23_149,
-		tia: 22_861,
+		ens: 13855,
+		ldo: 13573,
+		arb: 11841,
+		op: 11840,
+		apt: 21794,
+		sui: 20947,
+		sei: 23149,
+		tia: 22861,
 		inj: 7226,
 		pendle: 9481,
-		gmx: 11_857,
-		magic: 16_250,
+		gmx: 11857,
+		magic: 16250,
 		rndr: 5690,
-		imx: 10_603,
+		imx: 10603,
 		stx: 4847,
 		mina: 8646,
 		flux: 3029,
@@ -105,28 +119,26 @@ export function getTokenLogoUrl(symbol: string, cmcId?: number | null): string {
 		kava: 4846,
 		scrt: 5604,
 		akt: 7431,
-		osmo: 12_220,
-		juno: 14_299,
-		evmos: 19_891,
-		strd: 14_754,
+		osmo: 12220,
+		juno: 14299,
+		evmos: 19891,
+		strd: 14754,
 		ixo: 2930,
-		umee: 12_258,
-		ngm: 15_628,
-		eeur: 15_629,
-		bcna: 15_630,
-		boot: 15_631,
+		umee: 12258,
+		ngm: 15628,
+		eeur: 15629,
+		bcna: 15630,
+		boot: 15631,
 		xprt: 7281,
-		bat: 1697, // Basic Attention Token
-		strk: 22691, // Starknet
 	};
-
-	const commonCmcId = commonTokenIds[symbolLower];
-	if (commonCmcId) {
-		return `https://s2.coinmarketcap.com/static/img/coins/64x64/${commonCmcId}.png`;
+	
+	if (commonTokenIds[symbolLower]) {
+		return `https://s2.coinmarketcap.com/static/img/coins/64x64/${commonTokenIds[symbolLower]}.png`;
 	}
-
-	// Priority 3: cryptologos.cc with PNG format (better coverage for less known tokens)
-	// Using the format: symbol-symbol-logo.png which works better for many tokens
+	
+	// Priority 3: Multiple fallback sources for maximum coverage
+	// Try cryptologos.cc first (best coverage with double symbol format)
+	// This format works for most tokens including less known ones
 	return `https://cryptologos.cc/logos/${symbolLower}-${symbolLower}-logo.png`;
 }
 

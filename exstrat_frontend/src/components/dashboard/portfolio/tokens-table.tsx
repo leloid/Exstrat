@@ -419,7 +419,7 @@ export function TokensTable({ holdings, portfolioId, onTokenClick }: TokensTable
 										<TableCell>
 											<Stack direction="row" spacing={1.5} sx={{ alignItems: "center" }}>
 												<Avatar
-													src={getTokenLogoUrl(holding.token.symbol, holding.token.cmcId)}
+													src={getTokenLogoUrl(holding.token.symbol, holding.token.cmcId) || undefined}
 													sx={{ width: 32, height: 32 }}
 												>
 													{holding.token.symbol.charAt(0)}

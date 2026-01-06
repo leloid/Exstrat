@@ -385,7 +385,7 @@ export function TokenStrategySidebar({
 						<Stack direction="row" spacing={2} sx={{ alignItems: "center", justifyContent: "space-between", mb: 3 }}>
 							<Stack direction="row" spacing={1.5} sx={{ alignItems: "center" }}>
 								<Avatar
-									src={getTokenLogoUrl(holding.token.symbol, holding.token.cmcId)}
+									src={getTokenLogoUrl(holding.token.symbol, holding.token.cmcId) || undefined}
 									sx={{ width: 40, height: 40 }}
 								>
 									{holding.token.symbol.charAt(0)}
@@ -415,7 +415,7 @@ export function TokenStrategySidebar({
 						<Stack direction="row" spacing={2} sx={{ alignItems: "center", justifyContent: "space-between", mb: 3, pb: 2, borderBottom: "1px solid var(--mui-palette-divider)" }}>
 							<Stack direction="row" spacing={1.5} sx={{ alignItems: "center" }}>
 								<Avatar
-									src={getTokenLogoUrl(holding.token.symbol, holding.token.cmcId)}
+									src={getTokenLogoUrl(holding.token.symbol, holding.token.cmcId) || undefined}
 									sx={{ width: 40, height: 40 }}
 								>
 									{holding.token.symbol.charAt(0)}

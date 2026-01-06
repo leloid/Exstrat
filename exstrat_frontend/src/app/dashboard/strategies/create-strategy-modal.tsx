@@ -1126,7 +1126,7 @@ export function CreateStrategyModal({ onClose, onSuccess, open }: CreateStrategy
 													width: { xs: 40, sm: 48 },
 													bgcolor: "var(--mui-palette-primary-main)",
 												}}
-												src={getTokenLogoUrl(selectedToken.symbol, selectedToken.id)}
+												src={getTokenLogoUrl(selectedToken.symbol, selectedToken.id) || undefined}
 											>
 												{selectedToken.symbol?.charAt(0)?.toUpperCase() || "?"}
 											</Avatar>
