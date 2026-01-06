@@ -166,7 +166,9 @@ export function ImportCsvModal({
 		<Dialog open={open} onClose={handleClose} maxWidth="lg" fullWidth>
 			<DialogTitle>
 				<Stack direction="row" spacing={2} sx={{ alignItems: "center", justifyContent: "space-between" }}>
-					<Typography variant="h6">Import CSV - {exchange === "coinbase" ? "Coinbase" : "Crypto.com"}</Typography>
+					<Typography variant="h6">
+						Import CSV - {exchange === "coinbase" ? "Coinbase" : exchange === "crypto.com" ? "Crypto.com" : "ExStrat Custom"}
+					</Typography>
 					<IconButton onClick={handleClose} size="small">
 						<XIcon />
 					</IconButton>

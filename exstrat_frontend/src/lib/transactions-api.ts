@@ -89,7 +89,7 @@ export const transactionsApi = {
 	 * Parse CSV file content
 	 */
 	async parseCsv(data: {
-		exchange: "coinbase" | "crypto.com";
+		exchange: "coinbase" | "crypto.com" | "exstrat";
 		csvContent: string;
 		portfolioId?: string;
 	}): Promise<{

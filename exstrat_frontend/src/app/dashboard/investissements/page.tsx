@@ -63,6 +63,7 @@ import { formatCurrency, formatPercentage, formatCompactCurrency, formatQuantity
 import { useSecretMode } from "@/hooks/use-secret-mode";
 import { TokenSearch } from "@/components/transactions/token-search";
 import { CreateTransactionModal } from "@/components/transactions/create-transaction-modal";
+import { AddTransactionMethodModal } from "@/components/transactions/add-transaction-method-modal";
 import { SelectExchangeModal, type ExchangeType } from "@/components/exchanges/select-exchange-modal";
 import { ImportCsvModal } from "@/components/exchanges/import-csv-modal";
 import { toast } from "@/components/core/toaster";
@@ -160,6 +161,7 @@ export default function Page(): React.JSX.Element {
 	const [showSelectExchangeModal, setShowSelectExchangeModal] = React.useState(false);
 	const [showImportCsvModal, setShowImportCsvModal] = React.useState(false);
 	const [selectedExchange, setSelectedExchange] = React.useState<ExchangeType | null>(null);
+	const [showAddTransactionMethodModal, setShowAddTransactionMethodModal] = React.useState(false);
 	const [showDeleteTransactionModal, setShowDeleteTransactionModal] = React.useState(false);
 	const [transactionToDelete, setTransactionToDelete] = React.useState<string | null>(null);
 	const [selectedTransactionIds, setSelectedTransactionIds] = React.useState<Set<string>>(new Set());
@@ -1265,19 +1267,7 @@ export default function Page(): React.JSX.Element {
 						{portfolios.length > 0 && (
 							<Button
 								onClick={() => {
-									setEditingTransaction(null);
-									setSelectedToken(null);
-									setTransactionError(null);
-									setTransactionFormData({
-										quantity: "",
-										amountInvested: "",
-										averagePrice: "",
-										type: "BUY",
-										transactionDate: new Date().toISOString().split("T")[0],
-										notes: "",
-										portfolioId: portfolios[0]?.id || "",
-									});
-									setShowTransactionDialog(true);
+									setShowAddTransactionMethodModal(true);
 								}}
 								startIcon={<PlusIcon />}
 								variant="contained"
@@ -1840,19 +1830,7 @@ export default function Page(): React.JSX.Element {
 									endIcon={<ArrowUpRightIcon />}
 									size="small"
 									onClick={() => {
-										setEditingTransaction(null);
-										setSelectedToken(null);
-										setTransactionError(null);
-										setTransactionFormData({
-											quantity: "",
-											amountInvested: "",
-											averagePrice: "",
-											type: "BUY",
-											transactionDate: new Date().toISOString().split("T")[0],
-											notes: "",
-											portfolioId: portfolios[0]?.id || "",
-										});
-										setShowTransactionDialog(true);
+										setShowAddTransactionMethodModal(true);
 									}}
 								>
 									Add Transaction
@@ -1923,26 +1901,14 @@ export default function Page(): React.JSX.Element {
 									No transactions yet. Add your first transaction to get started.
 								</Typography>
 								<Button
-									onClick={() => {
-										setEditingTransaction(null);
-										setSelectedToken(null);
-										setTransactionError(null);
-										setTransactionFormData({
-											quantity: "",
-											amountInvested: "",
-											averagePrice: "",
-											type: "BUY",
-											transactionDate: new Date().toISOString().split("T")[0],
-											notes: "",
-											portfolioId: portfolios[0]?.id || "",
-										});
-										setShowTransactionDialog(true);
-									}}
-									startIcon={<PlusIcon />}
-									variant="contained"
-								>
-									Add Transaction
-								</Button>
+								onClick={() => {
+									setShowAddTransactionMethodModal(true);
+								}}
+								startIcon={<PlusIcon />}
+								variant="contained"
+							>
+								Add Transaction
+							</Button>
 							</Box>
 						) : filteredTransactions.length === 0 ? (
 							<Box sx={{ py: 8, textAlign: "center" }}>
@@ -2647,13 +2613,22 @@ export default function Page(): React.JSX.Element {
 						setShowImportCsvModal(false);
 						setSelectedExchange(null);
 					}}
-					exchange={selectedExchange}
+					exchange={selectedExchange || "coinbase"}
 					onSuccess={async () => {
 						// Refresh all data: portfolios, transactions, and holdings
 						await refreshAllData();
 					}}
 				/>
 			)}
+			<AddTransactionMethodModal
+				open={showAddTransactionMethodModal}
+				onClose={() => setShowAddTransactionMethodModal(false)}
+				onSuccess={async () => {
+					// Refresh all data: portfolios, transactions, and holdings
+					await refreshAllData();
+				}}
+				portfolios={portfolios}
+			/>
 		</Box>
 	);
 }

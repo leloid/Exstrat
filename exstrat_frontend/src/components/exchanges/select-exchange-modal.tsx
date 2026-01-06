@@ -24,7 +24,7 @@ import { ArrowRightIcon } from "@phosphor-icons/react/dist/ssr/ArrowRight";
 import { CheckIcon } from "@phosphor-icons/react/dist/ssr/Check";
 import { MagnifyingGlassIcon } from "@phosphor-icons/react/dist/ssr/MagnifyingGlass";
 
-export type ExchangeType = "coinbase" | "crypto.com";
+export type ExchangeType = "coinbase" | "crypto.com" | "exstrat";
 
 interface SelectExchangeModalProps {
 	open: boolean;

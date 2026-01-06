@@ -202,6 +202,7 @@ export class TransactionsController {
     res.setHeader('Content-Type', 'text/csv; charset=utf-8');
     res.setHeader('Content-Disposition', 'attachment; filename="exstrat-transactions-template.csv"');
     res.send(csvContent);
+    res.end();
   }
 
   @Post('parse-csv')
