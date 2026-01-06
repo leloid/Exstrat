@@ -1230,8 +1230,8 @@ export default function Page(): React.JSX.Element {
 							}}
 							startIcon={<WalletIcon />}
 							variant="outlined"
-							fullWidth={{ xs: true, sm: false }}
 							sx={{
+								width: { xs: "100%", sm: "auto" },
 								color: "primary.main",
 								borderColor: "primary.main",
 								"&:hover": {
@@ -1250,8 +1250,8 @@ export default function Page(): React.JSX.Element {
 							onClick={() => setShowSelectExchangeModal(true)}
 							startIcon={<PlugsConnectedIcon />}
 							variant="outlined"
-							fullWidth={{ xs: true, sm: false }}
 							sx={{
+								width: { xs: "100%", sm: "auto" },
 								color: "secondary.main",
 								borderColor: "secondary.main",
 								"&:hover": {
@@ -1273,7 +1273,7 @@ export default function Page(): React.JSX.Element {
 								}}
 								startIcon={<PlusIcon />}
 								variant="contained"
-								fullWidth={{ xs: true, sm: false }}
+								sx={{ width: { xs: "100%", sm: "auto" } }}
 							>
 								Add Transaction
 							</Button>
