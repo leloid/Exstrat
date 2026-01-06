@@ -52,6 +52,12 @@ api.interceptors.response.use(
 	async (error) => {
 		const originalRequest = error.config;
 
+		// Ne pas logger les erreurs 404 pour l'endpoint csv-template (fallback côté client)
+		if (error.response?.status === 404 && originalRequest.url?.includes("/transactions/csv-template")) {
+			// Silencieusement ignorer cette erreur car on utilise un fallback
+			return Promise.reject(error);
+		}
+
 		console.error("API Error:", error);
 
 		if (error.code === "ERR_NETWORK" || error.message === "Network Error") {
