@@ -90,9 +90,15 @@ export function SideNav(): React.JSX.Element {
 					))}
 				</Stack>
 				<Stack direction="row" spacing={2} sx={{ alignItems: "center" }}>
-					<Avatar>{user?.email?.charAt(0).toUpperCase() || "U"}</Avatar>
+					<Avatar>
+						{user?.firstName?.charAt(0).toUpperCase() || user?.lastName?.charAt(0).toUpperCase() || user?.email?.charAt(0).toUpperCase() || "U"}
+					</Avatar>
 					<div>
-						<Typography variant="subtitle1">{user?.email?.split("@")[0] || "User"}</Typography>
+						<Typography variant="subtitle1">
+							{user?.firstName && user?.lastName
+								? `${user.firstName} ${user.lastName}`
+								: user?.firstName || user?.lastName || user?.email?.split("@")[0] || "User"}
+						</Typography>
 						<Typography color="text.secondary" variant="caption">
 							{user?.email || ""}
 						</Typography>

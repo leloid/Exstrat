@@ -179,7 +179,7 @@ function LanguageSwitch(): React.JSX.Element {
 function UserButton(): React.JSX.Element {
 	const popover = usePopover<HTMLButtonElement>();
 	const { user } = useAuth();
-	const userInitial = user?.email?.charAt(0).toUpperCase() || "U";
+	const userInitial = user?.firstName?.charAt(0).toUpperCase() || user?.lastName?.charAt(0).toUpperCase() || user?.email?.charAt(0).toUpperCase() || "U";
 
 	return (
 		<React.Fragment>

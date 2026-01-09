@@ -75,7 +75,7 @@ export function AccountDetails(): React.JSX.Element {
 									</Stack>
 								</Box>
 								<Avatar sx={{ "--Avatar-size": "100px" }}>
-									{user?.email?.charAt(0).toUpperCase() || "U"}
+									{user?.firstName?.charAt(0).toUpperCase() || user?.lastName?.charAt(0).toUpperCase() || user?.email?.charAt(0).toUpperCase() || "U"}
 								</Avatar>
 							</Box>
 						</Box>

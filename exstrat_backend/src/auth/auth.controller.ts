@@ -127,6 +127,8 @@ export class AuthController {
       properties: {
         id: { type: 'string', example: 'clx1234567890' },
         email: { type: 'string', example: 'user@example.com' },
+        firstName: { type: 'string', example: 'John', nullable: true },
+        lastName: { type: 'string', example: 'Doe', nullable: true },
         createdAt: { type: 'string', example: '2024-01-01T00:00:00.000Z' }
       }
     }

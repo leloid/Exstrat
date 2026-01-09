@@ -39,8 +39,8 @@ function SignOutButton({ onClose }: { onClose?: () => void }): React.JSX.Element
 			// Utiliser replace pour éviter que l'utilisateur puisse revenir en arrière
 			router.replace(paths.auth.signIn);
 		} catch (error) {
-			console.error("Erreur lors de la déconnexion:", error);
-			// Rediriger quand même vers la page de connexion
+			console.error("Error during sign out:", error);
+			// Redirect to sign in page anyway
 			router.replace(paths.auth.signIn);
 		} finally {
 			setIsLoading(false);
@@ -81,7 +81,7 @@ function SignOutButton({ onClose }: { onClose?: () => void }): React.JSX.Element
 
 	return (
 		<MenuItem onClick={handleSignOut} disabled={isLoading} sx={{ justifyContent: "center" }}>
-			{isLoading ? "Déconnexion..." : "Sign out"}
+			{isLoading ? "Signing out..." : "Sign out"}
 		</MenuItem>
 	);
 }
@@ -94,8 +94,24 @@ export interface UserPopoverProps {
 
 export function UserPopover({ anchorEl, onClose, open }: UserPopoverProps): React.JSX.Element {
 	const { user } = useAuth();
-	const userName = user?.email?.split("@")[0] || "User";
+	
+	// Calculer le nom d'affichage avec fallback
+	const getDisplayName = () => {
+		if (user?.firstName && user?.lastName) {
+			return `${user.firstName} ${user.lastName}`;
+		}
+		if (user?.firstName) {
+			return user.firstName;
+		}
+		if (user?.lastName) {
+			return user.lastName;
+		}
+		return user?.email?.split("@")[0] || "User";
+	};
+	
+	const displayName = getDisplayName();
 	const userEmail = user?.email || "";
+	const userInitial = user?.firstName?.charAt(0).toUpperCase() || user?.lastName?.charAt(0).toUpperCase() || userEmail.charAt(0).toUpperCase() || "U";
 
 	return (
 		<Popover
@@ -108,10 +124,10 @@ export function UserPopover({ anchorEl, onClose, open }: UserPopoverProps): Reac
 		>
 			<Box sx={{ p: 2 }}>
 				<Stack direction="row" spacing={2} sx={{ alignItems: "center" }}>
-					<Avatar>{userEmail.charAt(0).toUpperCase() || "U"}</Avatar>
+					<Avatar>{userInitial}</Avatar>
 					<Box sx={{ flex: 1, minWidth: 0 }}>
 						<Typography noWrap variant="subtitle1">
-							{userName}
+							{displayName}
 						</Typography>
 						<Typography color="text.secondary" noWrap variant="body2">
 							{userEmail}
