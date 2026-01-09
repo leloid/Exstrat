@@ -376,14 +376,19 @@ function NavItem({
 				{...(isBranch
 					? { role: "button" }
 					: {
-							...(href
+							...(isSettings
 								? {
-										component: external ? "a" : RouterLink,
-										href,
-										target: external ? "_blank" : undefined,
-										rel: external ? "noreferrer" : undefined,
+										onClick: handleSettingsClick,
+										role: "button",
 									}
-								: { role: "button" }),
+								: href
+									? {
+											component: external ? "a" : RouterLink,
+											href,
+											target: external ? "_blank" : undefined,
+											rel: external ? "noreferrer" : undefined,
+										}
+									: { role: "button" }),
 						})}
 				sx={{
 					alignItems: "center",
