@@ -3,6 +3,22 @@ import { ApiProperty } from '@nestjs/swagger';
 
 export class SignUpDto {
   @ApiProperty({
+    description: 'Prénom de l\'utilisateur',
+    example: 'John',
+    required: false
+  })
+  @IsString({ message: 'Le prénom doit être une chaîne de caractères' })
+  firstName?: string;
+
+  @ApiProperty({
+    description: 'Nom de famille de l\'utilisateur',
+    example: 'Doe',
+    required: false
+  })
+  @IsString({ message: 'Le nom doit être une chaîne de caractères' })
+  lastName?: string;
+
+  @ApiProperty({
     description: 'Adresse email de l\'utilisateur',
     example: 'user@example.com',
     format: 'email'
@@ -56,12 +72,16 @@ export class AuthResponseDto {
     example: {
       id: 'clx1234567890',
       email: 'user@example.com',
+      firstName: 'John',
+      lastName: 'Doe',
       createdAt: '2024-01-01T00:00:00.000Z'
     }
   })
   user: {
     id: string;
     email: string;
+    firstName?: string | null;
+    lastName?: string | null;
     createdAt: Date;
   };
 
@@ -128,6 +148,41 @@ export class ResetPasswordResponseDto {
   @ApiProperty({
     description: 'Message de confirmation',
     example: 'Mot de passe réinitialisé avec succès'
+  })
+  message: string;
+}
+
+export class VerifyEmailDto {
+  @ApiProperty({
+    description: 'Token de vérification reçu par email',
+    example: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...'
+  })
+  @IsString({ message: 'Le token doit être une chaîne de caractères' })
+  token: string;
+}
+
+export class VerifyEmailResponseDto {
+  @ApiProperty({
+    description: 'Message de confirmation',
+    example: 'Email vérifié avec succès'
+  })
+  message: string;
+}
+
+export class ResendVerificationEmailDto {
+  @ApiProperty({
+    description: 'Adresse email de l\'utilisateur',
+    example: 'user@example.com',
+    format: 'email'
+  })
+  @IsEmail({}, { message: 'L\'email doit être valide' })
+  email: string;
+}
+
+export class ResendVerificationEmailResponseDto {
+  @ApiProperty({
+    description: 'Message de confirmation',
+    example: 'Si un compte existe avec cet email, un email de vérification a été envoyé'
   })
   message: string;
 }

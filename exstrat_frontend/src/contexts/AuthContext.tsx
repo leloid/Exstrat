@@ -88,6 +88,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
 			// Messages d'erreur spécifiques selon le code de statut
 			if (axiosError.response?.status === 401) {
+				// Si le message contient "vérifier votre email", on le garde tel quel
+				const errorMessage = axiosError.response.data?.message || "";
+				if (errorMessage.includes("vérifier votre email") || errorMessage.includes("email")) {
+					throw new Error(errorMessage);
+				}
 				throw new Error("Incorrect email or password");
 			} else if (axiosError.response?.status === 404) {
 				throw new Error("User not found");
@@ -106,8 +111,22 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 	const signUp = async (data: SignUpData) => {
 		try {
 			const response = await api.post<AuthResponse>("/auth/signup", data);
-			const { user: userData, accessToken } = response.data;
+			const { user: userData, accessToken, message } = response.data;
 
+			// Ne pas stocker le token et l'utilisateur si l'email n'est pas vérifié
+			// Le message du backend est : "Inscription réussie. Veuillez vérifier votre email pour activer votre compte."
+			// On vérifie si le message contient "vérifier" (français) ou "verify" (anglais)
+			const messageLower = (message || "").toLowerCase();
+			const needsVerification = messageLower.includes("vérifier") || messageLower.includes("verify");
+			
+			if (needsVerification) {
+				// Ne pas stocker le token, l'utilisateur doit d'abord vérifier son email
+				// On retourne sans stocker pour éviter la redirection automatique
+				// L'utilisateur verra le message de vérification sur la page sign-up
+				return;
+			}
+
+			// Si l'email est déjà vérifié (cas improbable mais possible), on stocke le token
 			setUser(userData);
 			localStorage.setItem("accessToken", accessToken);
 			localStorage.setItem("user", JSON.stringify(userData));

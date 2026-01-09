@@ -1,7 +1,7 @@
-import { Controller, Post, Body, UseGuards, Get, HttpCode, HttpStatus } from '@nestjs/common';
+import { Controller, Post, Body, UseGuards, Get, HttpCode, HttpStatus, Query } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { AuthService } from './auth.service';
-import { SignUpDto, SignInDto, AuthResponseDto, LogoutResponseDto, ForgotPasswordDto, ForgotPasswordResponseDto, ResetPasswordDto, ResetPasswordResponseDto } from './dto/auth.dto';
+import { SignUpDto, SignInDto, AuthResponseDto, LogoutResponseDto, ForgotPasswordDto, ForgotPasswordResponseDto, ResetPasswordDto, ResetPasswordResponseDto, VerifyEmailDto, VerifyEmailResponseDto, ResendVerificationEmailDto, ResendVerificationEmailResponseDto } from './dto/auth.dto';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { RefreshGuard } from './guards/refresh.guard';
 import { Public } from './decorators/public.decorator';
@@ -226,5 +226,68 @@ export class AuthController {
   })
   async resetPassword(@Body() resetPasswordDto: ResetPasswordDto): Promise<ResetPasswordResponseDto> {
     return this.authService.resetPassword(resetPasswordDto.token, resetPasswordDto.password);
+  }
+
+  @Public()
+  @Post('verify-email')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ 
+    summary: 'Vérification de l\'email',
+    description: 'Vérifie l\'email de l\'utilisateur avec le token reçu par email'
+  })
+  @ApiResponse({ 
+    status: 200, 
+    description: 'Email vérifié avec succès',
+    type: VerifyEmailResponseDto
+  })
+  @ApiResponse({ 
+    status: 400, 
+    description: 'Token invalide ou expiré',
+    schema: {
+      type: 'object',
+      properties: {
+        statusCode: { type: 'number', example: 400 },
+        message: { 
+          type: 'string',
+          example: 'Token invalide ou expiré'
+        },
+        error: { type: 'string', example: 'Bad Request' }
+      }
+    }
+  })
+  async verifyEmail(@Body() verifyEmailDto: VerifyEmailDto): Promise<VerifyEmailResponseDto> {
+    return this.authService.verifyEmail(verifyEmailDto.token);
+  }
+
+  @Public()
+  @Post('resend-verification-email')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ 
+    summary: 'Renvoyer l\'email de vérification',
+    description: 'Renvoie un email de vérification à l\'utilisateur'
+  })
+  @ApiResponse({ 
+    status: 200, 
+    description: 'Email de vérification envoyé (si l\'utilisateur existe)',
+    type: ResendVerificationEmailResponseDto
+  })
+  @ApiResponse({ 
+    status: 400, 
+    description: 'Email invalide',
+    schema: {
+      type: 'object',
+      properties: {
+        statusCode: { type: 'number', example: 400 },
+        message: { 
+          type: 'array', 
+          items: { type: 'string' },
+          example: ['L\'email doit être valide']
+        },
+        error: { type: 'string', example: 'Bad Request' }
+      }
+    }
+  })
+  async resendVerificationEmail(@Body() resendDto: ResendVerificationEmailDto): Promise<ResendVerificationEmailResponseDto> {
+    return this.authService.resendVerificationEmail(resendDto.email);
   }
 }

@@ -22,9 +22,12 @@ import { paths } from "@/paths";
 import { CenteredLayout } from "@/components/auth/centered-layout";
 import { AuthLogo } from "@/components/auth/auth-logo";
 import { useAuth } from "@/contexts/AuthContext";
+import api from "@/lib/api";
 
 const signUpSchema = z
 	.object({
+		firstName: z.string().min(1, "First name is required"),
+		lastName: z.string().min(1, "Last name is required"),
 		email: z.string().min(1, "Email is required").email("Invalid email format"),
 		password: z
 			.string()
@@ -47,6 +50,8 @@ export default function Page(): React.JSX.Element {
 	const { signUp, isAuthenticated } = useAuth();
 	const [error, setError] = React.useState<string>("");
 	const [isLoading, setIsLoading] = React.useState(false);
+	const [showVerificationMessage, setShowVerificationMessage] = React.useState(false);
+	const [userEmail, setUserEmail] = React.useState<string>("");
 
 	const {
 		register,
@@ -56,28 +61,51 @@ export default function Page(): React.JSX.Element {
 		resolver: zodResolver(signUpSchema),
 	});
 
-	// Rediriger si déjà connecté
+	// Rediriger si déjà connecté (mais seulement si on n'affiche pas le message de vérification)
 	React.useEffect(() => {
-		if (isAuthenticated) {
+		if (isAuthenticated && !showVerificationMessage) {
 			router.push(paths.dashboard.overview);
 		}
-	}, [isAuthenticated, router]);
+	}, [isAuthenticated, router, showVerificationMessage]);
 
 	const onSubmit = async (data: SignUpForm) => {
 		setIsLoading(true);
 		setError("");
+		setShowVerificationMessage(false);
 
 		try {
+			// Appeler signUp qui ne stockera pas le token si l'email n'est pas vérifié
 			await signUp({
+				firstName: data.firstName || undefined,
+				lastName: data.lastName || undefined,
 				email: data.email,
 				password: data.password,
 			});
-			// Nouvel utilisateur, rediriger vers le dashboard
-			router.push(paths.dashboard.overview);
+			// Toujours afficher le message de vérification après l'inscription
+			// car le backend envoie toujours un email de vérification
+			setUserEmail(data.email);
+			setShowVerificationMessage(true);
 		} catch (error_: unknown) {
 			const error = error_ as Error | { message?: string };
 			const errorMessage = error instanceof Error ? error.message : error.message || "An error occurred during sign up";
 			setError(errorMessage);
+		} finally {
+			setIsLoading(false);
+		}
+	};
+
+	const handleResendVerification = async () => {
+		if (!userEmail) return;
+
+		setIsLoading(true);
+		setError("");
+
+		try {
+			await api.post("/auth/resend-verification-email", { email: userEmail });
+			setError(""); // Clear any previous errors
+		} catch (error_: unknown) {
+			const axiosError = error_ as { response?: { data?: { message?: string }; status?: number }; message?: string };
+			setError(axiosError.response?.data?.message || "Error sending email. Please try again.");
 		} finally {
 			setIsLoading(false);
 		}
@@ -96,14 +124,74 @@ export default function Page(): React.JSX.Element {
 						}
 					/>
 					<CardContent>
-						<form onSubmit={handleSubmit(onSubmit)}>
+						{showVerificationMessage ? (
 							<Stack spacing={2}>
+								<Alert severity="info">
+									A verification email has been sent to <strong>{userEmail}</strong>.
+									Please check your inbox and click on the link to activate your account.
+								</Alert>
+								<Typography variant="body2" color="text.secondary">
+									Didn't receive the email?
+								</Typography>
+								<Button
+									variant="outlined"
+									onClick={handleResendVerification}
+									disabled={isLoading}
+									fullWidth
+									sx={{
+										"&:hover": {
+											backgroundColor: "var(--mui-palette-primary-main)",
+											color: "var(--mui-palette-primary-contrastText)",
+											borderColor: "var(--mui-palette-primary-main)",
+										},
+									}}
+								>
+									{isLoading ? "Sending..." : "Resend verification email"}
+								</Button>
 								{error && (
 									<Alert severity="error" onClose={() => setError("")}>
 										{error}
 									</Alert>
 								)}
+								<Button component={RouterLink} href={paths.auth.signIn} variant="contained" fullWidth>
+									Back to sign in
+								</Button>
+							</Stack>
+						) : (
+							<form onSubmit={handleSubmit(onSubmit)}>
 								<Stack spacing={2}>
+									{error && (
+										<Alert severity="error" onClose={() => setError("")}>
+											{error}
+										</Alert>
+									)}
+									<Stack spacing={2}>
+									<FormControl error={!!errors.firstName}>
+										<InputLabel>First name</InputLabel>
+										<OutlinedInput
+											{...register("firstName")}
+											type="text"
+											label="First name"
+										/>
+										{errors.firstName && (
+											<Typography variant="caption" color="error" sx={{ mt: 0.5 }}>
+												{errors.firstName.message}
+											</Typography>
+										)}
+									</FormControl>
+									<FormControl error={!!errors.lastName}>
+										<InputLabel>Last name</InputLabel>
+										<OutlinedInput
+											{...register("lastName")}
+											type="text"
+											label="Last name"
+										/>
+										{errors.lastName && (
+											<Typography variant="caption" color="error" sx={{ mt: 0.5 }}>
+												{errors.lastName.message}
+											</Typography>
+										)}
+									</FormControl>
 									<FormControl error={!!errors.email}>
 										<InputLabel>Email address</InputLabel>
 										<OutlinedInput
@@ -149,6 +237,7 @@ export default function Page(): React.JSX.Element {
 								</Stack>
 							</Stack>
 						</form>
+						)}
 					</CardContent>
 					<CardContent sx={{ pt: 0 }}>
 						<Typography color="text.secondary" variant="body2" align="center">

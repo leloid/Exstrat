@@ -70,13 +70,13 @@ export default function Page(): React.JSX.Element {
 			const axiosError = error_ as { response?: { data?: { message?: string }; status?: number }; message?: string };
 			
 			if (axiosError.response?.status === 400) {
-				setError(axiosError.response.data?.message || "Email invalide");
+				setError(axiosError.response.data?.message || "Invalid email");
 			} else if (axiosError.response?.status === 500) {
-				setError("Erreur serveur. Veuillez réessayer plus tard.");
+				setError("Server error. Please try again later.");
 			} else if (axiosError.message) {
 				setError(axiosError.message);
 			} else {
-				setError(axiosError.response?.data?.message || "Une erreur est survenue. Veuillez réessayer.");
+				setError(axiosError.response?.data?.message || "An error occurred. Please try again.");
 			}
 		} finally {
 			setIsLoading(false);
@@ -85,12 +85,12 @@ export default function Page(): React.JSX.Element {
 
 	const onSubmitResetPassword = async (data: ResetPasswordForm) => {
 		if (data.password !== data.confirmPassword) {
-			setError("Les mots de passe ne correspondent pas");
+			setError("Passwords do not match");
 			return;
 		}
 
 		if (!token) {
-			setError("Token manquant");
+			setError("Token missing");
 			return;
 		}
 
@@ -104,7 +104,7 @@ export default function Page(): React.JSX.Element {
 				password: data.password,
 			});
 			setSuccess(true);
-			// Rediriger vers la page de connexion après 2 secondes
+			// Redirect to sign in page after 2 seconds
 			setTimeout(() => {
 				router.push(paths.auth.signIn);
 			}, 2000);
@@ -112,13 +112,13 @@ export default function Page(): React.JSX.Element {
 			const axiosError = error_ as { response?: { data?: { message?: string }; status?: number }; message?: string };
 			
 			if (axiosError.response?.status === 400) {
-				setError(axiosError.response.data?.message || "Token invalide ou expiré");
+				setError(axiosError.response.data?.message || "Invalid or expired token");
 			} else if (axiosError.response?.status === 500) {
-				setError("Erreur serveur. Veuillez réessayer plus tard.");
+				setError("Server error. Please try again later.");
 			} else if (axiosError.message) {
 				setError(axiosError.message);
 			} else {
-				setError(axiosError.response?.data?.message || "Une erreur est survenue. Veuillez réessayer.");
+				setError(axiosError.response?.data?.message || "An error occurred. Please try again.");
 			}
 		} finally {
 			setIsLoading(false);
@@ -133,7 +133,7 @@ export default function Page(): React.JSX.Element {
 					<CardHeader
 						title={
 							<Typography variant="h4" component="h1" sx={{ fontWeight: 600 }}>
-								{isResetMode ? "Nouveau mot de passe" : "Réinitialisation du mot de passe"}
+								{isResetMode ? "New password" : "Reset password"}
 							</Typography>
 						}
 					/>
@@ -142,12 +142,12 @@ export default function Page(): React.JSX.Element {
 							<Stack spacing={2}>
 								<Alert severity="success">
 									{isResetMode
-										? "Votre mot de passe a été réinitialisé avec succès. Redirection vers la page de connexion..."
-										: "Si un compte existe avec cet email, un lien de réinitialisation a été envoyé."}
+										? "Your password has been reset successfully. Redirecting to sign in page..."
+										: "If an account exists with this email, a reset link has been sent."}
 								</Alert>
 								{!isResetMode && (
 									<Button component={RouterLink} href={paths.auth.signIn} variant="contained" fullWidth>
-										Retour à la connexion
+										Back to sign in
 									</Button>
 								)}
 							</Stack>
@@ -160,21 +160,21 @@ export default function Page(): React.JSX.Element {
 										</Alert>
 									)}
 									<FormControl error={!!resetPasswordForm.formState.errors.password}>
-										<InputLabel>Nouveau mot de passe</InputLabel>
+										<InputLabel>New password</InputLabel>
 										<OutlinedInput
 											{...resetPasswordForm.register("password", {
-												required: "Le mot de passe est requis",
+												required: "Password is required",
 												minLength: {
 													value: 8,
-													message: "Le mot de passe doit contenir au moins 8 caractères",
+													message: "Password must contain at least 8 characters",
 												},
 												pattern: {
 													value: /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]/,
-													message: "Le mot de passe doit contenir au moins une minuscule, une majuscule, un chiffre et un caractère spécial",
+													message: "Password must contain at least one lowercase letter, one uppercase letter, one number, and one special character",
 												},
 											})}
 											type={showPassword ? "text" : "password"}
-											label="Nouveau mot de passe"
+											label="New password"
 											endAdornment={
 												<InputAdornment position="end">
 													<IconButton
@@ -194,13 +194,13 @@ export default function Page(): React.JSX.Element {
 										)}
 									</FormControl>
 									<FormControl error={!!resetPasswordForm.formState.errors.confirmPassword}>
-										<InputLabel>Confirmer le mot de passe</InputLabel>
+										<InputLabel>Confirm password</InputLabel>
 										<OutlinedInput
 											{...resetPasswordForm.register("confirmPassword", {
-												required: "La confirmation du mot de passe est requise",
+												required: "Password confirmation is required",
 											})}
 											type={showConfirmPassword ? "text" : "password"}
-											label="Confirmer le mot de passe"
+											label="Confirm password"
 											endAdornment={
 												<InputAdornment position="end">
 													<IconButton
@@ -220,14 +220,14 @@ export default function Page(): React.JSX.Element {
 										)}
 									</FormControl>
 									<Button type="submit" variant="contained" disabled={isLoading} fullWidth>
-										{isLoading ? "Réinitialisation..." : "Réinitialiser le mot de passe"}
+										{isLoading ? "Resetting..." : "Reset password"}
 									</Button>
 									<div>
 										<Typography variant="body2" color="text.secondary" align="center">
-											Vous vous souvenez de votre mot de passe ?{" "}
+											Remember your password?{" "}
 											<RouterLink href={paths.auth.signIn} style={{ textDecoration: "none" }}>
 												<Typography component="span" variant="subtitle2" color="primary">
-													Se connecter
+													Sign in
 												</Typography>
 											</RouterLink>
 										</Typography>
@@ -243,17 +243,17 @@ export default function Page(): React.JSX.Element {
 										</Alert>
 									)}
 									<FormControl error={!!forgotPasswordForm.formState.errors.email}>
-										<InputLabel>Adresse email</InputLabel>
+										<InputLabel>Email address</InputLabel>
 										<OutlinedInput
 											{...forgotPasswordForm.register("email", {
-												required: "L'email est requis",
+												required: "Email is required",
 												pattern: {
 													value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
-													message: "Format d'email invalide",
+													message: "Invalid email format",
 												},
 											})}
 											type="email"
-											label="Adresse email"
+											label="Email address"
 										/>
 										{forgotPasswordForm.formState.errors.email && (
 											<Typography variant="caption" color="error" sx={{ mt: 0.5 }}>
@@ -262,14 +262,14 @@ export default function Page(): React.JSX.Element {
 										)}
 									</FormControl>
 									<Button type="submit" variant="contained" disabled={isLoading} fullWidth>
-										{isLoading ? "Envoi en cours..." : "Envoyer le lien de réinitialisation"}
+										{isLoading ? "Sending..." : "Send reset link"}
 									</Button>
 									<div>
 										<Typography variant="body2" color="text.secondary" align="center">
-											Vous vous souvenez de votre mot de passe ?{" "}
+											Remember your password?{" "}
 											<RouterLink href={paths.auth.signIn} style={{ textDecoration: "none" }}>
 												<Typography component="span" variant="subtitle2" color="primary">
-													Se connecter
+													Sign in
 												</Typography>
 											</RouterLink>
 										</Typography>

@@ -23,9 +23,9 @@ export default function Page(): React.JSX.Element {
 			try {
 				await signOut();
 			} catch (error) {
-				console.error("Erreur lors de la déconnexion:", error);
+				console.error("Error during sign out:", error);
 			} finally {
-				// Rediriger vers la page de connexion après déconnexion
+				// Redirect to sign in page after sign out
 				router.push(paths.auth.signIn);
 			}
 		};
@@ -46,7 +46,7 @@ export default function Page(): React.JSX.Element {
 			<Stack spacing={2} alignItems="center">
 				<CircularProgress />
 				<Typography variant="body1" color="text.secondary">
-					Déconnexion en cours...
+					Signing out...
 				</Typography>
 			</Stack>
 		</Box>

@@ -82,14 +82,16 @@ api.interceptors.response.use(
 			);
 		}
 
-		// Ne pas essayer de rafraîchir le token pour les endpoints d'authentification (login/signup/forgot-password/reset-password)
+		// Ne pas essayer de rafraîchir le token pour les endpoints d'authentification (login/signup/forgot-password/reset-password/verify-email)
 		// car une erreur 401 sur ces endpoints signifie simplement que les identifiants sont incorrects
 		const isAuthEndpoint =
 			originalRequest.url?.includes("/auth/signin") ||
 			originalRequest.url?.includes("/auth/signup") ||
 			originalRequest.url?.includes("/auth/login") ||
 			originalRequest.url?.includes("/auth/forgot-password") ||
-			originalRequest.url?.includes("/auth/reset-password");
+			originalRequest.url?.includes("/auth/reset-password") ||
+			originalRequest.url?.includes("/auth/verify-email") ||
+			originalRequest.url?.includes("/auth/resend-verification-email");
 
 		if (error.response?.status === 401 && !originalRequest._retry && !isAuthEndpoint) {
 			if (isRefreshing) {

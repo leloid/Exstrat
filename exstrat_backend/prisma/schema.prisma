@@ -15,6 +15,10 @@ model User {
   id                    String                @id @default(cuid())
   email                 String                @unique
   password              String
+  firstName             String?
+  lastName              String?
+  emailVerified         Boolean               @default(false)
+  emailVerificationToken String?
   createdAt             DateTime              @default(now())
   accounts              ExchangeAccount[]
   strategies            Strategy[]

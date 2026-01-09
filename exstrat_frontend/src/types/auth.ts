@@ -1,6 +1,8 @@
 export interface User {
 	id: string;
 	email: string;
+	firstName?: string | null;
+	lastName?: string | null;
 	createdAt: string;
 }
 
@@ -11,6 +13,8 @@ export interface AuthResponse {
 }
 
 export interface SignUpData {
+	firstName?: string;
+	lastName?: string;
 	email: string;
 	password: string;
 }

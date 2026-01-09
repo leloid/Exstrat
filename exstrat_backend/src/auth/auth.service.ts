@@ -18,7 +18,7 @@ export class AuthService {
   ) {}
 
   async signUp(signUpDto: SignUpDto): Promise<AuthResponseDto> {
-    const { email, password } = signUpDto;
+    const { email, password, firstName, lastName } = signUpDto;
 
     // Vérifier si l'utilisateur existe déjà
     const existingUser = await this.prisma.user.findUnique({
@@ -33,21 +33,58 @@ export class AuthService {
     const saltRounds = 12;
     const hashedPassword = await bcrypt.hash(password, saltRounds);
 
+    // Générer un token de vérification d'email
+    const verificationToken = this.jwtService.sign(
+      { 
+        email,
+        type: 'email-verification',
+        iat: Math.floor(Date.now() / 1000)
+      },
+      {
+        expiresIn: '7d', // Le token est valide 7 jours
+        issuer: 'exstrat-api',
+        audience: 'exstrat-client'
+      }
+    );
+
     try {
-      // Créer l'utilisateur
+      // Créer l'utilisateur avec le token de vérification
       const user = await this.prisma.user.create({
         data: {
           email,
           password: hashedPassword,
+          firstName: firstName || null,
+          lastName: lastName || null,
+          emailVerified: false,
+          emailVerificationToken: verificationToken,
         },
         select: {
           id: true,
           email: true,
+          firstName: true,
+          lastName: true,
           createdAt: true,
         }
       });
 
-      // Générer le token JWT
+      // Construire l'URL de vérification
+      const frontendUrl = this.configService.get<string>('FRONTEND_URL') || 'http://localhost:3001';
+      const verificationUrl = `${frontendUrl}/auth/verify-email?token=${verificationToken}`;
+
+      // Envoyer l'email de vérification
+      try {
+        await this.emailService.sendVerificationEmail({
+          to: user.email,
+          verificationUrl,
+        });
+
+        this.logger.log(`Verification email sent to ${user.email}`);
+      } catch (error) {
+        this.logger.error(`Error sending verification email to ${user.email}:`, error);
+        // On continue même si l'email échoue, l'utilisateur peut demander un renvoi
+      }
+
+      // Générer le token JWT pour la connexion (mais l'utilisateur devra vérifier son email)
       const payload = { 
         sub: user.id, 
         email: user.email,
@@ -61,7 +98,7 @@ export class AuthService {
       });
 
       return {
-        message: 'Inscription réussie',
+        message: 'Inscription réussie. Veuillez vérifier votre email pour activer votre compte.',
         user,
         accessToken
       };
@@ -80,6 +117,9 @@ export class AuthService {
         id: true,
         email: true,
         password: true,
+        firstName: true,
+        lastName: true,
+        emailVerified: true,
         createdAt: true,
       }
     });
@@ -92,6 +132,11 @@ export class AuthService {
     const isPasswordValid = await bcrypt.compare(password, user.password);
     if (!isPasswordValid) {
       throw new UnauthorizedException('Email ou mot de passe incorrect');
+    }
+
+    // Vérifier si l'email est vérifié
+    if (!user.emailVerified) {
+      throw new UnauthorizedException('Veuillez vérifier votre email avant de vous connecter. Un email de vérification a été envoyé lors de votre inscription.');
     }
 
     // Générer le token JWT
@@ -112,6 +157,8 @@ export class AuthService {
       user: {
         id: user.id,
         email: user.email,
+        firstName: user.firstName,
+        lastName: user.lastName,
         createdAt: user.createdAt,
       },
       accessToken
@@ -132,6 +179,8 @@ export class AuthService {
       select: {
         id: true,
         email: true,
+        firstName: true,
+        lastName: true,
         createdAt: true,
       }
     });
@@ -271,5 +320,144 @@ export class AuthService {
       this.logger.error('Error resetting password:', error);
       throw new BadRequestException('Erreur lors de la réinitialisation du mot de passe');
     }
+  }
+
+  async verifyEmail(token: string): Promise<{ message: string }> {
+    try {
+      // Vérifier et décoder le token
+      const payload = this.jwtService.verify(token, {
+        issuer: 'exstrat-api',
+        audience: 'exstrat-client'
+      });
+
+      // Vérifier que c'est bien un token de vérification d'email
+      if (payload.type !== 'email-verification') {
+        throw new BadRequestException('Token invalide');
+      }
+
+      // Trouver l'utilisateur par email
+      const user = await this.prisma.user.findUnique({
+        where: { email: payload.email },
+        select: {
+          id: true,
+          email: true,
+          emailVerified: true,
+          emailVerificationToken: true,
+        }
+      });
+
+      if (!user) {
+        throw new BadRequestException('Utilisateur non trouvé');
+      }
+
+      // Vérifier que le token correspond
+      if (user.emailVerificationToken !== token) {
+        throw new BadRequestException('Token invalide ou expiré');
+      }
+
+      // Vérifier si l'email est déjà vérifié
+      if (user.emailVerified) {
+        return {
+          message: 'Votre email est déjà vérifié'
+        };
+      }
+
+      // Marquer l'email comme vérifié et supprimer le token
+      await this.prisma.user.update({
+        where: { id: user.id },
+        data: {
+          emailVerified: true,
+          emailVerificationToken: null,
+        }
+      });
+
+      this.logger.log(`Email verified for user ${user.email}`);
+
+      return {
+        message: 'Email vérifié avec succès'
+      };
+    } catch (error) {
+      if (error instanceof BadRequestException) {
+        throw error;
+      }
+      
+      // Si c'est une erreur de vérification JWT (token expiré, invalide, etc.)
+      if (error.name === 'JsonWebTokenError' || error.name === 'TokenExpiredError') {
+        throw new BadRequestException('Token invalide ou expiré');
+      }
+
+      this.logger.error('Error verifying email:', error);
+      throw new BadRequestException('Erreur lors de la vérification de l\'email');
+    }
+  }
+
+  async resendVerificationEmail(email: string): Promise<{ message: string }> {
+    // Trouver l'utilisateur
+    const user = await this.prisma.user.findUnique({
+      where: { email },
+      select: {
+        id: true,
+        email: true,
+        emailVerified: true,
+      }
+    });
+
+    // Pour des raisons de sécurité, on ne révèle pas si l'utilisateur existe ou non
+    if (!user) {
+      this.logger.warn(`Verification email resend requested for non-existent email: ${email}`);
+      return {
+        message: 'Si un compte existe avec cet email, un email de vérification a été envoyé'
+      };
+    }
+
+    // Si l'email est déjà vérifié
+    if (user.emailVerified) {
+      return {
+        message: 'Votre email est déjà vérifié'
+      };
+    }
+
+    // Générer un nouveau token de vérification
+    const verificationToken = this.jwtService.sign(
+      { 
+        email: user.email,
+        type: 'email-verification',
+        iat: Math.floor(Date.now() / 1000)
+      },
+      {
+        expiresIn: '7d',
+        issuer: 'exstrat-api',
+        audience: 'exstrat-client'
+      }
+    );
+
+    // Mettre à jour le token dans la base de données
+    await this.prisma.user.update({
+      where: { id: user.id },
+      data: {
+        emailVerificationToken: verificationToken,
+      }
+    });
+
+    // Construire l'URL de vérification
+    const frontendUrl = this.configService.get<string>('FRONTEND_URL') || 'http://localhost:3001';
+    const verificationUrl = `${frontendUrl}/auth/verify-email?token=${verificationToken}`;
+
+    // Envoyer l'email de vérification
+    try {
+      await this.emailService.sendVerificationEmail({
+        to: user.email,
+        verificationUrl,
+      });
+
+      this.logger.log(`Verification email resent to ${user.email}`);
+    } catch (error) {
+      this.logger.error(`Error resending verification email to ${user.email}:`, error);
+      // On ne révèle pas l'erreur à l'utilisateur pour des raisons de sécurité
+    }
+
+    return {
+      message: 'Si un compte existe avec cet email, un email de vérification a été envoyé'
+    };
   }
 }
