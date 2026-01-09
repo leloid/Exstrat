@@ -1,7 +1,7 @@
 import { Controller, Post, Body, UseGuards, Get, HttpCode, HttpStatus } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { AuthService } from './auth.service';
-import { SignUpDto, SignInDto, AuthResponseDto, LogoutResponseDto } from './dto/auth.dto';
+import { SignUpDto, SignInDto, AuthResponseDto, LogoutResponseDto, ForgotPasswordDto, ForgotPasswordResponseDto, ResetPasswordDto, ResetPasswordResponseDto } from './dto/auth.dto';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { RefreshGuard } from './guards/refresh.guard';
 import { Public } from './decorators/public.decorator';
@@ -163,5 +163,68 @@ export class AuthController {
   })
   async refreshToken(@CurrentUser() user: any) {
     return this.authService.refreshToken(user.sub);
+  }
+
+  @Public()
+  @Post('forgot-password')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ 
+    summary: 'Demande de réinitialisation de mot de passe',
+    description: 'Envoie un email avec un lien de réinitialisation de mot de passe à l\'utilisateur'
+  })
+  @ApiResponse({ 
+    status: 200, 
+    description: 'Email de réinitialisation envoyé (si l\'utilisateur existe)',
+    type: ForgotPasswordResponseDto
+  })
+  @ApiResponse({ 
+    status: 400, 
+    description: 'Email invalide',
+    schema: {
+      type: 'object',
+      properties: {
+        statusCode: { type: 'number', example: 400 },
+        message: { 
+          type: 'array', 
+          items: { type: 'string' },
+          example: ['L\'email doit être valide']
+        },
+        error: { type: 'string', example: 'Bad Request' }
+      }
+    }
+  })
+  async forgotPassword(@Body() forgotPasswordDto: ForgotPasswordDto): Promise<ForgotPasswordResponseDto> {
+    return this.authService.forgotPassword(forgotPasswordDto.email);
+  }
+
+  @Public()
+  @Post('reset-password')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ 
+    summary: 'Réinitialisation du mot de passe',
+    description: 'Réinitialise le mot de passe de l\'utilisateur avec le token reçu par email'
+  })
+  @ApiResponse({ 
+    status: 200, 
+    description: 'Mot de passe réinitialisé avec succès',
+    type: ResetPasswordResponseDto
+  })
+  @ApiResponse({ 
+    status: 400, 
+    description: 'Token invalide ou expiré, ou mot de passe invalide',
+    schema: {
+      type: 'object',
+      properties: {
+        statusCode: { type: 'number', example: 400 },
+        message: { 
+          type: 'string',
+          example: 'Token invalide ou expiré'
+        },
+        error: { type: 'string', example: 'Bad Request' }
+      }
+    }
+  })
+  async resetPassword(@Body() resetPasswordDto: ResetPasswordDto): Promise<ResetPasswordResponseDto> {
+    return this.authService.resetPassword(resetPasswordDto.token, resetPasswordDto.password);
   }
 }

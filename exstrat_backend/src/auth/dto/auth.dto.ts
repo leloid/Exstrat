@@ -79,3 +79,55 @@ export class LogoutResponseDto {
   })
   message: string;
 }
+
+export class ForgotPasswordDto {
+  @ApiProperty({
+    description: 'Adresse email de l\'utilisateur',
+    example: 'user@example.com',
+    format: 'email'
+  })
+  @IsEmail({}, { message: 'L\'email doit être valide' })
+  email: string;
+}
+
+export class ForgotPasswordResponseDto {
+  @ApiProperty({
+    description: 'Message de confirmation',
+    example: 'Si un compte existe avec cet email, un lien de réinitialisation a été envoyé'
+  })
+  message: string;
+}
+
+export class ResetPasswordDto {
+  @ApiProperty({
+    description: 'Token de réinitialisation reçu par email',
+    example: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...'
+  })
+  @IsString({ message: 'Le token doit être une chaîne de caractères' })
+  token: string;
+
+  @ApiProperty({
+    description: 'Nouveau mot de passe sécurisé',
+    example: 'NewSecurePassword123!',
+    minLength: 8,
+    maxLength: 128
+  })
+  @IsString({ message: 'Le mot de passe doit être une chaîne de caractères' })
+  @MinLength(8, { message: 'Le mot de passe doit contenir au moins 8 caractères' })
+  @MaxLength(128, { message: 'Le mot de passe ne peut pas dépasser 128 caractères' })
+  @Matches(
+    /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]/,
+    {
+      message: 'Le mot de passe doit contenir au moins une minuscule, une majuscule, un chiffre et un caractère spécial'
+    }
+  )
+  password: string;
+}
+
+export class ResetPasswordResponseDto {
+  @ApiProperty({
+    description: 'Message de confirmation',
+    example: 'Mot de passe réinitialisé avec succès'
+  })
+  message: string;
+}
