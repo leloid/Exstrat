@@ -27,7 +27,7 @@ export function SecretModeButton(): React.JSX.Element {
 	};
 
 	return (
-		<Tooltip title={secretMode ? "Désactiver le mode secret" : "Activer le mode secret"}>
+		<Tooltip title={secretMode ? "Disable secret mode" : "Enable secret mode"}>
 			<IconButton onClick={handleToggle}>
 				{secretMode ? (
 					<EyeSlashIcon color="var(--mui-palette-secondary-main)" />

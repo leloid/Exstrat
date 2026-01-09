@@ -3,7 +3,6 @@
 import * as React from "react";
 import { useRouter } from "next/navigation";
 import Box from "@mui/material/Box";
-import ListItemIcon from "@mui/material/ListItemIcon";
 import Menu from "@mui/material/Menu";
 import MenuItem from "@mui/material/MenuItem";
 import Typography from "@mui/material/Typography";
@@ -77,11 +76,6 @@ export function LanguagePopover({ anchorEl, onClose, open = false }: LanguagePop
 							cursor: option.comingSoon ? "not-allowed" : "pointer",
 						}}
 					>
-						<ListItemIcon>
-							<Box sx={{ height: "28px", width: "28px", opacity: option.comingSoon ? 0.5 : 1 }}>
-								<Box alt={option.label} component="img" src={option.icon} sx={{ height: "auto", width: "100%" }} />
-							</Box>
-						</ListItemIcon>
 						<Box sx={{ flex: 1, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
 							<Typography variant="subtitle2">{option.label}</Typography>
 							{option.comingSoon && (

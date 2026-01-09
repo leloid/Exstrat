@@ -36,10 +36,7 @@ export function ContactsPopover({ anchorEl, onClose, open = false }: ContactsPop
 				<Typography variant="h6">Contacts</Typography>
 			</Box>
 			<Box sx={{ p: 2, textAlign: "center" }}>
-				<Typography variant="subtitle2" color="text.secondary">
-					To be soon
-				</Typography>
-				<Typography variant="body2" color="text.secondary" sx={{ mt: 1, fontSize: "0.75rem" }}>
+				<Typography variant="body2" color="text.secondary">
 					Contacts will be available soon
 				</Typography>
 			</Box>

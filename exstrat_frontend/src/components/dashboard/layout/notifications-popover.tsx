@@ -42,10 +42,7 @@ export function NotificationsPopover({
 				</Tooltip>
 			</Stack>
 			<Box sx={{ p: 2, textAlign: "center" }}>
-				<Typography variant="subtitle2" color="text.secondary">
-					To be soon
-				</Typography>
-				<Typography variant="body2" color="text.secondary" sx={{ mt: 1, fontSize: "0.75rem" }}>
+				<Typography variant="body2" color="text.secondary">
 					Notifications will be available soon
 				</Typography>
 			</Box>

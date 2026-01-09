@@ -9,18 +9,17 @@ import IconButton from "@mui/material/IconButton";
 import Stack from "@mui/material/Stack";
 import Tooltip from "@mui/material/Tooltip";
 import { BellIcon } from "@phosphor-icons/react/dist/ssr/Bell";
+import { GlobeIcon } from "@phosphor-icons/react/dist/ssr/Globe";
 import { ListIcon } from "@phosphor-icons/react/dist/ssr/List";
 import { MagnifyingGlassIcon } from "@phosphor-icons/react/dist/ssr/MagnifyingGlass";
 import { UsersIcon } from "@phosphor-icons/react/dist/ssr/Users";
-import { useTranslation } from "react-i18next";
 
 import type { NavItemConfig } from "@/types/nav";
 import { useDialog } from "@/hooks/use-dialog";
 import { usePopover } from "@/hooks/use-popover";
 
 import { ContactsPopover } from "../contacts-popover";
-import { languageFlags, LanguagePopover } from "../language-popover";
-import type { Language } from "../language-popover";
+import { LanguagePopover } from "../language-popover";
 import { MobileNav } from "../mobile-nav";
 import { NotificationsPopover } from "../notifications-popover";
 import { SearchDialog } from "../search-dialog";
@@ -153,10 +152,7 @@ function NotificationsButton(): React.JSX.Element {
 }
 
 function LanguageSwitch(): React.JSX.Element {
-	const { i18n } = useTranslation();
 	const popover = usePopover<HTMLButtonElement>();
-	const language = (i18n.language || "en") as Language;
-	const flag = languageFlags[language];
 
 	return (
 		<React.Fragment>
@@ -166,9 +162,7 @@ function LanguageSwitch(): React.JSX.Element {
 					ref={popover.anchorRef}
 					sx={{ display: { xs: "none", lg: "inline-flex" } }}
 				>
-					<Box sx={{ height: "24px", width: "24px" }}>
-						<Box alt={language} component="img" src={flag} sx={{ height: "auto", width: "100%" }} />
-					</Box>
+					<GlobeIcon fontSize="var(--icon-fontSize-md)" />
 				</IconButton>
 			</Tooltip>
 			<LanguagePopover anchorEl={popover.anchorRef.current} onClose={popover.handleClose} open={popover.open} />
