@@ -6,7 +6,6 @@ import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
 import Card from "@mui/material/Card";
 import CardContent from "@mui/material/CardContent";
@@ -21,6 +20,7 @@ import Alert from "@mui/material/Alert";
 
 import { paths } from "@/paths";
 import { CenteredLayout } from "@/components/auth/centered-layout";
+import { AuthLogo } from "@/components/auth/auth-logo";
 import { useAuth } from "@/contexts/AuthContext";
 
 const signUpSchema = z
@@ -86,27 +86,14 @@ export default function Page(): React.JSX.Element {
 	return (
 		<CenteredLayout>
 			<Stack spacing={4}>
-				<div>
-					<Box component={RouterLink} href={paths.home} sx={{ display: "inline-block", fontSize: 0 }}>
-						<Box
-							component="img"
-							src="/logo_large_dark_theme.svg"
-							alt="ExStrat"
-							sx={{ height: "auto", maxWidth: "300px", width: "auto" }}
-						/>
-					</Box>
-				</div>
+				<AuthLogo />
 				<Card>
 					<CardHeader
-						subheader={
-							<Typography color="text.secondary" variant="body2">
-								Already have an account?{" "}
-								<Link component={RouterLink} href={paths.auth.signIn} variant="subtitle2">
-									Sign in
-								</Link>
+						title={
+							<Typography variant="h4" component="h1" sx={{ fontWeight: 600 }}>
+								Sign up
 							</Typography>
 						}
-						title="Sign up"
 					/>
 					<CardContent>
 						<form onSubmit={handleSubmit(onSubmit)}>
@@ -162,6 +149,14 @@ export default function Page(): React.JSX.Element {
 								</Stack>
 							</Stack>
 						</form>
+					</CardContent>
+					<CardContent sx={{ pt: 0 }}>
+						<Typography color="text.secondary" variant="body2" align="center">
+							Already have an account?{" "}
+							<Link component={RouterLink} href={paths.auth.signIn} variant="subtitle2">
+								Sign in
+							</Link>
+						</Typography>
 					</CardContent>
 				</Card>
 			</Stack>

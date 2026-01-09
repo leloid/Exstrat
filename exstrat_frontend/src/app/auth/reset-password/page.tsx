@@ -4,7 +4,6 @@ import * as React from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import RouterLink from "next/link";
 import { useForm } from "react-hook-form";
-import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
 import Card from "@mui/material/Card";
 import CardContent from "@mui/material/CardContent";
@@ -22,6 +21,7 @@ import { EyeSlashIcon } from "@phosphor-icons/react/dist/ssr/EyeSlash";
 
 import { paths } from "@/paths";
 import { CenteredLayout } from "@/components/auth/centered-layout";
+import { AuthLogo } from "@/components/auth/auth-logo";
 import api from "@/lib/api";
 
 interface ForgotPasswordForm {
@@ -128,18 +128,15 @@ export default function Page(): React.JSX.Element {
 	return (
 		<CenteredLayout>
 			<Stack spacing={4}>
-				<div>
-					<Box component={RouterLink} href={paths.home} sx={{ display: "inline-block", fontSize: 0 }}>
-						<Box
-							component="img"
-							src="/logo_large_dark_theme.svg"
-							alt="ExStrat"
-							sx={{ height: "auto", maxWidth: "300px", width: "auto" }}
-						/>
-					</Box>
-				</div>
+				<AuthLogo />
 				<Card>
-					<CardHeader title={isResetMode ? "Nouveau mot de passe" : "Réinitialisation du mot de passe"} />
+					<CardHeader
+						title={
+							<Typography variant="h4" component="h1" sx={{ fontWeight: 600 }}>
+								{isResetMode ? "Nouveau mot de passe" : "Réinitialisation du mot de passe"}
+							</Typography>
+						}
+					/>
 					<CardContent>
 						{success ? (
 							<Stack spacing={2}>

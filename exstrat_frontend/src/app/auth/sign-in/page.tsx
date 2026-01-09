@@ -4,7 +4,6 @@ import * as React from "react";
 import RouterLink from "next/link";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
-import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
 import Card from "@mui/material/Card";
 import CardContent from "@mui/material/CardContent";
@@ -16,16 +15,15 @@ import OutlinedInput from "@mui/material/OutlinedInput";
 import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
 import Alert from "@mui/material/Alert";
-import { useColorScheme } from "@mui/material/styles";
 import { paths } from "@/paths";
 import { CenteredLayout } from "@/components/auth/centered-layout";
+import { AuthLogo } from "@/components/auth/auth-logo";
 import { useAuth } from "@/contexts/AuthContext";
 import type { SignInData } from "@/types/auth";
 
 export default function Page(): React.JSX.Element {
 	const router = useRouter();
 	const { signIn, isAuthenticated } = useAuth();
-	const { colorScheme = "light" } = useColorScheme();
 	const [error, setError] = React.useState<string>("");
 	const [isLoading, setIsLoading] = React.useState(false);
 
@@ -61,27 +59,14 @@ export default function Page(): React.JSX.Element {
 	return (
 		<CenteredLayout>
 			<Stack spacing={4}>
-				<div>
-					<Box component={RouterLink} href={paths.home} sx={{ display: "inline-block", fontSize: 0 }}>
-						<Box
-							component="img"
-							src={colorScheme === "light" ? "/DarkFullLogo.svg" : "/logo_large_dark_theme.svg"}
-							alt="ExStrat"
-							sx={{ height: "auto", maxWidth: "300px", width: "auto" }}
-						/>
-					</Box>
-				</div>
+				<AuthLogo />
 				<Card>
 					<CardHeader
-						subheader={
-							<Typography color="text.secondary" variant="body2">
-								Don&apos;t have an account?{" "}
-								<Link component={RouterLink} href={paths.auth.signUp} variant="subtitle2">
-									Sign up
-								</Link>
+						title={
+							<Typography variant="h4" component="h1" sx={{ fontWeight: 600 }}>
+								Sign in
 							</Typography>
 						}
-						title="Sign in"
 					/>
 					<CardContent>
 						<form onSubmit={handleSubmit(onSubmit)}>
@@ -141,6 +126,14 @@ export default function Page(): React.JSX.Element {
 								</div>
 							</Stack>
 						</form>
+					</CardContent>
+					<CardContent sx={{ pt: 0 }}>
+						<Typography color="text.secondary" variant="body2" align="center">
+							Don&apos;t have an account?{" "}
+							<Link component={RouterLink} href={paths.auth.signUp} variant="subtitle2">
+								Sign up
+							</Link>
+						</Typography>
 					</CardContent>
 				</Card>
 			</Stack>
