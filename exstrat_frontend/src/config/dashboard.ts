@@ -53,11 +53,23 @@ export const dashboardConfig = {
 			],
 		},
 	],
-	// Getting Started séparé pour être affiché en bas
+	// Getting Started et Settings séparés pour être affichés en bas
 	gettingStartedItem: {
-		key: "getting-started",
-		title: "Getting Started",
-		href: paths.dashboard.gettingStarted,
-		icon: "graduation-cap",
+		key: "bottom-nav",
+		title: undefined,
+		items: [
+			{
+				key: "getting-started",
+				title: "Getting Started",
+				href: paths.dashboard.gettingStarted,
+				icon: "graduation-cap",
+			},
+			{
+				key: "settings",
+				title: "Settings",
+				href: "#settings", // Utilisé comme identifiant pour ouvrir le drawer
+				icon: "gear",
+			},
+		],
 	},
 } satisfies DashboardConfig;

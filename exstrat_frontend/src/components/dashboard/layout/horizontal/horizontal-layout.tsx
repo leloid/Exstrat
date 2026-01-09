@@ -8,6 +8,7 @@ import { dashboardConfig } from "@/config/dashboard";
 import { useSettings } from "@/components/core/settings/settings-context";
 
 import { MainNav } from "./main-nav";
+import { FeedbackButton } from "../feedback-button";
 
 export interface HorizontalLayoutProps {
 	children?: React.ReactNode;
@@ -46,10 +47,11 @@ export function HorizontalLayout({ children }: HorizontalLayoutProps): React.JSX
 						flex: "1 1 auto",
 						flexDirection: "column",
 					}}
-				>
-					{children}
-				</Box>
+					>
+						{children}
+					</Box>
 			</Box>
+			<FeedbackButton />
 		</React.Fragment>
 	);
 }

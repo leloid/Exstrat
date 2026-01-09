@@ -1,7 +1,26 @@
-import { Controller, Post, Body, UseGuards } from '@nestjs/common';
+import { Controller, Post, Body, UseGuards, HttpCode, HttpStatus } from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
+import { IsEmail, IsString, IsOptional, MinLength, MaxLength } from 'class-validator';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { EmailService } from './email.service';
+import { Public } from '../auth/decorators/public.decorator';
 
+class FeedbackDto {
+  @IsEmail({}, { message: 'Email must be valid' })
+  email: string;
+
+  @IsOptional()
+  @IsString({ message: 'Name must be a string' })
+  @MaxLength(100, { message: 'Name must not exceed 100 characters' })
+  name?: string;
+
+  @IsString({ message: 'Message must be a string' })
+  @MinLength(10, { message: 'Message must be at least 10 characters' })
+  @MaxLength(2000, { message: 'Message must not exceed 2000 characters' })
+  message: string;
+}
+
+@ApiTags('Email')
 @Controller('email')
 export class EmailController {
   constructor(private readonly emailService: EmailService) {}
@@ -56,6 +75,55 @@ export class EmailController {
     return {
       success: true,
       message: `Test email sent to ${testEmail}`,
+    };
+  }
+
+  /**
+   * Endpoint pour envoyer un feedback utilisateur
+   * POST /email/feedback
+   */
+  @Public()
+  @Post('feedback')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ 
+    summary: 'Send user feedback',
+    description: 'Sends a feedback email from the user to contact@exstrat.io'
+  })
+  @ApiResponse({ 
+    status: 200, 
+    description: 'Feedback email sent successfully',
+    schema: {
+      type: 'object',
+      properties: {
+        success: { type: 'boolean', example: true },
+        message: { type: 'string', example: 'Feedback sent successfully' }
+      }
+    }
+  })
+  @ApiResponse({ 
+    status: 400, 
+    description: 'Invalid data',
+    schema: {
+      type: 'object',
+      properties: {
+        statusCode: { type: 'number', example: 400 },
+        message: { type: 'array', items: { type: 'string' } },
+        error: { type: 'string', example: 'Bad Request' }
+      }
+    }
+  })
+  async sendFeedback(@Body() feedbackDto: FeedbackDto) {
+    const { email, name, message } = feedbackDto;
+
+    await this.emailService.sendFeedbackEmail({
+      from: email,
+      userName: name,
+      message,
+    });
+
+    return {
+      success: true,
+      message: 'Feedback sent successfully',
     };
   }
 }

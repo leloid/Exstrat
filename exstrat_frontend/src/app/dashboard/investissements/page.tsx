@@ -1250,11 +1250,11 @@ export default function Page(): React.JSX.Element {
 						>
 							Add Wallet
 						</Button>
-						<Button
+							<Button
 							onClick={() => setShowSelectExchangeModal(true)}
-							startIcon={<PlugsConnectedIcon />}
-							variant="outlined"
-							sx={{
+									startIcon={<PlugsConnectedIcon />}
+									variant="outlined"
+										sx={{
 								width: { xs: "100%", sm: "auto" },
 								color: "secondary.main",
 								borderColor: "secondary.main",
@@ -1271,21 +1271,21 @@ export default function Page(): React.JSX.Element {
 							Add Exchange
 						</Button>
 						{portfolios.length > 0 && (
-							<Button
-								onClick={() => {
+									<Button
+										onClick={() => {
 									setShowAddTransactionMethodModal(true);
-								}}
+										}}
 								startIcon={<PlusIcon />}
 								variant="contained"
 								sx={{ width: { xs: "100%", sm: "auto" } }}
-							>
+									>
 								Add Transaction
-							</Button>
-						)}
+									</Button>
+					)}
 					</Stack>
 				</Stack>
 
-				{/* Wallets Section */}
+					{/* Wallets Section */}
 				<Grid container spacing={{ xs: 2, sm: 3 }}>
 					{/* Wallets Section */}
 					<Grid size={{ xs: 12 }}>
@@ -1908,14 +1908,14 @@ export default function Page(): React.JSX.Element {
 									No transactions yet. Add your first transaction to get started.
 								</Typography>
 								<Button
-								onClick={() => {
+									onClick={() => {
 									setShowAddTransactionMethodModal(true);
-								}}
-								startIcon={<PlusIcon />}
-								variant="contained"
-							>
-								Add Transaction
-							</Button>
+									}}
+									startIcon={<PlusIcon />}
+									variant="contained"
+								>
+									Add Transaction
+								</Button>
 							</Box>
 						) : filteredTransactions.length === 0 ? (
 							<Box sx={{ py: 8, textAlign: "center" }}>
@@ -1925,8 +1925,8 @@ export default function Page(): React.JSX.Element {
 							</Box>
 						) : (
 							<Box sx={{ overflowX: "auto", width: "100%" }}>
-								<Table>
-									<TableHead>
+							<Table>
+								<TableHead>
 									<TableRow>
 										<TableCell padding="checkbox">
 											<Checkbox

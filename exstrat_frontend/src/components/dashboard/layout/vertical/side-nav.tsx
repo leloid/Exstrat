@@ -15,6 +15,14 @@ import type { DashboardNavColor } from "@/types/settings";
 import { paths } from "@/paths";
 import { isNavItemActive } from "@/lib/is-nav-item-active";
 import type { ColorScheme } from "@/styles/theme/types";
+import { useRouter } from "next/navigation";
+import { appConfig } from "@/config/app";
+import { dashboardConfig } from "@/config/dashboard";
+import { setSettings as setPersistedSettings } from "@/lib/settings";
+import { useSettings } from "@/components/core/settings/settings-context";
+import type { Settings } from "@/types/settings";
+import type { Mode } from "@/styles/theme/types";
+import { SettingsDrawer } from "@/components/core/settings/settings-drawer";
 
 import { icons } from "../nav-icons";
 import { navColorStyles } from "./styles";
@@ -88,10 +96,16 @@ export function SideNav({ color = "evident", items = [], gettingStartedItem }: S
 				<Box sx={{ flex: "1 1 auto" }}>
 					{renderNavGroups({ items, pathname })}
 				</Box>
-				{/* Getting Started en bas */}
+				{/* Getting Started et Settings en bas */}
 				{gettingStartedItem && (
 					<Box sx={{ pt: 2, borderTop: "1px solid var(--NavItem-children-border)", mt: "auto" }}>
-						{renderNavItems({ depth: 0, items: [gettingStartedItem], pathname })}
+						{gettingStartedItem.items ? (
+							// Si c'est un groupe avec items, afficher directement les items sans menu déroulant
+							renderNavItems({ depth: 0, items: gettingStartedItem.items, pathname })
+						) : (
+							// Sinon, afficher l'item normalement
+							renderNavItems({ depth: 0, items: [gettingStartedItem], pathname })
+						)}
 					</Box>
 				)}
 			</Box>
@@ -171,11 +185,40 @@ function NavItem({
 	title,
 }: NavItemProps): React.JSX.Element {
 	const [open, setOpen] = React.useState<boolean>(forceOpen);
+	const [openSettingsDrawer, setOpenSettingsDrawer] = React.useState(false);
+	const { settings } = useSettings();
+	const { mode, setMode } = useColorScheme();
+	const router = useRouter();
+	
 	const active = isNavItemActive({ disabled, external, href, matcher, pathname });
 	const Icon = icon ? icons[icon] : null;
 	const ExpandIcon = open ? CaretDownIcon : CaretRightIcon;
 	const isBranch = children && !href;
 	const showChildren = Boolean(children && open);
+	const isSettings = href === "#settings";
+
+	const handleSettingsClick = () => {
+		setOpenSettingsDrawer(true);
+	};
+
+	const handleSettingsUpdate = async (values: Partial<Settings> & { theme?: Mode }): Promise<void> => {
+		const { theme, ...other } = values;
+
+		if (theme) {
+			setMode(theme);
+		}
+
+		const updatedSettings = { ...settings, ...other } satisfies Settings;
+
+		await setPersistedSettings(updatedSettings);
+		router.refresh();
+	};
+
+	const handleSettingsReset = async (): Promise<void> => {
+		setMode(null);
+		await setPersistedSettings({});
+		router.refresh();
+	};
 
 	return (
 		<Box component="li" data-depth={depth} sx={{ userSelect: "none" }}>
@@ -193,14 +236,19 @@ function NavItem({
 							role: "button",
 						}
 					: {
-							...(href
+							...(isSettings
 								? {
-										component: external ? "a" : RouterLink,
-										href,
-										target: external ? "_blank" : undefined,
-										rel: external ? "noreferrer" : undefined,
+										onClick: handleSettingsClick,
+										role: "button",
 									}
-								: { role: "button" }),
+								: href
+									? {
+											component: external ? "a" : RouterLink,
+											href,
+											target: external ? "_blank" : undefined,
+											rel: external ? "noreferrer" : undefined,
+										}
+									: { role: "button" }),
 						})}
 				sx={{
 					alignItems: "center",
@@ -276,6 +324,23 @@ function NavItem({
 					<Box sx={{ borderLeft: "1px solid var(--NavItem-children-border)", pl: "12px" }}>{children}</Box>
 				</Box>
 			) : null}
+			{isSettings && (
+				<SettingsDrawer
+					onClose={() => {
+						setOpenSettingsDrawer(false);
+					}}
+					onReset={handleSettingsReset}
+					onUpdate={handleSettingsUpdate}
+					open={openSettingsDrawer}
+					values={{
+						direction: settings.direction ?? appConfig.direction,
+						theme: mode,
+						primaryColor: settings.primaryColor ?? appConfig.primaryColor,
+						dashboardLayout: settings.dashboardLayout ?? dashboardConfig.layout,
+						dashboardNavColor: settings.dashboardNavColor ?? dashboardConfig.navColor,
+					}}
+				/>
+			)}
 		</Box>
 	);
 }

@@ -43,6 +43,14 @@ import { UserPopover } from "../user-popover";
 import { useAuth } from "@/contexts/AuthContext";
 import { navColorStyles } from "./styles";
 import { SecretModeButton } from "../secret-mode-button";
+import { useRouter } from "next/navigation";
+import { appConfig } from "@/config/app";
+import { dashboardConfig } from "@/config/dashboard";
+import { setSettings as setPersistedSettings } from "@/lib/settings";
+import { useSettings } from "@/components/core/settings/settings-context";
+import type { Settings } from "@/types/settings";
+import type { Mode } from "@/styles/theme/types";
+import { SettingsDrawer } from "@/components/core/settings/settings-drawer";
 
 const logoColors = {
 	dark: { blend_in: "light", discrete: "light", evident: "light" },
@@ -146,10 +154,16 @@ export function MainNav({ color = "evident", items = [], gettingStartedItem }: M
 					<Box sx={{ flex: "1 1 auto" }}>
 						{renderNavGroups({ items, pathname })}
 					</Box>
-					{/* Getting Started tout à droite */}
+					{/* Getting Started et Settings tout à droite */}
 					{gettingStartedItem && (
 						<Box sx={{ ml: "auto" }}>
-							{renderNavItems({ items: [gettingStartedItem], pathname })}
+							{gettingStartedItem.items ? (
+								// Si c'est un groupe avec items, afficher directement les items sans menu déroulant
+								renderNavItems({ items: gettingStartedItem.items, pathname })
+							) : (
+								// Sinon, afficher l'item normalement
+								renderNavItems({ items: [gettingStartedItem], pathname })
+							)}
 						</Box>
 					)}
 				</Box>
@@ -323,9 +337,38 @@ function NavItem({
 	pathname,
 	title,
 }: NavItemProps): React.JSX.Element {
+	const [openSettingsDrawer, setOpenSettingsDrawer] = React.useState(false);
+	const { settings } = useSettings();
+	const { mode, setMode } = useColorScheme();
+	const router = useRouter();
+	
 	const active = isNavItemActive({ disabled, external, href, matcher, pathname });
 	const Icon = icon ? icons[icon] : null;
 	const isBranch = Boolean(items);
+	const isSettings = href === "#settings";
+
+	const handleSettingsClick = () => {
+		setOpenSettingsDrawer(true);
+	};
+
+	const handleSettingsUpdate = async (values: Partial<Settings> & { theme?: Mode }): Promise<void> => {
+		const { theme, ...other } = values;
+
+		if (theme) {
+			setMode(theme);
+		}
+
+		const updatedSettings = { ...settings, ...other } satisfies Settings;
+
+		await setPersistedSettings(updatedSettings);
+		router.refresh();
+	};
+
+	const handleSettingsReset = async (): Promise<void> => {
+		setMode(null);
+		await setPersistedSettings({});
+		router.refresh();
+	};
 
 	const element = (
 		<Box component="li" sx={{ userSelect: "none" }}>
@@ -412,7 +455,28 @@ function NavItem({
 		);
 	}
 
-	return element;
+	return (
+		<>
+			{element}
+			{isSettings && (
+				<SettingsDrawer
+					onClose={() => {
+						setOpenSettingsDrawer(false);
+					}}
+					onReset={handleSettingsReset}
+					onUpdate={handleSettingsUpdate}
+					open={openSettingsDrawer}
+					values={{
+						direction: settings.direction ?? appConfig.direction,
+						theme: mode,
+						primaryColor: settings.primaryColor ?? appConfig.primaryColor,
+						dashboardLayout: settings.dashboardLayout ?? dashboardConfig.layout,
+						dashboardNavColor: settings.dashboardNavColor ?? dashboardConfig.navColor,
+					}}
+				/>
+			)}
+		</>
+	);
 }
 
 function renderDropdownItems({

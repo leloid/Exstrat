@@ -92,7 +92,6 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
 											<ThemeProvider>
 												<DynamicFavicon />
 												{children}
-												<SettingsButton />
 												<Toaster position="bottom-right" />
 											</ThemeProvider>
 										</Rtl>

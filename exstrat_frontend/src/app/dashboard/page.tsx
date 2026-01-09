@@ -430,8 +430,8 @@ export default function Page(): React.JSX.Element {
 					<Box sx={{ py: 8, textAlign: "center" }}>
 						<Typography color="text.secondary" variant="body1">
 							{isGlobalView
-								? "Aucun investissement trouvé dans vos portefeuilles. Ajoutez des transactions pour commencer."
-								: "Ce portefeuille ne contient aucun token. Ajoutez des transactions pour commencer."}
+								? "No investments found in your portfolios. Add transactions to get started."
+								: "This portfolio contains no tokens. Add transactions to get started."}
 						</Typography>
 						{!isGlobalView && (
 							<Button
@@ -439,7 +439,7 @@ export default function Page(): React.JSX.Element {
 								sx={{ mt: 2 }}
 								onClick={() => router.push("/dashboard/investissements")}
 							>
-								Ajouter des transactions
+								Add transactions
 							</Button>
 						)}
 					</Box>
