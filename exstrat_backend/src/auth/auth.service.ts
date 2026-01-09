@@ -136,6 +136,46 @@ export class AuthService {
 
     // Vérifier si l'email est vérifié
     if (!user.emailVerified) {
+      // Renvoyer automatiquement l'email de vérification
+      try {
+        // Générer un nouveau token de vérification
+        const verificationToken = this.jwtService.sign(
+          { 
+            email: user.email,
+            type: 'email-verification',
+            iat: Math.floor(Date.now() / 1000)
+          },
+          {
+            expiresIn: '7d',
+            issuer: 'exstrat-api',
+            audience: 'exstrat-client'
+          }
+        );
+
+        // Mettre à jour le token dans la base de données
+        await this.prisma.user.update({
+          where: { id: user.id },
+          data: {
+            emailVerificationToken: verificationToken,
+          }
+        });
+
+        // Construire l'URL de vérification
+        const frontendUrl = this.configService.get<string>('FRONTEND_URL') || 'http://localhost:3001';
+        const verificationUrl = `${frontendUrl}/auth/verify-email?token=${verificationToken}`;
+
+        // Envoyer l'email de vérification
+        await this.emailService.sendVerificationEmail({
+          to: user.email,
+          verificationUrl,
+        });
+
+        this.logger.log(`Verification email resent to ${user.email} during sign-in attempt`);
+      } catch (error) {
+        this.logger.error(`Error resending verification email to ${user.email} during sign-in:`, error);
+        // On continue même si l'email échoue
+      }
+
       throw new UnauthorizedException('Veuillez vérifier votre email avant de vous connecter. Un email de vérification a été envoyé lors de votre inscription.');
     }
 

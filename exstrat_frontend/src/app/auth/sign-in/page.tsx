@@ -26,12 +26,19 @@ export default function Page(): React.JSX.Element {
 	const { signIn, isAuthenticated } = useAuth();
 	const [error, setError] = React.useState<string>("");
 	const [isLoading, setIsLoading] = React.useState(false);
+	const [isResendingEmail, setIsResendingEmail] = React.useState(false);
+	const [resendSuccess, setResendSuccess] = React.useState(false);
+	const [userEmail, setUserEmail] = React.useState<string>("");
 
 	const {
 		register,
 		handleSubmit,
 		formState: { errors },
+		watch,
 	} = useForm<SignInData>();
+
+	// Watch email field to get the current email value
+	const emailValue = watch("email");
 
 	// Rediriger si déjà connecté
 	React.useEffect(() => {
@@ -43,6 +50,8 @@ export default function Page(): React.JSX.Element {
 	const onSubmit = async (data: SignInData) => {
 		setIsLoading(true);
 		setError("");
+		setResendSuccess(false);
+		setUserEmail(data.email);
 
 		try {
 			await signIn(data);
@@ -55,6 +64,39 @@ export default function Page(): React.JSX.Element {
 			setIsLoading(false);
 		}
 	};
+
+	const handleResendVerification = async () => {
+		if (!userEmail && !emailValue) return;
+
+		const emailToUse = userEmail || emailValue;
+		setIsResendingEmail(true);
+		setResendSuccess(false);
+		setError("");
+
+		try {
+			const api = (await import("@/lib/api")).api;
+			await api.post("/auth/resend-verification-email", { email: emailToUse });
+			setResendSuccess(true);
+			setError("");
+		} catch (error_: unknown) {
+			const axiosError = error_ as { response?: { data?: { message?: string }; status?: number }; message?: string };
+			setError(axiosError.response?.data?.message || "Error sending email. Please try again.");
+		} finally {
+			setIsResendingEmail(false);
+		}
+	};
+
+	// Check if the error message is about email verification
+	const isEmailVerificationError = React.useMemo(() => {
+		if (!error) return false;
+		const lowerError = error.toLowerCase();
+		return (
+			lowerError.includes("vérifier votre email") ||
+			lowerError.includes("verify your email") ||
+			lowerError.includes("email de vérification") ||
+			lowerError.includes("verification email")
+		);
+	}, [error]);
 
 	return (
 		<CenteredLayout>
@@ -73,7 +115,38 @@ export default function Page(): React.JSX.Element {
 							<Stack spacing={2}>
 								{error && (
 									<Alert severity="error" onClose={() => setError("")}>
-										{error}
+										{isEmailVerificationError ? (
+											<Stack spacing={1}>
+												<Typography variant="body2">
+													Veuillez vérifier votre email avant de vous connecter. Un email de vérification a été envoyé lors de votre inscription.
+												</Typography>
+												<Typography variant="body2">
+													Vous n&apos;avez pas reçu l&apos;email ?{" "}
+													<Link
+														component="button"
+														type="button"
+														onClick={handleResendVerification}
+														disabled={isResendingEmail}
+														sx={{
+															cursor: isResendingEmail ? "not-allowed" : "pointer",
+															textDecoration: "underline",
+															"&:hover": {
+																textDecoration: "underline",
+															},
+														}}
+													>
+														{isResendingEmail ? "Sending..." : "Resend verification email"}
+													</Link>
+												</Typography>
+											</Stack>
+										) : (
+											error
+										)}
+									</Alert>
+								)}
+								{resendSuccess && (
+									<Alert severity="success" onClose={() => setResendSuccess(false)}>
+										Verification email sent successfully. Please check your inbox.
 									</Alert>
 								)}
 								<Stack spacing={2}>

@@ -21,6 +21,8 @@ import Divider from "@mui/material/Divider";
 import Tooltip from "@mui/material/Tooltip";
 import { WalletIcon } from "@phosphor-icons/react/dist/ssr/Wallet";
 import { InfoIcon } from "@phosphor-icons/react/dist/ssr/Info";
+import { PlusIcon } from "@phosphor-icons/react/dist/ssr/Plus";
+import { ArrowRightIcon } from "@phosphor-icons/react/dist/ssr/ArrowRight";
 import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip as RechartsTooltip } from "recharts";
 
 import { usePortfolio } from "@/contexts/PortfolioContext";
@@ -405,39 +407,104 @@ export default function Page(): React.JSX.Element {
 		>
 			<Stack spacing={{ xs: 2, sm: 3, md: 4 }}>
 				{/* Header */}
-				<Stack direction={{ xs: "column", sm: "row" }} spacing={{ xs: 2, sm: 3 }} sx={{ alignItems: "flex-start" }}>
-					<Box sx={{ flex: "1 1 auto", width: { xs: "100%", sm: "auto" } }} />
-					<FormControl size="small" sx={{ minWidth: { xs: "100%", sm: 200 }, width: { xs: "100%", sm: "auto" } }}>
-						<Select value={isGlobalView ? "global" : currentPortfolio?.id || ""} onChange={handlePortfolioChange}>
-							<MenuItem value="global">🌐 Portefeuille Global</MenuItem>
-							{portfolios.map((portfolio) => (
-								<MenuItem key={portfolio.id} value={portfolio.id}>
-									{portfolio.name}
-									{portfolio.isDefault && " (par défaut)"}
-								</MenuItem>
-							))}
-						</Select>
-					</FormControl>
-				</Stack>
+				{portfolios.length > 0 && (
+					<Stack direction={{ xs: "column", sm: "row" }} spacing={{ xs: 2, sm: 3 }} sx={{ alignItems: "flex-start" }}>
+						<Box sx={{ flex: "1 1 auto", width: { xs: "100%", sm: "auto" } }} />
+						<FormControl size="small" sx={{ minWidth: { xs: "100%", sm: 200 }, width: { xs: "100%", sm: "auto" } }}>
+							<Select value={isGlobalView ? "global" : currentPortfolio?.id || ""} onChange={handlePortfolioChange}>
+								<MenuItem value="global">🌐 Portefeuille Global</MenuItem>
+								{portfolios.map((portfolio) => (
+									<MenuItem key={portfolio.id} value={portfolio.id}>
+										{portfolio.name}
+										{portfolio.isDefault && " (par défaut)"}
+									</MenuItem>
+								))}
+							</Select>
+						</FormControl>
+					</Stack>
+				)}
 
 				{/* Empty State */}
 				{displayHoldings.length === 0 ? (
-					<Box sx={{ py: 8, textAlign: "center" }}>
-						<Typography color="text.secondary" variant="body1">
-							{isGlobalView
-								? "No investments found in your portfolios. Add transactions to get started."
-								: "This portfolio contains no tokens. Add transactions to get started."}
-						</Typography>
-						{!isGlobalView && (
+					<Card
+						sx={{
+							py: { xs: 6, sm: 8 },
+							px: { xs: 3, sm: 4 },
+							textAlign: "center",
+							background: (theme) =>
+								theme.palette.mode === "dark"
+									? "linear-gradient(135deg, rgba(25, 118, 210, 0.1) 0%, rgba(156, 39, 176, 0.1) 100%)"
+									: "linear-gradient(135deg, rgba(25, 118, 210, 0.05) 0%, rgba(156, 39, 176, 0.05) 100%)",
+							border: (theme) =>
+								theme.palette.mode === "dark"
+									? "1px solid rgba(25, 118, 210, 0.2)"
+									: "1px solid rgba(25, 118, 210, 0.1)",
+							borderRadius: 3,
+						}}
+					>
+						<Stack spacing={3} sx={{ alignItems: "center", maxWidth: 500, mx: "auto" }}>
+							<Box
+								sx={{
+									width: 80,
+									height: 80,
+									borderRadius: "50%",
+									display: "flex",
+									alignItems: "center",
+									justifyContent: "center",
+									bgcolor: "primary.main",
+									color: "primary.contrastText",
+									mb: 1,
+								}}
+							>
+								<WalletIcon fontSize={40} weight="fill" />
+							</Box>
+							<Stack spacing={1}>
+								<Typography variant="h5" sx={{ fontWeight: 600 }}>
+									{portfolios.length === 0
+										? "Get Started with Your First Wallet"
+										: isGlobalView
+											? "No Investments Yet"
+											: "This Portfolio is Empty"}
+								</Typography>
+								<Typography color="text.secondary" variant="body1" sx={{ maxWidth: 400, mx: "auto" }}>
+									{portfolios.length === 0
+										? "Create your first wallet and start tracking your cryptocurrency investments. Add transactions to see your portfolio performance."
+										: isGlobalView
+											? "No investments found in your portfolios. Add transactions to get started and track your performance."
+											: "This portfolio contains no tokens. Add transactions to start tracking your investments."}
+								</Typography>
+							</Stack>
 							<Button
 								variant="contained"
-								sx={{ mt: 2 }}
+								size="large"
+								startIcon={<PlusIcon />}
+								endIcon={<ArrowRightIcon />}
 								onClick={() => router.push("/dashboard/investissements")}
+								sx={{
+									px: 4,
+									py: 1.5,
+									borderRadius: 2,
+									textTransform: "none",
+									fontSize: "1rem",
+									fontWeight: 600,
+									boxShadow: (theme) =>
+										theme.palette.mode === "dark"
+											? "0 4px 20px rgba(25, 118, 210, 0.4)"
+											: "0 4px 20px rgba(25, 118, 210, 0.3)",
+									"&:hover": {
+										boxShadow: (theme) =>
+											theme.palette.mode === "dark"
+												? "0 6px 24px rgba(25, 118, 210, 0.5)"
+												: "0 6px 24px rgba(25, 118, 210, 0.4)",
+										transform: "translateY(-2px)",
+									},
+									transition: "all 0.3s ease",
+								}}
 							>
-								Add transactions
+								{portfolios.length === 0 ? "Create Your First Wallet" : "Add Transactions"}
 							</Button>
-						)}
-					</Box>
+						</Stack>
+					</Card>
 				) : (
 					<>
 						{/* Quick Stats */}
