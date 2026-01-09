@@ -406,12 +406,7 @@ export default function Page(): React.JSX.Element {
 			<Stack spacing={{ xs: 2, sm: 3, md: 4 }}>
 				{/* Header */}
 				<Stack direction={{ xs: "column", sm: "row" }} spacing={{ xs: 2, sm: 3 }} sx={{ alignItems: "flex-start" }}>
-					<Box sx={{ flex: "1 1 auto", width: { xs: "100%", sm: "auto" } }}>
-						<Typography variant="h4" sx={{ fontSize: { xs: "1.5rem", sm: "2rem" } }}>Overview</Typography>
-						<Typography color="text.secondary" variant="body2" sx={{ mt: 0.5 }}>
-							Overview of your portfolio performance
-						</Typography>
-					</Box>
+					<Box sx={{ flex: "1 1 auto", width: { xs: "100%", sm: "auto" } }} />
 					<FormControl size="small" sx={{ minWidth: { xs: "100%", sm: 200 }, width: { xs: "100%", sm: "auto" } }}>
 						<Select value={isGlobalView ? "global" : currentPortfolio?.id || ""} onChange={handlePortfolioChange}>
 							<MenuItem value="global">🌐 Portefeuille Global</MenuItem>

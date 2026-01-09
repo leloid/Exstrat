@@ -308,14 +308,7 @@ function StrategiesPageContent(): React.JSX.Element {
 			<Stack spacing={4}>
 				{/* Header */}
 				<Stack direction={{ xs: "column", sm: "row" }} spacing={3} sx={{ alignItems: "flex-start" }}>
-					<Box sx={{ flex: "1 1 auto" }}>
-						<Typography variant="h4">Strategies</Typography>
-						<Typography color="text.secondary" variant="body1">
-							Create and manage your automated profit-taking strategies per token.
-							<br />
-							These strategies will be available to be applied to your portfolios in the Forecast page.
-						</Typography>
-					</Box>
+					<Box sx={{ flex: "1 1 auto" }} />
 					<Button onClick={handleCreateStrategy} startIcon={<PlusIcon />} variant="contained">
 						Create Strategy
 					</Button>

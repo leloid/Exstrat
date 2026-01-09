@@ -241,14 +241,7 @@ function ForecastPageContent(): React.JSX.Element {
 			<Stack spacing={4}>
 				{/* Header */}
 				<Stack direction={{ xs: "column", sm: "row" }} spacing={3} sx={{ alignItems: "flex-start" }}>
-					<Box sx={{ flex: "1 1 auto" }}>
-						<Typography variant="h4">Forecast</Typography>
-						<Typography color="text.secondary" variant="body1">
-							Create and manage forecasts by applying strategies to your wallets.
-							<br />
-							Select a wallet and assign strategies to each token to generate profit projections.
-						</Typography>
-					</Box>
+					<Box sx={{ flex: "1 1 auto" }} />
 					<Button onClick={handleCreateForecast} startIcon={<PlusIcon />} variant="contained">
 						Create Forecast
 					</Button>

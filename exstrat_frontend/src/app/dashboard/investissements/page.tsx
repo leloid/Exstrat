@@ -1219,12 +1219,7 @@ export default function Page(): React.JSX.Element {
 			<Stack spacing={{ xs: 2, sm: 3, md: 4 }}>
 				{/* Header */}
 				<Stack direction={{ xs: "column", sm: "row" }} spacing={{ xs: 2, sm: 3 }} sx={{ alignItems: "flex-start" }}>
-					<Box sx={{ flex: "1 1 auto", width: { xs: "100%", sm: "auto" } }}>
-						<Typography variant="h4" sx={{ fontSize: { xs: "1.5rem", sm: "2rem" } }}>Investments</Typography>
-						<Typography color="text.secondary" variant="body1">
-							Manage your wallets and transactions
-						</Typography>
-					</Box>
+					<Box sx={{ flex: "1 1 auto", width: { xs: "100%", sm: "auto" } }} />
 					<Stack direction={{ xs: "column", sm: "row" }} spacing={{ xs: 1, sm: 2 }} sx={{ width: { xs: "100%", sm: "auto" } }}>
 						<Button
 							onClick={() => {

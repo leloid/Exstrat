@@ -295,12 +295,7 @@ function ConfigurationPageContent(): React.JSX.Element {
 			<Stack spacing={4}>
 				{/* Header */}
 				<Stack direction={{ xs: "column", sm: "row" }} spacing={3} sx={{ alignItems: "flex-start" }}>
-					<Box sx={{ flex: "1 1 auto" }}>
-						<Typography variant="h4">Forecast Alerts</Typography>
-						<Typography color="text.secondary" variant="body1">
-							Manage your active alerts and configure profit-taking notifications for your forecasts.
-						</Typography>
-					</Box>
+					<Box sx={{ flex: "1 1 auto" }} />
 					<Button startIcon={<PlusIcon />} variant="contained" onClick={() => setShowAddModal(true)}>
 						Add Alert
 					</Button>
