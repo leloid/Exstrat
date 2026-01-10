@@ -408,7 +408,7 @@ export default function Page(): React.JSX.Element {
 		>
 			<Stack spacing={{ xs: 2, sm: 3, md: 4 }}>
 				{/* Header */}
-				{portfolios.length > 0 && (
+				{portfolios.length > 0 && transactions.length > 0 && (
 					<Stack direction={{ xs: "column", sm: "row" }} spacing={{ xs: 2, sm: 3 }} sx={{ alignItems: "flex-start" }}>
 						<Box sx={{ flex: "1 1 auto", width: { xs: "100%", sm: "auto" } }} />
 						<FormControl size="small" sx={{ minWidth: { xs: "100%", sm: 200 }, width: { xs: "100%", sm: "auto" } }}>
