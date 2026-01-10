@@ -79,6 +79,7 @@ import { ArrowUpRightIcon } from "@phosphor-icons/react/dist/ssr/ArrowUpRight";
 import { CaretDownIcon } from "@phosphor-icons/react/dist/ssr/CaretDown";
 import { CaretRightIcon } from "@phosphor-icons/react/dist/ssr/CaretRight";
 import { InfoIcon } from "@phosphor-icons/react/dist/ssr/Info";
+import { ArrowRightIcon } from "@phosphor-icons/react/dist/ssr/ArrowRight";
 import useMediaQuery from "@mui/material/useMediaQuery";
 import { useTheme } from "@mui/material/styles";
 
@@ -1216,116 +1217,175 @@ export default function Page(): React.JSX.Element {
 				p: { xs: 2, sm: 2, md: "var(--Content-padding)" },
 			}}
 		>
-			<Stack spacing={{ xs: 2, sm: 3, md: 4 }}>
-				{/* Header */}
-				<Stack direction={{ xs: "column", sm: "row" }} spacing={{ xs: 2, sm: 3 }} sx={{ alignItems: "flex-start" }}>
-					<Box sx={{ flex: "1 1 auto", width: { xs: "100%", sm: "auto" } }} />
-					<Stack direction={{ xs: "column", sm: "row" }} spacing={{ xs: 1, sm: 2 }} sx={{ width: { xs: "100%", sm: "auto" } }}>
+			{portfolios.length === 0 ? (
+				// Empty state when no wallets exist
+				<Card
+					sx={{
+						py: { xs: 6, sm: 8 },
+						px: { xs: 3, sm: 4 },
+						textAlign: "center",
+						background: (theme) =>
+							theme.palette.mode === "dark"
+								? "linear-gradient(135deg, rgba(25, 118, 210, 0.1) 0%, rgba(156, 39, 176, 0.1) 100%)"
+								: "linear-gradient(135deg, rgba(25, 118, 210, 0.05) 0%, rgba(156, 39, 176, 0.05) 100%)",
+						border: (theme) =>
+							theme.palette.mode === "dark"
+								? "1px solid rgba(25, 118, 210, 0.2)"
+								: "1px solid rgba(25, 118, 210, 0.1)",
+						borderRadius: 3,
+					}}
+				>
+					<Stack spacing={3} sx={{ alignItems: "center", maxWidth: 500, mx: "auto" }}>
+						<Box
+							sx={{
+								width: 80,
+								height: 80,
+								borderRadius: "50%",
+								display: "flex",
+								alignItems: "center",
+								justifyContent: "center",
+								bgcolor: "primary.main",
+								color: "primary.contrastText",
+								mb: 1,
+							}}
+						>
+							<WalletIcon fontSize={40} weight="fill" />
+						</Box>
+						<Stack spacing={1}>
+							<Typography variant="h5" sx={{ fontWeight: 600 }}>
+								Create Your First Wallet
+							</Typography>
+							<Typography color="text.secondary" variant="body1" sx={{ maxWidth: 400, mx: "auto" }}>
+								Start tracking your cryptocurrency investments by creating your first wallet. Add transactions to see your portfolio performance.
+							</Typography>
+						</Stack>
 						<Button
+							variant="contained"
+							size="large"
+							startIcon={<PlusIcon />}
+							endIcon={<ArrowRightIcon />}
 							onClick={() => {
 								setEditingPortfolioId(null);
+								setPortfolioName("");
 								setPortfolioFormData({ name: "", description: "", isDefault: false });
 								setShowPortfolioDialog(true);
 							}}
-							startIcon={<WalletIcon />}
-							variant="outlined"
 							sx={{
-								width: { xs: "100%", sm: "auto" },
-								color: "primary.main",
-								borderColor: "primary.main",
+								px: 4,
+								py: 1.5,
+								borderRadius: 2,
+								textTransform: "none",
+								fontSize: "1rem",
+								fontWeight: 600,
+								boxShadow: (theme) =>
+									theme.palette.mode === "dark"
+										? "0 4px 20px rgba(25, 118, 210, 0.4)"
+										: "0 4px 20px rgba(25, 118, 210, 0.3)",
 								"&:hover": {
-									backgroundColor: "primary.main",
-									borderColor: "primary.main",
-									color: "primary.contrastText",
-									"& .MuiSvgIcon-root": {
-										color: "primary.contrastText",
-									},
+									boxShadow: (theme) =>
+										theme.palette.mode === "dark"
+											? "0 6px 24px rgba(25, 118, 210, 0.5)"
+											: "0 6px 24px rgba(25, 118, 210, 0.4)",
+									transform: "translateY(-2px)",
 								},
+								transition: "all 0.3s ease",
 							}}
 						>
-							Add Wallet
+							Create My First Wallet
 						</Button>
+					</Stack>
+				</Card>
+			) : (
+				<Stack spacing={{ xs: 2, sm: 3, md: 4 }}>
+					{/* Header */}
+					<Stack direction={{ xs: "column", sm: "row" }} spacing={{ xs: 2, sm: 3 }} sx={{ alignItems: "flex-start" }}>
+						<Box sx={{ flex: "1 1 auto", width: { xs: "100%", sm: "auto" } }} />
+						<Stack direction={{ xs: "column", sm: "row" }} spacing={{ xs: 1, sm: 2 }} sx={{ width: { xs: "100%", sm: "auto" } }}>
 							<Button
-							onClick={() => setShowSelectExchangeModal(true)}
-									startIcon={<PlugsConnectedIcon />}
-									variant="outlined"
-										sx={{
-								width: { xs: "100%", sm: "auto" },
-								color: "secondary.main",
-								borderColor: "secondary.main",
-								"&:hover": {
-									backgroundColor: "secondary.main",
-									borderColor: "secondary.main",
-									color: "secondary.contrastText",
-									"& .MuiSvgIcon-root": {
-										color: "secondary.contrastText",
+								onClick={() => {
+									setEditingPortfolioId(null);
+									setPortfolioFormData({ name: "", description: "", isDefault: false });
+									setShowPortfolioDialog(true);
+								}}
+								startIcon={<WalletIcon />}
+								variant="outlined"
+								sx={{
+									width: { xs: "100%", sm: "auto" },
+									color: "primary.main",
+									borderColor: "primary.main",
+									"&:hover": {
+										backgroundColor: "primary.main",
+										borderColor: "primary.main",
+										color: "primary.contrastText",
+										"& .MuiSvgIcon-root": {
+											color: "primary.contrastText",
+										},
 									},
-								},
-							}}
-						>
-							Add Exchange
-						</Button>
-						{portfolios.length > 0 && (
-									<Button
-										onClick={() => {
+								}}
+							>
+								Add Wallet
+							</Button>
+							<Button
+								onClick={() => setShowSelectExchangeModal(true)}
+								startIcon={<PlugsConnectedIcon />}
+								variant="outlined"
+								sx={{
+									width: { xs: "100%", sm: "auto" },
+									color: "secondary.main",
+									borderColor: "secondary.main",
+									"&:hover": {
+										backgroundColor: "secondary.main",
+										borderColor: "secondary.main",
+										color: "secondary.contrastText",
+										"& .MuiSvgIcon-root": {
+											color: "secondary.contrastText",
+										},
+									},
+								}}
+							>
+								Add Exchange
+							</Button>
+							<Button
+								onClick={() => {
 									setShowAddTransactionMethodModal(true);
-										}}
+								}}
 								startIcon={<PlusIcon />}
 								variant="contained"
 								sx={{ width: { xs: "100%", sm: "auto" } }}
-									>
+							>
 								Add Transaction
-									</Button>
-					)}
+							</Button>
+						</Stack>
 					</Stack>
-				</Stack>
 
 					{/* Wallets Section */}
-				<Grid container spacing={{ xs: 2, sm: 3 }}>
-					{/* Wallets Section */}
-					<Grid size={{ xs: 12 }}>
-				<Card>
-					<CardContent>
-						<Stack direction={{ xs: "column", sm: "row" }} spacing={{ xs: 2, sm: 2 }} sx={{ alignItems: { xs: "stretch", sm: "center" }, justifyContent: "space-between", mb: 3 }}>
-							<Stack direction="row" spacing={2} sx={{ alignItems: "center" }}>
-								<WalletIcon fontSize="var(--icon-fontSize-lg)" />
-								<Typography variant="h6">Wallets</Typography>
-							</Stack>
-							<OutlinedInput
-								onChange={(e) => {
-									setWalletSearchQuery(e.target.value);
-									setWalletPage(0); // Reset to first page on search
-								}}
-								placeholder="Search wallets..."
-								size="small"
-								startAdornment={
-									<InputAdornment position="start">
-										<MagnifyingGlassIcon fontSize="var(--icon-fontSize-md)" />
-									</InputAdornment>
-								}
-								sx={{ maxWidth: { xs: "100%", sm: "300px" }, width: { xs: "100%", sm: "auto" } }}
-								value={walletSearchQuery}
-							/>
-						</Stack>
-						{portfolios.length === 0 ? (
-							<Box sx={{ py: 8, textAlign: "center" }}>
-								<Typography color="text.secondary" variant="body1" sx={{ mb: 2 }}>
-									No wallets yet. Create your first wallet to get started.
-								</Typography>
-								<Button
-									onClick={() => {
-										setEditingPortfolioId(null);
-										setPortfolioName("");
-										setPortfolioFormData({ name: "", description: "", isDefault: false });
-										setShowPortfolioDialog(true);
-									}}
-									startIcon={<PlusIcon />}
-									variant="contained"
-								>
-									Create Wallet
-								</Button>
-							</Box>
-						) : filteredWallets.length === 0 ? (
+					<Grid container spacing={{ xs: 2, sm: 3 }}>
+						{/* Wallets Section */}
+						<Grid size={{ xs: 12 }}>
+							<Card>
+								<CardContent>
+									<Stack direction={{ xs: "column", sm: "row" }} spacing={{ xs: 2, sm: 2 }} sx={{ alignItems: { xs: "stretch", sm: "center" }, justifyContent: "space-between", mb: 3 }}>
+										<Stack direction="row" spacing={2} sx={{ alignItems: "center" }}>
+											<WalletIcon fontSize="var(--icon-fontSize-lg)" />
+											<Typography variant="h6">Wallets</Typography>
+										</Stack>
+										<OutlinedInput
+											onChange={(e) => {
+												setWalletSearchQuery(e.target.value);
+												setWalletPage(0); // Reset to first page on search
+											}}
+											placeholder="Search wallets..."
+											size="small"
+											startAdornment={
+												<InputAdornment position="start">
+													<MagnifyingGlassIcon fontSize="var(--icon-fontSize-md)" />
+												</InputAdornment>
+											}
+											sx={{ maxWidth: { xs: "100%", sm: "300px" }, width: { xs: "100%", sm: "auto" } }}
+											value={walletSearchQuery}
+										/>
+									</Stack>
+									{filteredWallets.length === 0 ? (
 							<Box sx={{ py: 8, textAlign: "center" }}>
 								<Typography color="text.secondary" variant="body1">
 									No wallets found matching "{walletSearchQuery}"
@@ -2185,6 +2245,7 @@ export default function Page(): React.JSX.Element {
 				</Card>
 				)}
 			</Stack>
+			)}
 
 			{/* Wallet Dialog */}
 			<Dialog fullWidth maxWidth="sm" onClose={() => setShowPortfolioDialog(false)} open={showPortfolioDialog}>

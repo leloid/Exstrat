@@ -23,6 +23,7 @@ import { WalletIcon } from "@phosphor-icons/react/dist/ssr/Wallet";
 import { InfoIcon } from "@phosphor-icons/react/dist/ssr/Info";
 import { PlusIcon } from "@phosphor-icons/react/dist/ssr/Plus";
 import { ArrowRightIcon } from "@phosphor-icons/react/dist/ssr/ArrowRight";
+import { ArrowSquareOutIcon } from "@phosphor-icons/react/dist/ssr/ArrowSquareOut";
 import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip as RechartsTooltip } from "recharts";
 
 import { usePortfolio } from "@/contexts/PortfolioContext";
@@ -433,12 +434,12 @@ export default function Page(): React.JSX.Element {
 							textAlign: "center",
 							background: (theme) =>
 								theme.palette.mode === "dark"
-									? "linear-gradient(135deg, rgba(25, 118, 210, 0.1) 0%, rgba(156, 39, 176, 0.1) 100%)"
-									: "linear-gradient(135deg, rgba(25, 118, 210, 0.05) 0%, rgba(156, 39, 176, 0.05) 100%)",
+									? "linear-gradient(135deg, rgba(156, 39, 176, 0.1) 0%, rgba(25, 118, 210, 0.1) 100%)"
+									: "linear-gradient(135deg, rgba(156, 39, 176, 0.05) 0%, rgba(25, 118, 210, 0.05) 100%)",
 							border: (theme) =>
 								theme.palette.mode === "dark"
-									? "1px solid rgba(25, 118, 210, 0.2)"
-									: "1px solid rgba(25, 118, 210, 0.1)",
+									? "1px solid rgba(156, 39, 176, 0.2)"
+									: "1px solid rgba(156, 39, 176, 0.1)",
 							borderRadius: 3,
 						}}
 					>
@@ -451,34 +452,35 @@ export default function Page(): React.JSX.Element {
 									display: "flex",
 									alignItems: "center",
 									justifyContent: "center",
-									bgcolor: "primary.main",
-									color: "primary.contrastText",
+									bgcolor: "secondary.main",
+									color: "secondary.contrastText",
 									mb: 1,
 								}}
 							>
-								<WalletIcon fontSize={40} weight="fill" />
+								<ArrowSquareOutIcon fontSize={40} weight="fill" />
 							</Box>
 							<Stack spacing={1}>
 								<Typography variant="h5" sx={{ fontWeight: 600 }}>
 									{portfolios.length === 0
-										? "Get Started with Your First Wallet"
+										? "Start Managing Your Investments"
 										: isGlobalView
 											? "No Investments Yet"
 											: "This Portfolio is Empty"}
 								</Typography>
 								<Typography color="text.secondary" variant="body1" sx={{ maxWidth: 400, mx: "auto" }}>
 									{portfolios.length === 0
-										? "Create your first wallet and start tracking your cryptocurrency investments. Add transactions to see your portfolio performance."
+										? "Go to the Investments page to create your first wallet and start tracking your cryptocurrency investments."
 										: isGlobalView
-											? "No investments found in your portfolios. Add transactions to get started and track your performance."
-											: "This portfolio contains no tokens. Add transactions to start tracking your investments."}
+											? "No investments found in your portfolios. Go to the Investments page to add transactions and track your performance."
+											: "This portfolio contains no tokens. Go to the Investments page to add transactions."}
 								</Typography>
 							</Stack>
 							<Button
 								variant="contained"
 								size="large"
-								startIcon={<PlusIcon />}
-								endIcon={<ArrowRightIcon />}
+								color="secondary"
+								startIcon={<WalletIcon />}
+								endIcon={<ArrowSquareOutIcon />}
 								onClick={() => router.push("/dashboard/investissements")}
 								sx={{
 									px: 4,
@@ -489,19 +491,19 @@ export default function Page(): React.JSX.Element {
 									fontWeight: 600,
 									boxShadow: (theme) =>
 										theme.palette.mode === "dark"
-											? "0 4px 20px rgba(25, 118, 210, 0.4)"
-											: "0 4px 20px rgba(25, 118, 210, 0.3)",
+											? "0 4px 20px rgba(156, 39, 176, 0.4)"
+											: "0 4px 20px rgba(156, 39, 176, 0.3)",
 									"&:hover": {
 										boxShadow: (theme) =>
 											theme.palette.mode === "dark"
-												? "0 6px 24px rgba(25, 118, 210, 0.5)"
-												: "0 6px 24px rgba(25, 118, 210, 0.4)",
+												? "0 6px 24px rgba(156, 39, 176, 0.5)"
+												: "0 6px 24px rgba(156, 39, 176, 0.4)",
 										transform: "translateY(-2px)",
 									},
 									transition: "all 0.3s ease",
 								}}
 							>
-								{portfolios.length === 0 ? "Create Your First Wallet" : "Add Transactions"}
+								{portfolios.length === 0 ? "Go to Investments Page" : "Go to Investments Page"}
 							</Button>
 						</Stack>
 					</Card>

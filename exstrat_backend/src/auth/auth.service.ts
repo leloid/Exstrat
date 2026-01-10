@@ -78,9 +78,15 @@ export class AuthService {
           verificationUrl,
         });
 
-        this.logger.log(`Verification email sent to ${user.email}`);
-      } catch (error) {
+        this.logger.log(`Verification email sent successfully to ${user.email}`);
+      } catch (error: any) {
         this.logger.error(`Error sending verification email to ${user.email}:`, error);
+        this.logger.error(`Error details:`, {
+          message: error?.message,
+          name: error?.name,
+          response: error?.response?.data,
+          status: error?.response?.status,
+        });
         // On continue même si l'email échoue, l'utilisateur peut demander un renvoi
       }
 
@@ -490,9 +496,16 @@ export class AuthService {
         verificationUrl,
       });
 
-      this.logger.log(`Verification email resent to ${user.email}`);
-    } catch (error) {
+      this.logger.log(`Verification email resent successfully to ${user.email}`);
+    } catch (error: any) {
       this.logger.error(`Error resending verification email to ${user.email}:`, error);
+      this.logger.error(`Error details:`, {
+        message: error?.message,
+        name: error?.name,
+        response: error?.response?.data,
+        status: error?.response?.status,
+        stack: error?.stack,
+      });
       // On ne révèle pas l'erreur à l'utilisateur pour des raisons de sécurité
     }
 

@@ -11,13 +11,21 @@ export class EmailService {
   constructor(private configService: ConfigService) {
     const apiKey = this.configService.get<string>('RESEND_API_KEY');
     if (!apiKey) {
-      this.logger.warn('RESEND_API_KEY not found, email service will be disabled');
+      this.logger.error('RESEND_API_KEY not found in environment variables. Email service will be disabled.');
+      this.logger.error('Please add RESEND_API_KEY to your Railway environment variables.');
     } else {
       this.resend = new Resend(apiKey);
+      this.logger.log('Resend email service initialized successfully');
     }
 
     this.fromEmail =
       this.configService.get<string>('RESEND_FROM_EMAIL') || 'noreply@exstrat.com';
+    
+    this.logger.log(`Email service configured with FROM: ${this.fromEmail}`);
+    
+    if (!apiKey) {
+      this.logger.warn('⚠️ RESEND_API_KEY is missing. Emails will not be sent.');
+    }
   }
 
   /**
