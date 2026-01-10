@@ -1,6 +1,6 @@
-import { Controller, Post, Body, UseGuards, HttpCode, HttpStatus } from '@nestjs/common';
+import { Controller, Post, Body, UseGuards, HttpCode, HttpStatus, BadRequestException } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
-import { IsEmail, IsString, IsOptional, MinLength, MaxLength } from 'class-validator';
+import { IsEmail, IsString, IsOptional, MaxLength, ValidateIf } from 'class-validator';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { EmailService } from './email.service';
 import { Public } from '../auth/decorators/public.decorator';
@@ -15,7 +15,6 @@ class FeedbackDto {
   name?: string;
 
   @IsString({ message: 'Message must be a string' })
-  @MinLength(10, { message: 'Message must be at least 10 characters' })
   @MaxLength(2000, { message: 'Message must not exceed 2000 characters' })
   message: string;
 }
@@ -114,6 +113,12 @@ export class EmailController {
   })
   async sendFeedback(@Body() feedbackDto: FeedbackDto) {
     const { email, name, message } = feedbackDto;
+
+    // Validate minimum 20 words
+    const wordCount = message.trim().split(/\s+/).filter(word => word.length > 0).length;
+    if (wordCount < 20) {
+      throw new BadRequestException(`Message must contain at least 20 words. Current: ${wordCount} words.`);
+    }
 
     await this.emailService.sendFeedbackEmail({
       from: email,

@@ -76,6 +76,7 @@ import ToggleButton from "@mui/material/ToggleButton";
 import ToggleButtonGroup from "@mui/material/ToggleButtonGroup";
 import { ArrowDownRightIcon } from "@phosphor-icons/react/dist/ssr/ArrowDownRight";
 import { ArrowUpRightIcon } from "@phosphor-icons/react/dist/ssr/ArrowUpRight";
+import { ArrowsLeftRightIcon } from "@phosphor-icons/react/dist/ssr/ArrowsLeftRight";
 import { CaretDownIcon } from "@phosphor-icons/react/dist/ssr/CaretDown";
 import { CaretRightIcon } from "@phosphor-icons/react/dist/ssr/CaretRight";
 import { InfoIcon } from "@phosphor-icons/react/dist/ssr/Info";
@@ -223,6 +224,7 @@ export default function Page(): React.JSX.Element {
 	const [transactionRowsPerPage, setTransactionRowsPerPage] = React.useState(5);
 	const [transactionOrderBy, setTransactionOrderBy] = React.useState<string>("");
 	const [transactionOrder, setTransactionOrder] = React.useState<"asc" | "desc">("asc");
+	const [transactionWalletFilter, setTransactionWalletFilter] = React.useState<string>("global"); // "global" or portfolioId
 
 	// View all tokens modal state
 	const [showAllTokensModal, setShowAllTokensModal] = React.useState(false);
@@ -489,17 +491,26 @@ export default function Page(): React.JSX.Element {
 
 	// Filtered, sorted and paginated transactions
 	const filteredTransactions = React.useMemo(() => {
-		if (!transactionSearchQuery.trim()) {
-			return transactions;
+		let filtered = transactions;
+		
+		// Filter by wallet if not "global"
+		if (transactionWalletFilter !== "global") {
+			filtered = filtered.filter((transaction) => transaction.portfolioId === transactionWalletFilter);
 		}
-		const query = transactionSearchQuery.toLowerCase();
-		return transactions.filter(
-			(transaction) =>
-				transaction.symbol.toLowerCase().includes(query) ||
-				transaction.name.toLowerCase().includes(query) ||
-				transaction.portfolio?.name.toLowerCase().includes(query)
-		);
-	}, [transactions, transactionSearchQuery]);
+		
+		// Filter by search query
+		if (transactionSearchQuery.trim()) {
+			const query = transactionSearchQuery.toLowerCase();
+			filtered = filtered.filter(
+				(transaction) =>
+					transaction.symbol.toLowerCase().includes(query) ||
+					transaction.name.toLowerCase().includes(query) ||
+					transaction.portfolio?.name.toLowerCase().includes(query)
+			);
+		}
+		
+		return filtered;
+	}, [transactions, transactionSearchQuery, transactionWalletFilter]);
 
 	const sortedTransactions = React.useMemo(() => {
 		if (!transactionOrderBy) {
@@ -1859,56 +1870,23 @@ export default function Page(): React.JSX.Element {
 					</CardContent>
 					<Divider />
 					<CardActions>
-						<Button
-							color="secondary"
-							endIcon={<ArrowUpRightIcon />}
-							size="small"
-							variant="outlined"
-							onClick={() => {
-								setEditingPortfolioId(null);
-								setPortfolioName("");
-								setPortfolioFormData({ name: "", description: "", isDefault: false });
-								setShowPortfolioDialog(true);
-							}}
-							sx={{
-								color: "primary.main",
-								borderColor: "primary.main",
-								"&:hover": {
-									backgroundColor: "primary.main",
-									borderColor: "primary.main",
-									color: "primary.contrastText",
-									"& .MuiSvgIcon-root": {
-										color: "primary.contrastText",
-									},
-								},
-							}}
-						>
-							Add Wallet
-						</Button>
 						{portfolios.length > 0 && (
-							<>
-								<Button
-									color="secondary"
-									endIcon={<ArrowUpRightIcon />}
-									size="small"
-									onClick={() => {
-										setShowAddTransactionMethodModal(true);
-									}}
-								>
-									Add Transaction
-								</Button>
-								<Button
-									color="secondary"
-									endIcon={<ArrowDownRightIcon />}
-									size="small"
-									onClick={() => {
-										// TODO: Implement transfer token functionality
-										console.log("Transfer Token clicked");
-									}}
-								>
-									Transfer Token
-								</Button>
-							</>
+							<MuiTooltip title="Soon available" arrow placement="top">
+								<span>
+									<Button
+										color="secondary"
+										endIcon={<ArrowsLeftRightIcon />}
+										size="small"
+										disabled
+										onClick={() => {
+											// TODO: Implement transfer token functionality
+											console.log("Transfer Token clicked");
+										}}
+									>
+										Transfer Token
+									</Button>
+								</span>
+							</MuiTooltip>
 						)}
 					</CardActions>
 				</Card>
@@ -1922,9 +1900,26 @@ export default function Page(): React.JSX.Element {
 					<Card>
 					<CardContent>
 						<Stack direction={{ xs: "column", sm: "row" }} spacing={{ xs: 2, sm: 2 }} sx={{ alignItems: { xs: "stretch", sm: "center" }, justifyContent: "space-between", mb: 3 }}>
-							<Stack direction="row" spacing={2} sx={{ alignItems: "center" }}>
+							<Stack direction="row" spacing={2} sx={{ alignItems: "center", flexWrap: "wrap" }}>
 								<PlusIcon fontSize="var(--icon-fontSize-lg)" />
 								<Typography variant="h6">Transactions</Typography>
+								<FormControl size="small" sx={{ minWidth: 150 }}>
+									<Select
+										value={transactionWalletFilter}
+										onChange={(e) => {
+											setTransactionWalletFilter(e.target.value);
+											setTransactionPage(0); // Reset to first page on filter change
+										}}
+										displayEmpty
+									>
+										<MenuItem value="global">Global</MenuItem>
+										{portfolios.map((portfolio) => (
+											<MenuItem key={portfolio.id} value={portfolio.id}>
+												{portfolio.name}
+											</MenuItem>
+										))}
+									</Select>
+								</FormControl>
 								{selectedTransactionIds.size > 0 && (
 									<Button
 										color="error"

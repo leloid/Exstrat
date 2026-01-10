@@ -51,9 +51,19 @@ export function FeedbackButton(): React.JSX.Element {
 		setMessage("");
 	};
 
+	const countWords = (text: string): number => {
+		return text.trim().split(/\s+/).filter(word => word.length > 0).length;
+	};
+
 	const handleSubmit = async () => {
 		if (!email || !message.trim()) {
-			setError("Email and message are required");
+			setError("Message is required");
+			return;
+		}
+
+		const wordCount = countWords(message);
+		if (wordCount < 20) {
+			setError(`Message must contain at least 20 words. Current: ${wordCount} words.`);
 			return;
 		}
 
@@ -123,15 +133,6 @@ export function FeedbackButton(): React.JSX.Element {
 							</Alert>
 						)}
 						<TextField
-							label="Email"
-							type="email"
-							value={email}
-							onChange={(e) => setEmail(e.target.value)}
-							required
-							fullWidth
-							disabled={isLoading}
-						/>
-						<TextField
 							label="Name (optional)"
 							type="text"
 							value={name}
@@ -148,7 +149,9 @@ export function FeedbackButton(): React.JSX.Element {
 							required
 							fullWidth
 							disabled={isLoading}
-							placeholder="Tell us what you think, report a bug, or suggest a feature..."
+							placeholder="Tell us what you think, report a bug, or suggest a feature... (Minimum 20 words required)"
+							helperText={`${countWords(message)} words (minimum 20 required)`}
+							error={message.trim().length > 0 && countWords(message) < 20}
 						/>
 					</Box>
 				</DialogContent>
@@ -156,7 +159,11 @@ export function FeedbackButton(): React.JSX.Element {
 					<Button onClick={handleClose} disabled={isLoading}>
 						Cancel
 					</Button>
-					<Button onClick={handleSubmit} variant="contained" disabled={isLoading || !email || !message.trim()}>
+					<Button 
+						onClick={handleSubmit} 
+						variant="contained" 
+						disabled={isLoading || !email || !message.trim() || countWords(message) < 20}
+					>
 						{isLoading ? <CircularProgress size={20} /> : "Send Feedback"}
 					</Button>
 				</DialogActions>
