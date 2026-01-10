@@ -2368,7 +2368,7 @@ export default function Page(): React.JSX.Element {
 				}}
 				open={showDeleteWalletModal}
 			>
-				<DialogContent>
+				<DialogContent sx={{ border: "none", p: 0 }}>
 					<Paper sx={{ border: "1px solid var(--mui-palette-divider)", boxShadow: "var(--mui-shadows-16)", p: 0 }}>
 						<Stack direction="row" spacing={2} sx={{ display: "flex", p: 3 }}>
 							<Avatar sx={{ bgcolor: "var(--mui-palette-error-50)", color: "var(--mui-palette-error-main)" }}>
@@ -2412,7 +2412,7 @@ export default function Page(): React.JSX.Element {
 				}}
 				open={showDeleteTransactionModal}
 			>
-				<DialogContent>
+				<DialogContent sx={{ border: "none", p: 0 }}>
 					<Paper sx={{ border: "1px solid var(--mui-palette-divider)", boxShadow: "var(--mui-shadows-16)", p: 0 }}>
 						<Stack direction="row" spacing={2} sx={{ display: "flex", p: 3 }}>
 							<Avatar sx={{ bgcolor: "var(--mui-palette-error-50)", color: "var(--mui-palette-error-main)" }}>
@@ -2455,7 +2455,7 @@ export default function Page(): React.JSX.Element {
 				}}
 				open={showDeleteMultipleTransactionsModal}
 			>
-				<DialogContent>
+				<DialogContent sx={{ border: "none", p: 0 }}>
 					<Paper sx={{ border: "1px solid var(--mui-palette-divider)", boxShadow: "var(--mui-shadows-16)", p: 0 }}>
 						<Stack direction="row" spacing={2} sx={{ display: "flex", p: 3 }}>
 							<Avatar sx={{ bgcolor: "var(--mui-palette-error-50)", color: "var(--mui-palette-error-main)" }}>
