@@ -25,12 +25,14 @@ import Select from "@mui/material/Select";
 import MenuItem from "@mui/material/MenuItem";
 import { XIcon } from "@phosphor-icons/react/dist/ssr/X";
 import { FileCsvIcon } from "@phosphor-icons/react/dist/ssr/FileCsv";
+import { DownloadIcon } from "@phosphor-icons/react/dist/ssr/Download";
 import { CheckCircleIcon } from "@phosphor-icons/react/dist/ssr/CheckCircle";
 import { XCircleIcon } from "@phosphor-icons/react/dist/ssr/XCircle";
 import { transactionsApi } from "@/lib/transactions-api";
 import { toast } from "@/components/core/toaster";
 import type { ExchangeType } from "./select-exchange-modal";
 import { usePortfolio } from "@/contexts/PortfolioContext";
+import api from "@/lib/api";
 
 interface ImportCsvModalProps {
 	open: boolean;
@@ -66,6 +68,56 @@ export function ImportCsvModal({
 			setSelectedPortfolioId(defaultPortfolio.id);
 		}
 	}, [portfolios, selectedPortfolioId]);
+
+	const handleDownloadTemplate = async () => {
+		// Fonction helper pour télécharger le template
+		const downloadTemplateFile = () => {
+			const csvHeader = "Date,Symbol,Type,Quantity,Price,Amount,Notes\n";
+			const csvExample = "2024-01-15,BTC,BUY,0.5,50000,25000,Initial purchase\n";
+			const csvContent = csvHeader + csvExample;
+			const blob = new Blob([csvContent], { type: "text/csv" });
+			const url = window.URL.createObjectURL(blob);
+			const a = document.createElement("a");
+			a.href = url;
+			a.download = "exstrat-transactions-template.csv";
+			document.body.appendChild(a);
+			a.click();
+			window.URL.revokeObjectURL(url);
+			document.body.removeChild(a);
+			toast.success("Template downloaded successfully");
+		};
+
+		// Essayer d'abord l'API, sinon utiliser le fallback silencieusement
+		try {
+			const response = await api.get("/transactions/csv-template", {
+				responseType: "blob",
+			}).catch((error) => {
+				// Intercepter l'erreur silencieusement et retourner null
+				// Ne pas logger l'erreur car on utilise le fallback
+				return null;
+			});
+
+			if (response && response.data) {
+				const blob = new Blob([response.data], { type: "text/csv" });
+				const url = window.URL.createObjectURL(blob);
+				const a = document.createElement("a");
+				a.href = url;
+				a.download = "exstrat-transactions-template.csv";
+				document.body.appendChild(a);
+				a.click();
+				window.URL.revokeObjectURL(url);
+				document.body.removeChild(a);
+				toast.success("Template downloaded successfully");
+			} else {
+				// Fallback: créer le template côté client
+				downloadTemplateFile();
+			}
+		} catch (error: any) {
+			// En cas d'erreur, utiliser le fallback silencieusement
+			// Ne pas logger l'erreur car le fallback fonctionne
+			downloadTemplateFile();
+		}
+	};
 
 	const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
 		const selectedFile = event.target.files?.[0];
@@ -166,9 +218,18 @@ export function ImportCsvModal({
 		<Dialog open={open} onClose={handleClose} maxWidth="lg" fullWidth>
 			<DialogTitle>
 				<Stack direction="row" spacing={2} sx={{ alignItems: "center", justifyContent: "space-between" }}>
-					<Typography variant="h6">
-						Import CSV - {exchange === "coinbase" ? "Coinbase" : exchange === "crypto.com" ? "Crypto.com" : "ExStrat Custom"}
-					</Typography>
+					{exchange === "exstrat" ? (
+						<Box>
+							<Typography variant="h6">Import CSV - ExStrat Custom</Typography>
+							<Typography color="text.secondary" variant="body2">
+								Upload your CSV file using our custom template
+							</Typography>
+						</Box>
+					) : (
+						<Typography variant="h6">
+							Import CSV - {exchange === "coinbase" ? "Coinbase" : "Crypto.com"}
+						</Typography>
+					)}
 					<IconButton onClick={handleClose} size="small">
 						<XIcon />
 					</IconButton>
@@ -176,36 +237,30 @@ export function ImportCsvModal({
 			</DialogTitle>
 			<DialogContent>
 				<Stack spacing={3} sx={{ mt: 1 }}>
-					{/* File Upload */}
-					<Box>
-						<Button
-							variant="outlined"
-							component="label"
-							startIcon={<FileCsvIcon />}
-							sx={{ mb: 2 }}
-						>
-							Select CSV File
-							<input
-								type="file"
-								hidden
-								accept=".csv"
-								onChange={handleFileChange}
-							/>
-						</Button>
-						{file && (
-							<Typography variant="body2" color="text.secondary">
-								Selected: {file.name}
+					{/* Download Template - Only for Exstrat */}
+					{exchange === "exstrat" && (
+						<Box>
+							<Button
+								variant="outlined"
+								startIcon={<DownloadIcon />}
+								onClick={handleDownloadTemplate}
+								sx={{ textTransform: "none" }}
+							>
+								Download ExStrat Template
+							</Button>
+							<Typography color="text.secondary" variant="caption" sx={{ display: "block", mt: 1 }}>
+								Download the template, fill it with your transactions, and upload it here
 							</Typography>
-						)}
-					</Box>
+						</Box>
+					)}
 
-					{/* Portfolio Selection */}
+					{/* Wallet Selection */}
 					<FormControl fullWidth>
-						<InputLabel>Wallet</InputLabel>
+						<InputLabel>Select Wallet</InputLabel>
 						<Select
 							value={selectedPortfolioId}
 							onChange={(e) => setSelectedPortfolioId(e.target.value)}
-							label="Wallet"
+							label="Select Wallet"
 						>
 							{portfolios.map((portfolio) => (
 								<MenuItem key={portfolio.id} value={portfolio.id}>
@@ -215,97 +270,91 @@ export function ImportCsvModal({
 						</Select>
 					</FormControl>
 
+					{/* File Upload */}
+					<Box>
+						<Button variant="outlined" component="label" startIcon={<FileCsvIcon />} sx={{ textTransform: "none" }}>
+							{file ? file.name : "Select CSV File"}
+							<input type="file" accept=".csv" hidden onChange={handleFileChange} />
+						</Button>
+						{file && (
+							<Typography color="text.secondary" variant="caption" sx={{ display: "block", mt: 1 }}>
+								File selected: {file.name} ({(file.size / 1024).toFixed(2)} KB)
+							</Typography>
+						)}
+					</Box>
+
 					{/* Parse Button */}
-					<Button
-						variant="contained"
-						onClick={handleParse}
-						disabled={!csvContent || !selectedPortfolioId || isParsing}
-						startIcon={isParsing ? <CircularProgress size={20} /> : <FileCsvIcon />}
-					>
-						{isParsing ? "Parsing..." : "Parse CSV"}
-					</Button>
+					{csvContent && (
+						<Button
+							variant="contained"
+							onClick={handleParse}
+							disabled={isParsing || !selectedPortfolioId}
+							startIcon={isParsing ? <CircularProgress size={16} /> : <FileCsvIcon />}
+							sx={{ textTransform: "none" }}
+						>
+							{isParsing ? "Parsing..." : "Parse CSV"}
+						</Button>
+					)}
 
 					{/* Parse Results */}
 					{parseResult && (
 						<>
-							<Alert severity={parseResult.validCount > 0 ? "success" : "warning"}>
-								<Stack direction="row" spacing={2} sx={{ alignItems: "center" }}>
-									<Typography>
-										<strong>{parseResult.validCount}</strong> valid transactions
-									</Typography>
-									{parseResult.invalidCount > 0 && (
-										<Typography>
-											<strong>{parseResult.invalidCount}</strong> invalid transactions
-										</Typography>
-									)}
-								</Stack>
+							<Alert severity={parseResult.invalidCount > 0 ? "warning" : "success"}>
+								{parseResult.validCount} valid transaction(s) found
+								{parseResult.invalidCount > 0 && `, ${parseResult.invalidCount} with errors`}
 							</Alert>
 
-							{/* Valid Transactions Preview */}
 							{parseResult.validTransactions.length > 0 && (
 								<Box>
-									<Typography variant="h6" sx={{ mb: 2 }}>
-										Valid Transactions ({parseResult.validTransactions.length})
+									<Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1 }}>
+										Valid Transactions ({parseResult.validCount})
 									</Typography>
-									<Box sx={{ maxHeight: 400, overflow: "auto" }}>
+									<Box sx={{ maxHeight: 300, overflow: "auto" }}>
 										<Table size="small">
 											<TableHead>
 												<TableRow>
 													<TableCell>Date</TableCell>
-													<TableCell>Token</TableCell>
+													<TableCell>Symbol</TableCell>
 													<TableCell>Type</TableCell>
-													<TableCell>Quantity</TableCell>
-													<TableCell>Amount</TableCell>
-													<TableCell>Price</TableCell>
+													<TableCell align="right">Quantity</TableCell>
+													<TableCell align="right">Amount</TableCell>
 												</TableRow>
 											</TableHead>
 											<TableBody>
-												{parseResult.validTransactions.slice(0, 20).map((tx, index) => (
+												{parseResult.validTransactions.map((tx, index) => (
 													<TableRow key={index}>
 														<TableCell>
 															{new Date(tx.transactionDate).toLocaleDateString()}
 														</TableCell>
 														<TableCell>{tx.symbol}</TableCell>
 														<TableCell>
-															<Chip label={tx.type} size="small" />
+															<Chip label={tx.type} size="small" color="primary" variant="outlined" />
 														</TableCell>
-														<TableCell>{tx.quantity.toFixed(8)}</TableCell>
-														<TableCell>${tx.amountInvested.toFixed(2)}</TableCell>
-														<TableCell>${tx.averagePrice.toFixed(2)}</TableCell>
+														<TableCell align="right">{tx.quantity}</TableCell>
+														<TableCell align="right">${tx.amountInvested.toFixed(2)}</TableCell>
 													</TableRow>
 												))}
 											</TableBody>
 										</Table>
-										{parseResult.validTransactions.length > 20 && (
-											<Typography variant="body2" color="text.secondary" sx={{ mt: 1, textAlign: "center" }}>
-												... and {parseResult.validTransactions.length - 20} more
-											</Typography>
-										)}
 									</Box>
 								</Box>
 							)}
 
-							{/* Invalid Transactions */}
 							{parseResult.invalidTransactions.length > 0 && (
 								<Box>
-									<Typography variant="h6" sx={{ mb: 2, color: "error.main" }}>
-										Invalid Transactions ({parseResult.invalidTransactions.length})
+									<Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1, color: "error.main" }}>
+										Invalid Transactions ({parseResult.invalidCount})
 									</Typography>
-									<Box sx={{ maxHeight: 300, overflow: "auto" }}>
-										{parseResult.invalidTransactions.slice(0, 10).map((invalid, index) => (
-											<Alert key={index} severity="error" sx={{ mb: 1 }}>
-												<Stack spacing={0.5}>
-													<Typography variant="body2">
-														<strong>Row {invalid.row}:</strong> {invalid.errors.join(", ")}
+									<Box sx={{ maxHeight: 200, overflow: "auto" }}>
+										<Stack spacing={1}>
+											{parseResult.invalidTransactions.map((invalid, index) => (
+												<Alert key={index} severity="error" sx={{ py: 0.5 }}>
+													<Typography variant="caption">
+														Row {invalid.row}: {invalid.errors.join(", ")}
 													</Typography>
-												</Stack>
-											</Alert>
-										))}
-										{parseResult.invalidTransactions.length > 10 && (
-											<Typography variant="body2" color="text.secondary" sx={{ mt: 1, textAlign: "center" }}>
-												... and {parseResult.invalidTransactions.length - 10} more errors
-											</Typography>
-										)}
+												</Alert>
+											))}
+										</Stack>
 									</Box>
 								</Box>
 							)}
@@ -314,14 +363,16 @@ export function ImportCsvModal({
 				</Stack>
 			</DialogContent>
 			<DialogActions>
-				<Button onClick={handleClose}>Cancel</Button>
+				<Button onClick={handleClose} disabled={isImporting}>
+					Cancel
+				</Button>
 				<Button
 					variant="contained"
 					onClick={handleImport}
 					disabled={!parseResult || parseResult.validTransactions.length === 0 || isImporting}
-					startIcon={isImporting ? <CircularProgress size={20} /> : <CheckCircleIcon />}
+					startIcon={isImporting ? <CircularProgress size={16} /> : <CheckCircleIcon />}
 				>
-					{isImporting ? "Importing..." : `Import ${parseResult?.validCount || 0} Transactions`}
+					{isImporting ? "Importing..." : `Import ${parseResult?.validCount || 0} Transaction(s)`}
 				</Button>
 			</DialogActions>
 		</Dialog>

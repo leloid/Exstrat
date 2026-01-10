@@ -2690,8 +2690,8 @@ export default function Page(): React.JSX.Element {
 					if (method === "csv") {
 						setSelectedExchange(exchange);
 						setShowSelectExchangeModal(false);
-						// Pour tous les exchanges, afficher un message "coming soon"
-						toast.info(`${exchange} CSV import coming soon!`);
+						// Ouvrir directement le modal d'import CSV pour tous les exchanges
+						setShowImportCsvModal(true);
 					} else {
 						// API connection - coming soon
 						toast.info("API connection coming soon!");

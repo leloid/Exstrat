@@ -630,24 +630,17 @@ export function CreateTransactionModal({
 														<Stack direction="row" spacing={2} sx={{ alignItems: "center" }}>
 															<Avatar
 																sx={{
-																	bgcolor: transactionType === "BUY" ? "success.main" : "error.main",
-																	color: "white",
+																	bgcolor: "success.light",
+																	color: "success.dark",
 																	width: 48,
 																	height: 48,
 																}}
 															>
-																{transactionType === "BUY" ? (
-																	<TrendUpIcon fontSize="var(--icon-fontSize-lg)" />
-																) : (
-																	<TrendDownIcon fontSize="var(--icon-fontSize-lg)" />
-																)}
+																<CheckIcon fontSize="var(--icon-fontSize-lg)" />
 															</Avatar>
 															<Box sx={{ flex: 1 }}>
 																<Typography variant="h6" fontWeight={600}>
 																	Transaction Summary
-																</Typography>
-																<Typography color="text.secondary" variant="body2">
-																	Review your transaction before submitting
 																</Typography>
 															</Box>
 														</Stack>
@@ -681,10 +674,13 @@ export function CreateTransactionModal({
 																		Type
 																	</Typography>
 																	<Chip
-																		color={transactionType === "BUY" ? "success" : "error"}
 																		label={transactionType}
 																		size="medium"
-																		sx={{ fontWeight: 600 }}
+																		sx={{ 
+																			fontWeight: 600,
+																			bgcolor: "success.light",
+																			color: "success.dark",
+																		}}
 																	/>
 																</Grid>
 																<Grid size={{ xs: 12, sm: 4 }}>
