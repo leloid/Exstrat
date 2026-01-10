@@ -247,26 +247,6 @@ function ForecastPageContent(): React.JSX.Element {
 					</Button>
 				</Stack>
 
-				{/* Search */}
-				<Card>
-					<CardContent>
-						<Stack direction="row" spacing={2} sx={{ alignItems: "center", flexWrap: "wrap" }}>
-							<OutlinedInput
-								fullWidth
-								onChange={(e) => setSearchQuery(e.target.value)}
-								placeholder="Search forecasts by name or wallet..."
-								startAdornment={
-									<InputAdornment position="start">
-										<MagnifyingGlassIcon fontSize="var(--icon-fontSize-md)" />
-									</InputAdornment>
-								}
-								value={searchQuery}
-								sx={{ maxWidth: { sm: "400px" } }}
-							/>
-						</Stack>
-					</CardContent>
-				</Card>
-
 				{/* Forecasts Table */}
 				{filteredForecasts.length === 0 ? (
 					<Card>
@@ -285,19 +265,40 @@ function ForecastPageContent(): React.JSX.Element {
 					</Card>
 				) : (
 					<Card>
-						{selectedForecastIds.size > 0 && (
-							<Box sx={{ p: 2, borderBottom: "1px solid var(--mui-palette-divider)" }}>
-								<Button
-									color="error"
-									onClick={() => setShowDeleteMultipleForecastsModal(true)}
-									size="small"
-									startIcon={<TrashIcon />}
-									variant="outlined"
-								>
-									Delete ({selectedForecastIds.size})
-								</Button>
-							</Box>
-						)}
+						<Box sx={{ p: 2, borderBottom: "1px solid var(--mui-palette-divider)" }}>
+							<Stack direction="row" spacing={2} sx={{ alignItems: "center", justifyContent: "space-between" }}>
+								<Typography variant="h5" sx={{ fontWeight: 600 }}>
+									My Forecast
+								</Typography>
+								<Box sx={{ flex: "1 1 auto" }} />
+								<Stack direction="row" spacing={2} sx={{ alignItems: "center" }}>
+									<OutlinedInput
+										onChange={(e) => setSearchQuery(e.target.value)}
+										placeholder="Search forecasts by name or wallet..."
+										size="small"
+										startAdornment={
+											<InputAdornment position="start">
+												<MagnifyingGlassIcon fontSize="var(--icon-fontSize-md)" />
+											</InputAdornment>
+										}
+										sx={{ maxWidth: "300px", width: "100%" }}
+										value={searchQuery}
+									/>
+									{selectedForecastIds.size > 0 && (
+										<Button
+											color="error"
+											onClick={() => setShowDeleteMultipleForecastsModal(true)}
+											size="small"
+											startIcon={<TrashIcon />}
+											variant="outlined"
+										>
+											Delete ({selectedForecastIds.size})
+										</Button>
+									)}
+								</Stack>
+							</Stack>
+						</Box>
+						<Divider />
 						<CardContent sx={{ p: 0 }}>
 							<Box sx={{ overflowX: "auto" }}>
 								<Table>
@@ -407,16 +408,29 @@ function ForecastPageContent(): React.JSX.Element {
 															</Typography>
 														</TableCell>
 														<TableCell align="right">
-															<IconButton
-																onClick={(e) => {
-																	e.stopPropagation();
-																	handleEditForecast(forecast);
-																}}
-																size="small"
-																title="Edit forecast"
-															>
-																<PencilIcon fontSize="var(--icon-fontSize-md)" />
-															</IconButton>
+															<Stack direction="row" spacing={0.5} sx={{ alignItems: "center", justifyContent: "flex-end" }}>
+																<IconButton
+																	onClick={(e) => {
+																		e.stopPropagation();
+																		handleEditForecast(forecast);
+																	}}
+																	size="small"
+																	title="Edit forecast"
+																>
+																	<PencilIcon fontSize="var(--icon-fontSize-md)" />
+																</IconButton>
+																<IconButton
+																	onClick={(e) => {
+																		e.stopPropagation();
+																		handleDeleteForecast(forecast.id);
+																	}}
+																	size="small"
+																	title="Delete forecast"
+																	sx={{ color: "error.main" }}
+																>
+																	<TrashIcon fontSize="var(--icon-fontSize-md)" />
+																</IconButton>
+															</Stack>
 														</TableCell>
 													</TableRow>
 													<TableRow>

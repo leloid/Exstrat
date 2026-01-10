@@ -314,25 +314,6 @@ function StrategiesPageContent(): React.JSX.Element {
 					</Button>
 				</Stack>
 
-				{/* Search */}
-				<Card>
-					<CardContent>
-						<OutlinedInput
-							onChange={(e) => setSearchQuery(e.target.value)}
-							placeholder="Search strategies..."
-							size="small"
-							fullWidth
-							startAdornment={
-								<InputAdornment position="start">
-									<MagnifyingGlassIcon fontSize="var(--icon-fontSize-md)" />
-								</InputAdornment>
-							}
-							sx={{ maxWidth: "400px" }}
-							value={searchQuery}
-						/>
-					</CardContent>
-				</Card>
-
 				{/* Strategies Table */}
 				{!hasStrategies ? (
 					<Card>
@@ -376,19 +357,39 @@ function StrategiesPageContent(): React.JSX.Element {
 					</Card>
 				) : (
 					<Card>
-						{selection.selectedAny && (
-							<Box sx={{ p: 2, borderBottom: "1px solid var(--mui-palette-divider)" }}>
-								<Button
-									color="error"
-									onClick={() => setShowDeleteMultipleStrategiesModal(true)}
-									size="small"
-									startIcon={<TrashIcon />}
-									variant="outlined"
-								>
-									Delete ({selection.selected.size})
-								</Button>
-							</Box>
-						)}
+						<Box sx={{ p: 2, borderBottom: "1px solid var(--mui-palette-divider)" }}>
+							<Stack direction="row" spacing={2} sx={{ alignItems: "center", justifyContent: "space-between" }}>
+								<Typography variant="h5" sx={{ fontWeight: 600 }}>
+									My Strategy
+								</Typography>
+								<Box sx={{ flex: "1 1 auto" }} />
+								<Stack direction="row" spacing={2} sx={{ alignItems: "center" }}>
+									<OutlinedInput
+										onChange={(e) => setSearchQuery(e.target.value)}
+										placeholder="Search strategies..."
+										size="small"
+										startAdornment={
+											<InputAdornment position="start">
+												<MagnifyingGlassIcon fontSize="var(--icon-fontSize-md)" />
+											</InputAdornment>
+										}
+										sx={{ maxWidth: "300px", width: "100%" }}
+										value={searchQuery}
+									/>
+									{selection.selectedAny && (
+										<Button
+											color="error"
+											onClick={() => setShowDeleteMultipleStrategiesModal(true)}
+											size="small"
+											startIcon={<TrashIcon />}
+											variant="outlined"
+										>
+											Delete ({selection.selected.size})
+										</Button>
+									)}
+								</Stack>
+							</Stack>
+						</Box>
 						<Divider />
 						<Box sx={{ overflowX: "auto" }}>
 							<StrategiesTable

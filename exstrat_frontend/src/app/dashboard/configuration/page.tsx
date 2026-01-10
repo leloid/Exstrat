@@ -18,6 +18,7 @@ import TableHead from "@mui/material/TableHead";
 import TableRow from "@mui/material/TableRow";
 import TablePagination from "@mui/material/TablePagination";
 import Typography from "@mui/material/Typography";
+import Divider from "@mui/material/Divider";
 import Collapse from "@mui/material/Collapse";
 import Checkbox from "@mui/material/Checkbox";
 import FormControlLabel from "@mui/material/FormControlLabel";
@@ -301,26 +302,6 @@ function ConfigurationPageContent(): React.JSX.Element {
 					</Button>
 				</Stack>
 
-				{/* Search */}
-				<Card>
-					<CardContent>
-						<Stack direction="row" spacing={2} sx={{ alignItems: "center", flexWrap: "wrap" }}>
-							<OutlinedInput
-								fullWidth
-								onChange={(e) => setSearchQuery(e.target.value)}
-								placeholder="Search alerts by forecast name..."
-								startAdornment={
-									<InputAdornment position="start">
-										<MagnifyingGlassIcon fontSize="var(--icon-fontSize-md)" />
-									</InputAdornment>
-								}
-								value={searchQuery}
-								sx={{ maxWidth: { sm: "400px" } }}
-							/>
-						</Stack>
-					</CardContent>
-				</Card>
-
 				{/* Alerts Table */}
 				{filteredConfigurations.length === 0 ? (
 					<Card>
@@ -341,19 +322,40 @@ function ConfigurationPageContent(): React.JSX.Element {
 					</Card>
 				) : (
 					<Card>
-						{selection.selectedAny && (
-							<Box sx={{ p: 2, borderBottom: "1px solid var(--mui-palette-divider)" }}>
-								<Button
-									color="error"
-									onClick={() => setShowDeleteMultipleAlertsModal(true)}
-									size="small"
-									startIcon={<TrashIcon />}
-									variant="outlined"
-								>
-									Delete ({selection.selected.size})
-								</Button>
-							</Box>
-						)}
+						<Box sx={{ p: 2, borderBottom: "1px solid var(--mui-palette-divider)" }}>
+							<Stack direction="row" spacing={2} sx={{ alignItems: "center", justifyContent: "space-between" }}>
+								<Typography variant="h5" sx={{ fontWeight: 600 }}>
+									My Alert Configuration
+								</Typography>
+								<Box sx={{ flex: "1 1 auto" }} />
+								<Stack direction="row" spacing={2} sx={{ alignItems: "center" }}>
+									<OutlinedInput
+										onChange={(e) => setSearchQuery(e.target.value)}
+										placeholder="Search alerts by forecast name..."
+										size="small"
+										startAdornment={
+											<InputAdornment position="start">
+												<MagnifyingGlassIcon fontSize="var(--icon-fontSize-md)" />
+											</InputAdornment>
+										}
+										sx={{ maxWidth: "300px", width: "100%" }}
+										value={searchQuery}
+									/>
+									{selection.selectedAny && (
+										<Button
+											color="error"
+											onClick={() => setShowDeleteMultipleAlertsModal(true)}
+											size="small"
+											startIcon={<TrashIcon />}
+											variant="outlined"
+										>
+											Delete ({selection.selected.size})
+										</Button>
+									)}
+								</Stack>
+							</Stack>
+						</Box>
+						<Divider />
 						<CardContent sx={{ p: 0 }}>
 							<Box sx={{ overflowX: "auto" }}>
 								<Table>
@@ -383,6 +385,9 @@ function ConfigurationPageContent(): React.JSX.Element {
 											<TableCell sx={{ fontWeight: 600 }}>Channels</TableCell>
 											<TableCell align="right" sx={{ fontWeight: 600 }}>
 												Created
+											</TableCell>
+											<TableCell align="right" sx={{ fontWeight: 600 }}>
+												Actions
 											</TableCell>
 										</TableRow>
 									</TableHead>
@@ -478,10 +483,25 @@ function ConfigurationPageContent(): React.JSX.Element {
 																})}
 															</Typography>
 														</TableCell>
+														<TableCell align="right" onClick={(e) => e.stopPropagation()}>
+															<Stack direction="row" spacing={0.5} sx={{ alignItems: "center", justifyContent: "flex-end" }}>
+																<IconButton
+																	onClick={(e) => {
+																		e.stopPropagation();
+																		handleDeleteAlertClick(config.id);
+																	}}
+																	size="small"
+																	title="Delete alert"
+																	sx={{ color: "error.main" }}
+																>
+																	<TrashIcon fontSize="var(--icon-fontSize-md)" />
+																</IconButton>
+															</Stack>
+														</TableCell>
 													</TableRow>
 													<TableRow>
 														<TableCell
-															colSpan={7}
+															colSpan={8}
 															sx={{
 																py: 0,
 																borderBottom: isExpanded ? "1px solid var(--mui-palette-divider)" : "none",

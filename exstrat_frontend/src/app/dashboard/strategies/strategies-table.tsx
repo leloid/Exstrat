@@ -20,6 +20,7 @@ import Typography from "@mui/material/Typography";
 import CircularProgress from "@mui/material/CircularProgress";
 import Chip from "@mui/material/Chip";
 import { PencilIcon } from "@phosphor-icons/react/dist/ssr/Pencil";
+import { TrashIcon } from "@phosphor-icons/react/dist/ssr/Trash";
 import { CaretDownIcon } from "@phosphor-icons/react/dist/ssr/CaretDown";
 import { CaretRightIcon } from "@phosphor-icons/react/dist/ssr/CaretRight";
 
@@ -446,16 +447,28 @@ function StrategyRow({
 					</Typography>
 				</TableCell>
 				<TableCell align="right" onClick={(e) => e.stopPropagation()}>
-					<IconButton
-						onClick={(e) => {
-							e.stopPropagation();
-							onEdit(row);
-						}}
-						size="small"
-						sx={{ padding: "4px" }}
-					>
-						<PencilIcon fontSize="var(--icon-fontSize-sm)" />
-					</IconButton>
+					<Stack direction="row" spacing={0.5} sx={{ alignItems: "center", justifyContent: "flex-end" }}>
+						<IconButton
+							onClick={(e) => {
+								e.stopPropagation();
+								onEdit(row);
+							}}
+							size="small"
+							sx={{ padding: "4px" }}
+						>
+							<PencilIcon fontSize="var(--icon-fontSize-sm)" />
+						</IconButton>
+						<IconButton
+							onClick={(e) => {
+								e.stopPropagation();
+								onDelete(row.id);
+							}}
+							size="small"
+							sx={{ padding: "4px", color: "error.main" }}
+						>
+							<TrashIcon fontSize="var(--icon-fontSize-sm)" />
+						</IconButton>
+					</Stack>
 				</TableCell>
 			</TableRow>
 			{isExpanded && row.steps && row.steps.length > 0 && (
