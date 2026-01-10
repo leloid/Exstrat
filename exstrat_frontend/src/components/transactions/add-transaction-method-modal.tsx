@@ -34,6 +34,7 @@ import { ArrowRightIcon } from "@phosphor-icons/react/dist/ssr/ArrowRight";
 import { DownloadIcon } from "@phosphor-icons/react/dist/ssr/Download";
 import { CheckCircleIcon } from "@phosphor-icons/react/dist/ssr/CheckCircle";
 import { XCircleIcon } from "@phosphor-icons/react/dist/ssr/XCircle";
+import Image from "next/image";
 import { CreateTransactionModal } from "./create-transaction-modal";
 import type { Portfolio } from "@/types/portfolio";
 import api from "@/lib/api";
@@ -308,22 +309,49 @@ export function AddTransactionMethodModal({
 							<CardActionArea onClick={() => setSelectedMethod("csv")}>
 								<CardContent>
 									<Stack direction="row" spacing={2} sx={{ alignItems: "center" }}>
-										<Avatar
+										<Box
 											sx={{
-												bgcolor: "var(--mui-palette-success-main)",
-												color: "white",
 												width: 56,
 												height: 56,
+												borderRadius: 2,
+												overflow: "hidden",
+												display: "flex",
+												alignItems: "center",
+												justifyContent: "center",
+												bgcolor: "var(--mui-palette-background-paper)",
+												border: "1px solid var(--mui-palette-divider)",
 											}}
 										>
-											<FileCsvIcon fontSize="var(--icon-fontSize-lg)" />
-										</Avatar>
+											<Box
+												component="img"
+												src="/logo_dark.svg"
+												alt="Exstrat"
+												sx={{
+													width: 48,
+													height: 48,
+													objectFit: "contain",
+												}}
+											/>
+										</Box>
 										<Box sx={{ flex: 1 }}>
-											<Typography variant="h6" sx={{ fontWeight: 600 }}>
-												Import CSV
-											</Typography>
+											<Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
+												<Typography variant="h6" sx={{ fontWeight: 600 }}>
+													Import CSV
+												</Typography>
+												<Chip
+													label="Custom"
+													size="small"
+													sx={{
+														height: 20,
+														fontSize: "0.65rem",
+														fontWeight: 600,
+														bgcolor: "var(--mui-palette-primary-main)",
+														color: "white",
+													}}
+												/>
+											</Stack>
 											<Typography color="text.secondary" variant="body2">
-												Import multiple transactions from a CSV file
+												Import multiple transactions using our CSV template
 											</Typography>
 										</Box>
 										<ArrowRightIcon fontSize="var(--icon-fontSize-lg)" color="var(--mui-palette-text-secondary)" />
