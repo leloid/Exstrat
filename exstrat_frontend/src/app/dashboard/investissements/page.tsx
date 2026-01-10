@@ -46,6 +46,7 @@ import { MagnifyingGlassIcon } from "@phosphor-icons/react/dist/ssr/MagnifyingGl
 import { PencilIcon } from "@phosphor-icons/react/dist/ssr/Pencil";
 import { PlusIcon } from "@phosphor-icons/react/dist/ssr/Plus";
 import { TrashIcon } from "@phosphor-icons/react/dist/ssr/Trash";
+import { NoteIcon } from "@phosphor-icons/react/dist/ssr/Note";
 import { TrendDownIcon } from "@phosphor-icons/react/dist/ssr/TrendDown";
 import { TrendUpIcon } from "@phosphor-icons/react/dist/ssr/TrendUp";
 import { WalletIcon } from "@phosphor-icons/react/dist/ssr/Wallet";
@@ -2242,9 +2243,21 @@ export default function Page(): React.JSX.Element {
 												<Typography variant="body2">{transaction.portfolio?.name || "-"}</Typography>
 											</TableCell>
 											<TableCell align="right">
-												<IconButton onClick={() => openEditTransaction(transaction)} size="small">
-													<PencilIcon fontSize="var(--icon-fontSize-sm)" />
-												</IconButton>
+												<Stack direction="row" spacing={0.5} sx={{ alignItems: "center", justifyContent: "flex-end" }}>
+													{transaction.notes && transaction.notes.trim() && (
+														<MuiTooltip title={transaction.notes} arrow placement="top">
+															<IconButton size="small" sx={{ color: "text.secondary" }}>
+																<NoteIcon fontSize="var(--icon-fontSize-sm)" />
+															</IconButton>
+														</MuiTooltip>
+													)}
+													<IconButton onClick={() => openEditTransaction(transaction)} size="small">
+														<PencilIcon fontSize="var(--icon-fontSize-sm)" />
+													</IconButton>
+													<IconButton onClick={() => handleDeleteTransaction(transaction.id)} size="small" sx={{ color: "error.main" }}>
+														<TrashIcon fontSize="var(--icon-fontSize-sm)" />
+													</IconButton>
+												</Stack>
 											</TableCell>
 										</TableRow>
 									))}
