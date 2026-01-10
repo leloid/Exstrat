@@ -279,21 +279,9 @@ export function CreateTransactionModal({
 
 	return (
 		<Dialog fullWidth maxWidth="md" onClose={onClose} open={open}>
-			<DialogTitle>
-				<Stack direction="row" spacing={2} sx={{ alignItems: "center" }}>
-					<Avatar
-						sx={{
-							bgcolor: transactionType === "BUY" ? "success.main" : "error.main",
-							color: "white",
-						}}
-					>
-						{transactionType === "BUY" ? (
-							<TrendUpIcon fontSize="var(--icon-fontSize-lg)" />
-						) : (
-							<TrendDownIcon fontSize="var(--icon-fontSize-lg)" />
-						)}
-					</Avatar>
-					<Box sx={{ flex: 1 }}>
+			<DialogTitle sx={{ pb: 2, pt: 3, px: 3 }}>
+				<Stack direction="row" spacing={2} sx={{ alignItems: "center", justifyContent: "space-between" }}>
+					<Box>
 						<Typography variant="h6">{editingTransaction ? "Edit Transaction" : "Create Transaction"}</Typography>
 						<Typography color="text.secondary" variant="body2">
 							{editingTransaction ? "Update your transaction details" : "Add a new transaction to your portfolio"}
@@ -304,7 +292,7 @@ export function CreateTransactionModal({
 					</IconButton>
 				</Stack>
 			</DialogTitle>
-			<DialogContent>
+			<DialogContent sx={{ px: 3, py: 2 }}>
 				<Stack spacing={4} sx={{ mt: 2 }}>
 					{error && (
 						<Box
@@ -366,26 +354,6 @@ export function CreateTransactionModal({
 											<Card variant="outlined" sx={{ mb: 3 }}>
 												<CardContent>
 													<Stack spacing={3}>
-														<Stack direction="row" spacing={2} sx={{ alignItems: "center" }}>
-															<Avatar
-																sx={{
-																	bgcolor: "primary.main",
-																	color: "white",
-																	width: 48,
-																	height: 48,
-																}}
-															>
-																<CoinsIcon fontSize="var(--icon-fontSize-lg)" />
-															</Avatar>
-															<Box sx={{ flex: 1 }}>
-																<Typography variant="h6" fontWeight={600}>
-																	Select Token
-																</Typography>
-																<Typography color="text.secondary" variant="body2">
-																	Choose the cryptocurrency for this transaction
-																</Typography>
-															</Box>
-														</Stack>
 														<TokenSearch
 															onTokenSelect={(token) => {
 																setSelectedToken(token);
@@ -468,28 +436,6 @@ export function CreateTransactionModal({
 											<Card variant="outlined" sx={{ mb: 3 }}>
 												<CardContent>
 													<Stack spacing={3}>
-														<Stack direction="row" spacing={2} sx={{ alignItems: "center" }}>
-															<Avatar
-																sx={{
-																	bgcolor: "primary.main",
-																	color: "white",
-																	width: 48,
-																	height: 48,
-																}}
-															>
-																<WalletIcon fontSize="var(--icon-fontSize-lg)" />
-															</Avatar>
-															<Box sx={{ flex: 1 }}>
-																<Typography variant="h6" fontWeight={600}>
-																	Transaction Details
-																</Typography>
-																<Typography color="text.secondary" variant="body2">
-																	Configure your transaction parameters
-																</Typography>
-															</Box>
-														</Stack>
-
-														<Divider />
 
 														<Grid container spacing={2.5}>
 															<Grid size={{ xs: 12, sm: 6 }}>
@@ -530,18 +476,8 @@ export function CreateTransactionModal({
 																		onChange={(e) => setTransactionType(e.target.value as "BUY" | "SELL")}
 																		value={transactionType}
 																	>
-																		<MenuItem value="BUY">
-																			<Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
-																				<TrendUpIcon />
-																				<span>BUY</span>
-																			</Stack>
-																		</MenuItem>
-																		<MenuItem value="SELL">
-																			<Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
-																				<TrendDownIcon />
-																				<span>SELL</span>
-																			</Stack>
-																		</MenuItem>
+																		<MenuItem value="BUY">BUY</MenuItem>
+																		<MenuItem value="SELL">SELL</MenuItem>
 																	</Select>
 																</FormControl>
 															</Grid>
@@ -746,7 +682,6 @@ export function CreateTransactionModal({
 																	</Typography>
 																	<Chip
 																		color={transactionType === "BUY" ? "success" : "error"}
-																		icon={transactionType === "BUY" ? <TrendUpIcon /> : <TrendDownIcon />}
 																		label={transactionType}
 																		size="medium"
 																		sx={{ fontWeight: 600 }}
