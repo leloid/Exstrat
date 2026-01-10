@@ -21,8 +21,6 @@ import Avatar from "@mui/material/Avatar";
 import { ChartPieIcon } from "@phosphor-icons/react/dist/ssr/ChartPie";
 import { MagnifyingGlassIcon } from "@phosphor-icons/react/dist/ssr/MagnifyingGlass";
 import { PlusIcon } from "@phosphor-icons/react/dist/ssr/Plus";
-import { WalletIcon } from "@phosphor-icons/react/dist/ssr/Wallet";
-import { ArrowRightIcon } from "@phosphor-icons/react/dist/ssr/ArrowRight";
 import { PencilIcon } from "@phosphor-icons/react/dist/ssr/Pencil";
 import { TrashIcon } from "@phosphor-icons/react/dist/ssr/Trash";
 import { WarningIcon } from "@phosphor-icons/react/dist/ssr/Warning";
@@ -30,8 +28,6 @@ import { WarningIcon } from "@phosphor-icons/react/dist/ssr/Warning";
 import { strategiesApi } from "@/lib/strategies-api";
 import { getPortfolios, getPortfolioHoldings } from "@/lib/portfolios-api";
 import { transactionsApi } from "@/lib/transactions-api";
-import { usePortfolio } from "@/contexts/PortfolioContext";
-import { useRouter } from "next/navigation";
 import { formatCurrency, formatPercentage } from "@/lib/format";
 import type { StrategyResponse } from "@/types/strategies";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
@@ -51,8 +47,6 @@ export default function Page(): React.JSX.Element {
 }
 
 function StrategiesPageContent(): React.JSX.Element {
-	const router = useRouter();
-	const { portfolios, isLoading: portfoliosLoading } = usePortfolio();
 	const [strategies, setStrategies] = React.useState<StrategyResponse[]>([]);
 	const [totalStrategies, setTotalStrategies] = React.useState(0);
 	const [isLoading, setIsLoading] = React.useState(true);
@@ -65,7 +59,6 @@ function StrategiesPageContent(): React.JSX.Element {
 	const [tokenPrices, setTokenPrices] = React.useState<Map<string, number>>(new Map());
 	const [showDeleteMultipleStrategiesModal, setShowDeleteMultipleStrategiesModal] = React.useState(false);
 	const [expandedStrategyId, setExpandedStrategyId] = React.useState<string | null>(null);
-	const [transactions, setTransactions] = React.useState<any[]>([]);
 	
 	// Pagination states
 	const [page, setPage] = React.useState(0);
@@ -108,19 +101,6 @@ function StrategiesPageContent(): React.JSX.Element {
 			console.error("Error loading strategies for search:", error);
 		}
 	}, [debouncedSearchQuery]);
-
-	// Load transactions
-	React.useEffect(() => {
-		const loadTransactions = async () => {
-			try {
-				const response = await transactionsApi.getTransactions({ limit: 100 });
-				setTransactions(response.transactions || []);
-			} catch (error) {
-				console.error("Error loading transactions:", error);
-			}
-		};
-		loadTransactions();
-	}, []);
 
 	// Load strategies on mount and when filters change
 	React.useEffect(() => {
@@ -315,24 +295,6 @@ function StrategiesPageContent(): React.JSX.Element {
 
 	const displayStrategies = filteredStrategies;
 	const hasStrategies = totalStrategies > 0;
-	const hasPortfolios = portfolios.length > 0;
-	const hasTransactions = transactions.length > 0;
-
-	// Show loading state
-	if (isLoading || portfoliosLoading) {
-		return (
-			<Box
-				sx={{
-					alignItems: "center",
-					display: "flex",
-					justifyContent: "center",
-					minHeight: "400px",
-				}}
-			>
-				<CircularProgress />
-			</Box>
-		);
-	}
 
 	return (
 		<Box
@@ -345,161 +307,42 @@ function StrategiesPageContent(): React.JSX.Element {
 		>
 			<Stack spacing={4}>
 				{/* Header */}
-				{hasPortfolios && hasTransactions && (
-					<Stack direction={{ xs: "column", sm: "row" }} spacing={3} sx={{ alignItems: "flex-start" }}>
-						<Box sx={{ flex: "1 1 auto" }} />
-						<Button onClick={handleCreateStrategy} startIcon={<PlusIcon />} variant="contained">
-							Create Strategy
-						</Button>
-					</Stack>
-				)}
+				<Stack direction={{ xs: "column", sm: "row" }} spacing={3} sx={{ alignItems: "flex-start" }}>
+					<Box sx={{ flex: "1 1 auto" }} />
+					<Button onClick={handleCreateStrategy} startIcon={<PlusIcon />} variant="contained">
+						Create Strategy
+					</Button>
+				</Stack>
 
-				{/* Empty States with Conditions */}
-				{!hasPortfolios ? (
-					<Card
-						sx={{
-							py: { xs: 6, sm: 8 },
-							px: { xs: 3, sm: 4 },
-							textAlign: "center",
-							background: (theme) =>
-								theme.palette.mode === "dark"
-									? "linear-gradient(135deg, rgba(156, 39, 176, 0.1) 0%, rgba(25, 118, 210, 0.1) 100%)"
-									: "linear-gradient(135deg, rgba(156, 39, 176, 0.05) 0%, rgba(25, 118, 210, 0.05) 100%)",
-							border: (theme) =>
-								theme.palette.mode === "dark"
-									? "1px solid rgba(156, 39, 176, 0.2)"
-									: "1px solid rgba(156, 39, 176, 0.1)",
-							borderRadius: 3,
-						}}
-					>
-						<Stack spacing={3} sx={{ alignItems: "center", maxWidth: 500, mx: "auto" }}>
-							<Box
-								sx={{
-									width: 80,
-									height: 80,
-									borderRadius: "50%",
-									bgcolor: "var(--mui-palette-background-level1)",
-									display: "flex",
-									alignItems: "center",
-									justifyContent: "center",
-								}}
-							>
-								<WalletIcon fontSize="var(--icon-fontSize-xl)" />
-							</Box>
-							<Stack spacing={1}>
-								<Typography variant="h5" sx={{ fontWeight: 600 }}>
-									No Wallet Found
-								</Typography>
-								<Typography color="text.secondary" variant="body2">
-									Create your first wallet before creating a strategy.
-								</Typography>
+				{/* Strategies Table */}
+				{!hasStrategies ? (
+					<Card>
+						<CardContent sx={{ py: 8, textAlign: "center" }}>
+							<Stack spacing={2} sx={{ alignItems: "center" }}>
+								<Box
+									sx={{
+										alignItems: "center",
+										bgcolor: "var(--mui-palette-background-level1)",
+										borderRadius: "50%",
+										display: "flex",
+										height: "64px",
+										justifyContent: "center",
+										width: "64px",
+									}}
+								>
+									<ChartPieIcon fontSize="var(--icon-fontSize-xl)" />
+								</Box>
+								<Stack spacing={1}>
+									<Typography variant="h6">No Strategies</Typography>
+									<Typography color="text.secondary" variant="body2">
+										Create your first automated profit-taking strategy to get started.
+									</Typography>
+								</Stack>
+									<Button onClick={handleCreateStrategy} startIcon={<PlusIcon />} variant="contained">
+									Create Strategy
+									</Button>
 							</Stack>
-							<Button
-								onClick={() => router.push("/dashboard/investissements")}
-								variant="contained"
-								size="large"
-								startIcon={<WalletIcon />}
-								endIcon={<ArrowRightIcon />}
-								sx={{ px: 3, py: 1.5 }}
-							>
-								Create My First Wallet
-							</Button>
-						</Stack>
-					</Card>
-				) : !hasTransactions ? (
-					<Card
-						sx={{
-							py: { xs: 6, sm: 8 },
-							px: { xs: 3, sm: 4 },
-							textAlign: "center",
-							background: (theme) =>
-								theme.palette.mode === "dark"
-									? "linear-gradient(135deg, rgba(156, 39, 176, 0.1) 0%, rgba(25, 118, 210, 0.1) 100%)"
-									: "linear-gradient(135deg, rgba(156, 39, 176, 0.05) 0%, rgba(25, 118, 210, 0.05) 100%)",
-							border: (theme) =>
-								theme.palette.mode === "dark"
-									? "1px solid rgba(156, 39, 176, 0.2)"
-									: "1px solid rgba(156, 39, 176, 0.1)",
-							borderRadius: 3,
-						}}
-					>
-						<Stack spacing={3} sx={{ alignItems: "center", maxWidth: 500, mx: "auto" }}>
-							<Box
-								sx={{
-									width: 80,
-									height: 80,
-									borderRadius: "50%",
-									bgcolor: "var(--mui-palette-background-level1)",
-									display: "flex",
-									alignItems: "center",
-									justifyContent: "center",
-								}}
-							>
-								<ChartPieIcon fontSize="var(--icon-fontSize-xl)" />
-							</Box>
-							<Stack spacing={1}>
-								<Typography variant="h5" sx={{ fontWeight: 600 }}>
-									No Transactions Found
-								</Typography>
-								<Typography color="text.secondary" variant="body2">
-									Add at least one transaction before creating a strategy.
-								</Typography>
-							</Stack>
-							<Button
-								onClick={() => router.push("/dashboard/investissements")}
-								variant="contained"
-								size="large"
-								startIcon={<PlusIcon />}
-								endIcon={<ArrowRightIcon />}
-								sx={{ px: 3, py: 1.5 }}
-							>
-								Go to Investments Page
-							</Button>
-						</Stack>
-					</Card>
-				) : !hasStrategies ? (
-					<Card
-						sx={{
-							py: { xs: 6, sm: 8 },
-							px: { xs: 3, sm: 4 },
-							textAlign: "center",
-							background: (theme) =>
-								theme.palette.mode === "dark"
-									? "linear-gradient(135deg, rgba(156, 39, 176, 0.1) 0%, rgba(25, 118, 210, 0.1) 100%)"
-									: "linear-gradient(135deg, rgba(156, 39, 176, 0.05) 0%, rgba(25, 118, 210, 0.05) 100%)",
-							border: (theme) =>
-								theme.palette.mode === "dark"
-									? "1px solid rgba(156, 39, 176, 0.2)"
-									: "1px solid rgba(156, 39, 176, 0.1)",
-							borderRadius: 3,
-						}}
-					>
-						<Stack spacing={3} sx={{ alignItems: "center", maxWidth: 500, mx: "auto" }}>
-							<Box
-								sx={{
-									width: 80,
-									height: 80,
-									borderRadius: "50%",
-									bgcolor: "var(--mui-palette-background-level1)",
-									display: "flex",
-									alignItems: "center",
-									justifyContent: "center",
-								}}
-							>
-								<ChartPieIcon fontSize="var(--icon-fontSize-xl)" />
-							</Box>
-							<Stack spacing={1}>
-								<Typography variant="h5" sx={{ fontWeight: 600 }}>
-									No Strategies
-								</Typography>
-								<Typography color="text.secondary" variant="body2">
-									Create your first automated profit-taking strategy to get started.
-								</Typography>
-							</Stack>
-							<Button onClick={handleCreateStrategy} startIcon={<PlusIcon />} variant="contained" size="large" sx={{ px: 3, py: 1.5 }}>
-								Create Strategy
-							</Button>
-						</Stack>
+						</CardContent>
 					</Card>
 				) : displayStrategies.length === 0 ? (
 					<Card>

@@ -932,6 +932,7 @@ export default function Page(): React.JSX.Element {
 		}
 	};
 
+
 	const openEditPortfolio = (portfolio: PortfolioData) => {
 		setEditingPortfolioId(portfolio.id);
 		setPortfolioFormData({
