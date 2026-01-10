@@ -1339,16 +1339,6 @@ export default function Page(): React.JSX.Element {
 						</Button>
 						<Stack direction={{ xs: "column", sm: "row" }} spacing={{ xs: 1, sm: 2 }} sx={{ width: { xs: "100%", sm: "auto" } }}>
 							<Button
-								onClick={() => {
-									setShowAddTransactionMethodModal(true);
-								}}
-								startIcon={<PlusIcon />}
-								variant="contained"
-								sx={{ width: { xs: "100%", sm: "auto" } }}
-							>
-								Add Transaction
-							</Button>
-							<Button
 								onClick={() => setShowSelectExchangeModal(true)}
 								startIcon={<PlugsConnectedIcon />}
 								variant="outlined"
@@ -1387,6 +1377,16 @@ export default function Page(): React.JSX.Element {
 								}}
 							>
 								Import CSV
+							</Button>
+							<Button
+								onClick={() => {
+									setShowAddTransactionMethodModal(true);
+								}}
+								startIcon={<PlusIcon />}
+								variant="contained"
+								sx={{ width: { xs: "100%", sm: "auto" } }}
+							>
+								Add Transaction
 							</Button>
 						</Stack>
 					</Stack>
