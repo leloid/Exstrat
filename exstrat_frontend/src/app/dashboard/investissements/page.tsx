@@ -54,6 +54,7 @@ import { XIcon } from "@phosphor-icons/react/dist/ssr/X";
 import { GlobeIcon } from "@phosphor-icons/react/dist/ssr/Globe";
 import { ChartLineIcon } from "@phosphor-icons/react/dist/ssr/ChartLine";
 import { PlugsConnectedIcon } from "@phosphor-icons/react/dist/ssr/PlugsConnected";
+import { FileCsvIcon } from "@phosphor-icons/react/dist/ssr/FileCsv";
 import MuiTooltip from "@mui/material/Tooltip";
 
 import { usePortfolio } from "@/contexts/PortfolioContext";
@@ -65,6 +66,7 @@ import { TokenSearch } from "@/components/transactions/token-search";
 import { CreateTransactionModal } from "@/components/transactions/create-transaction-modal";
 import { AddTransactionMethodModal } from "@/components/transactions/add-transaction-method-modal";
 import { SelectExchangeModal, type ExchangeType } from "@/components/exchanges/select-exchange-modal";
+import { SelectCsvModal } from "@/components/exchanges/select-csv-modal";
 import { ImportCsvModal } from "@/components/exchanges/import-csv-modal";
 import { toast } from "@/components/core/toaster";
 import type { Holding, CreatePortfolioDto, UpdatePortfolioDto } from "@/types/portfolio";
@@ -165,6 +167,7 @@ export default function Page(): React.JSX.Element {
 	const [showDeleteWalletModal, setShowDeleteWalletModal] = React.useState(false);
 	const [walletToDelete, setWalletToDelete] = React.useState<string | null>(null);
 	const [showSelectExchangeModal, setShowSelectExchangeModal] = React.useState(false);
+	const [showSelectCsvModal, setShowSelectCsvModal] = React.useState(false);
 	const [showImportCsvModal, setShowImportCsvModal] = React.useState(false);
 	const [selectedExchange, setSelectedExchange] = React.useState<ExchangeType | null>(null);
 	const [showAddTransactionMethodModal, setShowAddTransactionMethodModal] = React.useState(false);
@@ -1309,32 +1312,41 @@ export default function Page(): React.JSX.Element {
 			) : (
 				<Stack spacing={{ xs: 2, sm: 3, md: 4 }}>
 					{/* Header */}
-					<Stack direction={{ xs: "column", sm: "row" }} spacing={{ xs: 2, sm: 3 }} sx={{ alignItems: "flex-start" }}>
-						<Box sx={{ flex: "1 1 auto", width: { xs: "100%", sm: "auto" } }} />
+					<Stack direction={{ xs: "column", sm: "row" }} spacing={{ xs: 2, sm: 3 }} sx={{ alignItems: "flex-start", justifyContent: "space-between" }}>
+						<Button
+							onClick={() => {
+								setEditingPortfolioId(null);
+								setPortfolioFormData({ name: "", description: "", isDefault: false });
+								setShowPortfolioDialog(true);
+							}}
+							startIcon={<WalletIcon />}
+							variant="outlined"
+							sx={{
+								width: { xs: "100%", sm: "auto" },
+								color: "primary.main",
+								borderColor: "primary.main",
+								"&:hover": {
+									backgroundColor: "primary.main",
+									borderColor: "primary.main",
+									color: "primary.contrastText",
+									"& .MuiSvgIcon-root": {
+										color: "primary.contrastText",
+									},
+								},
+							}}
+						>
+							Add Wallet
+						</Button>
 						<Stack direction={{ xs: "column", sm: "row" }} spacing={{ xs: 1, sm: 2 }} sx={{ width: { xs: "100%", sm: "auto" } }}>
 							<Button
 								onClick={() => {
-									setEditingPortfolioId(null);
-									setPortfolioFormData({ name: "", description: "", isDefault: false });
-									setShowPortfolioDialog(true);
+									setShowAddTransactionMethodModal(true);
 								}}
-								startIcon={<WalletIcon />}
-								variant="outlined"
-								sx={{
-									width: { xs: "100%", sm: "auto" },
-									color: "primary.main",
-									borderColor: "primary.main",
-									"&:hover": {
-										backgroundColor: "primary.main",
-										borderColor: "primary.main",
-										color: "primary.contrastText",
-										"& .MuiSvgIcon-root": {
-											color: "primary.contrastText",
-										},
-									},
-								}}
+								startIcon={<PlusIcon />}
+								variant="contained"
+								sx={{ width: { xs: "100%", sm: "auto" } }}
 							>
-								Add Wallet
+								Add Transaction
 							</Button>
 							<Button
 								onClick={() => setShowSelectExchangeModal(true)}
@@ -1357,14 +1369,24 @@ export default function Page(): React.JSX.Element {
 								Add Exchange
 							</Button>
 							<Button
-								onClick={() => {
-									setShowAddTransactionMethodModal(true);
+								onClick={() => setShowSelectCsvModal(true)}
+								startIcon={<FileCsvIcon />}
+								variant="outlined"
+								sx={{
+									width: { xs: "100%", sm: "auto" },
+									color: "secondary.main",
+									borderColor: "secondary.main",
+									"&:hover": {
+										backgroundColor: "secondary.main",
+										borderColor: "secondary.main",
+										color: "secondary.contrastText",
+										"& .MuiSvgIcon-root": {
+											color: "secondary.contrastText",
+										},
+									},
 								}}
-								startIcon={<PlusIcon />}
-								variant="contained"
-								sx={{ width: { xs: "100%", sm: "auto" } }}
 							>
-								Add Transaction
+								Import CSV
 							</Button>
 						</Stack>
 					</Stack>
@@ -1903,23 +1925,30 @@ export default function Page(): React.JSX.Element {
 							<Stack direction="row" spacing={2} sx={{ alignItems: "center", flexWrap: "wrap" }}>
 								<PlusIcon fontSize="var(--icon-fontSize-lg)" />
 								<Typography variant="h6">Transactions</Typography>
-								<FormControl size="small" sx={{ minWidth: 150 }}>
-									<Select
-										value={transactionWalletFilter}
-										onChange={(e) => {
-											setTransactionWalletFilter(e.target.value);
-											setTransactionPage(0); // Reset to first page on filter change
-										}}
-										displayEmpty
-									>
-										<MenuItem value="global">Global</MenuItem>
-										{portfolios.map((portfolio) => (
-											<MenuItem key={portfolio.id} value={portfolio.id}>
-												{portfolio.name}
-											</MenuItem>
-										))}
-									</Select>
-								</FormControl>
+								{portfolios.length >= 2 && (
+									<Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
+										<Typography variant="caption" color="text.secondary" sx={{ fontSize: "0.75rem" }}>
+											Wallet filter
+										</Typography>
+										<FormControl size="small" sx={{ minWidth: 150 }}>
+											<Select
+												value={transactionWalletFilter}
+												onChange={(e) => {
+													setTransactionWalletFilter(e.target.value);
+													setTransactionPage(0); // Reset to first page on filter change
+												}}
+												displayEmpty
+											>
+												<MenuItem value="global">Global</MenuItem>
+												{portfolios.map((portfolio) => (
+													<MenuItem key={portfolio.id} value={portfolio.id}>
+														{portfolio.name}
+													</MenuItem>
+												))}
+											</Select>
+										</FormControl>
+									</Stack>
+								)}
 								{selectedTransactionIds.size > 0 && (
 									<Button
 										color="error"
@@ -1932,21 +1961,23 @@ export default function Page(): React.JSX.Element {
 									</Button>
 								)}
 							</Stack>
-							<OutlinedInput
-								onChange={(e) => {
-									setTransactionSearchQuery(e.target.value);
-									setTransactionPage(0); // Reset to first page on search
-								}}
-								placeholder="Search transactions..."
-								size="small"
-								startAdornment={
-									<InputAdornment position="start">
-										<MagnifyingGlassIcon fontSize="var(--icon-fontSize-md)" />
-									</InputAdornment>
-								}
-								sx={{ maxWidth: "300px" }}
-								value={transactionSearchQuery}
-							/>
+							{transactions.length > 0 && (
+								<OutlinedInput
+									onChange={(e) => {
+										setTransactionSearchQuery(e.target.value);
+										setTransactionPage(0); // Reset to first page on search
+									}}
+									placeholder="Search transactions..."
+									size="small"
+									startAdornment={
+										<InputAdornment position="start">
+											<MagnifyingGlassIcon fontSize="var(--icon-fontSize-md)" />
+										</InputAdornment>
+									}
+									sx={{ maxWidth: "300px" }}
+									value={transactionSearchQuery}
+								/>
+							)}
 						</Stack>
 						{loadingTransactions ? (
 							<Box sx={{ py: 8, textAlign: "center" }}>
@@ -2659,11 +2690,22 @@ export default function Page(): React.JSX.Element {
 					if (method === "csv") {
 						setSelectedExchange(exchange);
 						setShowSelectExchangeModal(false);
-						setShowImportCsvModal(true);
+						// Pour tous les exchanges, afficher un message "coming soon"
+						toast.info(`${exchange} CSV import coming soon!`);
 					} else {
 						// API connection - coming soon
 						toast.info("API connection coming soon!");
 					}
+				}}
+			/>
+			<SelectCsvModal
+				open={showSelectCsvModal}
+				onClose={() => setShowSelectCsvModal(false)}
+				onSelectExchange={(exchange) => {
+					// Seul Exstrat est disponible, ouvrir directement le modal d'import CSV
+					setSelectedExchange(exchange);
+					setShowSelectCsvModal(false);
+					setShowImportCsvModal(true);
 				}}
 			/>
 			{selectedExchange && (
