@@ -24,7 +24,7 @@ export class EmailService {
     this.logger.log(`Email service configured with FROM: ${this.fromEmail}`);
     
     if (!apiKey) {
-      this.logger.warn('⚠️ RESEND_API_KEY is missing. Emails will not be sent.');
+      this.logger.warn('RESEND_API_KEY is missing. Emails will not be sent.');
     }
   }
 
@@ -49,7 +49,7 @@ export class EmailService {
       data;
 
     try {
-      const subject = `🎯 Target Price Reached - ${tokenSymbol} Strategy`;
+      const subject = `Target Price Reached - ${tokenSymbol} Strategy`;
       const html = this.generateStrategyAlertEmail({
         userName,
         strategyName,
@@ -102,7 +102,7 @@ export class EmailService {
     const { to, userName, tokenSymbol, currentPrice, targetPrice, tpOrder } = data;
 
     try {
-      const subject = `🎯 TP${tpOrder} Reached - ${tokenSymbol}`;
+      const subject = `TP${tpOrder} Reached - ${tokenSymbol}`;
       const html = this.generateTPAlertEmail({
         userName,
         tokenSymbol,
@@ -323,7 +323,7 @@ export class EmailService {
                   </defs>
                 </svg>
               </div>
-              <h1 class="header-title">🎯 Target Price Reached!</h1>
+              <h1 class="header-title">Target Price Reached</h1>
             </div>
             <div class="content">
               <p class="greeting">Hello ${userName},</p>
@@ -357,7 +357,7 @@ export class EmailService {
             </div>
             <div class="footer">
               <p class="footer-text">
-                This is an automated alert from <strong>ExStrat</strong>.<br>
+                This is an automated alert from <strong>exStrat</strong>.<br>
                 You can manage your alerts in your <a href="https://app.exstrat.com/configuration" class="footer-link">account settings</a>.
               </p>
             </div>
@@ -554,7 +554,7 @@ export class EmailService {
                   </defs>
                 </svg>
               </div>
-              <h1 class="header-title">🎯 TP${tpOrder} Reached!</h1>
+              <h1 class="header-title">TP${tpOrder} Reached</h1>
             </div>
             <div class="content">
               <p class="greeting">Hello ${userName},</p>
@@ -584,7 +584,7 @@ export class EmailService {
             </div>
             <div class="footer">
               <p class="footer-text">
-                This is an automated alert from <strong>ExStrat</strong>.<br>
+                This is an automated alert from <strong>exStrat</strong>.<br>
                 You can manage your alerts in your <a href="https://app.exstrat.com/configuration" class="footer-link">account settings</a>.
               </p>
             </div>
@@ -609,7 +609,7 @@ export class EmailService {
     const { to, resetUrl } = data;
 
     try {
-      const subject = '🔐 Réinitialisation de votre mot de passe ExStrat';
+      const subject = 'Réinitialisation de votre mot de passe exStrat';
       const html = this.generatePasswordResetEmail({ resetUrl });
 
       this.logger.log(`Attempting to send password reset email to ${to} from ${this.fromEmail}`);
@@ -648,7 +648,7 @@ export class EmailService {
         <head>
           <meta charset="UTF-8">
           <meta name="viewport" content="width=device-width, initial-scale=1.0">
-          <title>Réinitialisation de mot de passe - ExStrat</title>
+          <title>Réinitialisation de mot de passe - exStrat</title>
           <style>
             body {
               font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
@@ -798,18 +798,18 @@ export class EmailService {
                   </defs>
                 </svg>
               </div>
-              <h1 class="header-title">🔐 Réinitialisation de mot de passe</h1>
+              <h1 class="header-title">Réinitialisation de mot de passe</h1>
             </div>
             <div class="content">
               <p class="greeting">Bonjour,</p>
               <p class="message">
-                Vous avez demandé à réinitialiser votre mot de passe pour votre compte ExStrat.
+                Vous avez demandé à réinitialiser votre mot de passe pour votre compte exStrat.
                 Cliquez sur le bouton ci-dessous pour créer un nouveau mot de passe.
               </p>
               
               <div class="info-card">
                 <p class="info-text">
-                  <strong>⚠️ Important :</strong> Ce lien est valide pendant 1 heure uniquement.
+                  <strong>Important :</strong> Ce lien est valide pendant 1 heure uniquement.
                   Si vous n'avez pas demandé cette réinitialisation, ignorez cet email.
                 </p>
               </div>
@@ -825,7 +825,7 @@ export class EmailService {
             </div>
             <div class="footer">
               <p class="footer-text">
-                Cet email a été envoyé automatiquement par <strong>ExStrat</strong>.<br>
+                Cet email a été envoyé automatiquement par <strong>exStrat</strong>.<br>
                 Si vous n'avez pas demandé cette réinitialisation, vous pouvez ignorer cet email en toute sécurité.
               </p>
             </div>
@@ -850,7 +850,7 @@ export class EmailService {
     const { to, verificationUrl } = data;
 
     try {
-      const subject = '✅ Vérifiez votre adresse email - ExStrat';
+      const subject = 'Vérifiez votre adresse email - exStrat';
       const html = this.generateVerificationEmail({ verificationUrl });
 
       this.logger.log(`Attempting to send verification email to ${to} from ${this.fromEmail}`);
@@ -889,7 +889,7 @@ export class EmailService {
         <head>
           <meta charset="UTF-8">
           <meta name="viewport" content="width=device-width, initial-scale=1.0">
-          <title>Vérification de votre email - ExStrat</title>
+          <title>Vérification de votre email - exStrat</title>
           <style>
             body {
               font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
@@ -1032,18 +1032,18 @@ export class EmailService {
                   </defs>
                 </svg>
               </div>
-              <h1 class="header-title">✅ Vérifiez votre email</h1>
+              <h1 class="header-title">Vérifiez votre email</h1>
             </div>
             <div class="content">
-              <p class="greeting">Bienvenue sur ExStrat !</p>
+              <p class="greeting">Bienvenue sur exStrat !</p>
               <p class="message">
-                Merci de vous être inscrit. Pour activer votre compte et commencer à utiliser ExStrat,
+                Merci de vous être inscrit. Pour activer votre compte et commencer à utiliser exStrat,
                 veuillez vérifier votre adresse email en cliquant sur le bouton ci-dessous.
               </p>
               
               <div class="info-card">
                 <p class="info-text">
-                  <strong>💡 Astuce :</strong> Ce lien est valide pendant 7 jours.
+                  <strong>Astuce :</strong> Ce lien est valide pendant 7 jours.
                   Si vous n'avez pas créé de compte, vous pouvez ignorer cet email.
                 </p>
               </div>
@@ -1059,7 +1059,7 @@ export class EmailService {
             </div>
             <div class="footer">
               <p class="footer-text">
-                Cet email a été envoyé automatiquement par <strong>ExStrat</strong>.<br>
+                Cet email a été envoyé automatiquement par <strong>exStrat</strong>.<br>
                 Si vous n'avez pas créé de compte, vous pouvez ignorer cet email en toute sécurité.
               </p>
             </div>
@@ -1086,7 +1086,7 @@ export class EmailService {
     const to = 'contact@exstrat.io';
 
     try {
-      const subject = `📝 Feedback from ${userName || from} - ExStrat`;
+      const subject = `Feedback from ${userName || from} - exStrat`;
       const html = this.generateFeedbackEmail({ from, userName, message });
 
       this.logger.log(`Attempting to send feedback email from ${from} to ${to}`);
@@ -1136,7 +1136,7 @@ export class EmailService {
         <table role="presentation" style="max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
           <tr>
             <td style="padding: 40px 30px; text-align: center; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 8px 8px 0 0;">
-              <h1 style="margin: 0; color: #ffffff; font-size: 24px; font-weight: 600;">📝 New Feedback</h1>
+              <h1 style="margin: 0; color: #ffffff; font-size: 24px; font-weight: 600;">New Feedback</h1>
             </td>
           </tr>
           <tr>
@@ -1158,7 +1158,7 @@ export class EmailService {
           <tr>
             <td style="padding: 20px 30px; text-align: center; background-color: #f8f9fa; border-radius: 0 0 8px 8px;">
               <p style="margin: 0; color: #999999; font-size: 12px;">
-                This feedback was sent from the ExStrat application.
+                This feedback was sent from the exStrat application.
               </p>
             </td>
           </tr>
