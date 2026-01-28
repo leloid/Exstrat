@@ -7,6 +7,8 @@ import { EmailService } from './email.service';
 import { Public } from '../auth/decorators/public.decorator';
 import { memoryStorage } from 'multer';
 
+type MulterFile = Express.Multer.File;
+
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 const MAX_FILES = 5;
 const ALLOWED_MIME_TYPES = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
@@ -120,7 +122,7 @@ export class EmailController {
       type: 'object',
       properties: {
         email: { type: 'string', format: 'email' },
-        name: { type: 'string', required: false },
+        name: { type: 'string' },
         message: { type: 'string' },
         images: {
           type: 'array',
@@ -158,7 +160,7 @@ export class EmailController {
   })
   async sendFeedback(
     @Body() feedbackDto: FeedbackDto,
-    @UploadedFiles() files?: Express.Multer.File[]
+    @UploadedFiles() files?: MulterFile[]
   ) {
     // Extract and validate data (FormData values are strings)
     const email = typeof feedbackDto.email === 'string' ? feedbackDto.email : String(feedbackDto.email || '');

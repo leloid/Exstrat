@@ -4,6 +4,8 @@ import { Resend } from 'resend';
 import * as fs from 'fs';
 import * as path from 'path';
 
+type MulterFile = Express.Multer.File;
+
 @Injectable()
 export class EmailService {
   private readonly logger = new Logger(EmailService.name);
@@ -1069,7 +1071,7 @@ export class EmailService {
     from: string;
     userName?: string;
     message: string;
-    images?: Express.Multer.File[];
+    images?: MulterFile[];
   }): Promise<void> {
     if (!this.resend) {
       this.logger.warn('Resend not configured, skipping email');
@@ -1115,7 +1117,7 @@ export class EmailService {
     from: string; 
     userName?: string; 
     message: string;
-    images?: Express.Multer.File[];
+    images?: MulterFile[];
   }): string {
     const { from, userName, message, images = [] } = data;
     const displayName = userName || from;

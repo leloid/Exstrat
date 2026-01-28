@@ -48,6 +48,7 @@ import { StrategyStatus } from "@/types/strategies";
 import { TokenSearch } from "@/components/transactions/token-search";
 import type { TokenSearchResult } from "@/types/transactions";
 import type { Portfolio, Holding } from "@/types/portfolio";
+import { toast } from "@/components/core/toaster";
 import { usePortfolio } from "@/contexts/PortfolioContext";
 import { Option } from "@/components/core/option";
 
@@ -119,6 +120,8 @@ export function CreateStrategyModal({ onClose, onSuccess, open }: CreateStrategy
 	const [rawTokenInputs, setRawTokenInputs] = React.useState<Record<number, string>>({});
 	const [focusedPercentageInput, setFocusedPercentageInput] = React.useState<number | null>(null);
 	const [focusedTokenInput, setFocusedTokenInput] = React.useState<number | null>(null);
+	// Local state for price input to allow empty field
+	const [rawPriceInputs, setRawPriceInputs] = React.useState<Record<number, string>>({});
 	const [investmentData, setInvestmentData] = React.useState<{
 		numberOfTransactions: number;
 		totalInvested: number;
@@ -206,6 +209,16 @@ export function CreateStrategyModal({ onClose, onSuccess, open }: CreateStrategy
 		loadAvailableQuantity();
 	}, [selectedPortfolioId, selectedToken, isVirtualWallet]);
 
+	// Set default average price from token price when token is selected (only for virtual wallets)
+	React.useEffect(() => {
+		if (isVirtualWallet && selectedToken && selectedToken.quote?.USD?.price) {
+			const tokenPrice = selectedToken.quote.USD.price;
+			// Only set default price for virtual wallets
+			// For real wallets, the average price comes from transactions (holding.averagePrice)
+			setStrategyAveragePrice(tokenPrice.toString());
+		}
+	}, [selectedToken, isVirtualWallet]);
+
 	// Load investment data when token and quantity are set
 	React.useEffect(() => {
 		const loadInvestmentData = async () => {
@@ -267,17 +280,19 @@ export function CreateStrategyModal({ onClose, onSuccess, open }: CreateStrategy
 				);
 
 				const currentPrice = holding?.currentPrice || selectedToken.quote?.USD?.price || avgPrice;
-				const totalInvested = portfolioTransactions.reduce((sum, t) => sum + (t.amountInvested || 0), 0);
+				const totalInvestedAll = portfolioTransactions.reduce((sum, t) => sum + (t.amountInvested || 0), 0);
 				const totalQuantity = portfolioTransactions.reduce((sum, t) => sum + (t.quantity || 0), 0);
-				const averagePrice = totalQuantity > 0 ? totalInvested / totalQuantity : avgPrice;
+				const averagePrice = totalQuantity > 0 ? totalInvestedAll / totalQuantity : avgPrice;
+				// Calculate invested amount proportionally to the selected quantity for strategy
+				const totalInvested = totalQuantity > 0 ? (totalInvestedAll / totalQuantity) * qty : qty * avgPrice;
 				const currentValue = qty * currentPrice;
 				const currentPNL = currentValue - totalInvested;
 				const currentPNLPercentage = totalInvested > 0 ? (currentPNL / totalInvested) * 100 : 0;
 
 				setInvestmentData({
 					numberOfTransactions: portfolioTransactions.length || 1,
-					totalInvested: totalInvested || qty * avgPrice,
-					totalQuantity: totalQuantity || qty,
+					totalInvested,
+					totalQuantity: qty, // Use selected quantity for strategy, not total quantity owned
 					averagePrice: averagePrice || avgPrice,
 					currentPrice,
 					currentPNL,
@@ -299,17 +314,38 @@ export function CreateStrategyModal({ onClose, onSuccess, open }: CreateStrategy
 			return;
 		}
 
+		// Get current token price (from step 2: choose token)
+		const currentTokenPrice = selectedToken?.quote?.USD?.price || parseFloat(strategyAveragePrice) || 0;
+
 		const newTargets: ProfitTarget[] = [];
 		for (let i = 0; i < numberOfTargets; i++) {
 			newTargets.push({
 				id: `target-${i}`,
-				targetType: "percentage",
-				targetValue: (i + 1) * 50, // 50%, 100%, 150%, etc.
+				targetType: "price",
+				targetValue: currentTokenPrice > 0 ? currentTokenPrice : 0, // Use current token price as default
 				sellPercentage: 0, // Start at 0, user can set custom percentages
 			});
 		}
 		setProfitTargets(newTargets);
-	}, [numberOfTargets]);
+	}, [numberOfTargets, selectedToken, strategyAveragePrice]);
+
+	// Get current token price (always use the real-time price from the token quote)
+	const currentTokenPrice = React.useMemo(() => {
+		const price = selectedToken?.quote?.USD?.price || investmentData?.currentPrice || parseFloat(strategyAveragePrice) || 0;
+		// Debug log to verify price is available
+		if (price > 0) {
+			console.log("Current token price:", price, "from:", selectedToken?.quote?.USD?.price ? "quote" : investmentData?.currentPrice ? "investmentData" : "strategyAveragePrice");
+		}
+		return price;
+	}, [selectedToken, investmentData, strategyAveragePrice]);
+
+	// Check if any price target is below current price
+	const hasInvalidPriceTarget = React.useMemo(() => {
+		if (profitTargets.length === 0 || currentTokenPrice <= 0) return false;
+		return profitTargets.some(
+			(target) => target.targetType === "price" && target.targetValue > 0 && target.targetValue < currentTokenPrice
+		);
+	}, [profitTargets, currentTokenPrice]);
 
 	// Calculate strategy info for each target
 	const strategyInfo = React.useMemo<StrategyInfo[]>(() => {
@@ -333,8 +369,8 @@ export function CreateStrategyModal({ onClose, onSuccess, open }: CreateStrategy
 				targetPrice = target.targetValue;
 			}
 
-			// Calculate tokens to sell
-			const tokensToSell = (remainingTokens * target.sellPercentage) / 100;
+			// Calculate tokens to sell - percentage of initial quantity, not remaining
+			const tokensToSell = (qty * target.sellPercentage) / 100;
 			const amountCollected = tokensToSell * targetPrice;
 			remainingTokens -= tokensToSell;
 
@@ -399,6 +435,19 @@ export function CreateStrategyModal({ onClose, onSuccess, open }: CreateStrategy
 			return;
 		}
 
+		// Validate that price targets are not below current price
+		if (currentTokenPrice > 0) {
+			const invalidTargets = profitTargets.filter(
+				(target) => target.targetType === "price" && target.targetValue > 0 && target.targetValue < currentTokenPrice
+			);
+
+			if (invalidTargets.length > 0) {
+				// Show error toast
+				toast.error(`Impossible: you cannot sell tokens at a price that has already been reached (current price: ${formatCurrency(currentTokenPrice, "$", 2)})`);
+				return;
+			}
+		}
+
 		setIsSubmitting(true);
 		try {
 			const strategyData: CreateStrategyDto = {
@@ -449,7 +498,7 @@ export function CreateStrategyModal({ onClose, onSuccess, open }: CreateStrategy
 		{ label: "Choose a token", key: "token" },
 		{ label: "Quantity to apply", key: "quantity" },
 		{ label: "Strategy name", key: "name" },
-		{ label: "Number of exits", key: "exits" },
+		{ label: "Exit Configuration", key: "exits" },
 		{ label: "Target Configuration", key: "targets" },
 	];
 
@@ -696,14 +745,6 @@ export function CreateStrategyModal({ onClose, onSuccess, open }: CreateStrategy
 																</Typography>
 															)}
 														</Stack>
-														<TextField
-															fullWidth
-															label="Average Price (USD)"
-															type="number"
-															value={strategyAveragePrice}
-															onChange={(e) => setStrategyAveragePrice(e.target.value)}
-															inputProps={{ step: "0.01" }}
-														/>
 														{strategyQuantity && parseFloat(strategyQuantity) > 0 && (
 															<Stack direction="row" spacing={2}>
 																<Button onClick={handleBack} variant="outlined">
@@ -740,14 +781,36 @@ export function CreateStrategyModal({ onClose, onSuccess, open }: CreateStrategy
 													</Stack>
 												)}
 
-												{/* Step 5: Number of Exits */}
+												{/* Step 5: Exit Configuration */}
 												{index === 4 && strategyName && (
 													<Stack spacing={2}>
-														<FormControl fullWidth>
-															<InputLabel>Number of exits</InputLabel>
+														<FormControl fullWidth disabled>
+															<InputLabel>Number of stop loss</InputLabel>
 															<Select
-																label="Number of exits"
+																label="Number of stop loss"
+																value=""
+																displayEmpty
+																renderValue={() => {
+																	return <Typography color="text.disabled">to be soon</Typography>;
+																}}
+															>
+																<Option value="" disabled>
+																	to be soon
+																</Option>
+															</Select>
+														</FormControl>
+														<FormControl fullWidth>
+															<InputLabel>Number of take profit</InputLabel>
+															<Select
+																label="Number of take profit"
 																value={numberOfTargets > 0 ? numberOfTargets.toString() : ""}
+																displayEmpty
+																renderValue={(value) => {
+																	if (!value || value === "") {
+																		return <Typography color="text.secondary">number of exit</Typography>;
+																	}
+																	return value;
+																}}
 																onChange={(e) => {
 																	const val = parseInt(e.target.value);
 																	if (!isNaN(val) && val >= 1 && val <= 6) {
@@ -758,7 +821,7 @@ export function CreateStrategyModal({ onClose, onSuccess, open }: CreateStrategy
 															>
 																{[1, 2, 3, 4, 5, 6].map((num) => (
 																	<Option key={num} value={num.toString()}>
-																		{num} {num === 1 ? "exit" : "exits"}
+																		{num}
 																	</Option>
 																))}
 															</Select>
@@ -788,12 +851,25 @@ export function CreateStrategyModal({ onClose, onSuccess, open }: CreateStrategy
 																		<Stack spacing={3}>
 																			{/* Target Header */}
 																			<Stack direction="row" spacing={2} sx={{ alignItems: "center", justifyContent: "space-between" }}>
-																				<Stack direction="row" spacing={2} sx={{ alignItems: "center" }}>
-																					<Avatar sx={{ bgcolor: "var(--mui-palette-primary-main)", width: 32, height: 32 }}>
+																				<Box
+																					sx={{
+																						display: "inline-flex",
+																						alignItems: "center",
+																						gap: 1,
+																						px: 2,
+																						py: 1,
+																						bgcolor: "primary.main",
+																						borderRadius: 1,
+																						color: "primary.contrastText",
+																					}}
+																				>
+																					<Typography variant="body2" sx={{ fontWeight: 700, fontSize: "0.875rem" }}>
 																						{targetIndex + 1}
-																					</Avatar>
-																					<Typography variant="subtitle1">Exit Target #{targetIndex + 1}</Typography>
-																				</Stack>
+																					</Typography>
+																					<Typography variant="body2" sx={{ fontWeight: 600, fontSize: "0.875rem" }}>
+																						Take Profit
+																					</Typography>
+																				</Box>
 																				<Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
 																					<Typography variant="body2">Percentage</Typography>
 																					<Switch
@@ -836,13 +912,91 @@ export function CreateStrategyModal({ onClose, onSuccess, open }: CreateStrategy
 																								</IconButton>
 																							</Stack>
 																						) : (
-																							<TextField
-																								fullWidth
-																								type="number"
-																								value={target.targetValue}
-																								onChange={(e) => handleTargetChange(targetIndex, "targetValue", parseFloat(e.target.value) || 0)}
-																								inputProps={{ step: "0.01" }}
-																							/>
+																							<>
+																								<TextField
+																									fullWidth
+																									type="number"
+																									value={rawPriceInputs[targetIndex] !== undefined ? rawPriceInputs[targetIndex] : (target.targetValue || "")}
+																									onChange={(e) => {
+																										const inputValue = e.target.value;
+																										// Store raw input value to allow empty field and prevent "0" prefix
+																										setRawPriceInputs((prev) => ({ ...prev, [targetIndex]: inputValue }));
+																										
+																										// Allow empty input for user to clear and retype
+																										if (inputValue === "" || inputValue === ".") {
+																											// Don't update targetValue, just keep the field empty
+																											return;
+																										}
+																										
+																										const newValue = parseFloat(inputValue);
+																										if (isNaN(newValue)) {
+																											return; // Don't update if not a valid number
+																										}
+																										
+																										// Allow typing freely - validation will happen on blur
+																										// This allows user to type numbers like 5000 (starting with 5, then 50, then 500, then 5000)
+																										handleTargetChange(targetIndex, "targetValue", newValue);
+																									}}
+																									onBlur={(e) => {
+																										// Clear raw input on blur
+																										setRawPriceInputs((prev) => {
+																											const newState = { ...prev };
+																											delete newState[targetIndex];
+																											return newState;
+																										});
+																										
+																										// On blur, validate and correct if value is invalid
+																										const value = parseFloat(e.target.value) || 0;
+																										if (value > 0) {
+																											if (currentTokenPrice > 0 && value < currentTokenPrice) {
+																												handleTargetChange(targetIndex, "targetValue", currentTokenPrice);
+																												toast.error(`Price has been corrected to current price (${formatCurrency(currentTokenPrice, "$", 2)}) as it cannot be below the current price`);
+																											} else {
+																												handleTargetChange(targetIndex, "targetValue", value);
+																											}
+																										} else if (target.targetValue === 0) {
+																											// If field is empty and targetValue is 0, set to current price or keep 0
+																											if (currentTokenPrice > 0) {
+																												handleTargetChange(targetIndex, "targetValue", currentTokenPrice);
+																											}
+																										}
+																									}}
+																									onKeyDown={(e) => {
+																										// Prevent Enter key if value is invalid
+																										if (e.key === "Enter") {
+																											const value = parseFloat((e.target as HTMLInputElement).value) || 0;
+																											if (currentTokenPrice > 0 && value > 0 && value < currentTokenPrice) {
+																												e.preventDefault();
+																												toast.error(`Price must be greater than or equal to the current price (${formatCurrency(currentTokenPrice, "$", 2)})`);
+																											}
+																										}
+																									}}
+																									inputProps={{ 
+																										step: "0.01", 
+																										min: currentTokenPrice > 0 ? currentTokenPrice : 0,
+																										onInvalid: (e) => {
+																											// HTML5 validation fallback
+																											if (currentTokenPrice > 0) {
+																												(e.target as HTMLInputElement).setCustomValidity(`Price must be greater than or equal to ${formatCurrency(currentTokenPrice, "$", 2)}`);
+																											}
+																										},
+																										onInput: (e) => {
+																											// Clear custom validity on input
+																											(e.target as HTMLInputElement).setCustomValidity("");
+																										}
+																									}}
+																									error={
+																										currentTokenPrice > 0 && target.targetType === "price" && target.targetValue > 0 && target.targetValue < currentTokenPrice
+																									}
+																									helperText={
+																										currentTokenPrice > 0 && target.targetType === "price" && target.targetValue > 0 && target.targetValue < currentTokenPrice
+																											? `Impossible: you cannot sell tokens at a price that has already been reached (current price: ${formatCurrency(currentTokenPrice, "$", 2)})`
+																											: currentTokenPrice > 0
+																											? `Minimum price: ${formatCurrency(currentTokenPrice, "$", 2)}`
+																											: undefined
+																									}
+																								/>
+																							</>
 																						)}
 																						{target.targetType === "percentage" && !isNaN(avgPrice) && avgPrice > 0 && (
 																							<Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
@@ -1257,51 +1411,90 @@ export function CreateStrategyModal({ onClose, onSuccess, open }: CreateStrategy
 										<Typography variant="subtitle1" sx={{ mb: 2 }}>
 											Summary
 										</Typography>
-										<Grid container spacing={2}>
-											<Grid size={6}>
-												<Typography color="text.secondary" variant="caption">
-													Invested
-												</Typography>
-												<Typography color="success.main" variant="h6">
-													{formatCurrency(parseFloat(strategyQuantity) * parseFloat(strategyAveragePrice), "$", 2)}
-												</Typography>
+										<Stack spacing={2}>
+											{/* Line 1: Strategy name | Total invested */}
+											<Grid container spacing={2}>
+												<Grid size={6}>
+													<Typography color="text.secondary" variant="body2">
+														Strategy name
+													</Typography>
+													<Typography variant="body2" sx={{ fontWeight: 600 }}>
+														{strategyName || "—"}
+													</Typography>
+												</Grid>
+												<Grid size={6}>
+													<Typography color="text.secondary" variant="body2">
+														Total invested
+													</Typography>
+													<Typography color="success.main" variant="body2" sx={{ fontWeight: 600 }}>
+														{formatCurrency(parseFloat(strategyQuantity) * parseFloat(strategyAveragePrice), "$", 2)}
+													</Typography>
+												</Grid>
 											</Grid>
-											<Grid size={6}>
-												<Typography color="text.secondary" variant="caption">
-													Total cashed in
-												</Typography>
-												<Typography color="success.main" variant="h6">
-													{formatCurrency(
-														strategyInfo.reduce((sum, info) => sum + info.amountCollected, 0),
-														"$",
-														2
-													)}
-												</Typography>
+											{/* Line 2: Total amount collected | Net result */}
+											<Grid container spacing={2}>
+												<Grid size={6}>
+													<Typography color="text.secondary" variant="body2">
+														Total amount collected
+													</Typography>
+													<Typography color="success.main" variant="body2" sx={{ fontWeight: 600 }}>
+														{formatCurrency(
+															strategyInfo.reduce((sum, info) => sum + info.amountCollected, 0),
+															"$",
+															2
+														)}
+													</Typography>
+												</Grid>
+												<Grid size={6}>
+													<Typography color="text.secondary" variant="body2">
+														Net result
+													</Typography>
+													<Typography
+														color="success.main"
+														variant="body2"
+														sx={{ fontWeight: 600 }}
+													>
+														{formatCurrency(
+															strategyInfo.reduce((sum, info) => sum + info.amountCollected, 0) -
+																parseFloat(strategyQuantity) * parseFloat(strategyAveragePrice),
+															"$",
+															2
+														)}
+													</Typography>
+												</Grid>
 											</Grid>
-											<Grid size={6}>
-												<Typography color="text.secondary" variant="caption">
-													Net result
-												</Typography>
-												<Typography color="success.main" variant="h6">
-													{formatCurrency(
-														strategyInfo.reduce((sum, info) => sum + info.amountCollected, 0) -
-															parseFloat(strategyQuantity) * parseFloat(strategyAveragePrice),
-														"$",
-														2
-													)}
-												</Typography>
+											{/* Line 3: Remaining tokens | Bag percentage sold */}
+											<Grid container spacing={2}>
+												<Grid size={6}>
+													<Typography color="text.secondary" variant="body2">
+														Remaining tokens
+													</Typography>
+													<Typography color="warning.main" variant="body2" sx={{ fontWeight: 600 }}>
+														{strategyInfo.length > 0
+															? strategyInfo[strategyInfo.length - 1].remainingTokens.toFixed(8)
+															: "0.00000000"}
+													</Typography>
+												</Grid>
+												<Grid size={6}>
+													<Typography color="text.secondary" variant="body2">
+														Bag percentage sold
+													</Typography>
+													<Typography
+														color={
+															profitTargets.reduce((sum, t) => sum + t.sellPercentage, 0) > 100
+																? "error.main"
+																: profitTargets.reduce((sum, t) => sum + t.sellPercentage, 0) === 100
+																	? "success.main"
+																	: "text.secondary"
+														}
+														variant="body2"
+														sx={{ fontWeight: 600 }}
+													>
+														{profitTargets.reduce((sum, t) => sum + t.sellPercentage, 0).toFixed(1)}%
+													</Typography>
+												</Grid>
 											</Grid>
-											<Grid size={6}>
-												<Typography color="text.secondary" variant="caption">
-													Remaining tokens
-												</Typography>
-												<Typography color="warning.main" variant="h6">
-													{strategyInfo.length > 0
-														? strategyInfo[strategyInfo.length - 1].remainingTokens.toFixed(6)
-														: "0.000000"}
-												</Typography>
-											</Grid>
-										</Grid>
+										</Stack>
 									</CardContent>
 								</Card>
 							)}
@@ -1319,7 +1512,8 @@ export function CreateStrategyModal({ onClose, onSuccess, open }: CreateStrategy
 						!strategyAveragePrice ||
 						!strategyName ||
 						numberOfTargets === 0 ||
-						profitTargets.reduce((sum, t) => sum + t.sellPercentage, 0) > 100
+						profitTargets.reduce((sum, t) => sum + t.sellPercentage, 0) > 100 ||
+						hasInvalidPriceTarget
 					}
 					onClick={handleSubmit}
 					startIcon={isSubmitting ? <CircularProgress size={16} /> : <ChartPieIcon />}
