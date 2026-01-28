@@ -35,7 +35,7 @@ export const dashboardConfig = {
 			key: "strategies",
 			title: undefined,
 			items: [
-				{ key: "strategies", title: "Token Strategies", href: paths.dashboard.strategies, icon: "chess-knight" },
+				{ key: "strategies", title: "Token Strategies", href: paths.dashboard.strategies, icon: "sliders" },
 			],
 		},
 		{
