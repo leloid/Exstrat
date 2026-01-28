@@ -18,7 +18,7 @@ import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
 import TablePagination from "@mui/material/TablePagination";
 import Avatar from "@mui/material/Avatar";
-import { ChartPieIcon } from "@phosphor-icons/react/dist/ssr/ChartPie";
+import { ArrowRightIcon } from "@phosphor-icons/react/dist/ssr/ArrowRight";
 import { MagnifyingGlassIcon } from "@phosphor-icons/react/dist/ssr/MagnifyingGlass";
 import { PlusIcon } from "@phosphor-icons/react/dist/ssr/Plus";
 import { PencilIcon } from "@phosphor-icons/react/dist/ssr/Pencil";
@@ -307,42 +307,72 @@ function StrategiesPageContent(): React.JSX.Element {
 		>
 			<Stack spacing={4}>
 				{/* Header */}
-				<Stack direction={{ xs: "column", sm: "row" }} spacing={3} sx={{ alignItems: "flex-start" }}>
-					<Box sx={{ flex: "1 1 auto" }} />
-					<Button onClick={handleCreateStrategy} startIcon={<PlusIcon />} variant="contained">
-						Create Strategy
-					</Button>
-				</Stack>
+				{hasStrategies && (
+					<Stack direction={{ xs: "column", sm: "row" }} spacing={3} sx={{ alignItems: "flex-start" }}>
+						<Box sx={{ flex: "1 1 auto" }} />
+						<Button onClick={handleCreateStrategy} startIcon={<PlusIcon />} variant="contained">
+							Create Strategy
+						</Button>
+					</Stack>
+				)}
 
 				{/* Strategies Table */}
 				{!hasStrategies ? (
-					<Card>
-						<CardContent sx={{ py: 8, textAlign: "center" }}>
-							<Stack spacing={2} sx={{ alignItems: "center" }}>
-								<Box
-									sx={{
-										alignItems: "center",
-										bgcolor: "var(--mui-palette-background-level1)",
-										borderRadius: "50%",
-										display: "flex",
-										height: "64px",
-										justifyContent: "center",
-										width: "64px",
-									}}
-								>
-									<ChartPieIcon fontSize="var(--icon-fontSize-xl)" />
-								</Box>
-								<Stack spacing={1}>
-									<Typography variant="h6">No Strategies</Typography>
-									<Typography color="text.secondary" variant="body2">
-										Create your first automated profit-taking strategy to get started.
-									</Typography>
-								</Stack>
-									<Button onClick={handleCreateStrategy} startIcon={<PlusIcon />} variant="contained">
-									Create Strategy
-									</Button>
+					<Card
+						sx={{
+							py: { xs: 6, sm: 8 },
+							px: { xs: 3, sm: 4 },
+							textAlign: "center",
+							background: (theme) =>
+								theme.palette.mode === "dark"
+									? "linear-gradient(135deg, rgba(25, 118, 210, 0.1) 0%, rgba(156, 39, 176, 0.1) 100%)"
+									: "linear-gradient(135deg, rgba(25, 118, 210, 0.05) 0%, rgba(156, 39, 176, 0.05) 100%)",
+							border: (theme) =>
+								theme.palette.mode === "dark"
+									? "1px solid rgba(25, 118, 210, 0.2)"
+									: "1px solid rgba(25, 118, 210, 0.1)",
+							borderRadius: 3,
+						}}
+					>
+						<Stack spacing={3} sx={{ alignItems: "center", maxWidth: 500, mx: "auto" }}>
+							<Stack spacing={1}>
+								<Typography variant="h5" sx={{ fontWeight: 600 }}>
+									Create Your First Strategy
+								</Typography>
+								<Typography color="text.secondary" variant="body1" sx={{ maxWidth: 400, mx: "auto" }}>
+									Start automating your profit-taking by creating your first token strategy. Set target prices and let the system manage your exits automatically.
+								</Typography>
 							</Stack>
-						</CardContent>
+							<Button
+								variant="contained"
+								size="large"
+								startIcon={<PlusIcon />}
+								endIcon={<ArrowRightIcon />}
+								onClick={handleCreateStrategy}
+								sx={{
+									px: 4,
+									py: 1.5,
+									borderRadius: 2,
+									textTransform: "none",
+									fontSize: "1rem",
+									fontWeight: 600,
+									boxShadow: (theme) =>
+										theme.palette.mode === "dark"
+											? "0 4px 20px rgba(25, 118, 210, 0.4)"
+											: "0 4px 20px rgba(25, 118, 210, 0.3)",
+									"&:hover": {
+										boxShadow: (theme) =>
+											theme.palette.mode === "dark"
+												? "0 6px 24px rgba(25, 118, 210, 0.5)"
+												: "0 6px 24px rgba(25, 118, 210, 0.4)",
+										transform: "translateY(-2px)",
+									},
+									transition: "all 0.3s ease",
+								}}
+							>
+								Create My First Strategy
+							</Button>
+						</Stack>
 					</Card>
 				) : displayStrategies.length === 0 ? (
 					<Card>

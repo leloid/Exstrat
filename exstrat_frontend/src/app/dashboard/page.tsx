@@ -444,21 +444,6 @@ export default function Page(): React.JSX.Element {
 						}}
 					>
 						<Stack spacing={3} sx={{ alignItems: "center", maxWidth: 500, mx: "auto" }}>
-							<Box
-								sx={{
-									width: 80,
-									height: 80,
-									borderRadius: "50%",
-									display: "flex",
-									alignItems: "center",
-									justifyContent: "center",
-									bgcolor: "secondary.main",
-									color: "secondary.contrastText",
-									mb: 1,
-								}}
-							>
-								<ArrowSquareOutIcon fontSize={40} weight="fill" />
-							</Box>
 							<Stack spacing={1}>
 								<Typography variant="h5" sx={{ fontWeight: 600 }}>
 									{portfolios.length === 0
@@ -478,7 +463,6 @@ export default function Page(): React.JSX.Element {
 							<Button
 								variant="contained"
 								size="large"
-								color="secondary"
 								startIcon={<WalletIcon />}
 								endIcon={<ArrowSquareOutIcon />}
 								onClick={() => router.push("/dashboard/investissements")}
@@ -491,13 +475,13 @@ export default function Page(): React.JSX.Element {
 									fontWeight: 600,
 									boxShadow: (theme) =>
 										theme.palette.mode === "dark"
-											? "0 4px 20px rgba(156, 39, 176, 0.4)"
-											: "0 4px 20px rgba(156, 39, 176, 0.3)",
+											? "0 4px 20px rgba(25, 118, 210, 0.4)"
+											: "0 4px 20px rgba(25, 118, 210, 0.3)",
 									"&:hover": {
 										boxShadow: (theme) =>
 											theme.palette.mode === "dark"
-												? "0 6px 24px rgba(156, 39, 176, 0.5)"
-												: "0 6px 24px rgba(156, 39, 176, 0.4)",
+												? "0 6px 24px rgba(25, 118, 210, 0.5)"
+												: "0 6px 24px rgba(25, 118, 210, 0.4)",
 										transform: "translateY(-2px)",
 									},
 									transition: "all 0.3s ease",

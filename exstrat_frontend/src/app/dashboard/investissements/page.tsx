@@ -1252,21 +1252,6 @@ export default function Page(): React.JSX.Element {
 					}}
 				>
 					<Stack spacing={3} sx={{ alignItems: "center", maxWidth: 500, mx: "auto" }}>
-						<Box
-							sx={{
-								width: 80,
-								height: 80,
-								borderRadius: "50%",
-								display: "flex",
-								alignItems: "center",
-								justifyContent: "center",
-								bgcolor: "primary.main",
-								color: "primary.contrastText",
-								mb: 1,
-							}}
-						>
-							<WalletIcon fontSize={40} weight="fill" />
-						</Box>
 						<Stack spacing={1}>
 							<Typography variant="h5" sx={{ fontWeight: 600 }}>
 								Create Your First Wallet

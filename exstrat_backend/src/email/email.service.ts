@@ -1069,20 +1069,21 @@ export class EmailService {
     from: string;
     userName?: string;
     message: string;
+    images?: Express.Multer.File[];
   }): Promise<void> {
     if (!this.resend) {
       this.logger.warn('Resend not configured, skipping email');
       return;
     }
 
-    const { from, userName, message } = data;
+    const { from, userName, message, images = [] } = data;
     const to = 'contact@exstrat.io';
 
     try {
       const subject = `Feedback from ${userName || from} - exStrat`;
-      const html = this.generateFeedbackEmail({ from, userName, message });
+      const html = this.generateFeedbackEmail({ from, userName, message, images });
 
-      this.logger.log(`Attempting to send feedback email from ${from} to ${to}`);
+      this.logger.log(`Attempting to send feedback email from ${from} to ${to}${images.length > 0 ? ` with ${images.length} image(s)` : ''}`);
       
       const result = await this.resend.emails.send({
         from: this.fromEmail,
@@ -1110,9 +1111,33 @@ export class EmailService {
   /**
    * Génère le HTML de l'email de feedback
    */
-  private generateFeedbackEmail(data: { from: string; userName?: string; message: string }): string {
-    const { from, userName, message } = data;
+  private generateFeedbackEmail(data: { 
+    from: string; 
+    userName?: string; 
+    message: string;
+    images?: Express.Multer.File[];
+  }): string {
+    const { from, userName, message, images = [] } = data;
     const displayName = userName || from;
+
+    // Convert images to base64 data URLs
+    const imageHtml = images.length > 0 ? images.map((file, index) => {
+      const base64 = file.buffer.toString('base64');
+      const mimeType = file.mimetype;
+      const dataUrl = `data:${mimeType};base64,${base64}`;
+      return `
+              <div style="margin: 15px 0; text-align: center;">
+                <p style="margin: 0 0 8px 0; color: #666; font-size: 12px; font-weight: 600;">
+                  ${file.originalname || `Image ${index + 1}`}
+                </p>
+                <img 
+                  src="${dataUrl}" 
+                  alt="${file.originalname || `Screenshot ${index + 1}`}"
+                  style="max-width: 100%; height: auto; border-radius: 8px; border: 2px solid #047DD5; box-shadow: 0 2px 8px rgba(4, 125, 213, 0.2);"
+                />
+              </div>
+      `;
+    }).join('') : '';
 
     return `
 <!DOCTYPE html>
@@ -1146,6 +1171,12 @@ export class EmailService {
               <div style="margin: 20px 0; padding: 20px; background: linear-gradient(135deg, #e6f4fd 0%, #ffffff 100%); border-radius: 8px; border-left: 4px solid #047DD5; box-shadow: 0 2px 8px rgba(4, 125, 213, 0.1);">
                 <p style="margin: 0; color: #25292E; font-size: 14px; line-height: 1.6; white-space: pre-wrap;">${message}</p>
               </div>
+              ${images.length > 0 ? `
+              <div style="margin: 20px 0; padding: 20px; background: #ffffff; border-radius: 8px; border: 2px solid #047DD5;">
+                <h3 style="margin: 0 0 15px 0; color: #047DD5; font-size: 16px; font-weight: 600;">Attached Images (${images.length})</h3>
+                ${imageHtml}
+              </div>
+              ` : ''}
             </td>
           </tr>
           <tr>

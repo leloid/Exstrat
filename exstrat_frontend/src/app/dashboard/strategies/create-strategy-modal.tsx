@@ -457,7 +457,7 @@ export function CreateStrategyModal({ onClose, onSuccess, open }: CreateStrategy
 		<Dialog fullWidth maxWidth="lg" onClose={handleClose} open={open}>
 			<DialogTitle>
 				<Stack direction="row" spacing={2} sx={{ alignItems: "center", justifyContent: "space-between" }}>
-					<Typography variant="h6">Create Strategy</Typography>
+					<Typography variant="h4" sx={{ fontWeight: 600 }}>Strategy Creation</Typography>
 					<IconButton onClick={handleClose} size="small">
 						<XIcon />
 					</IconButton>
@@ -489,7 +489,7 @@ export function CreateStrategyModal({ onClose, onSuccess, open }: CreateStrategy
 										>
 											<Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
 												<Typography variant="subtitle2">
-													{index + 1}. {step.label}
+													{step.label}
 												</Typography>
 												{activeStep > index && (
 													<Chip color="success" label="Completed" size="small" />

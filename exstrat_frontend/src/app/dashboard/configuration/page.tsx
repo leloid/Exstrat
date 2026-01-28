@@ -26,6 +26,7 @@ import Dialog from "@mui/material/Dialog";
 import DialogActions from "@mui/material/DialogActions";
 import DialogContent from "@mui/material/DialogContent";
 import Avatar from "@mui/material/Avatar";
+import { ArrowRightIcon } from "@phosphor-icons/react/dist/ssr/ArrowRight";
 import { CaretDownIcon } from "@phosphor-icons/react/dist/ssr/CaretDown";
 import { MagnifyingGlassIcon } from "@phosphor-icons/react/dist/ssr/MagnifyingGlass";
 import { PlusIcon } from "@phosphor-icons/react/dist/ssr/Plus";
@@ -295,30 +296,76 @@ function ConfigurationPageContent(): React.JSX.Element {
 		>
 			<Stack spacing={4}>
 				{/* Header */}
-				<Stack direction={{ xs: "column", sm: "row" }} spacing={3} sx={{ alignItems: "flex-start" }}>
-					<Box sx={{ flex: "1 1 auto" }} />
-					<Button startIcon={<PlusIcon />} variant="contained" onClick={() => setShowAddModal(true)}>
-						Add Alert
-					</Button>
-				</Stack>
+				{alertConfigurations.length > 0 && (
+					<Stack direction={{ xs: "column", sm: "row" }} spacing={3} sx={{ alignItems: "flex-start" }}>
+						<Box sx={{ flex: "1 1 auto" }} />
+						<Button startIcon={<PlusIcon />} variant="contained" onClick={() => setShowAddModal(true)}>
+							Add Alert
+						</Button>
+					</Stack>
+				)}
 
 				{/* Alerts Table */}
 				{filteredConfigurations.length === 0 ? (
-					<Card>
-						<CardContent>
-							<Stack spacing={2} sx={{ alignItems: "center", py: 4 }}>
-								<Typography color="text.secondary" variant="body1">
-									{searchQuery
-										? "No alerts found matching your search."
-										: "No active alerts at the moment. Create your first alert configuration to get started."}
+					<Card
+						sx={{
+							py: { xs: 6, sm: 8 },
+							px: { xs: 3, sm: 4 },
+							textAlign: "center",
+							background: (theme) =>
+								theme.palette.mode === "dark"
+									? "linear-gradient(135deg, rgba(25, 118, 210, 0.1) 0%, rgba(156, 39, 176, 0.1) 100%)"
+									: "linear-gradient(135deg, rgba(25, 118, 210, 0.05) 0%, rgba(156, 39, 176, 0.05) 100%)",
+							border: (theme) =>
+								theme.palette.mode === "dark"
+									? "1px solid rgba(25, 118, 210, 0.2)"
+									: "1px solid rgba(25, 118, 210, 0.1)",
+							borderRadius: 3,
+						}}
+					>
+						<Stack spacing={3} sx={{ alignItems: "center", maxWidth: 500, mx: "auto" }}>
+							<Stack spacing={1}>
+								<Typography variant="h5" sx={{ fontWeight: 600 }}>
+									{searchQuery ? "No Alerts Found" : "Create Your First Alert Configuration"}
 								</Typography>
-								{!searchQuery && (
-									<Button onClick={() => setShowAddModal(true)} startIcon={<PlusIcon />} variant="contained">
-										Add Alert
-									</Button>
-								)}
+								<Typography color="text.secondary" variant="body1" sx={{ maxWidth: 400, mx: "auto" }}>
+									{searchQuery
+										? "No alerts found matching your search. Try adjusting your search criteria."
+										: "Start receiving automated alerts for your strategies by creating your first alert configuration. Get notified when your target prices are reached."}
+								</Typography>
 							</Stack>
-						</CardContent>
+							{!searchQuery && (
+								<Button
+									variant="contained"
+									size="large"
+									startIcon={<PlusIcon />}
+									endIcon={<ArrowRightIcon />}
+									onClick={() => setShowAddModal(true)}
+									sx={{
+										px: 4,
+										py: 1.5,
+										borderRadius: 2,
+										textTransform: "none",
+										fontSize: "1rem",
+										fontWeight: 600,
+										boxShadow: (theme) =>
+											theme.palette.mode === "dark"
+												? "0 4px 20px rgba(25, 118, 210, 0.4)"
+												: "0 4px 20px rgba(25, 118, 210, 0.3)",
+										"&:hover": {
+											boxShadow: (theme) =>
+												theme.palette.mode === "dark"
+													? "0 6px 24px rgba(25, 118, 210, 0.5)"
+													: "0 6px 24px rgba(25, 118, 210, 0.4)",
+											transform: "translateY(-2px)",
+										},
+										transition: "all 0.3s ease",
+									}}
+								>
+									Create My First Alert
+								</Button>
+							)}
+						</Stack>
 					</Card>
 				) : (
 					<Card>

@@ -1,9 +1,15 @@
-import { Controller, Post, Body, UseGuards, HttpCode, HttpStatus, BadRequestException } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
+import { Controller, Post, Body, UseGuards, HttpCode, HttpStatus, BadRequestException, UseInterceptors, UploadedFiles } from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiResponse, ApiConsumes, ApiBody } from '@nestjs/swagger';
+import { FilesInterceptor } from '@nestjs/platform-express';
 import { IsEmail, IsString, IsOptional, MaxLength, ValidateIf } from 'class-validator';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { EmailService } from './email.service';
 import { Public } from '../auth/decorators/public.decorator';
+import { memoryStorage } from 'multer';
+
+const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
+const MAX_FILES = 5;
+const ALLOWED_MIME_TYPES = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
 
 class FeedbackDto {
   @IsEmail({}, { message: 'Email must be valid' })
@@ -83,10 +89,49 @@ export class EmailController {
    */
   @Public()
   @Post('feedback')
+  @UseInterceptors(
+    FilesInterceptor('images', MAX_FILES, {
+      storage: memoryStorage(),
+      limits: {
+        fileSize: MAX_FILE_SIZE,
+        files: MAX_FILES,
+      },
+      fileFilter: (req, file, cb) => {
+        if (!ALLOWED_MIME_TYPES.includes(file.mimetype)) {
+          return cb(
+            new BadRequestException(
+              `Invalid file type. Allowed types: ${ALLOWED_MIME_TYPES.join(', ')}`
+            ),
+            false
+          );
+        }
+        cb(null, true);
+      },
+    })
+  )
   @HttpCode(HttpStatus.OK)
+  @ApiConsumes('multipart/form-data')
   @ApiOperation({ 
     summary: 'Send user feedback',
-    description: 'Sends a feedback email from the user to contact@exstrat.io'
+    description: 'Sends a feedback email from the user to contact@exstrat.io with optional images'
+  })
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        email: { type: 'string', format: 'email' },
+        name: { type: 'string', required: false },
+        message: { type: 'string' },
+        images: {
+          type: 'array',
+          items: {
+            type: 'string',
+            format: 'binary',
+          },
+        },
+      },
+      required: ['email', 'message'],
+    },
   })
   @ApiResponse({ 
     status: 200, 
@@ -111,8 +156,19 @@ export class EmailController {
       }
     }
   })
-  async sendFeedback(@Body() feedbackDto: FeedbackDto) {
-    const { email, name, message } = feedbackDto;
+  async sendFeedback(
+    @Body() feedbackDto: FeedbackDto,
+    @UploadedFiles() files?: Express.Multer.File[]
+  ) {
+    // Extract and validate data (FormData values are strings)
+    const email = typeof feedbackDto.email === 'string' ? feedbackDto.email : String(feedbackDto.email || '');
+    const name = feedbackDto.name ? (typeof feedbackDto.name === 'string' ? feedbackDto.name : String(feedbackDto.name)) : undefined;
+    const message = typeof feedbackDto.message === 'string' ? feedbackDto.message : String(feedbackDto.message || '');
+
+    // Validate email format
+    if (!email || !email.includes('@')) {
+      throw new BadRequestException('Valid email is required');
+    }
 
     // Validate minimum 20 characters
     const charCount = message.trim().length;
@@ -120,10 +176,27 @@ export class EmailController {
       throw new BadRequestException(`Message must contain at least 20 characters. Current: ${charCount} characters.`);
     }
 
+    // Validate files
+    if (files && files.length > MAX_FILES) {
+      throw new BadRequestException(`Maximum ${MAX_FILES} images allowed`);
+    }
+
+    if (files) {
+      for (const file of files) {
+        if (file.size > MAX_FILE_SIZE) {
+          throw new BadRequestException(`File ${file.originalname} exceeds maximum size of ${MAX_FILE_SIZE / 1024 / 1024}MB`);
+        }
+        if (!ALLOWED_MIME_TYPES.includes(file.mimetype)) {
+          throw new BadRequestException(`File ${file.originalname} has invalid type. Allowed: ${ALLOWED_MIME_TYPES.join(', ')}`);
+        }
+      }
+    }
+
     await this.emailService.sendFeedbackEmail({
-      from: email,
-      userName: name,
-      message,
+      from: email.trim(),
+      userName: name?.trim(),
+      message: message.trim(),
+      images: files || [],
     });
 
     return {
