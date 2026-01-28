@@ -288,10 +288,10 @@ function ConfigurationPageContent(): React.JSX.Element {
 	return (
 		<Box
 			sx={{
-				maxWidth: "var(--Content-maxWidth)",
-				m: "var(--Content-margin)",
-				p: "var(--Content-padding)",
-				width: "var(--Content-width)",
+				width: "100%",
+				maxWidth: "100%",
+				m: 0,
+				p: { xs: 2, sm: 3, md: 4 },
 			}}
 		>
 			<Stack spacing={4}>
@@ -309,6 +309,7 @@ function ConfigurationPageContent(): React.JSX.Element {
 				{filteredConfigurations.length === 0 ? (
 					<Card
 						sx={{
+							width: "100%",
 							py: { xs: 6, sm: 8 },
 							px: { xs: 3, sm: 4 },
 							textAlign: "center",
@@ -368,7 +369,7 @@ function ConfigurationPageContent(): React.JSX.Element {
 						</Stack>
 					</Card>
 				) : (
-					<Card>
+					<Card sx={{ width: "100%" }}>
 						<Box sx={{ p: 2, borderBottom: "1px solid var(--mui-palette-divider)" }}>
 							<Stack direction="row" spacing={2} sx={{ alignItems: "center", justifyContent: "space-between" }}>
 								<Typography variant="h5" sx={{ fontWeight: 600 }}>
@@ -404,7 +405,7 @@ function ConfigurationPageContent(): React.JSX.Element {
 						</Box>
 						<Divider />
 						<CardContent sx={{ p: 0 }}>
-							<Box sx={{ overflowX: "auto" }}>
+							<Box sx={{ overflowX: "auto", width: "100%" }}>
 								<Table>
 									<TableHead>
 										<TableRow>
