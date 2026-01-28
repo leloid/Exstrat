@@ -401,9 +401,9 @@ export default function Page(): React.JSX.Element {
 		<Box
 			sx={{
 				width: "100%",
-				maxWidth: { xs: "100%", sm: "100%", md: "var(--Content-maxWidth)", lg: "var(--Content-maxWidth)" },
-				m: { xs: 0, sm: 1, md: "var(--Content-margin)" },
-				p: { xs: 2, sm: 2, md: "var(--Content-padding)" },
+				maxWidth: "100%",
+				m: 0,
+				p: { xs: 2, sm: 3, md: 4 },
 			}}
 		>
 			<Stack spacing={{ xs: 2, sm: 3, md: 4 }}>
@@ -429,6 +429,7 @@ export default function Page(): React.JSX.Element {
 				{displayHoldings.length === 0 ? (
 					<Card
 						sx={{
+							width: "100%",
 							py: { xs: 6, sm: 8 },
 							px: { xs: 3, sm: 4 },
 							textAlign: "center",
@@ -524,7 +525,7 @@ export default function Page(): React.JSX.Element {
 							</Grid>
 							<Grid size={{ xs: 12, lg: 4 }}>
 								{aggregatedTokenData.length > 0 ? (
-									<Card sx={{ height: "100%", minHeight: { xs: "400px", sm: "500px", md: "600px" }, display: "flex", flexDirection: "column" }}>
+									<Card sx={{ width: "100%", height: "100%", minHeight: { xs: "400px", sm: "500px", md: "600px" }, display: "flex", flexDirection: "column" }}>
 										<CardHeader
 											avatar={
 												<Avatar>
@@ -700,7 +701,7 @@ export default function Page(): React.JSX.Element {
 										</CardContent>
 									</Card>
 								) : (
-									<Card>
+									<Card sx={{ width: "100%" }}>
 										<CardHeader
 											avatar={
 												<Avatar>
