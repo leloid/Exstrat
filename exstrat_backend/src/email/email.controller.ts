@@ -114,10 +114,10 @@ export class EmailController {
   async sendFeedback(@Body() feedbackDto: FeedbackDto) {
     const { email, name, message } = feedbackDto;
 
-    // Validate minimum 20 words
-    const wordCount = message.trim().split(/\s+/).filter(word => word.length > 0).length;
-    if (wordCount < 20) {
-      throw new BadRequestException(`Message must contain at least 20 words. Current: ${wordCount} words.`);
+    // Validate minimum 20 characters
+    const charCount = message.trim().length;
+    if (charCount < 20) {
+      throw new BadRequestException(`Message must contain at least 20 characters. Current: ${charCount} characters.`);
     }
 
     await this.emailService.sendFeedbackEmail({

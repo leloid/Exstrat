@@ -51,19 +51,15 @@ export function FeedbackButton(): React.JSX.Element {
 		setMessage("");
 	};
 
-	const countWords = (text: string): number => {
-		return text.trim().split(/\s+/).filter(word => word.length > 0).length;
-	};
-
 	const handleSubmit = async () => {
 		if (!email || !message.trim()) {
 			setError("Message is required");
 			return;
 		}
 
-		const wordCount = countWords(message);
-		if (wordCount < 20) {
-			setError(`Message must contain at least 20 words. Current: ${wordCount} words.`);
+		const charCount = message.trim().length;
+		if (charCount < 20) {
+			setError(`Message must contain at least 20 characters. Current: ${charCount} characters.`);
 			return;
 		}
 
@@ -149,9 +145,9 @@ export function FeedbackButton(): React.JSX.Element {
 							required
 							fullWidth
 							disabled={isLoading}
-							placeholder="Tell us what you think, report a bug, or suggest a feature... (Minimum 20 words required)"
-							helperText={`${countWords(message)} words (minimum 20 required)`}
-							error={message.trim().length > 0 && countWords(message) < 20}
+							placeholder="Tell us what you think, report a bug, or suggest a feature... (Minimum 20 characters required)"
+							helperText={`${message.trim().length} characters (minimum 20 required)`}
+							error={message.trim().length > 0 && message.trim().length < 20}
 						/>
 					</Box>
 				</DialogContent>
@@ -162,7 +158,7 @@ export function FeedbackButton(): React.JSX.Element {
 					<Button 
 						onClick={handleSubmit} 
 						variant="contained" 
-						disabled={isLoading || !email || !message.trim() || countWords(message) < 20}
+						disabled={isLoading || !email || !message.trim() || message.trim().length < 20}
 					>
 						{isLoading ? <CircularProgress size={20} /> : "Send Feedback"}
 					</Button>
