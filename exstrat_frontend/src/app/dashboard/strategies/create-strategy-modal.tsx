@@ -414,6 +414,31 @@ export function CreateStrategyModal({ onClose, onSuccess, open }: CreateStrategy
 		});
 	};
 
+	const handleAddExit = () => {
+		if (numberOfTargets >= 6) {
+			toast.error("Maximum 6 exits allowed");
+			return;
+		}
+		const currentTokenPrice = selectedToken?.quote?.USD?.price || parseFloat(strategyAveragePrice) || 0;
+		const newTarget: ProfitTarget = {
+			id: `target-${profitTargets.length}`,
+			targetType: "price",
+			targetValue: currentTokenPrice > 0 ? currentTokenPrice : 0,
+			sellPercentage: 0,
+		};
+		setProfitTargets((prev) => [...prev, newTarget]);
+		setNumberOfTargets((prev) => prev + 1);
+	};
+
+	const handleRemoveExit = (targetIndex: number) => {
+		if (profitTargets.length <= 1) {
+			toast.error("At least one exit is required");
+			return;
+		}
+		setProfitTargets((prev) => prev.filter((_, index) => index !== targetIndex));
+		setNumberOfTargets((prev) => Math.max(1, prev - 1));
+	};
+
 	const handleSellPercentageChange = (index: number, value: number) => {
 		// Calculate max value based on other targets to keep total at 100%
 		const otherTargetsTotal = profitTargets.reduce((sum, t, idx) => (idx === index ? sum : sum + t.sellPercentage), 0);
@@ -1212,6 +1237,45 @@ export function CreateStrategyModal({ onClose, onSuccess, open }: CreateStrategy
 																</Card>
 															);
 														})}
+
+														{/* Add/Remove Exit Buttons */}
+														<Stack direction="row" spacing={2} sx={{ justifyContent: "center", alignItems: "center", pt: 2 }}>
+															<Button
+																variant="outlined"
+																color="primary"
+																onClick={handleAddExit}
+																disabled={numberOfTargets >= 6}
+																startIcon={<PlusIcon />}
+																sx={{ 
+																	minWidth: 140,
+																	"&:hover": {
+																		backgroundColor: "primary.main",
+																		color: "primary.contrastText",
+																		borderColor: "primary.main"
+																	}
+																}}
+															>
+																Add Exit
+															</Button>
+															{profitTargets.length > 1 && (
+																<Button
+																	variant="outlined"
+																	color="error"
+																	onClick={() => handleRemoveExit(profitTargets.length - 1)}
+																	startIcon={<MinusIcon />}
+																	sx={{ 
+																		minWidth: 140,
+																		"&:hover": {
+																			backgroundColor: "error.main",
+																			color: "error.contrastText",
+																			borderColor: "error.main"
+																		}
+																	}}
+																>
+																	Remove Exit
+																</Button>
+															)}
+														</Stack>
 
 														{(() => {
 															const totalPercentage = profitTargets.reduce((sum, t) => sum + t.sellPercentage, 0);

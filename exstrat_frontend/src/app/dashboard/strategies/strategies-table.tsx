@@ -23,6 +23,7 @@ import { PencilIcon } from "@phosphor-icons/react/dist/ssr/Pencil";
 import { TrashIcon } from "@phosphor-icons/react/dist/ssr/Trash";
 import { CaretDownIcon } from "@phosphor-icons/react/dist/ssr/CaretDown";
 import { CaretRightIcon } from "@phosphor-icons/react/dist/ssr/CaretRight";
+import { NoteIcon } from "@phosphor-icons/react/dist/ssr/Note";
 
 import { formatCurrency, formatPercentage } from "@/lib/format";
 import type { StrategyResponse } from "@/types/strategies";
@@ -105,40 +106,22 @@ export function StrategiesTable({
 	}, []);
 
 	return (
-		<Table>
+		<Table sx={{ tableLayout: "auto", width: "100%" }}>
 			<TableHead>
-				{/* Group Headers */}
 				<TableRow>
-					<TableCell padding="checkbox" rowSpan={2}>
+					<TableCell padding="checkbox">
 						<Checkbox checked={allSelected} indeterminate={someSelected} onChange={allSelected ? onDeselectAll : onSelectAll} />
 					</TableCell>
-					<TableCell rowSpan={2} sx={{ width: "200px", minWidth: "180px" }}>
-						Strategy
-					</TableCell>
-					<TableCell colSpan={2} sx={{ textAlign: "center", borderBottom: "1px solid var(--mui-palette-divider)" }}>
-						<Typography variant="overline" sx={{ fontWeight: 600, letterSpacing: "0.1em", fontSize: "0.7rem" }}>
-							INVESTI
-						</Typography>
-					</TableCell>
-					<TableCell colSpan={2} sx={{ textAlign: "center", borderBottom: "1px solid var(--mui-palette-divider)" }}>
-						<Typography variant="overline" sx={{ fontWeight: 600, letterSpacing: "0.1em", fontSize: "0.7rem" }}>
-							PROFIT
-						</Typography>
-					</TableCell>
-					<TableCell rowSpan={2} sx={{ width: "80px", minWidth: "70px" }}>
-						Cibles
-					</TableCell>
-					<TableCell rowSpan={2} sx={{ width: "100px", minWidth: "90px" }}>
-						Total Vente %
-					</TableCell>
-					<TableCell rowSpan={2} sx={{ width: "100px", minWidth: "90px" }} />
-				</TableRow>
-				{/* Column Headers */}
-				<TableRow>
-					<TableCell sx={{ width: "120px", minWidth: "110px", fontSize: "0.875rem" }}>Total Investi</TableCell>
-					<TableCell sx={{ width: "130px", minWidth: "120px", fontSize: "0.875rem" }}>QTY</TableCell>
-					<TableCell sx={{ width: "120px", minWidth: "110px", fontSize: "0.875rem" }}>Profit(USD)</TableCell>
-					<TableCell sx={{ width: "120px", minWidth: "110px", fontSize: "0.875rem" }}>Profit(%)</TableCell>
+					<TableCell sx={{ minWidth: "180px", fontWeight: 600 }}>Strategy Name</TableCell>
+					<TableCell align="right" sx={{ minWidth: "120px", fontWeight: 600 }}>Total Invested</TableCell>
+					<TableCell align="right" sx={{ minWidth: "120px", fontWeight: 600 }}>Quantity</TableCell>
+					<TableCell align="right" sx={{ minWidth: "140px", fontWeight: 600 }}>Total Amount Collected</TableCell>
+					<TableCell align="right" sx={{ minWidth: "120px", fontWeight: 600 }}>Net Result</TableCell>
+					<TableCell align="right" sx={{ minWidth: "130px", fontWeight: 600 }}>Bag Percentage Sold</TableCell>
+					<TableCell align="right" sx={{ minWidth: "130px", fontWeight: 600 }}>Remaining Token</TableCell>
+					<TableCell align="center" sx={{ minWidth: "60px", fontWeight: 600 }}>TP</TableCell>
+					<TableCell align="center" sx={{ minWidth: "100px", fontWeight: 600, color: "text.disabled" }}>SL (To be soon)</TableCell>
+					<TableCell align="center" sx={{ minWidth: "100px", fontWeight: 600 }}>Actions</TableCell>
 				</TableRow>
 			</TableHead>
 			<TableBody>
@@ -380,74 +363,62 @@ function StrategyRow({
 						</Stack>
 					</Tooltip>
 				</TableCell>
-				<TableCell>
+				<TableCell align="right">
 					<Typography variant="body2" sx={{ fontSize: "0.875rem", whiteSpace: "nowrap" }}>
 						{formatCurrency(calculations.totalInvested, "$", 2)}
 					</Typography>
 				</TableCell>
-				<TableCell>
-					<Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
-						<Avatar
-							src={getTokenLogoUrl(row.symbol, row.cmcId) || undefined}
-							alt={row.symbol}
-							sx={{
-								width: 20,
-								height: 20,
-								fontSize: "0.625rem",
-								bgcolor: "var(--mui-palette-primary-main)",
-							}}
-						>
-							{row.symbol.charAt(0)}
-						</Avatar>
-						<Typography variant="body2" sx={{ fontSize: "0.875rem", whiteSpace: "nowrap" }}>
-							{row.baseQuantity.toLocaleString(undefined, { maximumFractionDigits: 6 })} {row.symbol}
-						</Typography>
-					</Stack>
-				</TableCell>
-				<TableCell>
-					{isLoadingPrice ? (
-						<CircularProgress size={16} />
-					) : (
-						<Typography
-							variant="body2"
-							sx={{
-								color: calculations.profitUSD >= 0 ? "success.main" : "error.main",
-								fontSize: "0.875rem",
-								whiteSpace: "nowrap",
-							}}
-						>
-							{formatCurrency(calculations.profitUSD, "$", 2)}
-						</Typography>
-					)}
-				</TableCell>
-				<TableCell>
-					{isLoadingPrice ? (
-						<CircularProgress size={16} />
-					) : (
-						<Typography
-							variant="body2"
-							sx={{
-								color: calculations.profitPercentage >= 0 ? "success.main" : "error.main",
-								fontSize: "0.875rem",
-								whiteSpace: "nowrap",
-							}}
-						>
-							{formatPercentage(calculations.profitPercentage)}
-						</Typography>
-					)}
-				</TableCell>
-				<TableCell>
-					<Typography variant="body2" sx={{ fontSize: "0.875rem" }}>
-						{calculations.numberOfTargets}
+				<TableCell align="right">
+					<Typography variant="body2" sx={{ fontSize: "0.875rem", whiteSpace: "nowrap" }}>
+						{row.baseQuantity.toLocaleString(undefined, { maximumFractionDigits: 8 })} {row.symbol}
 					</Typography>
 				</TableCell>
-				<TableCell>
+				<TableCell align="right">
+					<Typography variant="body2" sx={{ fontSize: "0.875rem", whiteSpace: "nowrap", color: "success.main" }}>
+						{formatCurrency(calculations.totalCashedIn, "$", 2)}
+					</Typography>
+				</TableCell>
+				<TableCell align="right">
+					<Typography
+						variant="body2"
+						sx={{
+							fontSize: "0.875rem",
+							whiteSpace: "nowrap",
+							color: calculations.netResult >= 0 ? "success.main" : "error.main",
+						}}
+					>
+						{formatCurrency(calculations.netResult, "$", 2)}
+					</Typography>
+				</TableCell>
+				<TableCell align="right">
 					<Typography variant="body2" sx={{ fontSize: "0.875rem", whiteSpace: "nowrap" }}>
 						{formatPercentage(calculations.totalSellPercentage)}
 					</Typography>
 				</TableCell>
-				<TableCell align="right" onClick={(e) => e.stopPropagation()}>
-					<Stack direction="row" spacing={0.5} sx={{ alignItems: "center", justifyContent: "flex-end" }}>
+				<TableCell align="right">
+					<Typography variant="body2" sx={{ fontSize: "0.875rem", whiteSpace: "nowrap", color: "warning.main" }}>
+						{calculations.remainingTokens.toLocaleString(undefined, { maximumFractionDigits: 8 })}
+					</Typography>
+				</TableCell>
+				<TableCell align="center">
+					<Typography variant="body2" sx={{ fontSize: "0.875rem" }}>
+						{calculations.numberOfTargets}
+					</Typography>
+				</TableCell>
+				<TableCell align="center" sx={{ opacity: 0.4 }}>
+					<Typography variant="body2" sx={{ fontSize: "0.875rem", color: "text.disabled" }}>
+						—
+					</Typography>
+				</TableCell>
+				<TableCell align="center" onClick={(e) => e.stopPropagation()}>
+					<Stack direction="row" spacing={0.5} sx={{ alignItems: "center", justifyContent: "center" }}>
+						{row.notes && row.notes.trim() && (
+							<Tooltip title={row.notes} arrow placement="top">
+								<IconButton size="small" sx={{ padding: "2px", color: "text.secondary" }}>
+									<NoteIcon fontSize="var(--icon-fontSize-sm)" />
+								</IconButton>
+							</Tooltip>
+						)}
 						<IconButton
 							onClick={(e) => {
 								e.stopPropagation();
@@ -473,7 +444,7 @@ function StrategyRow({
 			</TableRow>
 			{isExpanded && row.steps && row.steps.length > 0 && (
 				<TableRow>
-					<TableCell colSpan={9} sx={{ py: 0, borderBottom: "1px solid var(--mui-palette-divider)" }}>
+					<TableCell colSpan={11} sx={{ py: 0, borderBottom: "1px solid var(--mui-palette-divider)" }}>
 						<Collapse in={isExpanded} timeout="auto" unmountOnExit>
 							<Box sx={{ py: 2, px: 2, bgcolor: "var(--mui-palette-background-paper)" }}>
 								<Table size="small" sx={{ "& .MuiTableCell-root": { borderBottom: "1px solid var(--mui-palette-divider)", py: 1 } }}>

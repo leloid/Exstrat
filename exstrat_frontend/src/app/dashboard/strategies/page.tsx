@@ -400,7 +400,7 @@ function StrategiesPageContent(): React.JSX.Element {
 						<Box sx={{ p: 2, borderBottom: "1px solid var(--mui-palette-divider)" }}>
 							<Stack direction="row" spacing={2} sx={{ alignItems: "center", justifyContent: "space-between" }}>
 								<Typography variant="h5" sx={{ fontWeight: 600 }}>
-									My Strategy
+									My Strategies
 								</Typography>
 								<Box sx={{ flex: "1 1 auto" }} />
 								<Stack direction="row" spacing={2} sx={{ alignItems: "center" }}>
