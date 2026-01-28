@@ -1928,28 +1928,23 @@ export default function Page(): React.JSX.Element {
 								<PlusIcon fontSize="var(--icon-fontSize-lg)" />
 								<Typography variant="h6">Transactions</Typography>
 								{portfolios.length >= 2 && (
-									<Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
-										<Typography variant="caption" color="text.secondary" sx={{ fontSize: "0.75rem" }}>
-											Wallet filter
-										</Typography>
-										<FormControl size="small" sx={{ minWidth: 150 }}>
-											<Select
-												value={transactionWalletFilter}
-												onChange={(e) => {
-													setTransactionWalletFilter(e.target.value);
-													setTransactionPage(0); // Reset to first page on filter change
-												}}
-												displayEmpty
-											>
-												<MenuItem value="global">Global</MenuItem>
-												{portfolios.map((portfolio) => (
-													<MenuItem key={portfolio.id} value={portfolio.id}>
-														{portfolio.name}
-													</MenuItem>
-												))}
-											</Select>
-										</FormControl>
-									</Stack>
+									<FormControl size="small" sx={{ minWidth: 150 }}>
+										<Select
+											value={transactionWalletFilter}
+											onChange={(e) => {
+												setTransactionWalletFilter(e.target.value);
+												setTransactionPage(0); // Reset to first page on filter change
+											}}
+											displayEmpty
+										>
+											<MenuItem value="global">Global</MenuItem>
+											{portfolios.map((portfolio) => (
+												<MenuItem key={portfolio.id} value={portfolio.id}>
+													{portfolio.name}
+												</MenuItem>
+											))}
+										</Select>
+									</FormControl>
 								)}
 								{selectedTransactionIds.size > 0 && (
 									<Button
