@@ -37,6 +37,7 @@ import { StrategiesTable } from "./strategies-table";
 import { useDebounce } from "@/hooks/use-debounce";
 import { useSelection } from "@/hooks/use-selection";
 import { toast } from "@/components/core/toaster";
+import { ConfirmModal } from "@/app/dashboard/configuration/confirm-modal";
 
 export default function Page(): React.JSX.Element {
 	return (
@@ -58,6 +59,8 @@ function StrategiesPageContent(): React.JSX.Element {
 	const [editingStrategy, setEditingStrategy] = React.useState<StrategyResponse | null>(null);
 	const [tokenPrices, setTokenPrices] = React.useState<Map<string, number>>(new Map());
 	const [showDeleteMultipleStrategiesModal, setShowDeleteMultipleStrategiesModal] = React.useState(false);
+	const [showDeleteStrategyModal, setShowDeleteStrategyModal] = React.useState(false);
+	const [strategyToDelete, setStrategyToDelete] = React.useState<string | null>(null);
 	const [expandedStrategyId, setExpandedStrategyId] = React.useState<string | null>(null);
 	
 	// Pagination states
@@ -219,21 +222,28 @@ function StrategiesPageContent(): React.JSX.Element {
 	}, []);
 
 	const handleDeleteStrategy = React.useCallback(
-		async (strategyId: string) => {
-			if (window.confirm("Are you sure you want to delete this strategy?")) {
-				try {
-					await strategiesApi.deleteStrategy(strategyId);
-					await loadStrategies();
-					selection.deselectOne(strategyId);
-					toast.success("Strategy deleted successfully");
-				} catch (error) {
-					console.error("Error deleting strategy:", error);
-					toast.error("Failed to delete strategy. Please try again.");
-				}
-			}
+		(strategyId: string) => {
+			setStrategyToDelete(strategyId);
+			setShowDeleteStrategyModal(true);
 		},
-		[loadStrategies, selection]
+		[]
 	);
+
+	const confirmDeleteStrategy = React.useCallback(async () => {
+		if (!strategyToDelete) return;
+		
+		try {
+			await strategiesApi.deleteStrategy(strategyToDelete);
+			await loadStrategies();
+			selection.deselectOne(strategyToDelete);
+			setShowDeleteStrategyModal(false);
+			setStrategyToDelete(null);
+			toast.success("Strategy deleted successfully");
+		} catch (error) {
+			console.error("Error deleting strategy:", error);
+			toast.error("Failed to delete strategy. Please try again.");
+		}
+	}, [strategyToDelete, loadStrategies, selection]);
 
 	const confirmDeleteMultipleStrategies = React.useCallback(async () => {
 		const selectedIds = Array.from(selection.selected);
@@ -468,6 +478,20 @@ function StrategiesPageContent(): React.JSX.Element {
 				onSuccess={loadStrategies}
 				open={showEditModal}
 				strategy={editingStrategy}
+			/>
+
+			{/* Delete Strategy Confirmation Modal */}
+			<ConfirmModal
+				open={showDeleteStrategyModal}
+				onClose={() => {
+					setShowDeleteStrategyModal(false);
+					setStrategyToDelete(null);
+				}}
+				onConfirm={confirmDeleteStrategy}
+				title="Delete Strategy"
+				message="Are you sure you want to delete this strategy? This action is irreversible and will permanently delete all associated data."
+				confirmText="Delete"
+				cancelText="Cancel"
 			/>
 
 			{/* Delete Multiple Strategies Confirmation Modal */}

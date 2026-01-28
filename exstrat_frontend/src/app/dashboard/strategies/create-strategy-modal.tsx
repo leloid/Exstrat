@@ -1113,8 +1113,6 @@ export function CreateStrategyModal({ onClose, onSuccess, open }: CreateStrategy
 						}}
 					>
 						<Stack spacing={3}>
-							<Typography variant="h6">Your Investment Data</Typography>
-							
 							{/* Token Display */}
 							{selectedToken && (
 								<Card variant="outlined" sx={{ bgcolor: "var(--mui-palette-background-level1)" }}>
@@ -1153,8 +1151,11 @@ export function CreateStrategyModal({ onClose, onSuccess, open }: CreateStrategy
 								</Card>
 							)}
 							
-							<Card variant="outlined">
+							<Card variant="outlined" sx={{ bgcolor: "var(--mui-palette-background-level1)" }}>
 								<CardContent>
+									<Typography variant="subtitle1" sx={{ mb: 2 }}>
+										Investment Data
+									</Typography>
 									<Stack spacing={2}>
 										<Stack direction="row" spacing={2} sx={{ justifyContent: "space-between" }}>
 											<Typography color="text.secondary" variant="body2">
@@ -1164,6 +1165,16 @@ export function CreateStrategyModal({ onClose, onSuccess, open }: CreateStrategy
 												{investmentData?.numberOfTransactions || (strategyQuantity && strategyAveragePrice ? 1 : 0)}
 											</Typography>
 										</Stack>
+										{selectedPortfolioId && selectedPortfolioId !== "virtual" && (
+											<Stack direction="row" spacing={2} sx={{ justifyContent: "space-between" }}>
+												<Typography color="text.secondary" variant="body2">
+													Wallet
+												</Typography>
+												<Typography variant="body2">
+													{portfolios.find((p) => p.id === selectedPortfolioId)?.name || "Unknown"}
+												</Typography>
+											</Stack>
+										)}
 										<Stack direction="row" spacing={2} sx={{ justifyContent: "space-between" }}>
 											<Typography color="text.secondary" variant="body2">
 												Total invested
@@ -1197,6 +1208,16 @@ export function CreateStrategyModal({ onClose, onSuccess, open }: CreateStrategy
 														: "$0.00"}
 											</Typography>
 										</Stack>
+										{selectedToken?.quote?.USD?.price && (
+											<Stack direction="row" spacing={2} sx={{ justifyContent: "space-between" }}>
+												<Typography color="text.secondary" variant="body2">
+													Current price
+												</Typography>
+												<Typography variant="body2">
+													{formatCurrency(selectedToken.quote?.USD?.price || null, "$", 2)}
+												</Typography>
+											</Stack>
+										)}
 										{investmentData?.currentPNL !== undefined && (
 											<>
 												<Divider />
@@ -1221,19 +1242,6 @@ export function CreateStrategyModal({ onClose, onSuccess, open }: CreateStrategy
 													>
 														{(investmentData.currentPNLPercentage ?? 0) >= 0 ? "+" : ""}
 														{(investmentData.currentPNLPercentage ?? 0).toFixed(2)}%
-													</Typography>
-												</Stack>
-											</>
-										)}
-										{selectedToken?.quote?.USD?.price && (
-											<>
-												<Divider />
-												<Stack direction="row" spacing={2} sx={{ justifyContent: "space-between" }}>
-													<Typography color="text.secondary" variant="body2">
-														Current price
-													</Typography>
-													<Typography variant="body2">
-														{formatCurrency(selectedToken.quote?.USD?.price || null, "$", 2)}
 													</Typography>
 												</Stack>
 											</>
