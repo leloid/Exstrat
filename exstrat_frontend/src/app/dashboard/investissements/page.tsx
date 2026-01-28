@@ -1228,15 +1228,16 @@ export default function Page(): React.JSX.Element {
 		<Box
 			sx={{
 				width: "100%",
-				maxWidth: { xs: "100%", sm: "100%", md: "var(--Content-maxWidth)", lg: "var(--Content-maxWidth)" },
-				m: { xs: 0, sm: 1, md: "var(--Content-margin)" },
-				p: { xs: 2, sm: 2, md: "var(--Content-padding)" },
+				maxWidth: "100%",
+				m: 0,
+				p: { xs: 2, sm: 3, md: 4 },
 			}}
 		>
 			{portfolios.length === 0 ? (
 				// Empty state when no wallets exist
 				<Card
 					sx={{
+						width: "100%",
 						py: { xs: 6, sm: 8 },
 						px: { xs: 3, sm: 4 },
 						textAlign: "center",
@@ -1382,7 +1383,7 @@ export default function Page(): React.JSX.Element {
 					<Grid container spacing={{ xs: 2, sm: 3 }}>
 						{/* Wallets Section */}
 						<Grid size={{ xs: 12 }}>
-							<Card>
+							<Card sx={{ width: "100%" }}>
 								<CardContent>
 									<Stack direction={{ xs: "column", sm: "row" }} spacing={{ xs: 2, sm: 2 }} sx={{ alignItems: { xs: "stretch", sm: "center" }, justifyContent: "space-between", mb: 3 }}>
 										<Stack direction="row" spacing={2} sx={{ alignItems: "center" }}>
@@ -1906,7 +1907,7 @@ export default function Page(): React.JSX.Element {
 
 				{/* Transactions Section */}
 				{portfolios.length > 0 && (
-					<Card>
+					<Card sx={{ width: "100%" }}>
 					<CardContent>
 						<Stack direction={{ xs: "column", sm: "row" }} spacing={{ xs: 2, sm: 2 }} sx={{ alignItems: { xs: "stretch", sm: "center" }, justifyContent: "space-between", mb: 3 }}>
 							<Stack direction="row" spacing={2} sx={{ alignItems: "center", flexWrap: "wrap" }}>
@@ -2519,7 +2520,7 @@ export default function Page(): React.JSX.Element {
 			>
 				<DialogContent sx={{ p: 0 }}>
 					{selectedWalletData && (
-						<Card>
+						<Card sx={{ width: "100%" }}>
 							<CardHeader
 								avatar={
 									<Avatar
@@ -2970,7 +2971,7 @@ function AllTokensModal({
 					/>
 
 					{/* Table */}
-					<Box sx={{ overflowX: "auto" }}>
+					<Box sx={{ overflowX: "auto", width: "100%" }}>
 						<Table>
 							<TableHead>
 								<TableRow>

@@ -309,10 +309,10 @@ function StrategiesPageContent(): React.JSX.Element {
 	return (
 		<Box
 			sx={{
-				maxWidth: "var(--Content-maxWidth)",
-				m: "var(--Content-margin)",
-				p: "var(--Content-padding)",
-				width: "var(--Content-width)",
+				width: "100%",
+				maxWidth: "100%",
+				m: 0,
+				p: { xs: 2, sm: 3, md: 4 },
 			}}
 		>
 			<Stack spacing={4}>
@@ -330,6 +330,7 @@ function StrategiesPageContent(): React.JSX.Element {
 				{!hasStrategies ? (
 					<Card
 						sx={{
+							width: "100%",
 							py: { xs: 6, sm: 8 },
 							px: { xs: 3, sm: 4 },
 							textAlign: "center",
@@ -385,7 +386,7 @@ function StrategiesPageContent(): React.JSX.Element {
 						</Stack>
 					</Card>
 				) : displayStrategies.length === 0 ? (
-					<Card>
+					<Card sx={{ width: "100%" }}>
 						<CardContent sx={{ py: 8, textAlign: "center" }}>
 							<Stack spacing={2} sx={{ alignItems: "center" }}>
 								<Typography variant="h6">No Strategies Found</Typography>
@@ -396,7 +397,7 @@ function StrategiesPageContent(): React.JSX.Element {
 						</CardContent>
 					</Card>
 				) : (
-					<Card>
+					<Card sx={{ width: "100%" }}>
 						<Box sx={{ p: 2, borderBottom: "1px solid var(--mui-palette-divider)" }}>
 							<Stack direction="row" spacing={2} sx={{ alignItems: "center", justifyContent: "space-between" }}>
 								<Typography variant="h5" sx={{ fontWeight: 600 }}>
@@ -431,7 +432,7 @@ function StrategiesPageContent(): React.JSX.Element {
 							</Stack>
 						</Box>
 						<Divider />
-						<Box sx={{ overflowX: "auto" }}>
+						<Box sx={{ overflowX: "auto", width: "100%" }}>
 							<StrategiesTable
 								onDelete={handleDeleteStrategy}
 								onEdit={handleEditStrategy}
