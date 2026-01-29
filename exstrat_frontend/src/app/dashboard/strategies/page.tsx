@@ -38,6 +38,11 @@ import { useDebounce } from "@/hooks/use-debounce";
 import { useSelection } from "@/hooks/use-selection";
 import { toast } from "@/components/core/toaster";
 import { ConfirmModal } from "@/app/dashboard/configuration/confirm-modal";
+import FormControl from "@mui/material/FormControl";
+import Select from "@mui/material/Select";
+import MenuItem from "@mui/material/MenuItem";
+import type { Portfolio } from "@/types/portfolio";
+import type { TransactionResponse } from "@/types/transactions";
 
 export default function Page(): React.JSX.Element {
 	return (
@@ -62,6 +67,9 @@ function StrategiesPageContent(): React.JSX.Element {
 	const [showDeleteStrategyModal, setShowDeleteStrategyModal] = React.useState(false);
 	const [strategyToDelete, setStrategyToDelete] = React.useState<string | null>(null);
 	const [expandedStrategyId, setExpandedStrategyId] = React.useState<string | null>(null);
+	const [walletFilter, setWalletFilter] = React.useState<string>("global"); // "global" or portfolioId
+	const [portfolios, setPortfolios] = React.useState<Portfolio[]>([]);
+	const [transactions, setTransactions] = React.useState<TransactionResponse[]>([]);
 	
 	// Pagination states
 	const [page, setPage] = React.useState(0);
@@ -186,20 +194,68 @@ function StrategiesPageContent(): React.JSX.Element {
 		loadTokenPrices();
 	}, [loadTokenPrices]);
 
-	// Filter strategies by search query (client-side for now, can be moved to server)
+	// Load portfolios
+	React.useEffect(() => {
+		const loadPortfolios = async () => {
+			try {
+				const portfoliosData = await getPortfolios();
+				setPortfolios(portfoliosData);
+			} catch (error) {
+				console.error("Error loading portfolios:", error);
+			}
+		};
+		loadPortfolios();
+	}, []);
+
+	// Load transactions
+	React.useEffect(() => {
+		const loadTransactions = async () => {
+			try {
+				const response = await transactionsApi.getTransactions();
+				const transactionsArray = Array.isArray(response?.transactions)
+					? response.transactions
+					: [];
+				setTransactions(transactionsArray);
+			} catch (error) {
+				console.error("Error loading transactions:", error);
+			}
+		};
+		loadTransactions();
+	}, []);
+
+	// Filter strategies by wallet and search query
 	const filteredStrategies = React.useMemo(() => {
-		if (!debouncedSearchQuery.trim()) {
-			return strategies;
+		let filtered = strategies;
+
+		// Filter by wallet if not "global"
+		if (walletFilter !== "global") {
+			// Get transactions for the selected wallet
+			const walletTransactions = transactions.filter(
+				(transaction) => transaction.portfolioId === walletFilter
+			);
+			// Get unique symbols from wallet transactions
+			const walletSymbols = new Set(
+				walletTransactions.map((t) => t.symbol.toUpperCase())
+			);
+			// Filter strategies that match wallet tokens
+			filtered = filtered.filter((strategy) =>
+				walletSymbols.has(strategy.symbol.toUpperCase())
+			);
 		}
 
-		const query = debouncedSearchQuery.toLowerCase();
-		return strategies.filter(
+		// Filter by search query
+		if (debouncedSearchQuery.trim()) {
+			const query = debouncedSearchQuery.toLowerCase();
+			filtered = filtered.filter(
 				(strategy) =>
 					strategy.name.toLowerCase().includes(query) ||
 					strategy.symbol.toLowerCase().includes(query) ||
 					strategy.tokenName.toLowerCase().includes(query)
 			);
-	}, [strategies, debouncedSearchQuery]);
+		}
+
+		return filtered;
+	}, [strategies, debouncedSearchQuery, walletFilter, transactions]);
 
 	// Reset page when search changes
 	React.useEffect(() => {
@@ -385,17 +441,6 @@ function StrategiesPageContent(): React.JSX.Element {
 							</Button>
 						</Stack>
 					</Card>
-				) : displayStrategies.length === 0 ? (
-					<Card sx={{ width: "100%" }}>
-						<CardContent sx={{ py: 8, textAlign: "center" }}>
-							<Stack spacing={2} sx={{ alignItems: "center" }}>
-								<Typography variant="h6">No Strategies Found</Typography>
-								<Typography color="text.secondary" variant="body2">
-									Try adjusting your search or filter criteria.
-								</Typography>
-							</Stack>
-						</CardContent>
-					</Card>
 				) : (
 					<Card sx={{ width: "100%" }}>
 						<Box sx={{ p: 2, borderBottom: "1px solid var(--mui-palette-divider)" }}>
@@ -405,6 +450,23 @@ function StrategiesPageContent(): React.JSX.Element {
 								</Typography>
 								<Box sx={{ flex: "1 1 auto" }} />
 								<Stack direction="row" spacing={2} sx={{ alignItems: "center" }}>
+									<FormControl size="small" sx={{ minWidth: 150 }}>
+										<Select
+											value={walletFilter}
+											onChange={(e) => {
+												setWalletFilter(e.target.value);
+												setPage(0); // Reset to first page on filter change
+											}}
+											displayEmpty
+										>
+											<MenuItem value="global">Global</MenuItem>
+											{portfolios.map((portfolio) => (
+												<MenuItem key={portfolio.id} value={portfolio.id}>
+													{portfolio.name}
+												</MenuItem>
+											))}
+										</Select>
+									</FormControl>
 									<OutlinedInput
 										onChange={(e) => setSearchQuery(e.target.value)}
 										placeholder="Search strategies..."
@@ -432,36 +494,49 @@ function StrategiesPageContent(): React.JSX.Element {
 							</Stack>
 						</Box>
 						<Divider />
-						<Box sx={{ overflowX: "auto", width: "100%" }}>
-							<StrategiesTable
-								onDelete={handleDeleteStrategy}
-								onEdit={handleEditStrategy}
-								rows={displayStrategies}
-								selectedIds={selection.selected}
-								tokenPrices={tokenPrices}
-								onSelect={selection.selectOne}
-								onDeselect={selection.deselectOne}
-								onSelectAll={selection.selectAll}
-								onDeselectAll={selection.deselectAll}
-								isLoadingPrices={isLoadingPrices}
-								expandedStrategyId={expandedStrategyId}
-								onToggleExpand={(strategyId) => {
-									setExpandedStrategyId((prev) => (prev === strategyId ? null : strategyId));
-								}}
-							/>
-						</Box>
-						{totalStrategies > 0 && (
-							<TablePagination
-								component="div"
-								count={totalStrategies}
-								onPageChange={handlePageChange}
-								onRowsPerPageChange={handleRowsPerPageChange}
-								page={page}
-								rowsPerPage={rowsPerPage}
-								rowsPerPageOptions={[5, 10, 25, 50]}
-								labelRowsPerPage="Rows per page:"
-								labelDisplayedRows={({ from, to, count }) => `${from}-${to} of ${count !== -1 ? count : `more than ${to}`}`}
-							/>
+						{displayStrategies.length === 0 ? (
+							<CardContent sx={{ py: 8, textAlign: "center" }}>
+								<Stack spacing={2} sx={{ alignItems: "center" }}>
+									<Typography variant="h6">No Strategies Found</Typography>
+									<Typography color="text.secondary" variant="body2">
+										Try adjusting your search or filter criteria.
+									</Typography>
+								</Stack>
+							</CardContent>
+						) : (
+							<>
+								<Box sx={{ overflowX: "auto", width: "100%" }}>
+									<StrategiesTable
+										onDelete={handleDeleteStrategy}
+										onEdit={handleEditStrategy}
+										rows={displayStrategies}
+										selectedIds={selection.selected}
+										tokenPrices={tokenPrices}
+										onSelect={selection.selectOne}
+										onDeselect={selection.deselectOne}
+										onSelectAll={selection.selectAll}
+										onDeselectAll={selection.deselectAll}
+										isLoadingPrices={isLoadingPrices}
+										expandedStrategyId={expandedStrategyId}
+										onToggleExpand={(strategyId) => {
+											setExpandedStrategyId((prev) => (prev === strategyId ? null : strategyId));
+										}}
+									/>
+								</Box>
+								{totalStrategies > 0 && (
+									<TablePagination
+										component="div"
+										count={totalStrategies}
+										onPageChange={handlePageChange}
+										onRowsPerPageChange={handleRowsPerPageChange}
+										page={page}
+										rowsPerPage={rowsPerPage}
+										rowsPerPageOptions={[5, 10, 25, 50]}
+										labelRowsPerPage="Rows per page:"
+										labelDisplayedRows={({ from, to, count }) => `${from}-${to} of ${count !== -1 ? count : `more than ${to}`}`}
+									/>
+								)}
+							</>
 						)}
 					</Card>
 				)}

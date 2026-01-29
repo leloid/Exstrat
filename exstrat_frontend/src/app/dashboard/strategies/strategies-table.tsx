@@ -451,11 +451,10 @@ function StrategyRow({
 									<TableHead>
 										<TableRow>
 											<TableCell sx={{ width: "60px", fontWeight: 600, fontSize: "0.75rem" }}>TP</TableCell>
-											<TableCell sx={{ fontWeight: 600, fontSize: "0.75rem" }}>Type</TableCell>
+											<TableCell sx={{ fontWeight: 600, fontSize: "0.75rem" }}>Exit type</TableCell>
 											<TableCell align="right" sx={{ fontWeight: 600, fontSize: "0.75rem" }}>Target</TableCell>
-											<TableCell align="right" sx={{ fontWeight: 600, fontSize: "0.75rem" }}>Sell %</TableCell>
-											<TableCell align="right" sx={{ fontWeight: 600, fontSize: "0.75rem" }}>Quantity</TableCell>
-											<TableCell align="right" sx={{ fontWeight: 600, fontSize: "0.75rem" }}>Amount</TableCell>
+											<TableCell align="right" sx={{ fontWeight: 600, fontSize: "0.75rem" }}>Token quantity to sell</TableCell>
+											<TableCell align="right" sx={{ fontWeight: 600, fontSize: "0.75rem" }}>Amount collected</TableCell>
 											<TableCell sx={{ width: "100px", fontWeight: 600, fontSize: "0.75rem" }}>Status</TableCell>
 										</TableRow>
 									</TableHead>
@@ -486,14 +485,7 @@ function StrategyRow({
 													</TableCell>
 													<TableCell align="right">
 														<Typography variant="body2" sx={{ fontSize: "0.75rem", fontWeight: 500, color: "primary.main" }}>
-															{targetType === "percentage"
-																? `${targetValue.toFixed(2)}%`
-																: formatCurrency(targetValue, "$", 2)}
-														</Typography>
-													</TableCell>
-													<TableCell align="right">
-														<Typography variant="body2" sx={{ fontSize: "0.75rem", fontWeight: 500, color: "secondary.main" }}>
-															{formatPercentage(step.sellPercentage)}
+															{formatCurrency(targetPrice, "$", 2)}
 														</Typography>
 													</TableCell>
 													<TableCell align="right">
