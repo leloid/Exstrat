@@ -322,14 +322,14 @@ function ForecastPageContent(): React.JSX.Element {
 								<Stack direction="row" spacing={2} sx={{ alignItems: "center" }}>
 									<OutlinedInput
 										onChange={(e) => setSearchQuery(e.target.value)}
-										placeholder="Search forecasts by name or wallet..."
+										placeholder="Search Forecast or Wallet"
 										size="small"
 										startAdornment={
 											<InputAdornment position="start">
 												<MagnifyingGlassIcon fontSize="var(--icon-fontSize-md)" />
 											</InputAdornment>
 										}
-										sx={{ maxWidth: "300px", width: "100%" }}
+										sx={{ maxWidth: "400px", width: "100%", minWidth: "250px" }}
 										value={searchQuery}
 									/>
 									{selectedForecastIds.size > 0 && (
