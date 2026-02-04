@@ -613,11 +613,12 @@ export function CreateTransactionModal({
 											>
 												<CardContent>
 													<Stack spacing={3}>
+														{/* Header */}
 														<Stack direction="row" spacing={2} sx={{ alignItems: "center" }}>
 															<Avatar
 																sx={{
-																	bgcolor: "success.light",
-																	color: "success.dark",
+																	bgcolor: "primary.main",
+																	color: "primary.contrastText",
 																	width: 48,
 																	height: 48,
 																}}
@@ -628,93 +629,158 @@ export function CreateTransactionModal({
 																<Typography variant="h6" fontWeight={600}>
 																	Transaction Summary
 																</Typography>
+																<Typography color="text.secondary" variant="body2">
+																	Review your transaction details before confirming
+																</Typography>
 															</Box>
 														</Stack>
-														<Divider />
+
 														{selectedToken && (
-															<Grid container spacing={3}>
-																<Grid size={{ xs: 12, sm: 6 }}>
-																	<Typography color="text.secondary" variant="caption" sx={{ fontWeight: 600, mb: 0.5, display: "block" }}>
-																		Token
-																	</Typography>
-																	<Stack direction="row" spacing={1.5} sx={{ alignItems: "center" }}>
-																		{tokenLogoUrl ? (
-																			<Avatar src={tokenLogoUrl} sx={{ width: 32, height: 32 }} />
-																		) : (
-																			<Avatar sx={{ width: 32, height: 32, bgcolor: "primary.main" }}>
-																				{selectedToken.symbol.charAt(0)}
-																			</Avatar>
-																		)}
-																		<Box>
-																			<Typography variant="subtitle1" fontWeight={600}>
-																				{selectedToken.symbol}
-																			</Typography>
-																			<Typography color="text.secondary" variant="body2">
-																				{selectedToken.name}
-																			</Typography>
-																		</Box>
+															<>
+																{/* Token & Transaction Info Section */}
+																<Box
+																	sx={{
+																		p: 2.5,
+																		bgcolor: "action.hover",
+																		borderRadius: 2,
+																		border: "1px solid",
+																		borderColor: "divider",
+																	}}
+																>
+																	<Stack spacing={2.5}>
+																		{/* Token Info */}
+																		<Stack direction="row" spacing={2} sx={{ alignItems: "center" }}>
+																			{tokenLogoUrl ? (
+																				<Avatar src={tokenLogoUrl} sx={{ width: 48, height: 48 }} />
+																			) : (
+																				<Avatar sx={{ width: 48, height: 48, bgcolor: "primary.main" }}>
+																					{selectedToken.symbol.charAt(0)}
+																				</Avatar>
+																			)}
+																			<Box sx={{ flex: 1 }}>
+																				<Typography variant="h6" fontWeight={600}>
+																					{selectedToken.symbol}
+																				</Typography>
+																				<Typography color="text.secondary" variant="body2">
+																					{selectedToken.name}
+																				</Typography>
+																			</Box>
+																			<Chip
+																				label={transactionType}
+																				size="medium"
+																				sx={{ 
+																					fontWeight: 600,
+																					bgcolor: transactionType === "BUY" ? "success.light" : "error.light",
+																					color: transactionType === "BUY" ? "success.dark" : "error.dark",
+																				}}
+																			/>
+																		</Stack>
+
+																		<Divider />
+
+																		{/* Wallet Info */}
+																		<Stack direction="row" spacing={1.5} sx={{ alignItems: "center" }}>
+																			<WalletIcon size={24} color="var(--mui-palette-primary-main)" />
+																			<Box>
+																				<Typography color="text.secondary" variant="caption" sx={{ fontWeight: 600, display: "block" }}>
+																					Wallet
+																				</Typography>
+																				<Typography variant="subtitle1" fontWeight={600}>
+																					{portfolios.find((p) => p.id === selectedPortfolioId)?.name || "N/A"}
+																				</Typography>
+																			</Box>
+																		</Stack>
 																	</Stack>
-																</Grid>
-																<Grid size={{ xs: 12, sm: 6 }}>
-																	<Typography color="text.secondary" variant="caption" sx={{ fontWeight: 600, mb: 0.5, display: "block" }}>
-																		Type
+																</Box>
+
+																{/* Financial Details Section */}
+																<Box
+																	sx={{
+																		p: 2.5,
+																		bgcolor: "background.paper",
+																		borderRadius: 2,
+																		border: "1px solid",
+																		borderColor: "divider",
+																	}}
+																>
+																	<Typography variant="subtitle2" fontWeight={600} sx={{ mb: 2, color: "text.secondary" }}>
+																		Financial Details
 																	</Typography>
-																	<Chip
-																		label={transactionType}
-																		size="medium"
-																		sx={{ 
-																			fontWeight: 600,
-																			bgcolor: "success.light",
-																			color: "success.dark",
-																		}}
-																	/>
-																</Grid>
-																<Grid size={{ xs: 12, sm: 6 }}>
-																	<Typography color="text.secondary" variant="caption" sx={{ fontWeight: 600, mb: 0.5, display: "block" }}>
-																		Wallet
-																	</Typography>
-																	<Stack direction="row" spacing={1.5} sx={{ alignItems: "center" }}>
-																		<WalletIcon size={20} color="var(--mui-palette-primary-main)" />
-																		<Typography variant="subtitle1" fontWeight={600}>
-																			{portfolios.find((p) => p.id === selectedPortfolioId)?.name || "N/A"}
-																		</Typography>
-																	</Stack>
-																</Grid>
-																<Grid size={{ xs: 12, sm: 4 }}>
-																	<Typography color="text.secondary" variant="caption" sx={{ fontWeight: 600, mb: 0.5, display: "block" }}>
-																		Quantity
-																	</Typography>
-																	<Typography variant="h6" fontWeight={600}>
-																		{quantity}
-																	</Typography>
-																</Grid>
-																<Grid size={{ xs: 12, sm: 4 }}>
-																	<Typography color="text.secondary" variant="caption" sx={{ fontWeight: 600, mb: 0.5, display: "block" }}>
-																		Amount Invested
-																	</Typography>
-																	<Typography variant="h6" fontWeight={600}>
-																		{formatCurrency(parseFloat(amountInvested), "$", 2)}
-																	</Typography>
-																</Grid>
-																<Grid size={{ xs: 12, sm: 4 }}>
-																	<Typography color="text.secondary" variant="caption" sx={{ fontWeight: 600, mb: 0.5, display: "block" }}>
-																		Average Price
-																	</Typography>
-																	<Typography variant="h6" fontWeight={600}>
-																		{formatCurrency(parseFloat(averagePrice), "$", 8)}
-																	</Typography>
-																</Grid>
+																	<Grid container spacing={3}>
+																		<Grid size={{ xs: 12, sm: 4 }}>
+																			<Box
+																				sx={{
+																					p: 1.5,
+																					bgcolor: "action.hover",
+																					borderRadius: 1.5,
+																					textAlign: "center",
+																				}}
+																			>
+																				<Typography color="text.secondary" variant="caption" sx={{ fontWeight: 600, display: "block", mb: 0.5 }}>
+																					Quantity
+																				</Typography>
+																				<Typography variant="h6" fontWeight={700}>
+																					{quantity}
+																				</Typography>
+																			</Box>
+																		</Grid>
+																		<Grid size={{ xs: 12, sm: 4 }}>
+																			<Box
+																				sx={{
+																					p: 1.5,
+																					bgcolor: "action.hover",
+																					borderRadius: 1.5,
+																					textAlign: "center",
+																				}}
+																			>
+																				<Typography color="text.secondary" variant="caption" sx={{ fontWeight: 600, display: "block", mb: 0.5 }}>
+																					Amount Invested
+																				</Typography>
+																				<Typography variant="h6" fontWeight={700} color="primary.main">
+																					{formatCurrency(parseFloat(amountInvested), "$", 2)}
+																				</Typography>
+																			</Box>
+																		</Grid>
+																		<Grid size={{ xs: 12, sm: 4 }}>
+																			<Box
+																				sx={{
+																					p: 1.5,
+																					bgcolor: "action.hover",
+																					borderRadius: 1.5,
+																					textAlign: "center",
+																				}}
+																			>
+																				<Typography color="text.secondary" variant="caption" sx={{ fontWeight: 600, display: "block", mb: 0.5 }}>
+																					Average Price
+																				</Typography>
+																				<Typography variant="h6" fontWeight={700}>
+																					{formatCurrency(parseFloat(averagePrice), "$", 8)}
+																				</Typography>
+																			</Box>
+																		</Grid>
+																	</Grid>
+																</Box>
+
+																{/* Notes Section */}
 																{notes && (
-																	<Grid size={{ xs: 12 }}>
-																		<Typography color="text.secondary" variant="caption" sx={{ fontWeight: 600, mb: 0.5, display: "block" }}>
+																	<Box
+																		sx={{
+																			p: 2,
+																			bgcolor: "action.hover",
+																			borderRadius: 2,
+																			border: "1px solid",
+																			borderColor: "divider",
+																		}}
+																	>
+																		<Typography color="text.secondary" variant="caption" sx={{ fontWeight: 600, display: "block", mb: 1 }}>
 																			Notes
 																		</Typography>
-																		<Typography variant="body2" sx={{ p: 1.5, bgcolor: "action.hover", borderRadius: 1 }}>
+																		<Typography variant="body2" sx={{ whiteSpace: "pre-wrap" }}>
 																			{notes}
 																		</Typography>
-																	</Grid>
+																	</Box>
 																)}
-															</Grid>
+															</>
 														)}
 													</Stack>
 												</CardContent>
