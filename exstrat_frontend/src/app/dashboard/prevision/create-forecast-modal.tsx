@@ -698,8 +698,8 @@ export function CreateForecastModal({ onClose, onSuccess, open }: CreateForecast
 										Overview of your portfolio forecast based on applied strategies
 									</Typography>
 								</Box>
-								<Grid container spacing={3}>
-									<Grid size={{ xs: 12, sm: 6, md: 4 }}>
+								<Grid container spacing={2}>
+									<Grid size={{ xs: 12, sm: 6, md: 3 }}>
 										<Box
 											sx={{
 												p: 2,
@@ -717,7 +717,7 @@ export function CreateForecastModal({ onClose, onSuccess, open }: CreateForecast
 											</Typography>
 										</Box>
 									</Grid>
-									<Grid size={{ xs: 12, sm: 6, md: 4 }}>
+									<Grid size={{ xs: 12, sm: 6, md: 3 }}>
 										<Box
 											sx={{
 												p: 2,
@@ -735,7 +735,7 @@ export function CreateForecastModal({ onClose, onSuccess, open }: CreateForecast
 											</Typography>
 										</Box>
 									</Grid>
-									<Grid size={{ xs: 12, sm: 6, md: 4 }}>
+									<Grid size={{ xs: 12, sm: 6, md: 3 }}>
 										<Box
 											sx={{
 												p: 2,
@@ -757,7 +757,7 @@ export function CreateForecastModal({ onClose, onSuccess, open }: CreateForecast
 											</Typography>
 										</Box>
 									</Grid>
-									<Grid size={{ xs: 12, sm: 6, md: 4 }}>
+									<Grid size={{ xs: 12, sm: 6, md: 3 }}>
 										<Box
 											sx={{
 												p: 2,
@@ -776,24 +776,6 @@ export function CreateForecastModal({ onClose, onSuccess, open }: CreateForecast
 												sx={{ fontWeight: 700 }}
 											>
 												{formatPercentage(summary.returnPercentage)}
-											</Typography>
-										</Box>
-									</Grid>
-									<Grid size={{ xs: 12, sm: 6, md: 4 }}>
-										<Box
-											sx={{
-												p: 2,
-												bgcolor: "background.paper",
-												borderRadius: 2,
-												border: "1px solid",
-												borderColor: "divider",
-											}}
-										>
-											<Typography color="text.secondary" variant="caption" sx={{ fontWeight: 600, display: "block", mb: 0.5 }}>
-												Remaining Tokens Value
-											</Typography>
-											<Typography variant="h6" sx={{ fontWeight: 700 }}>
-												{formatCurrency(summary.remainingTokensValue, "$", 2)}
 											</Typography>
 										</Box>
 									</Grid>
