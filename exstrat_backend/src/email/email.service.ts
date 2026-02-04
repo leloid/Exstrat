@@ -639,7 +639,7 @@ export class EmailService {
     const { to, resetUrl } = data;
 
     try {
-      const subject = 'Réinitialisation de votre mot de passe exStrat';
+      const subject = 'Reset your exStrat password';
       const html = this.generatePasswordResetEmail({ resetUrl });
 
       this.logger.log(`Attempting to send password reset email to ${to} from ${this.fromEmail}`);
@@ -674,11 +674,11 @@ export class EmailService {
 
     return `
       <!DOCTYPE html>
-      <html lang="fr">
+      <html lang="en">
         <head>
           <meta charset="UTF-8">
           <meta name="viewport" content="width=device-width, initial-scale=1.0">
-          <title>Réinitialisation de mot de passe - exStrat</title>
+          <title>Password Reset - exStrat</title>
           <style>
             body {
               font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
@@ -814,35 +814,35 @@ export class EmailService {
               <div class="logo-container">
                 <img src="${this.logoBase64 ? `data:image/png;base64,${this.logoBase64}` : this.logoUrl}" alt="exStrat Logo" width="200" height="auto" style="width: 200px; height: auto; max-width: 100%; display: block; margin: 0 auto; border: 0; outline: none; text-decoration: none; -ms-interpolation-mode: bicubic;" class="logo" />
               </div>
-              <h1 class="header-title">Réinitialisation de mot de passe</h1>
+              <h1 class="header-title">Password Reset</h1>
             </div>
             <div class="content">
-              <p class="greeting">Bonjour,</p>
+              <p class="greeting">Hello,</p>
               <p class="message">
-                Vous avez demandé à réinitialiser votre mot de passe pour votre compte exStrat.
-                Cliquez sur le bouton ci-dessous pour créer un nouveau mot de passe.
+                You have requested to reset your password for your exStrat account.
+                Click the button below to create a new password.
               </p>
               
               <div class="info-card">
                 <p class="info-text">
-                  <strong>Important :</strong> Ce lien est valide pendant 1 heure uniquement.
-                  Si vous n'avez pas demandé cette réinitialisation, ignorez cet email.
+                  <strong>Important:</strong> This link is valid for 1 hour only.
+                  If you did not request this reset, please ignore this email.
                 </p>
               </div>
 
-              <p class="action-text">Cliquez sur le bouton pour réinitialiser votre mot de passe</p>
+              <p class="action-text">Click the button to reset your password</p>
               
-              <a href="${resetUrl}" class="button">Réinitialiser mon mot de passe</a>
+              <a href="${resetUrl}" class="button">Reset my password</a>
 
               <p class="warning-text">
-                Si le bouton ne fonctionne pas, copiez et collez ce lien dans votre navigateur :<br>
+                If the button doesn't work, copy and paste this link into your browser:<br>
                 <a href="${resetUrl}" style="color: #047DD5; word-break: break-all;">${resetUrl}</a>
               </p>
             </div>
             <div class="footer">
               <p class="footer-text">
-                Cet email a été envoyé automatiquement par <strong>exStrat</strong>.<br>
-                Si vous n'avez pas demandé cette réinitialisation, vous pouvez ignorer cet email en toute sécurité.
+                This email was automatically sent by <strong>exStrat</strong>.<br>
+                If you did not request this reset, you can safely ignore this email.
               </p>
             </div>
           </div>
@@ -866,7 +866,7 @@ export class EmailService {
     const { to, verificationUrl } = data;
 
     try {
-      const subject = 'Vérifiez votre adresse email - exStrat';
+      const subject = 'Verify your email address - exStrat';
       const html = this.generateVerificationEmail({ verificationUrl });
 
       this.logger.log(`Attempting to send verification email to ${to} from ${this.fromEmail}`);
@@ -901,11 +901,11 @@ export class EmailService {
 
     return `
       <!DOCTYPE html>
-      <html lang="fr">
+      <html lang="en">
         <head>
           <meta charset="UTF-8">
           <meta name="viewport" content="width=device-width, initial-scale=1.0">
-          <title>Vérification de votre email - exStrat</title>
+          <title>Verify your email - exStrat</title>
           <style>
             body {
               font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
@@ -1034,28 +1034,28 @@ export class EmailService {
               <div class="logo-container">
                 <img src="${this.logoBase64 ? `data:image/png;base64,${this.logoBase64}` : this.logoUrl}" alt="exStrat Logo" width="200" height="auto" style="width: 200px; height: auto; max-width: 100%; display: block; margin: 0 auto; border: 0; outline: none; text-decoration: none; -ms-interpolation-mode: bicubic;" class="logo" />
               </div>
-              <h1 class="header-title">Vérifiez votre email</h1>
+              <h1 class="header-title">Verify your email</h1>
             </div>
             <div class="content">
-              <p class="greeting">Bienvenue sur exStrat !</p>
+              <p class="greeting">Welcome to exStrat!</p>
               <p class="message">
-                Merci de vous être inscrit. Pour activer votre compte et commencer à utiliser exStrat,
-                veuillez vérifier votre adresse email en cliquant sur le bouton ci-dessous.
+                Thank you for signing up. To activate your account and start using exStrat,
+                please verify your email address by clicking the button below.
               </p>
 
-              <p class="action-text">Cliquez sur le bouton pour vérifier votre email</p>
+              <p class="action-text">Click the button to verify your email</p>
               
-              <a href="${verificationUrl}" class="button">Vérifier mon email</a>
+              <a href="${verificationUrl}" class="button">Verify my email</a>
 
               <p class="warning-text">
-                Si le bouton ne fonctionne pas, copiez et collez ce lien dans votre navigateur :<br>
+                If the button doesn't work, copy and paste this link into your browser:<br>
                 <a href="${verificationUrl}" style="color: #047DD5; word-break: break-all;">${verificationUrl}</a>
               </p>
             </div>
             <div class="footer">
               <p class="footer-text">
-                Cet email a été envoyé automatiquement par <strong>exStrat</strong>.<br>
-                Si vous n'avez pas créé de compte, vous pouvez ignorer cet email en toute sécurité.
+                This email was automatically sent by <strong>exStrat</strong>.<br>
+                If you did not create an account, you can safely ignore this email.
               </p>
             </div>
           </div>
