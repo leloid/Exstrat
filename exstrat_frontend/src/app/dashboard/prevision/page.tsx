@@ -33,9 +33,7 @@ import { CaretRightIcon } from "@phosphor-icons/react/dist/ssr/CaretRight";
 import Collapse from "@mui/material/Collapse";
 import Divider from "@mui/material/Divider";
 import Checkbox from "@mui/material/Checkbox";
-import List from "@mui/material/List";
-import ListItem from "@mui/material/ListItem";
-import ListItemText from "@mui/material/ListItemText";
+import Grid from "@mui/material/Grid";
 import { formatCurrency, formatPercentage } from "@/lib/format";
 import { getForecasts, deleteForecast, getForecastById, getForecastDetails } from "@/lib/portfolios-api";
 import type { ForecastResponse } from "@/types/portfolio";
@@ -574,26 +572,40 @@ function ForecastPageContent(): React.JSX.Element {
 																															<Typography variant="subtitle2">
 																																Profit takings for strategy {strategy.name} on {holding.token?.symbol || holding.symbol}
 																															</Typography>
-																															<List dense>
+																															<Grid container spacing={2}>
 																																{strategy.profitTargets.map((target: ProfitTarget) => {
 																																	const targetPrice =
 																																		target.targetType === "percentage"
 																																			? averagePrice * (1 + target.targetValue / 100)
 																																			: target.targetValue;
 																																	return (
-																																		<ListItem key={target.order} sx={{ py: 0.5 }}>
-																																			<Checkbox checked size="small" sx={{ p: 0, mr: 1 }} />
-																																			<ListItemText
-																																				primary={
-																																					<Typography variant="body2" sx={{ color: "text.primary" }}>
-																																						TP {target.order}: {holding.token?.symbol || holding.symbol} = {formatCurrency(targetPrice, "$", 2)} Sell <Typography component="span" variant="body2" sx={{ color: "primary.main", fontWeight: 600 }}>{target.sellPercentage.toFixed(1)}%</Typography>
+																																		<Grid key={target.order} size={{ xs: 12, sm: 6, md: 2 }}>
+																																			<Box
+																																				sx={{
+																																					p: 2,
+																																					bgcolor: "background.paper",
+																																					borderRadius: 2,
+																																					border: "1px solid",
+																																					borderColor: "divider",
+																																					height: "100%",
+																																				}}
+																																			>
+																																				<Stack spacing={1}>
+																																					<Typography variant="subtitle1" sx={{ color: "text.primary", fontWeight: 600 }}>
+																																						TP {target.order}
 																																					</Typography>
-																																				}
-																																			/>
-																																		</ListItem>
+																																					<Typography variant="body2" sx={{ color: "text.secondary" }}>
+																																						{holding.token?.symbol || holding.symbol} = {formatCurrency(targetPrice, "$", 2)}
+																																					</Typography>
+																																					<Typography variant="body2" sx={{ color: "primary.main", fontWeight: 600 }}>
+																																						Sell {target.sellPercentage.toFixed(1)}%
+																																					</Typography>
+																																				</Stack>
+																																			</Box>
+																																		</Grid>
 																																	);
 																																})}
-																															</List>
+																															</Grid>
 																														</Stack>
 																													</CardContent>
 																												</Card>

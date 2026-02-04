@@ -625,23 +625,37 @@ export function CreateForecastModal({ onClose, onSuccess, open }: CreateForecast
 																							<Typography variant="subtitle2">
 																								Profit takings for strategy {selectedStrategy?.name} on {holding.token?.symbol || holding.symbol}
 																							</Typography>
-																							<List dense>
+																							<Grid container spacing={2}>
 																								{result.profitTargetsDetails.map((detail) => {
 																									const percentage = holding.quantity > 0 ? (detail.tokensSold / holding.quantity) * 100 : 0;
 																									return (
-																										<ListItem key={detail.order} sx={{ py: 0.5 }}>
-																											<Checkbox checked size="small" sx={{ p: 0, mr: 1 }} />
-																											<ListItemText
-																												primary={
-																													<Typography variant="body2" sx={{ color: "text.primary" }}>
-																														TP {detail.order}: {holding.token?.symbol || holding.symbol} = {formatCurrency(detail.targetPrice, "$", 2)} Sell <Typography component="span" variant="body2" sx={{ color: "primary.main", fontWeight: 600 }}>{percentage.toFixed(1)}%</Typography>
+																										<Grid key={detail.order} size={{ xs: 12, sm: 6, md: 2 }}>
+																											<Box
+																												sx={{
+																													p: 2,
+																													bgcolor: "background.paper",
+																													borderRadius: 2,
+																													border: "1px solid",
+																													borderColor: "divider",
+																													height: "100%",
+																												}}
+																											>
+																												<Stack spacing={1}>
+																													<Typography variant="subtitle1" sx={{ color: "text.primary", fontWeight: 600 }}>
+																														TP {detail.order}
 																													</Typography>
-																												}
-																											/>
-																										</ListItem>
+																													<Typography variant="body2" sx={{ color: "text.secondary" }}>
+																														{holding.token?.symbol || holding.symbol} = {formatCurrency(detail.targetPrice, "$", 2)}
+																													</Typography>
+																													<Typography variant="body2" sx={{ color: "primary.main", fontWeight: 600 }}>
+																														Sell {percentage.toFixed(1)}%
+																													</Typography>
+																												</Stack>
+																											</Box>
+																										</Grid>
 																									);
 																								})}
-																							</List>
+																							</Grid>
 																						</Stack>
 																					</CardContent>
 																				</Card>
