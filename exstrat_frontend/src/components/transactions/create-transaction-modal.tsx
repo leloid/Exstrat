@@ -606,23 +606,9 @@ export function CreateTransactionModal({
 											<Card
 												variant="outlined"
 												sx={{
-													bgcolor:
-														colorScheme === "dark"
-															? transactionType === "BUY"
-																? "rgba(76, 175, 80, 0.15)"
-																: "rgba(244, 67, 54, 0.15)"
-															: transactionType === "BUY"
-																? "success.50"
-																: "error.50",
+													bgcolor: colorScheme === "dark" ? "rgba(255, 255, 255, 0.05)" : "background.paper",
 													border: "1px solid",
-													borderColor:
-														colorScheme === "dark"
-															? transactionType === "BUY"
-																? "success.dark"
-																: "error.dark"
-															: transactionType === "BUY"
-																? "success.200"
-																: "error.200",
+													borderColor: "divider",
 												}}
 											>
 												<CardContent>
@@ -682,6 +668,17 @@ export function CreateTransactionModal({
 																			color: "success.dark",
 																		}}
 																	/>
+																</Grid>
+																<Grid size={{ xs: 12, sm: 6 }}>
+																	<Typography color="text.secondary" variant="caption" sx={{ fontWeight: 600, mb: 0.5, display: "block" }}>
+																		Wallet
+																	</Typography>
+																	<Stack direction="row" spacing={1.5} sx={{ alignItems: "center" }}>
+																		<WalletIcon size={20} color="var(--mui-palette-primary-main)" />
+																		<Typography variant="subtitle1" fontWeight={600}>
+																			{portfolios.find((p) => p.id === selectedPortfolioId)?.name || "N/A"}
+																		</Typography>
+																	</Stack>
 																</Grid>
 																<Grid size={{ xs: 12, sm: 4 }}>
 																	<Typography color="text.secondary" variant="caption" sx={{ fontWeight: 600, mb: 0.5, display: "block" }}>
