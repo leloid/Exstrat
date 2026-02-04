@@ -21,6 +21,7 @@ import TableCell from "@mui/material/TableCell";
 import TableHead from "@mui/material/TableHead";
 import TableRow from "@mui/material/TableRow";
 import TablePagination from "@mui/material/TablePagination";
+import TableSortLabel from "@mui/material/TableSortLabel";
 import Typography from "@mui/material/Typography";
 import { ArrowRightIcon } from "@phosphor-icons/react/dist/ssr/ArrowRight";
 import { MagnifyingGlassIcon } from "@phosphor-icons/react/dist/ssr/MagnifyingGlass";
@@ -30,6 +31,7 @@ import { TrashIcon } from "@phosphor-icons/react/dist/ssr/Trash";
 import { WarningIcon } from "@phosphor-icons/react/dist/ssr/Warning";
 import { CaretDownIcon } from "@phosphor-icons/react/dist/ssr/CaretDown";
 import { CaretRightIcon } from "@phosphor-icons/react/dist/ssr/CaretRight";
+import { CaretUpIcon } from "@phosphor-icons/react/dist/ssr/CaretUp";
 import Collapse from "@mui/material/Collapse";
 import Divider from "@mui/material/Divider";
 import Checkbox from "@mui/material/Checkbox";
@@ -67,6 +69,10 @@ function ForecastPageContent(): React.JSX.Element {
 	// Pagination states
 	const [page, setPage] = React.useState(0);
 	const [rowsPerPage, setRowsPerPage] = React.useState(10);
+
+	// Sorting states
+	const [sortBy, setSortBy] = React.useState<"wallet" | "created" | null>(null);
+	const [sortOrder, setSortOrder] = React.useState<"asc" | "desc">("asc");
 
 	// Load forecasts
 	React.useEffect(() => {
@@ -196,16 +202,39 @@ function ForecastPageContent(): React.JSX.Element {
 		}
 	};
 
-	// Filter forecasts based on search query
+	// Filter and sort forecasts
 	const filteredForecasts = React.useMemo(() => {
-		if (!searchQuery.trim()) return forecasts;
-		const query = searchQuery.toLowerCase();
-		return forecasts.filter(
-			(forecast) =>
-				forecast.name.toLowerCase().includes(query) ||
-				forecast.portfolioName?.toLowerCase().includes(query)
-		);
-	}, [forecasts, searchQuery]);
+		let result = forecasts;
+		
+		// Apply search filter
+		if (searchQuery.trim()) {
+			const query = searchQuery.toLowerCase();
+			result = result.filter(
+				(forecast) =>
+					forecast.name.toLowerCase().includes(query) ||
+					forecast.portfolioName?.toLowerCase().includes(query)
+			);
+		}
+
+		// Apply sorting
+		if (sortBy) {
+			result = [...result].sort((a, b) => {
+				let comparison = 0;
+				if (sortBy === "wallet") {
+					const walletA = a.portfolioName || "";
+					const walletB = b.portfolioName || "";
+					comparison = walletA.localeCompare(walletB);
+				} else if (sortBy === "created") {
+					const dateA = new Date(a.createdAt).getTime();
+					const dateB = new Date(b.createdAt).getTime();
+					comparison = dateA - dateB;
+				}
+				return sortOrder === "asc" ? comparison : -comparison;
+			});
+		}
+
+		return result;
+	}, [forecasts, searchQuery, sortBy, sortOrder]);
 
 	// Paginate forecasts
 	const paginatedForecasts = React.useMemo(() => {
@@ -361,13 +390,45 @@ function ForecastPageContent(): React.JSX.Element {
 											</TableCell>
 											<TableCell sx={{ width: "40px", fontWeight: 600 }} />
 											<TableCell sx={{ fontWeight: 600 }}>Forecast Name</TableCell>
-											<TableCell sx={{ fontWeight: 600 }}>Wallet</TableCell>
+											<TableCell sx={{ fontWeight: 600 }}>
+												<TableSortLabel
+													active={sortBy === "wallet"}
+													direction={sortBy === "wallet" ? sortOrder : "asc"}
+													onClick={() => {
+														if (sortBy === "wallet") {
+															setSortOrder(sortOrder === "asc" ? "desc" : "asc");
+														} else {
+															setSortBy("wallet");
+															setSortOrder("asc");
+														}
+														setPage(0);
+													}}
+												>
+													Wallet
+												</TableSortLabel>
+											</TableCell>
 											<TableCell align="right" sx={{ fontWeight: 600 }}>Tokens</TableCell>
 											<TableCell align="right" sx={{ fontWeight: 600 }}>Total Invested</TableCell>
 											<TableCell align="right" sx={{ fontWeight: 600 }}>Total Collected</TableCell>
 											<TableCell align="right" sx={{ fontWeight: 600 }}>Total Profit</TableCell>
 											<TableCell align="right" sx={{ fontWeight: 600 }}>Return %</TableCell>
-											<TableCell align="right" sx={{ fontWeight: 600 }}>Created</TableCell>
+											<TableCell align="right" sx={{ fontWeight: 600 }}>
+												<TableSortLabel
+													active={sortBy === "created"}
+													direction={sortBy === "created" ? sortOrder : "asc"}
+													onClick={() => {
+														if (sortBy === "created") {
+															setSortOrder(sortOrder === "asc" ? "desc" : "asc");
+														} else {
+															setSortBy("created");
+															setSortOrder("asc");
+														}
+														setPage(0);
+													}}
+												>
+													Created
+												</TableSortLabel>
+											</TableCell>
 											<TableCell align="right" sx={{ fontWeight: 600 }}>Actions</TableCell>
 										</TableRow>
 									</TableHead>
@@ -485,7 +546,7 @@ function ForecastPageContent(): React.JSX.Element {
 														<TableCell colSpan={11} sx={{ py: 0, borderBottom: isExpanded ? "1px solid var(--mui-palette-divider)" : "none" }}>
 															<Collapse in={isExpanded} timeout="auto" unmountOnExit>
 																{details ? (
-																	<Box sx={{ py: 3 }}>
+																	<Box sx={{ py: 2, pl: 5, pr: 0 }}>
 																		<Typography variant="h6" sx={{ mb: 2 }}>
 																			Profit-taking strategies by token
 																		</Typography>
@@ -565,7 +626,7 @@ function ForecastPageContent(): React.JSX.Element {
 																								<TableRow>
 																									<TableCell colSpan={5} sx={{ py: 0, borderBottom: isTokenExpanded ? "1px solid var(--mui-palette-divider)" : "none" }}>
 																										<Collapse in={isTokenExpanded} timeout="auto" unmountOnExit>
-																											<Box sx={{ py: 2, pl: 4 }}>
+																											<Box sx={{ py: 2, px: 0 }}>
 																												<Card variant="outlined" sx={{ bgcolor: "var(--mui-palette-background-level1)" }}>
 																													<CardContent>
 																														<Stack spacing={2}>
