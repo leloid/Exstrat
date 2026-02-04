@@ -343,12 +343,27 @@ function ForecastPageContent(): React.JSX.Element {
 				) : (
 					<Card sx={{ width: "100%" }}>
 						<Box sx={{ p: 2, borderBottom: "1px solid var(--mui-palette-divider)" }}>
-							<Stack direction="row" spacing={2} sx={{ alignItems: "center", justifyContent: "space-between" }}>
+							<Stack 
+								direction={{ xs: "column", sm: "row" }} 
+								spacing={2} 
+								sx={{ 
+									alignItems: { xs: "stretch", sm: "center" }, 
+									justifyContent: "space-between" 
+								}}
+							>
 								<Typography variant="h5" sx={{ fontWeight: 600 }}>
 									My Forecast
 								</Typography>
-								<Box sx={{ flex: "1 1 auto" }} />
-								<Stack direction="row" spacing={2} sx={{ alignItems: "center" }}>
+								<Box sx={{ display: { xs: "none", sm: "block" }, flex: "1 1 auto" }} />
+								<Stack 
+									direction="row" 
+									spacing={2} 
+									sx={{ 
+										alignItems: "center",
+										flexWrap: { xs: "wrap", sm: "nowrap" },
+										gap: { xs: 1, sm: 2 }
+									}}
+								>
 									<OutlinedInput
 										onChange={(e) => setSearchQuery(e.target.value)}
 										placeholder="Search Forecast or Wallet"
@@ -358,7 +373,12 @@ function ForecastPageContent(): React.JSX.Element {
 												<MagnifyingGlassIcon fontSize="var(--icon-fontSize-md)" />
 											</InputAdornment>
 										}
-										sx={{ maxWidth: "400px", width: "100%", minWidth: "250px" }}
+										sx={{ 
+											maxWidth: { xs: "100%", sm: "400px" }, 
+											width: { xs: "100%", sm: "auto" }, 
+											minWidth: { xs: "100%", sm: "250px" },
+											flex: { xs: "1 1 100%", sm: "0 0 auto" }
+										}}
 										value={searchQuery}
 									/>
 									{selectedForecastIds.size > 0 && (
@@ -368,6 +388,11 @@ function ForecastPageContent(): React.JSX.Element {
 											size="small"
 											startIcon={<TrashIcon />}
 											variant="outlined"
+											sx={{
+												whiteSpace: "nowrap",
+												flexShrink: 0,
+												minWidth: "fit-content"
+											}}
 										>
 											Delete ({selectedForecastIds.size})
 										</Button>
@@ -556,8 +581,10 @@ function ForecastPageContent(): React.JSX.Element {
 																					<TableCell sx={{ width: "40px", fontWeight: 600 }} />
 																					<TableCell sx={{ fontWeight: 600 }}>Token</TableCell>
 																					<TableCell sx={{ fontWeight: 600 }}>Strategy</TableCell>
-																					<TableCell align="right" sx={{ fontWeight: 600 }}>Quantity</TableCell>
 																					<TableCell align="right" sx={{ fontWeight: 600 }}>Invested</TableCell>
+																					<TableCell align="right" sx={{ fontWeight: 600 }}>Qty</TableCell>
+																					<TableCell align="right" sx={{ fontWeight: 600 }}>Collected</TableCell>
+																					<TableCell align="right" sx={{ fontWeight: 600 }}>Profit</TableCell>
 																				</TableRow>
 																			</TableHead>
 																			<TableBody>
@@ -567,6 +594,22 @@ function ForecastPageContent(): React.JSX.Element {
 																						const strategy = holding.strategy;
 																						const quantity = holding.quantity || 0;
 																						const averagePrice = holding.averagePrice || 0;
+																						const invested = quantity * averagePrice;
+																						
+																						// Calculate collected and profit from profit targets
+																						let amountCollected = 0;
+																						if (strategy.profitTargets) {
+																							strategy.profitTargets.forEach((target: ProfitTarget) => {
+																								const targetPrice =
+																									target.targetType === "percentage"
+																										? averagePrice * (1 + target.targetValue / 100)
+																										: target.targetValue;
+																								const tokensToSell = (quantity * target.sellPercentage) / 100;
+																								amountCollected += tokensToSell * targetPrice;
+																							});
+																						}
+																						const profit = amountCollected - invested;
+																						
 																						const tokenKey = `${forecast.id}-${holding.id}`;
 																						const isTokenExpanded = expandedTokens.has(tokenKey);
 																						return (
@@ -612,19 +655,32 @@ function ForecastPageContent(): React.JSX.Element {
 																									</TableCell>
 																									<TableCell align="right">
 																										<Typography variant="body2">
+																											{formatCurrency(invested, "$", 2)}
+																										</Typography>
+																									</TableCell>
+																									<TableCell align="right">
+																										<Typography variant="body2">
 																											{quantity.toLocaleString(undefined, {
 																												maximumFractionDigits: 8,
 																											})}
 																										</Typography>
 																									</TableCell>
 																									<TableCell align="right">
-																										<Typography variant="body2">
-																											{formatCurrency(quantity * averagePrice, "$", 2)}
+																										<Typography variant="body2" sx={{ color: "success.main" }}>
+																											{formatCurrency(amountCollected, "$", 2)}
+																										</Typography>
+																									</TableCell>
+																									<TableCell align="right">
+																										<Typography
+																											variant="body2"
+																											sx={{ color: profit >= 0 ? "success.main" : "error.main" }}
+																										>
+																											{formatCurrency(profit, "$", 2)}
 																										</Typography>
 																									</TableCell>
 																								</TableRow>
 																								<TableRow>
-																									<TableCell colSpan={5} sx={{ py: 0, borderBottom: isTokenExpanded ? "1px solid var(--mui-palette-divider)" : "none" }}>
+																									<TableCell colSpan={7} sx={{ py: 0, borderBottom: isTokenExpanded ? "1px solid var(--mui-palette-divider)" : "none" }}>
 																										<Collapse in={isTokenExpanded} timeout="auto" unmountOnExit>
 																											<Box sx={{ py: 2, px: 0 }}>
 																												<Card variant="outlined" sx={{ bgcolor: "var(--mui-palette-background-level1)" }}>
