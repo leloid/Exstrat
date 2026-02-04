@@ -12,9 +12,13 @@ import FormControl from "@mui/material/FormControl";
 import InputLabel from "@mui/material/InputLabel";
 import Link from "@mui/material/Link";
 import OutlinedInput from "@mui/material/OutlinedInput";
+import InputAdornment from "@mui/material/InputAdornment";
+import IconButton from "@mui/material/IconButton";
 import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
 import Alert from "@mui/material/Alert";
+import { EyeIcon } from "@phosphor-icons/react/dist/ssr/Eye";
+import { EyeSlashIcon } from "@phosphor-icons/react/dist/ssr/EyeSlash";
 import { paths } from "@/paths";
 import { CenteredLayout } from "@/components/auth/centered-layout";
 import { AuthLogo } from "@/components/auth/auth-logo";
@@ -29,6 +33,7 @@ export default function Page(): React.JSX.Element {
 	const [isResendingEmail, setIsResendingEmail] = React.useState(false);
 	const [resendSuccess, setResendSuccess] = React.useState(false);
 	const [userEmail, setUserEmail] = React.useState<string>("");
+	const [showPassword, setShowPassword] = React.useState(false);
 
 	const {
 		register,
@@ -179,8 +184,24 @@ export default function Page(): React.JSX.Element {
 													message: "Password must contain at least 8 characters",
 												},
 											})}
-											type="password"
+											type={showPassword ? "text" : "password"}
 											label="Password"
+											endAdornment={
+												<InputAdornment position="end">
+													<IconButton
+														onClick={() => setShowPassword(!showPassword)}
+														onMouseDown={(e) => e.preventDefault()}
+														edge="end"
+														aria-label="toggle password visibility"
+													>
+														{showPassword ? (
+															<EyeSlashIcon fontSize="var(--icon-fontSize-md)" />
+														) : (
+															<EyeIcon fontSize="var(--icon-fontSize-md)" />
+														)}
+													</IconButton>
+												</InputAdornment>
+											}
 										/>
 										{errors.password && (
 											<Typography variant="caption" color="error" sx={{ mt: 0.5 }}>
