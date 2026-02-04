@@ -23,11 +23,9 @@ import { NoSsr } from "@/components/core/no-ssr";
 import { formatCurrency, formatPercentage } from "@/lib/format";
 import { getTokenLogoUrl } from "@/lib/utils";
 import type { Holding } from "@/types/portfolio";
-import * as configurationApi from "@/lib/configuration-api";
 import { getForecasts, getTheoreticalStrategies } from "@/lib/portfolios-api";
 import { strategiesApi } from "@/lib/strategies-api";
 import type { ForecastResponse } from "@/types/portfolio";
-import type { AlertConfiguration } from "@/types/configuration";
 import type { TheoreticalStrategyResponse, StrategyResponse } from "@/types/strategies";
 
 export interface TokenStrategySidebarProps {
@@ -46,7 +44,6 @@ export function TokenStrategySidebar({
 	const { colorScheme = "light" } = useColorScheme();
 	const [forecast, setForecast] = React.useState<ForecastResponse | null>(null);
 	const [strategy, setStrategy] = React.useState<TheoreticalStrategyResponse | null>(null);
-	const [alertConfiguration, setAlertConfiguration] = React.useState<AlertConfiguration | null>(null);
 	const [loading, setLoading] = React.useState(false);
 
 	React.useEffect(() => {
@@ -54,86 +51,54 @@ export function TokenStrategySidebar({
 			if (!holding) {
 				setForecast(null);
 				setStrategy(null);
-				setAlertConfiguration(null);
 				return;
 			}
 
 			try {
 				setLoading(true);
 
-				// Load all active alert configurations (even without portfolioId for global view)
-				const allConfigs = await configurationApi.getAlertConfigurations();
-				const activeConfigs = allConfigs.filter((config) => config.isActive);
+				// Load strategies for this token symbol
+				const strategiesData = await strategiesApi.getStrategies({});
+				const strategiesForToken = strategiesData.strategies?.filter((s) => s.symbol === holding.token.symbol) || [];
 
-				// Find configuration with token alert for this holding
-				const configWithToken = activeConfigs.find((config) =>
-					config.tokenAlerts?.some((ta) => ta.holdingId === holding.id && ta.isActive)
+				if (strategiesForToken.length === 0) {
+					setForecast(null);
+					setStrategy(null);
+					return;
+				}
+
+				// Use the first strategy found
+				const firstStrategy = strategiesForToken[0];
+				const theoreticalStrategy: TheoreticalStrategyResponse = {
+					id: firstStrategy.id,
+					userId: firstStrategy.userId,
+					name: firstStrategy.name,
+					tokenSymbol: firstStrategy.symbol,
+					tokenName: firstStrategy.tokenName,
+					quantity: firstStrategy.baseQuantity,
+					averagePrice: firstStrategy.referencePrice,
+					profitTargets: firstStrategy.steps.map((step, index) => ({
+						order: index + 1,
+						targetType: step.targetType === "exact_price" ? "price" : "percentage",
+						targetValue: step.targetValue,
+						sellPercentage: step.sellPercentage,
+						notes: step.notes,
+					})),
+					status: firstStrategy.status === "active" ? "active" : firstStrategy.status === "paused" ? "paused" : "completed",
+					createdAt: firstStrategy.createdAt,
+					updatedAt: firstStrategy.updatedAt,
+					numberOfTargets: firstStrategy.steps.length,
+				};
+				setStrategy(theoreticalStrategy);
+
+				// Try to find forecast that includes this strategy
+				const allForecasts = await getForecasts();
+				const forecastData = allForecasts.find((f) =>
+					f.strategies?.some((fs) => fs.strategyId === firstStrategy.id)
 				);
 
-				if (!configWithToken) {
-					setForecast(null);
-					setStrategy(null);
-					setAlertConfiguration(null);
-					return;
-				}
-
-				setAlertConfiguration(configWithToken);
-
-				// Load forecast
-				const allForecasts = await getForecasts();
-				const forecastData = allForecasts.find((f) => f.id === configWithToken.forecastId);
-
-				if (!forecastData) {
-					setForecast(null);
-					setStrategy(null);
-					return;
-				}
-				setForecast(forecastData);
-
-				// Find strategy from token alert
-				const tokenAlert = configWithToken.tokenAlerts?.find((ta) => ta.holdingId === holding.id);
-				if (tokenAlert?.strategyId) {
-					// Load both theoretical and real strategies
-					const [theoreticalStrategies, realStrategiesData] = await Promise.all([
-						getTheoreticalStrategies(),
-						strategiesApi.getStrategies({}),
-					]);
-
-					// Convert real strategies to theoretical format
-					const convertedStrategies: TheoreticalStrategyResponse[] = (realStrategiesData.strategies || []).map(
-						(strategy: StrategyResponse) => {
-							const profitTargets = strategy.steps.map((step, index) => ({
-								order: index + 1,
-								targetType: (step.targetType === "exact_price" ? "price" : "percentage") as "percentage" | "price",
-								targetValue: step.targetValue,
-								sellPercentage: step.sellPercentage,
-								notes: step.notes,
-							}));
-
-							return {
-								id: strategy.id,
-								userId: strategy.userId,
-								name: strategy.name,
-								tokenSymbol: strategy.symbol,
-								tokenName: strategy.tokenName,
-								quantity: strategy.baseQuantity,
-								averagePrice: strategy.referencePrice,
-								profitTargets,
-								status:
-									strategy.status === "active" ? "active" : strategy.status === "paused" ? "paused" : "completed",
-								createdAt: strategy.createdAt,
-								updatedAt: strategy.updatedAt,
-								numberOfTargets: strategy.steps.length,
-							} as TheoreticalStrategyResponse;
-						}
-					);
-
-					// Combine all strategies
-					const allStrategies = [...(theoreticalStrategies || []), ...convertedStrategies];
-					const strategyData = allStrategies.find((s) => s.id === tokenAlert.strategyId);
-					setStrategy(strategyData || null);
-				} else {
-					setStrategy(null);
+				if (forecastData) {
+					setForecast(forecastData);
 				}
 			} catch (error) {
 				console.error("Error loading strategy details:", error);
@@ -291,16 +256,30 @@ export function TokenStrategySidebar({
 		return <></>;
 	}
 
-	const tokenAlert = alertConfiguration?.tokenAlerts?.find((ta) => ta.holdingId === holding.id);
 	const currentPrice = holding.currentPrice || holding.averagePrice || 0;
-	const tpAlerts = tokenAlert?.tpAlerts || [];
-
 	const totalTP = strategy?.profitTargets.length || 0;
-	// Compter les TP atteints basé uniquement sur le prix, pas sur isActive
-	// Un TP atteint reste atteint même s'il est désactivé après l'envoi de l'email
-	const tpReached = tpAlerts.filter((tp) => currentPrice >= Number(tp.targetPrice)).length;
+	
+	// Count reached TPs based on price
+	const tpReached = strategy?.profitTargets?.filter((tp) => {
+		if (tp.targetType === "price") {
+			return currentPrice >= Number(tp.targetValue);
+		} else {
+			// percentage
+			const targetPrice = holding.averagePrice * (1 + Number(tp.targetValue) / 100);
+			return currentPrice >= targetPrice;
+		}
+	}).length || 0;
+	
 	const completionPercentage = totalTP > 0 ? (tpReached / totalTP) * 100 : 0;
-	const projectedValue = tpAlerts.reduce((sum, tp) => sum + (tp.projectedAmount || 0), 0);
+	
+	// Calculate projected value from strategy
+	const projectedValue = strategy?.profitTargets?.reduce((sum, tp) => {
+		const tokensToSell = (strategy.quantity * tp.sellPercentage) / 100;
+		const targetPrice = tp.targetType === "price" 
+			? Number(tp.targetValue) 
+			: holding.averagePrice * (1 + Number(tp.targetValue) / 100);
+		return sum + (tokensToSell * targetPrice);
+	}, 0) || 0;
 
 	const CustomTooltip = ({ active, payload, label }: any) => {
 		if (active && payload && payload.length) {
@@ -380,7 +359,7 @@ export function TokenStrategySidebar({
 							Loading...
 						</Typography>
 					</Box>
-				) : !forecast || !strategy || !alertConfiguration ? (
+				) : !strategy ? (
 					<>
 						<Stack direction="row" spacing={2} sx={{ alignItems: "center", justifyContent: "space-between", mb: 3 }}>
 							<Stack direction="row" spacing={1.5} sx={{ alignItems: "center" }}>

@@ -27,10 +27,8 @@ import { InfoIcon } from "@phosphor-icons/react/dist/ssr/Info";
 import { formatCurrency, formatPercentage, formatQuantity, formatQuantityCompact } from "@/lib/format";
 import { getTokenLogoUrl } from "@/lib/utils";
 import type { Holding } from "@/types/portfolio";
-import * as configurationApi from "@/lib/configuration-api";
 import { getTheoreticalStrategies } from "@/lib/portfolios-api";
 import { strategiesApi } from "@/lib/strategies-api";
-import type { AlertConfiguration } from "@/types/configuration";
 import type { TheoreticalStrategyResponse, StrategyResponse } from "@/types/strategies";
 import { useSecretMode } from "@/hooks/use-secret-mode";
 
@@ -53,22 +51,17 @@ export function TokensTable({ holdings, portfolioId, onTokenClick }: TokensTable
 	const { secretMode } = useSecretMode();
 	const [sortField, setSortField] = React.useState<SortField>("currentValue");
 	const [sortDirection, setSortDirection] = React.useState<SortDirection>("desc");
-	const [alertConfigurations, setAlertConfigurations] = React.useState<AlertConfiguration[]>([]);
 	const [strategiesMap, setStrategiesMap] = React.useState<Map<string, TheoreticalStrategyResponse>>(new Map());
 	const [loadingAlerts, setLoadingAlerts] = React.useState(false);
 	const [page, setPage] = React.useState(0);
 	const [rowsPerPage, setRowsPerPage] = React.useState(5);
 
-	// Load alert configurations and strategies
+	// Load strategies
 	React.useEffect(() => {
 		const loadAlertData = async () => {
 			// Load even if no portfolioId (for global view)
 			try {
 				setLoadingAlerts(true);
-
-				const allConfigs = await configurationApi.getAlertConfigurations();
-				const activeConfigs = allConfigs.filter((config) => config.isActive);
-				setAlertConfigurations(activeConfigs);
 
 				// Load theoretical strategies
 				const theoreticalStrategies = await getTheoreticalStrategies();
@@ -119,27 +112,27 @@ export function TokensTable({ holdings, portfolioId, onTokenClick }: TokensTable
 		loadAlertData();
 	}, [portfolioId]);
 
-	// Get token alert info
+	// Get token alert info (now based on strategies directly)
 	const getTokenAlertInfo = React.useCallback(
 		(holding: Holding): TokenAlertInfo => {
-			for (const config of alertConfigurations) {
-				const tokenAlert = config.tokenAlerts?.find((ta) => ta.holdingId === holding.id);
-
-				if (tokenAlert && tokenAlert.isActive) {
-					let strategyName: string | null = null;
-					if (tokenAlert.strategyId) {
-						const strategy = strategiesMap.get(tokenAlert.strategyId);
-						strategyName = strategy?.name || null;
-					}
-
+			// Find strategy for this token symbol
+			for (const [strategyId, strategy] of strategiesMap.entries()) {
+				if (strategy.tokenSymbol === holding.token.symbol) {
 					const currentPrice = holding.currentPrice || holding.averagePrice || 0;
-					// Compter les TP atteints basé uniquement sur le prix, pas sur isActive
-					// Un TP atteint reste atteint même s'il est désactivé après l'envoi de l'email
-					const tpReached = tokenAlert.tpAlerts?.filter((tp) => currentPrice >= Number(tp.targetPrice)).length || 0;
-					const totalTP = tokenAlert.numberOfTargets || tokenAlert.tpAlerts?.length || 0;
+					// Count reached TPs based on price
+					const tpReached = strategy.profitTargets?.filter((tp) => {
+						if (tp.targetType === "price") {
+							return currentPrice >= Number(tp.targetValue);
+						} else {
+							// percentage
+							const targetPrice = holding.averagePrice * (1 + Number(tp.targetValue) / 100);
+							return currentPrice >= targetPrice;
+						}
+					}).length || 0;
+					const totalTP = strategy.profitTargets?.length || 0;
 
 					return {
-						strategyName,
+						strategyName: strategy.name,
 						tpProgress: `${tpReached}/${totalTP}`,
 					};
 				}
@@ -150,7 +143,7 @@ export function TokensTable({ holdings, portfolioId, onTokenClick }: TokensTable
 				tpProgress: "-",
 			};
 		},
-		[alertConfigurations, strategiesMap]
+		[strategiesMap]
 	);
 
 	// Calculate values for each holding

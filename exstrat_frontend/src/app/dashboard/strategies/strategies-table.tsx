@@ -130,17 +130,16 @@ export function StrategiesTable({
 					<TableCell padding="checkbox">
 						<Checkbox checked={allSelected} indeterminate={someSelected} onChange={allSelected ? onDeselectAll : onSelectAll} />
 					</TableCell>
-					<TableCell sx={{ minWidth: "180px", fontWeight: 600 }}>Strategy Name</TableCell>
-					<TableCell align="right" sx={{ minWidth: "120px", fontWeight: 600 }}>Total Invested</TableCell>
-					<TableCell align="right" sx={{ minWidth: "120px", fontWeight: 600 }}>Quantity</TableCell>
-					<TableCell align="right" sx={{ minWidth: "140px", fontWeight: 600 }}>Total Amount Collected</TableCell>
-					<TableCell align="right" sx={{ minWidth: "120px", fontWeight: 600 }}>Net Result</TableCell>
-					<TableCell align="right" sx={{ minWidth: "130px", fontWeight: 600 }}>Bag Percentage Sold</TableCell>
-					<TableCell align="right" sx={{ minWidth: "130px", fontWeight: 600 }}>Remaining Token</TableCell>
-					<TableCell align="center" sx={{ minWidth: "60px", fontWeight: 600 }}>TP</TableCell>
-					<TableCell align="center" sx={{ minWidth: "100px", fontWeight: 600, color: "text.disabled" }}>SL (To be soon)</TableCell>
-					<TableCell align="center" sx={{ minWidth: "100px", fontWeight: 600 }}>Alerts</TableCell>
-					<TableCell align="center" sx={{ minWidth: "100px", fontWeight: 600 }}>Actions</TableCell>
+					<TableCell sx={{ minWidth: "140px", fontWeight: 600, fontSize: "0.8125rem" }}>Strategy Name</TableCell>
+					<TableCell align="right" sx={{ minWidth: "95px", fontWeight: 600, fontSize: "0.8125rem" }}>Total Invested</TableCell>
+					<TableCell align="right" sx={{ minWidth: "85px", fontWeight: 600, fontSize: "0.8125rem" }}>Quantity</TableCell>
+					<TableCell align="right" sx={{ minWidth: "115px", fontWeight: 600, fontSize: "0.8125rem" }}>Total Amount Collected</TableCell>
+					<TableCell align="right" sx={{ minWidth: "95px", fontWeight: 600, fontSize: "0.8125rem" }}>Net Result</TableCell>
+					<TableCell align="right" sx={{ minWidth: "105px", fontWeight: 600, fontSize: "0.8125rem" }}>Bag % Sold</TableCell>
+					<TableCell align="right" sx={{ minWidth: "105px", fontWeight: 600, fontSize: "0.8125rem" }}>Remaining Token</TableCell>
+					<TableCell align="center" sx={{ minWidth: "40px", fontWeight: 600, fontSize: "0.8125rem" }}>TP</TableCell>
+					<TableCell align="center" sx={{ minWidth: "70px", fontWeight: 600, fontSize: "0.8125rem" }}>Alerts</TableCell>
+					<TableCell align="center" sx={{ minWidth: "80px", fontWeight: 600, fontSize: "0.8125rem" }}>Actions</TableCell>
 				</TableRow>
 			</TableHead>
 			<TableBody>
@@ -383,37 +382,56 @@ function StrategyRow({
 									)}
 								</IconButton>
 							)}
-							<Stack spacing={0.25}>
-								<Typography variant="subtitle2" sx={{ fontSize: "0.875rem", lineHeight: 1.3 }}>
-									{row.name}
-								</Typography>
-								<Typography color="text.secondary" variant="body2" sx={{ fontSize: "0.75rem", lineHeight: 1.2 }}>
-									{row.symbol} - {row.tokenName}
-								</Typography>
-							</Stack>
+						<Stack spacing={0.25} sx={{ minWidth: 0 }}>
+							<Typography 
+								variant="subtitle2" 
+								sx={{ 
+									fontSize: "0.875rem", 
+									lineHeight: 1.3,
+									overflow: "hidden",
+									textOverflow: "ellipsis",
+									whiteSpace: "nowrap"
+								}}
+							>
+								{row.name}
+							</Typography>
+							<Typography 
+								color="text.secondary" 
+								variant="body2" 
+								sx={{ 
+									fontSize: "0.75rem", 
+									lineHeight: 1.2,
+									overflow: "hidden",
+									textOverflow: "ellipsis",
+									whiteSpace: "nowrap"
+								}}
+							>
+								{row.symbol} - {row.tokenName}
+							</Typography>
+						</Stack>
 						</Stack>
 					</Tooltip>
 				</TableCell>
-				<TableCell align="right">
-					<Typography variant="body2" sx={{ fontSize: "0.875rem", whiteSpace: "nowrap" }}>
+				<TableCell align="right" sx={{ py: 1 }}>
+					<Typography variant="body2" sx={{ fontSize: "0.8125rem", whiteSpace: "nowrap" }}>
 						{formatCurrency(calculations.totalInvested, "$", 2)}
 					</Typography>
 				</TableCell>
-				<TableCell align="right">
-					<Typography variant="body2" sx={{ fontSize: "0.875rem", whiteSpace: "nowrap" }}>
-						{row.baseQuantity.toLocaleString(undefined, { maximumFractionDigits: 8 })} {row.symbol}
+				<TableCell align="right" sx={{ py: 1 }}>
+					<Typography variant="body2" sx={{ fontSize: "0.8125rem", whiteSpace: "nowrap" }}>
+						{row.baseQuantity.toLocaleString(undefined, { maximumFractionDigits: 6 })} {row.symbol}
 					</Typography>
 				</TableCell>
-				<TableCell align="right">
-					<Typography variant="body2" sx={{ fontSize: "0.875rem", whiteSpace: "nowrap", color: "success.main" }}>
+				<TableCell align="right" sx={{ py: 1 }}>
+					<Typography variant="body2" sx={{ fontSize: "0.8125rem", whiteSpace: "nowrap", color: "success.main" }}>
 						{formatCurrency(calculations.totalCashedIn, "$", 2)}
 					</Typography>
 				</TableCell>
-				<TableCell align="right">
+				<TableCell align="right" sx={{ py: 1 }}>
 					<Typography
 						variant="body2"
 						sx={{
-							fontSize: "0.875rem",
+							fontSize: "0.8125rem",
 							whiteSpace: "nowrap",
 							color: calculations.netResult >= 0 ? "success.main" : "error.main",
 						}}
@@ -421,27 +439,22 @@ function StrategyRow({
 						{formatCurrency(calculations.netResult, "$", 2)}
 					</Typography>
 				</TableCell>
-				<TableCell align="right">
-					<Typography variant="body2" sx={{ fontSize: "0.875rem", whiteSpace: "nowrap" }}>
+				<TableCell align="right" sx={{ py: 1 }}>
+					<Typography variant="body2" sx={{ fontSize: "0.8125rem", whiteSpace: "nowrap" }}>
 						{formatPercentage(calculations.totalSellPercentage)}
 					</Typography>
 				</TableCell>
-				<TableCell align="right">
-					<Typography variant="body2" sx={{ fontSize: "0.875rem", whiteSpace: "nowrap", color: "warning.main" }}>
-						{calculations.remainingTokens.toLocaleString(undefined, { maximumFractionDigits: 8 })}
+				<TableCell align="right" sx={{ py: 1 }}>
+					<Typography variant="body2" sx={{ fontSize: "0.8125rem", whiteSpace: "nowrap", color: "warning.main" }}>
+						{calculations.remainingTokens.toLocaleString(undefined, { maximumFractionDigits: 6 })}
 					</Typography>
 				</TableCell>
-				<TableCell align="center">
-					<Typography variant="body2" sx={{ fontSize: "0.875rem" }}>
+				<TableCell align="center" sx={{ py: 1 }}>
+					<Typography variant="body2" sx={{ fontSize: "0.8125rem" }}>
 						{calculations.numberOfTargets}
 					</Typography>
 				</TableCell>
-				<TableCell align="center" sx={{ opacity: 0.4 }}>
-					<Typography variant="body2" sx={{ fontSize: "0.875rem", color: "text.disabled" }}>
-						—
-					</Typography>
-				</TableCell>
-				<TableCell align="center" onClick={(e) => e.stopPropagation()}>
+				<TableCell align="center" sx={{ py: 1 }} onClick={(e) => e.stopPropagation()}>
 					{onStrategyAlertToggle && (
 						<Switch
 							checked={strategyAlerts.get(row.id)?.isActive ?? false}
@@ -454,8 +467,8 @@ function StrategyRow({
 						/>
 					)}
 				</TableCell>
-				<TableCell align="center" onClick={(e) => e.stopPropagation()}>
-					<Stack direction="row" spacing={0.5} sx={{ alignItems: "center", justifyContent: "center" }}>
+				<TableCell align="center" sx={{ py: 1 }} onClick={(e) => e.stopPropagation()}>
+					<Stack direction="row" spacing={0.25} sx={{ alignItems: "center", justifyContent: "center" }}>
 						{row.notes && row.notes.trim() && (
 							<Tooltip title={row.notes} arrow placement="top">
 								<IconButton size="small" sx={{ padding: "2px", color: "text.secondary" }}>
@@ -469,7 +482,7 @@ function StrategyRow({
 								onEdit(row);
 							}}
 							size="small"
-							sx={{ padding: "4px" }}
+							sx={{ padding: "2px" }}
 						>
 							<PencilIcon fontSize="var(--icon-fontSize-sm)" />
 						</IconButton>
@@ -479,7 +492,7 @@ function StrategyRow({
 								onDelete(row.id);
 							}}
 							size="small"
-							sx={{ padding: "4px", color: "error.main" }}
+							sx={{ padding: "2px", color: "error.main" }}
 						>
 							<TrashIcon fontSize="var(--icon-fontSize-sm)" />
 						</IconButton>
@@ -488,7 +501,7 @@ function StrategyRow({
 			</TableRow>
 			{isExpanded && row.steps && row.steps.length > 0 && (
 				<TableRow>
-					<TableCell colSpan={12} sx={{ py: 0, borderBottom: "1px solid var(--mui-palette-divider)" }}>
+					<TableCell colSpan={11} sx={{ py: 0, borderBottom: "1px solid var(--mui-palette-divider)" }}>
 						<Collapse in={isExpanded} timeout="auto" unmountOnExit>
 							<Box sx={{ py: 2, px: 2, bgcolor: "var(--mui-palette-background-paper)" }}>
 								<Grid container spacing={2}>
