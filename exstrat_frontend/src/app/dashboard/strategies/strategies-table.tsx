@@ -8,6 +8,7 @@ import CardContent from "@mui/material/CardContent";
 import Checkbox from "@mui/material/Checkbox";
 import Collapse from "@mui/material/Collapse";
 import Divider from "@mui/material/Divider";
+import Grid from "@mui/material/Grid";
 import IconButton from "@mui/material/IconButton";
 import Stack from "@mui/material/Stack";
 import Table from "@mui/material/Table";
@@ -447,91 +448,94 @@ function StrategyRow({
 					<TableCell colSpan={11} sx={{ py: 0, borderBottom: "1px solid var(--mui-palette-divider)" }}>
 						<Collapse in={isExpanded} timeout="auto" unmountOnExit>
 							<Box sx={{ py: 2, px: 2, bgcolor: "var(--mui-palette-background-paper)" }}>
-								<Table size="small" sx={{ "& .MuiTableCell-root": { borderBottom: "1px solid var(--mui-palette-divider)", py: 1 } }}>
-									<TableHead>
-										<TableRow>
-											<TableCell sx={{ width: "60px", fontWeight: 600, fontSize: "0.75rem" }}>TP</TableCell>
-											<TableCell sx={{ fontWeight: 600, fontSize: "0.75rem" }}>Exit type</TableCell>
-											<TableCell align="right" sx={{ fontWeight: 600, fontSize: "0.75rem" }}>Target</TableCell>
-											<TableCell align="right" sx={{ fontWeight: 600, fontSize: "0.75rem" }}>Token quantity to sell</TableCell>
-											<TableCell align="right" sx={{ fontWeight: 600, fontSize: "0.75rem" }}>Amount collected</TableCell>
-											<TableCell sx={{ width: "100px", fontWeight: 600, fontSize: "0.75rem" }}>Status</TableCell>
-										</TableRow>
-									</TableHead>
-									<TableBody>
-										{row.steps.map((step, index) => {
-											const targetPrice = step.targetPrice || 0;
-											const tokensToSell = step.sellQuantity || (row.baseQuantity * step.sellPercentage) / 100;
-											const amountCollected = tokensToSell * targetPrice;
-											const targetType = step.targetType === "percentage_of_average" ? "percentage" : "price";
-											const targetValue = targetType === "percentage"
-												? step.targetValue
-												: targetPrice;
+								<Grid container spacing={2}>
+									{row.steps.map((step, index) => {
+										const targetPrice = step.targetPrice || 0;
+										const tokensToSell = step.sellQuantity || (row.baseQuantity * step.sellPercentage) / 100;
+										const amountCollected = tokensToSell * targetPrice;
+										const targetType = step.targetType === "percentage_of_average" ? "percentage" : "price";
 
-											return (
-												<TableRow key={step.id || index} hover>
-													<TableCell>
-														<Chip
-															label={`TP ${index + 1}`}
-															size="small"
-															color="primary"
-															sx={{ fontWeight: 600, fontSize: "0.7rem", height: "22px" }}
-														/>
-													</TableCell>
-													<TableCell>
-														<Typography variant="body2" sx={{ fontSize: "0.75rem" }}>
-															{targetType === "percentage" ? "Percentage" : "Price"}
+										return (
+											<Grid key={step.id || index} size={{ xs: 12, sm: 6, md: 2 }}>
+												<Box
+													sx={{
+														p: 2,
+														bgcolor: "background.paper",
+														borderRadius: 2,
+														border: "1px solid",
+														borderColor: "divider",
+														height: "100%",
+													}}
+												>
+													<Stack spacing={1.5}>
+														<Typography variant="subtitle1" sx={{ color: "text.primary", fontWeight: 600 }}>
+															TP {index + 1}
 														</Typography>
-													</TableCell>
-													<TableCell align="right">
-														<Typography variant="body2" sx={{ fontSize: "0.75rem", fontWeight: 500, color: "primary.main" }}>
-															{formatCurrency(targetPrice, "$", 2)}
-														</Typography>
-													</TableCell>
-													<TableCell align="right">
-														<Typography variant="body2" sx={{ fontSize: "0.75rem" }}>
-															{tokensToSell.toLocaleString(undefined, { maximumFractionDigits: 6 })}
-														</Typography>
-														<Typography variant="caption" color="text.secondary" sx={{ fontSize: "0.65rem" }}>
-															{row.symbol}
-														</Typography>
-													</TableCell>
-													<TableCell align="right">
-														<Typography variant="body2" sx={{ fontSize: "0.75rem", fontWeight: 600, color: "success.main" }}>
-															{formatCurrency(amountCollected, "$", 2)}
-														</Typography>
-													</TableCell>
-													<TableCell>
-														{step.state === "triggered" ? (
-															<Chip
-																label="Triggered"
-																size="small"
-																color="success"
-																sx={{ fontSize: "0.65rem", height: "20px" }}
-															/>
-														) : (
-															<Chip
-																label="Pending"
-																size="small"
-																variant="outlined"
-																sx={{
-																	fontSize: "0.65rem",
-																	height: "20px",
-																	borderColor: "var(--mui-palette-text-secondary)",
-																	color: "var(--mui-palette-text-primary)",
-																	"&:hover": {
-																		borderColor: "var(--mui-palette-text-primary)",
-																		backgroundColor: "var(--mui-palette-action-hover)",
-																	},
-																}}
-															/>
-														)}
-													</TableCell>
-												</TableRow>
-											);
-										})}
-									</TableBody>
-								</Table>
+														<Stack spacing={0.5}>
+															<Typography variant="caption" sx={{ color: "text.secondary", fontWeight: 600 }}>
+																Exit type
+															</Typography>
+															<Typography variant="body2" sx={{ color: "text.primary" }}>
+																{targetType === "percentage" ? "Percentage" : "Price"}
+															</Typography>
+														</Stack>
+														<Stack spacing={0.5}>
+															<Typography variant="caption" sx={{ color: "text.secondary", fontWeight: 600 }}>
+																Target
+															</Typography>
+															<Typography variant="body2" sx={{ color: "text.primary", fontWeight: 600 }}>
+																{formatCurrency(targetPrice, "$", 2)}
+															</Typography>
+														</Stack>
+														<Stack spacing={0.5}>
+															<Typography variant="caption" sx={{ color: "text.secondary", fontWeight: 600 }}>
+																Token quantity to sell
+															</Typography>
+															<Typography variant="body2" sx={{ color: "text.primary" }}>
+																{tokensToSell.toLocaleString(undefined, { maximumFractionDigits: 6 })} {row.symbol}
+															</Typography>
+														</Stack>
+														<Stack spacing={0.5}>
+															<Typography variant="caption" sx={{ color: "text.secondary", fontWeight: 600 }}>
+																Amount collected
+															</Typography>
+															<Typography variant="body2" sx={{ color: "success.main", fontWeight: 600 }}>
+																{formatCurrency(amountCollected, "$", 2)}
+															</Typography>
+														</Stack>
+														<Stack spacing={0.5}>
+															<Typography variant="caption" sx={{ color: "text.secondary", fontWeight: 600 }}>
+																Status
+															</Typography>
+															<Box>
+																{step.state === "triggered" ? (
+																	<Chip
+																		label="Triggered"
+																		size="small"
+																		color="success"
+																		sx={{ fontSize: "0.65rem", height: "20px" }}
+																	/>
+																) : (
+																	<Chip
+																		label="Pending"
+																		size="small"
+																		variant="outlined"
+																		sx={{
+																			fontSize: "0.65rem",
+																			height: "20px",
+																			borderColor: "var(--mui-palette-text-secondary)",
+																			color: "var(--mui-palette-text-primary)",
+																		}}
+																	/>
+																)}
+															</Box>
+														</Stack>
+													</Stack>
+												</Box>
+											</Grid>
+										);
+									})}
+								</Grid>
 							</Box>
 						</Collapse>
 					</TableCell>
