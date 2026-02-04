@@ -515,77 +515,206 @@ function StrategyRow({
 											<Grid key={step.id || index} size={{ xs: 12, sm: 6, md: 2 }}>
 												<Box
 													sx={{
-														p: 2,
+														p: 2.5,
 														bgcolor: "background.paper",
-														borderRadius: 2,
+														borderRadius: 2.5,
 														border: "1px solid",
 														borderColor: "divider",
 														height: "100%",
+														boxShadow: "0 1px 3px rgba(0, 0, 0, 0.08)",
+														transition: "all 0.2s ease-in-out",
+														"&:hover": {
+															boxShadow: "0 4px 12px rgba(0, 0, 0, 0.12)",
+															borderColor: "primary.main",
+														},
 													}}
 												>
-													<Stack spacing={1.5}>
-														<Typography variant="subtitle1" sx={{ color: "text.primary", fontWeight: 600 }}>
-															TP {index + 1}
-														</Typography>
-														<Stack spacing={0.5}>
-															<Typography variant="caption" sx={{ color: "text.secondary", fontWeight: 600 }}>
-																Target
+													<Stack spacing={2}>
+														{/* Header with TP number */}
+														<Box
+															sx={{
+																p: 1,
+																bgcolor: "primary.main",
+																borderRadius: 1.5,
+																display: "inline-flex",
+																alignSelf: "flex-start",
+															}}
+														>
+															<Typography 
+																variant="subtitle2" 
+																sx={{ 
+																	color: "primary.contrastText", 
+																	fontWeight: 700,
+																	fontSize: "0.875rem",
+																	lineHeight: 1.2,
+																}}
+															>
+																TP {index + 1}
 															</Typography>
-															<Typography variant="body2" sx={{ color: "text.primary", fontWeight: 600 }}>
-																{formatCurrency(targetPrice, "$", 2)}
-															</Typography>
-														</Stack>
-														<Stack spacing={0.5}>
-															<Typography variant="caption" sx={{ color: "text.secondary", fontWeight: 600 }}>
-																Token quantity to sell
-															</Typography>
-															<Typography variant="body2" sx={{ color: "text.primary" }}>
-																{tokensToSell.toLocaleString(undefined, { maximumFractionDigits: 6 })} {row.symbol}
-															</Typography>
-														</Stack>
-														<Stack spacing={0.5}>
-															<Typography variant="caption" sx={{ color: "text.secondary", fontWeight: 600 }}>
-																Amount collected
-															</Typography>
-															<Typography variant="body2" sx={{ color: "success.main", fontWeight: 600 }}>
-																{formatCurrency(amountCollected, "$", 2)}
-															</Typography>
-														</Stack>
-														<Stack spacing={0.5}>
-															<Typography variant="caption" sx={{ color: "text.secondary", fontWeight: 600 }}>
-																Status
-															</Typography>
+														</Box>
+														
+														<Stack spacing={1.5}>
+															{/* Target */}
 															<Box>
-																{step.state === "triggered" ? (
-																	<Chip
-																		label="Triggered"
-																		size="small"
-																		color="success"
-																		sx={{ fontSize: "0.65rem", height: "20px" }}
-																	/>
-																) : (
-																	<Chip
-																		label="Pending"
-																		size="small"
-																		variant="outlined"
-																		sx={{
-																			fontSize: "0.65rem",
-																			height: "20px",
-																			borderColor: "var(--mui-palette-text-secondary)",
-																			color: "var(--mui-palette-text-primary)",
-																		}}
-																	/>
-																)}
+																<Typography 
+																	variant="caption" 
+																	sx={{ 
+																		color: "text.secondary", 
+																		fontWeight: 600,
+																		fontSize: "0.7rem",
+																		textTransform: "uppercase",
+																		letterSpacing: "0.5px",
+																		mb: 0.5,
+																		display: "block",
+																	}}
+																>
+																	Target
+																</Typography>
+																<Typography 
+																	variant="h6" 
+																	sx={{ 
+																		color: "primary.main", 
+																		fontWeight: 700,
+																		fontSize: "1.125rem",
+																		lineHeight: 1.3,
+																	}}
+																>
+																	{formatCurrency(targetPrice, "$", 2)}
+																</Typography>
+															</Box>
+															
+															{/* Token quantity to sell */}
+															<Box>
+																<Typography 
+																	variant="caption" 
+																	sx={{ 
+																		color: "text.secondary", 
+																		fontWeight: 600,
+																		fontSize: "0.7rem",
+																		textTransform: "uppercase",
+																		letterSpacing: "0.5px",
+																		mb: 0.5,
+																		display: "block",
+																	}}
+																>
+																	Token quantity to sell
+																</Typography>
+																<Typography 
+																	variant="body1" 
+																	sx={{ 
+																		color: "text.primary",
+																		fontWeight: 600,
+																		fontSize: "0.9375rem",
+																	}}
+																>
+																	{tokensToSell.toLocaleString(undefined, { maximumFractionDigits: 6 })} {row.symbol}
+																</Typography>
+															</Box>
+															
+															{/* Amount collected */}
+															<Box>
+																<Typography 
+																	variant="caption" 
+																	sx={{ 
+																		color: "text.secondary", 
+																		fontWeight: 600,
+																		fontSize: "0.7rem",
+																		textTransform: "uppercase",
+																		letterSpacing: "0.5px",
+																		mb: 0.5,
+																		display: "block",
+																	}}
+																>
+																	Amount collected
+																</Typography>
+																<Typography 
+																	variant="body1" 
+																	sx={{ 
+																		color: "success.main", 
+																		fontWeight: 700,
+																		fontSize: "0.9375rem",
+																	}}
+																>
+																	{formatCurrency(amountCollected, "$", 2)}
+																</Typography>
+															</Box>
+															
+															{/* Status */}
+															<Box>
+																<Typography 
+																	variant="caption" 
+																	sx={{ 
+																		color: "text.secondary", 
+																		fontWeight: 600,
+																		fontSize: "0.7rem",
+																		textTransform: "uppercase",
+																		letterSpacing: "0.5px",
+																		mb: 0.75,
+																		display: "block",
+																	}}
+																>
+																	Status
+																</Typography>
+																<Box>
+																	{step.state === "triggered" ? (
+																		<Chip
+																			label="Triggered"
+																			size="small"
+																			color="success"
+																			sx={{ 
+																				fontSize: "0.7rem", 
+																				height: "24px",
+																				fontWeight: 600,
+																			}}
+																		/>
+																	) : (
+																		<Chip
+																			label="Pending"
+																			size="small"
+																			variant="outlined"
+																			sx={{
+																				fontSize: "0.7rem",
+																				height: "24px",
+																				borderColor: "text.secondary",
+																				color: "text.primary",
+																				fontWeight: 600,
+																			}}
+																		/>
+																	)}
+																</Box>
 															</Box>
 														</Stack>
 														{onStepAlertChange && (
-															<Stack spacing={1.5} sx={{ mt: 1.5, pt: 1.5, borderTop: "1px solid", borderColor: "divider" }}>
+															<Stack 
+																spacing={2} 
+																sx={{ 
+																	mt: 2, 
+																	pt: 2, 
+																	borderTop: "2px solid", 
+																	borderColor: "divider",
+																	bgcolor: "action.hover",
+																	mx: -2.5,
+																	px: 2.5,
+																	pb: 2,
+																}}
+															>
 																{/* Pre-reaching Alert */}
-																<Stack spacing={0.5}>
-																	<Typography variant="caption" sx={{ color: "text.secondary", fontWeight: 600, fontSize: "0.7rem" }}>
+																<Box>
+																	<Typography 
+																		variant="caption" 
+																		sx={{ 
+																			color: "text.secondary", 
+																			fontWeight: 600, 
+																			fontSize: "0.7rem",
+																			textTransform: "uppercase",
+																			letterSpacing: "0.5px",
+																			mb: 1,
+																			display: "block",
+																		}}
+																	>
 																		Pre-reaching Alert
 																	</Typography>
-																	<Stack direction="row" spacing={0.5} sx={{ alignItems: "center" }}>
+																	<Stack direction="row" spacing={0.75} sx={{ alignItems: "center" }}>
 																		<IconButton
 																			size="small"
 																			onClick={(e) => {
@@ -595,27 +724,34 @@ function StrategyRow({
 																				onStepAlertChange(step.id, "beforeTPPercentage", newValue);
 																			}}
 																			sx={{ 
-																				width: 28, 
-																				height: 28,
-																				border: "1px solid",
+																				width: 32, 
+																				height: 32,
+																				border: "1.5px solid",
 																				borderColor: "divider",
-																				borderRadius: 1,
+																				borderRadius: 1.5,
+																				bgcolor: "background.paper",
+																				"&:hover": {
+																					bgcolor: "action.hover",
+																					borderColor: "primary.main",
+																				},
 																			}}
 																		>
-																			<MinusIcon size={14} />
+																			<MinusIcon size={16} />
 																		</IconButton>
 																		<Box
 																			sx={{
 																				flex: 1,
-																				px: 1,
-																				py: 0.5,
-																				bgcolor: "background.level1",
-																				borderRadius: 1,
+																				px: 1.5,
+																				py: 0.75,
+																				bgcolor: "background.paper",
+																				border: "1.5px solid",
+																				borderColor: "divider",
+																				borderRadius: 1.5,
 																				textAlign: "center",
-																				minWidth: 50,
+																				minWidth: 60,
 																			}}
 																		>
-																			<Typography variant="body2" sx={{ fontWeight: 600, fontSize: "0.75rem" }}>
+																			<Typography variant="body2" sx={{ fontWeight: 700, fontSize: "0.8125rem", color: "primary.main" }}>
 																				{stepAlerts.get(step.id)?.beforeTPPercentage ?? 2}%
 																			</Typography>
 																		</Box>
@@ -628,36 +764,62 @@ function StrategyRow({
 																				onStepAlertChange(step.id, "beforeTPPercentage", newValue);
 																			}}
 																			sx={{ 
-																				width: 28, 
-																				height: 28,
-																				border: "1px solid",
+																				width: 32, 
+																				height: 32,
+																				border: "1.5px solid",
 																				borderColor: "divider",
-																				borderRadius: 1,
+																				borderRadius: 1.5,
+																				bgcolor: "background.paper",
+																				"&:hover": {
+																					bgcolor: "action.hover",
+																					borderColor: "primary.main",
+																				},
 																			}}
 																		>
-																			<PlusIcon size={14} />
+																			<PlusIcon size={16} />
 																		</IconButton>
 																	</Stack>
-																</Stack>
+																</Box>
 																{/* Reaching Alert */}
-																<FormControlLabel
-																	control={
-																		<Checkbox
-																			size="small"
-																			checked={stepAlerts.get(step.id)?.tpReachedEnabled ?? true}
-																			onChange={(e) => {
-																				e.stopPropagation();
-																				onStepAlertChange(step.id, "tpReachedEnabled", e.target.checked);
-																			}}
-																		/>
-																	}
-																	label={
-																		<Typography variant="caption" sx={{ fontSize: "0.7rem" }}>
-																			Reaching Alert
-																		</Typography>
-																	}
-																	sx={{ m: 0 }}
-																/>
+																<Box>
+																	<Typography 
+																		variant="caption" 
+																		sx={{ 
+																			color: "text.secondary", 
+																			fontWeight: 600, 
+																			fontSize: "0.7rem",
+																			textTransform: "uppercase",
+																			letterSpacing: "0.5px",
+																			mb: 1,
+																			display: "block",
+																		}}
+																	>
+																		Reaching Alert
+																	</Typography>
+																	<FormControlLabel
+																		control={
+																			<Checkbox
+																				size="small"
+																				checked={stepAlerts.get(step.id)?.tpReachedEnabled ?? true}
+																				onChange={(e) => {
+																					e.stopPropagation();
+																					onStepAlertChange(step.id, "tpReachedEnabled", e.target.checked);
+																				}}
+																				sx={{
+																					"& .MuiSvgIcon-root": {
+																						fontSize: 20,
+																					},
+																				}}
+																			/>
+																		}
+																		label={
+																			<Typography variant="body2" sx={{ fontSize: "0.8125rem", fontWeight: 500 }}>
+																				Enabled
+																			</Typography>
+																		}
+																		sx={{ m: 0 }}
+																	/>
+																</Box>
 															</Stack>
 														)}
 													</Stack>

@@ -94,7 +94,7 @@ export function TokenStrategySidebar({
 				// Try to find forecast that includes this strategy
 				const allForecasts = await getForecasts();
 				const forecastData = allForecasts.find((f) =>
-					f.strategies?.some((fs) => fs.strategyId === firstStrategy.id)
+					Object.values(f.appliedStrategies || {}).includes(firstStrategy.id)
 				);
 
 				if (forecastData) {
@@ -487,12 +487,14 @@ export function TokenStrategySidebar({
 							</Typography>
 							<Stack spacing={1.5}>
 								{strategy.profitTargets.map((tp) => {
-									const tpAlert = tpAlerts.find((ta) => ta.tpOrder === tp.order);
 									const targetPrice =
 										tp.targetType === "percentage"
 											? holding.averagePrice * (1 + tp.targetValue / 100)
 											: tp.targetValue;
 									const isReached = currentPrice >= targetPrice;
+									// Calculate projected amount from strategy
+									const tokensToSell = (strategy.quantity * tp.sellPercentage) / 100;
+									const projectedAmount = tokensToSell * targetPrice;
 									
 									// Calculate percentage gain from average price
 									const percentageGain = holding.averagePrice > 0 
@@ -559,7 +561,7 @@ export function TokenStrategySidebar({
 																			Amount
 																		</Typography>
 																		<Typography variant="caption" sx={{ display: "block", fontWeight: 600, color: "success.main" }}>
-																			{formatCurrency(tpAlert?.projectedAmount || 0, "$", 0)}
+																			{formatCurrency(projectedAmount, "$", 0)}
 																		</Typography>
 																	</Box>
 																</Stack>
