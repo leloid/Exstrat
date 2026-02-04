@@ -128,8 +128,8 @@ export interface StepAlert {
 }
 
 export interface CreateStrategyAlertDto {
-	strategyId: string;
-	notificationChannels: NotificationChannels;
+	strategyId?: string; // Optionnel car récupéré depuis l'URL
+	notificationChannels?: NotificationChannels;
 	isActive?: boolean;
 }
 

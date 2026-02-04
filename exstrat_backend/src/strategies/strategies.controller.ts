@@ -103,10 +103,18 @@ export class StrategiesController {
   @ApiResponse({ status: 404, description: 'Stratégie non trouvée' })
   async createOrUpdateStrategyAlert(
     @CurrentUser('id') userId: string,
-    @Param('strategyId', ParseUUIDPipe) strategyId: string,
+    @Param('strategyId') strategyId: string, // Retirer ParseUUIDPipe temporairement pour debug
     @Body() createDto: CreateStrategyAlertDto,
   ): Promise<StrategyAlertResponseDto> {
-    return this.strategiesService.createOrUpdateStrategyAlert(userId, strategyId, createDto);
+    console.log('🔔 [StrategiesController] createOrUpdateStrategyAlert called:', { userId, strategyId, createDto });
+    try {
+      const result = await this.strategiesService.createOrUpdateStrategyAlert(userId, strategyId, createDto);
+      console.log('✅ [StrategiesController] createOrUpdateStrategyAlert success:', result);
+      return result;
+    } catch (error) {
+      console.error('❌ [StrategiesController] createOrUpdateStrategyAlert error:', error);
+      throw error;
+    }
   }
 
   @Get(':strategyId/alerts')

@@ -450,16 +450,20 @@ export class StrategiesService {
     strategyId: string,
     createDto: CreateStrategyAlertDto,
   ): Promise<StrategyAlertResponseDto> {
+    console.log('🔔 [StrategiesService] createOrUpdateStrategyAlert called:', { userId, strategyId, createDto });
+    
     // Vérifier que la stratégie existe et appartient à l'utilisateur
     const strategy = await this.prisma.strategy.findUnique({
       where: { id: strategyId },
     });
 
     if (!strategy) {
+      console.log('❌ [StrategiesService] Strategy not found:', strategyId);
       throw new NotFoundException('Stratégie non trouvée');
     }
 
     if (strategy.userId !== userId) {
+      console.log('❌ [StrategiesService] Access denied:', { strategyUserId: strategy.userId, requestUserId: userId });
       throw new ForbiddenException('Vous n\'avez pas accès à cette stratégie');
     }
 
@@ -468,36 +472,49 @@ export class StrategiesService {
       where: { strategyId },
     });
 
+    console.log('🔔 [StrategiesService] Existing strategy alert:', existing);
+
     if (existing) {
       // Mettre à jour
+      console.log('🔔 [StrategiesService] Updating existing strategy alert');
+      const updateData: any = {};
+      
+      if (createDto.isActive !== undefined) {
+        updateData.isActive = createDto.isActive;
+      }
+      
+      if (createDto.notificationChannels) {
+        updateData.notificationChannels = {
+          email: createDto.notificationChannels.email,
+          push: createDto.notificationChannels.push,
+        };
+      }
+      
+      console.log('🔔 [StrategiesService] Update data:', updateData);
+      
       const updated = await this.prisma.strategyAlert.update({
         where: { id: existing.id },
-        data: {
-          isActive: createDto.isActive ?? existing.isActive,
-          notificationChannels: createDto.notificationChannels 
-            ? {
-                email: createDto.notificationChannels.email,
-                push: createDto.notificationChannels.push,
-              }
-            : undefined,
-        },
+        data: updateData,
       });
 
+      console.log('✅ [StrategiesService] Strategy alert updated:', updated);
       return this.mapToStrategyAlertResponseDto(updated);
     } else {
       // Créer
+      console.log('🔔 [StrategiesService] Creating new strategy alert');
       const created = await this.prisma.strategyAlert.create({
         data: {
           strategyId,
           userId,
           isActive: createDto.isActive ?? true,
           notificationChannels: {
-            email: createDto.notificationChannels.email ?? true,
-            push: createDto.notificationChannels.push ?? true,
+            email: createDto.notificationChannels?.email ?? true,
+            push: createDto.notificationChannels?.push ?? true,
           },
         },
       });
 
+      console.log('✅ [StrategiesService] Strategy alert created:', created);
       return this.mapToStrategyAlertResponseDto(created);
     }
   }

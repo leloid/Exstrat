@@ -70,6 +70,8 @@ export function StrategiesTable({
 	onToggleExpand,
 	stepAlerts = new Map(),
 	onStepAlertChange,
+	strategyAlerts = new Map(),
+	onStrategyAlertToggle,
 }: StrategiesTableProps): React.JSX.Element {
 	const allSelected = rows.length > 0 && selectedIds.size === rows.length;
 	const someSelected = selectedIds.size > 0 && selectedIds.size < rows.length;
@@ -135,6 +137,7 @@ export function StrategiesTable({
 					<TableCell align="right" sx={{ minWidth: "130px", fontWeight: 600 }}>Remaining Token</TableCell>
 					<TableCell align="center" sx={{ minWidth: "60px", fontWeight: 600 }}>TP</TableCell>
 					<TableCell align="center" sx={{ minWidth: "100px", fontWeight: 600, color: "text.disabled" }}>SL (To be soon)</TableCell>
+					<TableCell align="center" sx={{ minWidth: "100px", fontWeight: 600 }}>Alerts</TableCell>
 					<TableCell align="center" sx={{ minWidth: "100px", fontWeight: 600 }}>Actions</TableCell>
 				</TableRow>
 			</TableHead>
@@ -155,6 +158,8 @@ export function StrategiesTable({
 						onToggleExpand={onToggleExpand}
 						stepAlerts={stepAlerts}
 						onStepAlertChange={onStepAlertChange}
+						strategyAlerts={strategyAlerts}
+						onStrategyAlertToggle={onStrategyAlertToggle}
 					/>
 				))}
 			</TableBody>
@@ -192,6 +197,8 @@ function StrategyRow({
 	onToggleExpand,
 	stepAlerts = new Map(),
 	onStepAlertChange,
+	strategyAlerts = new Map(),
+	onStrategyAlertToggle,
 }: StrategyRowProps): React.JSX.Element {
 	// Memoize calculations
 	const calculations = React.useMemo(() => {
@@ -431,6 +438,19 @@ function StrategyRow({
 					</Typography>
 				</TableCell>
 				<TableCell align="center" onClick={(e) => e.stopPropagation()}>
+					{onStrategyAlertToggle && (
+						<Switch
+							checked={strategyAlerts.get(row.id)?.isActive ?? false}
+							onChange={(e) => {
+								e.stopPropagation();
+								onStrategyAlertToggle(row.id, e.target.checked);
+							}}
+							size="small"
+							color="primary"
+						/>
+					)}
+				</TableCell>
+				<TableCell align="center" onClick={(e) => e.stopPropagation()}>
 					<Stack direction="row" spacing={0.5} sx={{ alignItems: "center", justifyContent: "center" }}>
 						{row.notes && row.notes.trim() && (
 							<Tooltip title={row.notes} arrow placement="top">
@@ -464,7 +484,7 @@ function StrategyRow({
 			</TableRow>
 			{isExpanded && row.steps && row.steps.length > 0 && (
 				<TableRow>
-					<TableCell colSpan={11} sx={{ py: 0, borderBottom: "1px solid var(--mui-palette-divider)" }}>
+					<TableCell colSpan={12} sx={{ py: 0, borderBottom: "1px solid var(--mui-palette-divider)" }}>
 						<Collapse in={isExpanded} timeout="auto" unmountOnExit>
 							<Box sx={{ py: 2, px: 2, bgcolor: "var(--mui-palette-background-paper)" }}>
 								<Grid container spacing={2}>

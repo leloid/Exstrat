@@ -69,6 +69,8 @@ function StrategiesPageContent(): React.JSX.Element {
 	const [strategyToDelete, setStrategyToDelete] = React.useState<string | null>(null);
 	const [expandedStrategyId, setExpandedStrategyId] = React.useState<string | null>(null);
 	const [walletFilter, setWalletFilter] = React.useState<string>("global"); // "global" or portfolioId
+	const [showAlertConflictModal, setShowAlertConflictModal] = React.useState(false);
+	const [pendingAlertToggle, setPendingAlertToggle] = React.useState<{ strategyId: string; enabled: boolean; conflictingStrategyId: string } | null>(null);
 	const [portfolios, setPortfolios] = React.useState<Portfolio[]>([]);
 	const [transactions, setTransactions] = React.useState<TransactionResponse[]>([]);
 	
@@ -105,6 +107,7 @@ function StrategiesPageContent(): React.JSX.Element {
 				(response.strategies || []).map(async (strategy) => {
 					try {
 						const alert = await strategiesApi.getStrategyAlert(strategy.id);
+						console.log(`🔔 [Frontend] Loaded alert for strategy ${strategy.id}:`, alert);
 						if (alert) {
 							alertsMap.set(strategy.id, alert);
 							
@@ -126,15 +129,21 @@ function StrategiesPageContent(): React.JSX.Element {
 									})
 								);
 							}
+						} else {
+							console.log(`🔔 [Frontend] No alert found for strategy ${strategy.id}`);
 						}
 					} catch (error: any) {
 						// Ignorer les erreurs 404/400 (pas d'alerte configurée)
 						if (error.response?.status !== 404 && error.response?.status !== 400) {
 							console.error(`Error loading alert for strategy ${strategy.id}:`, error);
+						} else {
+							console.log(`🔔 [Frontend] No alert configured for strategy ${strategy.id} (404/400 is normal)`);
 						}
 					}
 				})
 			).then(() => {
+				console.log("🔔 [Frontend] All alerts loaded. Strategy alerts:", Array.from(alertsMap.entries()));
+				console.log("🔔 [Frontend] Step alerts:", Array.from(stepAlertsMap.entries()));
 				setStrategyAlerts(alertsMap);
 				setStepAlerts(stepAlertsMap);
 			}).catch((error) => {
@@ -451,6 +460,173 @@ function StrategiesPageContent(): React.JSX.Element {
 		}
 	}, [stepAlerts]);
 
+	// Handle strategy alert toggle with conflict detection
+	const handleStrategyAlertToggle = React.useCallback(async (
+		strategyId: string,
+		enabled: boolean
+	) => {
+		console.log("🔔 [Frontend] handleStrategyAlertToggle called:", { strategyId, enabled });
+		console.log("🔔 [Frontend] Current strategyAlerts map:", Array.from(strategyAlerts.entries()));
+		console.log("🔔 [Frontend] Current strategies:", strategies.map(s => ({ id: s.id, symbol: s.symbol })));
+		
+		// Si on désactive, pas de conflit possible
+		if (!enabled) {
+			try {
+				const existing = strategyAlerts.get(strategyId);
+				console.log("🔔 [Frontend] Disabling alert, existing:", existing);
+				if (existing) {
+					await strategiesApi.updateStrategyAlert(strategyId, { isActive: false });
+					setStrategyAlerts((prev) => {
+						const updated = new Map(prev);
+						updated.set(strategyId, { ...existing, isActive: false });
+						console.log("🔔 [Frontend] Updated strategyAlerts after disable:", Array.from(updated.entries()));
+						return updated;
+					});
+					toast.success("Alerts disabled");
+				} else {
+					console.log("⚠️ [Frontend] No existing alert found to disable");
+				}
+			} catch (error: any) {
+				console.error("❌ [Frontend] Error disabling strategy alert:", error);
+				console.error("❌ [Frontend] Error details:", {
+					message: error.message,
+					response: error.response?.data,
+					status: error.response?.status,
+				});
+				toast.error("Failed to disable alerts");
+			}
+			return;
+		}
+
+		// Si on active, vérifier les conflits
+		const currentStrategy = strategies.find(s => s.id === strategyId);
+		console.log("🔔 [Frontend] Current strategy:", currentStrategy);
+		if (!currentStrategy) {
+			console.error("❌ [Frontend] Strategy not found:", strategyId);
+			return;
+		}
+
+		// Chercher une autre stratégie avec le même token qui a une alerte active
+		const conflictingStrategy = strategies.find(s => 
+			s.id !== strategyId && 
+			s.symbol.toUpperCase() === currentStrategy.symbol.toUpperCase() &&
+			strategyAlerts.get(s.id)?.isActive === true
+		);
+
+		console.log("🔔 [Frontend] Conflicting strategy:", conflictingStrategy);
+
+		if (conflictingStrategy) {
+			// Afficher la popup de confirmation
+			console.log("🔔 [Frontend] Conflict detected, showing modal");
+			setPendingAlertToggle({ strategyId, enabled, conflictingStrategyId: conflictingStrategy.id });
+			setShowAlertConflictModal(true);
+		} else {
+			// Pas de conflit, activer directement
+			try {
+				const existing = strategyAlerts.get(strategyId);
+				console.log("🔔 [Frontend] No conflict, enabling alert. Existing:", existing);
+				
+				if (existing) {
+					console.log("🔔 [Frontend] Updating existing alert");
+					await strategiesApi.updateStrategyAlert(strategyId, { isActive: true });
+					setStrategyAlerts((prev) => {
+						const updated = new Map(prev);
+						updated.set(strategyId, { ...existing, isActive: true });
+						console.log("🔔 [Frontend] Updated strategyAlerts after enable (update):", Array.from(updated.entries()));
+						return updated;
+					});
+				} else {
+					console.log("🔔 [Frontend] Creating new alert");
+					// Créer une nouvelle alerte avec les valeurs par défaut
+					const createData = {
+						// Ne pas inclure strategyId car il est dans l'URL
+						notificationChannels: { email: true, push: true },
+						isActive: true,
+					};
+					console.log("🔔 [Frontend] Create data:", createData);
+					await strategiesApi.createOrUpdateStrategyAlert(strategyId, createData);
+					const newAlert = await strategiesApi.getStrategyAlert(strategyId);
+					console.log("🔔 [Frontend] Created alert from server:", newAlert);
+					if (newAlert) {
+						setStrategyAlerts((prev) => {
+							const updated = new Map(prev);
+							updated.set(strategyId, newAlert);
+							console.log("🔔 [Frontend] Updated strategyAlerts after enable (create):", Array.from(updated.entries()));
+							return updated;
+						});
+					}
+				}
+				toast.success("Alerts enabled");
+			} catch (error: any) {
+				console.error("❌ [Frontend] Error enabling strategy alert:", error);
+				console.error("❌ [Frontend] Error details:", {
+					message: error.message,
+					response: error.response?.data,
+					status: error.response?.status,
+					config: error.config,
+				});
+				toast.error("Failed to enable alerts");
+			}
+		}
+	}, [strategies, strategyAlerts]);
+
+	// Confirm alert conflict resolution
+	const handleConfirmAlertConflict = React.useCallback(async () => {
+		if (!pendingAlertToggle) return;
+
+		try {
+			const { strategyId, enabled, conflictingStrategyId } = pendingAlertToggle;
+
+			// Désactiver l'ancienne stratégie
+			const conflictingAlert = strategyAlerts.get(conflictingStrategyId);
+			if (conflictingAlert) {
+				await strategiesApi.updateStrategyAlert(conflictingStrategyId, { isActive: false });
+				setStrategyAlerts((prev) => {
+					const updated = new Map(prev);
+					updated.set(conflictingStrategyId, { ...conflictingAlert, isActive: false });
+					return updated;
+				});
+			}
+
+			// Activer la nouvelle stratégie
+			const existing = strategyAlerts.get(strategyId);
+			if (existing) {
+				await strategiesApi.updateStrategyAlert(strategyId, { isActive: true });
+				setStrategyAlerts((prev) => {
+					const updated = new Map(prev);
+					updated.set(strategyId, { ...existing, isActive: true });
+					return updated;
+				});
+			} else {
+				console.log("🔔 [Frontend] Creating new alert in conflict resolution");
+				const createData = {
+					// Ne pas inclure strategyId car il est dans l'URL
+					notificationChannels: { email: true, push: true },
+					isActive: true,
+				};
+				console.log("🔔 [Frontend] Create data:", createData);
+				await strategiesApi.createOrUpdateStrategyAlert(strategyId, createData);
+				const newAlert = await strategiesApi.getStrategyAlert(strategyId);
+				console.log("🔔 [Frontend] Created alert from server:", newAlert);
+				if (newAlert) {
+					setStrategyAlerts((prev) => {
+						const updated = new Map(prev);
+						updated.set(strategyId, newAlert);
+						return updated;
+					});
+				}
+			}
+
+			toast.success("Alerts enabled (previous alerts for this token were disabled)");
+		} catch (error: any) {
+			console.error("❌ [Frontend] Error resolving alert conflict:", error);
+			toast.error("Failed to update alerts");
+		} finally {
+			setShowAlertConflictModal(false);
+			setPendingAlertToggle(null);
+		}
+	}, [pendingAlertToggle, strategyAlerts]);
+
 	// Reset selections when search query changes
 	React.useEffect(() => {
 		selection.deselectAll();
@@ -636,6 +812,8 @@ function StrategiesPageContent(): React.JSX.Element {
 										}}
 										stepAlerts={stepAlerts}
 										onStepAlertChange={handleStepAlertChange}
+										strategyAlerts={strategyAlerts}
+										onStrategyAlertToggle={handleStrategyAlertToggle}
 									/>
 								</Box>
 								{totalStrategies > 0 && (
@@ -670,6 +848,22 @@ function StrategiesPageContent(): React.JSX.Element {
 				open={showEditModal}
 				strategy={editingStrategy}
 			/>
+
+			{/* Alert Conflict Modal */}
+			{pendingAlertToggle && (
+				<ConfirmModal
+					open={showAlertConflictModal}
+					onClose={() => {
+						setShowAlertConflictModal(false);
+						setPendingAlertToggle(null);
+					}}
+					onConfirm={handleConfirmAlertConflict}
+					title="Alert Conflict Detected"
+					message={`Another strategy for ${strategies.find(s => s.id === pendingAlertToggle.strategyId)?.symbol || "this token"} already has alerts enabled. Enabling alerts for this strategy will automatically disable alerts for the other strategy with the same token. Do you want to continue?`}
+					confirmText="Yes, disable other alerts"
+					cancelText="Cancel"
+				/>
+			)}
 
 			{/* Delete Strategy Confirmation Modal */}
 			<ConfirmModal

@@ -15,15 +15,16 @@ export class NotificationChannelsDto {
 
 // DTO pour créer/mettre à jour StrategyAlert
 export class CreateStrategyAlertDto {
-  @ApiProperty({ description: 'ID de la stratégie' })
+  @ApiProperty({ description: 'ID de la stratégie (optionnel, récupéré depuis l\'URL)', required: false })
   @IsString()
-  @IsNotEmpty()
-  strategyId: string;
+  @IsOptional()
+  strategyId?: string; // Optionnel car récupéré depuis les paramètres de route
 
   @ApiProperty({ description: 'Canaux de notification' })
   @ValidateNested()
   @Type(() => NotificationChannelsDto)
-  notificationChannels: NotificationChannelsDto;
+  @IsOptional()
+  notificationChannels?: NotificationChannelsDto;
 
   @ApiProperty({ description: 'Activer la configuration', default: true })
   @IsBoolean()
