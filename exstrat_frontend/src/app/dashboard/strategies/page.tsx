@@ -392,16 +392,16 @@ function StrategiesPageContent(): React.JSX.Element {
 	// Handle step alert changes
 	const handleStepAlertChange = React.useCallback(async (
 		stepId: string,
-		field: "beforeTPEnabled" | "tpReachedEnabled",
-		value: boolean
+		field: "beforeTPEnabled" | "tpReachedEnabled" | "beforeTPPercentage",
+		value: boolean | number
 	) => {
 		console.log("🔔 [Frontend] handleStepAlertChange called:", { stepId, field, value });
 		try {
 			const existing = stepAlerts.get(stepId);
 			console.log("🔔 [Frontend] Existing step alert:", existing);
 			
-			const updateData: { beforeTPEnabled?: boolean; tpReachedEnabled?: boolean } = {};
-			updateData[field] = value;
+			const updateData: { beforeTPEnabled?: boolean; tpReachedEnabled?: boolean; beforeTPPercentage?: number } = {};
+			updateData[field] = value as any;
 			
 			if (existing) {
 				console.log("🔔 [Frontend] Updating existing step alert:", updateData);
@@ -415,10 +415,13 @@ function StrategiesPageContent(): React.JSX.Element {
 			} else {
 				console.log("🔔 [Frontend] Creating new step alert");
 				// Ne pas envoyer stepId dans le body car il est déjà dans l'URL
-				const createData = {
-					beforeTPEnabled: field === "beforeTPEnabled" ? value : true,
-					tpReachedEnabled: field === "tpReachedEnabled" ? value : true,
+				const createData: { beforeTPEnabled?: boolean; tpReachedEnabled?: boolean; beforeTPPercentage?: number } = {
+					beforeTPEnabled: field === "beforeTPEnabled" ? (value as boolean) : true,
+					tpReachedEnabled: field === "tpReachedEnabled" ? (value as boolean) : true,
 				};
+				if (field === "beforeTPPercentage") {
+					createData.beforeTPPercentage = value as number;
+				}
 				console.log("🔔 [Frontend] Create data:", createData);
 				await strategiesApi.createOrUpdateStepAlert(stepId, createData);
 				// Recharger l'alerte depuis le serveur pour obtenir les vraies valeurs

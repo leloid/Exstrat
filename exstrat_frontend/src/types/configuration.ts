@@ -121,6 +121,7 @@ export interface StepAlert {
 	stepId: string;
 	strategyId: string;
 	beforeTPEnabled: boolean;
+	beforeTPPercentage?: number; // Percentage before TP (e.g., 2 for 2%)
 	tpReachedEnabled: boolean;
 	createdAt: string;
 	updatedAt: string;
@@ -140,11 +141,13 @@ export interface UpdateStrategyAlertDto {
 export interface CreateStepAlertDto {
 	stepId: string;
 	beforeTPEnabled?: boolean;
+	beforeTPPercentage?: number;
 	tpReachedEnabled?: boolean;
 }
 
 export interface UpdateStepAlertDto {
 	beforeTPEnabled?: boolean;
+	beforeTPPercentage?: number;
 	tpReachedEnabled?: boolean;
 }
 

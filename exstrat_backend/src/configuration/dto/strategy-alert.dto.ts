@@ -1,4 +1,4 @@
-import { IsString, IsNotEmpty, IsBoolean, IsOptional, ValidateNested } from 'class-validator';
+import { IsString, IsNotEmpty, IsBoolean, IsOptional, ValidateNested, IsNumber, Min, Max } from 'class-validator';
 import { Type } from 'class-transformer';
 import { ApiProperty } from '@nestjs/swagger';
 
@@ -56,6 +56,13 @@ export class CreateStepAlertDto {
   @IsOptional()
   beforeTPEnabled?: boolean;
 
+  @ApiProperty({ description: 'Pourcentage avant le TP pour l\'alerte (ex: 2 pour 2%)', required: false, minimum: 0, maximum: 100 })
+  @IsNumber()
+  @Min(0)
+  @Max(100)
+  @IsOptional()
+  beforeTPPercentage?: number;
+
   @ApiProperty({ description: 'Activer l\'alerte quand le TP est atteint', default: true })
   @IsBoolean()
   @IsOptional()
@@ -67,6 +74,13 @@ export class UpdateStepAlertDto {
   @IsBoolean()
   @IsOptional()
   beforeTPEnabled?: boolean;
+
+  @ApiProperty({ description: 'Pourcentage avant le TP pour l\'alerte (ex: 2 pour 2%)', required: false, minimum: 0, maximum: 100 })
+  @IsNumber()
+  @Min(0)
+  @Max(100)
+  @IsOptional()
+  beforeTPPercentage?: number;
 
   @ApiProperty({ description: 'Activer l\'alerte quand le TP est atteint', required: false })
   @IsBoolean()
@@ -113,6 +127,9 @@ export class StepAlertResponseDto {
 
   @ApiProperty()
   beforeTPEnabled: boolean;
+
+  @ApiProperty({ required: false })
+  beforeTPPercentage?: number;
 
   @ApiProperty()
   tpReachedEnabled: boolean;

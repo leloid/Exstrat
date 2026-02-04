@@ -25,6 +25,9 @@ import { TrashIcon } from "@phosphor-icons/react/dist/ssr/Trash";
 import { CaretDownIcon } from "@phosphor-icons/react/dist/ssr/CaretDown";
 import { CaretRightIcon } from "@phosphor-icons/react/dist/ssr/CaretRight";
 import { NoteIcon } from "@phosphor-icons/react/dist/ssr/Note";
+import { MinusIcon } from "@phosphor-icons/react/dist/ssr/Minus";
+import { PlusIcon } from "@phosphor-icons/react/dist/ssr/Plus";
+import Button from "@mui/material/Button";
 
 import { formatCurrency, formatPercentage } from "@/lib/format";
 import type { StrategyResponse } from "@/types/strategies";
@@ -32,6 +35,8 @@ import type { StepAlert } from "@/types/configuration";
 import { strategiesApi } from "@/lib/strategies-api";
 import { toast } from "@/components/core/toaster";
 import FormControlLabel from "@mui/material/FormControlLabel";
+import Switch from "@mui/material/Switch";
+import type { StrategyAlert } from "@/types/configuration";
 
 interface StrategiesTableProps {
 	rows: StrategyResponse[];
@@ -487,14 +492,6 @@ function StrategyRow({
 														</Typography>
 														<Stack spacing={0.5}>
 															<Typography variant="caption" sx={{ color: "text.secondary", fontWeight: 600 }}>
-																Exit type
-															</Typography>
-															<Typography variant="body2" sx={{ color: "text.primary" }}>
-																{targetType === "percentage" ? "Percentage" : "Price"}
-															</Typography>
-														</Stack>
-														<Stack spacing={0.5}>
-															<Typography variant="caption" sx={{ color: "text.secondary", fontWeight: 600 }}>
 																Target
 															</Typography>
 															<Typography variant="body2" sx={{ color: "text.primary", fontWeight: 600 }}>
@@ -545,25 +542,67 @@ function StrategyRow({
 															</Box>
 														</Stack>
 														{onStepAlertChange && (
-															<Stack spacing={1} sx={{ mt: 1, pt: 1, borderTop: "1px solid", borderColor: "divider" }}>
-																<FormControlLabel
-																	control={
-																		<Checkbox
+															<Stack spacing={1.5} sx={{ mt: 1.5, pt: 1.5, borderTop: "1px solid", borderColor: "divider" }}>
+																{/* Pre-reaching Alert */}
+																<Stack spacing={0.5}>
+																	<Typography variant="caption" sx={{ color: "text.secondary", fontWeight: 600, fontSize: "0.7rem" }}>
+																		Pre-reaching Alert
+																	</Typography>
+																	<Stack direction="row" spacing={0.5} sx={{ alignItems: "center" }}>
+																		<IconButton
 																			size="small"
-																			checked={stepAlerts.get(step.id)?.beforeTPEnabled ?? true}
-																			onChange={(e) => {
+																			onClick={(e) => {
 																				e.stopPropagation();
-																				onStepAlertChange(step.id, "beforeTPEnabled", e.target.checked);
+																				const current = stepAlerts.get(step.id)?.beforeTPPercentage ?? 2;
+																				const newValue = Math.max(0, current - 1);
+																				onStepAlertChange(step.id, "beforeTPPercentage", newValue);
 																			}}
-																		/>
-																	}
-																	label={
-																		<Typography variant="caption" sx={{ fontSize: "0.7rem" }}>
-																			Alert before reached
-																		</Typography>
-																	}
-																	sx={{ m: 0 }}
-																/>
+																			sx={{ 
+																				width: 28, 
+																				height: 28,
+																				border: "1px solid",
+																				borderColor: "divider",
+																				borderRadius: 1,
+																			}}
+																		>
+																			<MinusIcon size={14} />
+																		</IconButton>
+																		<Box
+																			sx={{
+																				flex: 1,
+																				px: 1,
+																				py: 0.5,
+																				bgcolor: "background.level1",
+																				borderRadius: 1,
+																				textAlign: "center",
+																				minWidth: 50,
+																			}}
+																		>
+																			<Typography variant="body2" sx={{ fontWeight: 600, fontSize: "0.75rem" }}>
+																				{stepAlerts.get(step.id)?.beforeTPPercentage ?? 2}%
+																			</Typography>
+																		</Box>
+																		<IconButton
+																			size="small"
+																			onClick={(e) => {
+																				e.stopPropagation();
+																				const current = stepAlerts.get(step.id)?.beforeTPPercentage ?? 2;
+																				const newValue = Math.min(100, current + 1);
+																				onStepAlertChange(step.id, "beforeTPPercentage", newValue);
+																			}}
+																			sx={{ 
+																				width: 28, 
+																				height: 28,
+																				border: "1px solid",
+																				borderColor: "divider",
+																				borderRadius: 1,
+																			}}
+																		>
+																			<PlusIcon size={14} />
+																		</IconButton>
+																	</Stack>
+																</Stack>
+																{/* Reaching Alert */}
 																<FormControlLabel
 																	control={
 																		<Checkbox
@@ -577,7 +616,7 @@ function StrategyRow({
 																	}
 																	label={
 																		<Typography variant="caption" sx={{ fontSize: "0.7rem" }}>
-																			Alert when reaching
+																			Reaching Alert
 																		</Typography>
 																	}
 																	sx={{ m: 0 }}

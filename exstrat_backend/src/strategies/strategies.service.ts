@@ -652,6 +652,7 @@ export class StrategiesService {
         where: { id: existing.id },
         data: {
           beforeTPEnabled: createDto.beforeTPEnabled !== undefined ? createDto.beforeTPEnabled : existing.beforeTPEnabled,
+          beforeTPPercentage: createDto.beforeTPPercentage !== undefined ? createDto.beforeTPPercentage : existing.beforeTPPercentage,
           tpReachedEnabled: createDto.tpReachedEnabled !== undefined ? createDto.tpReachedEnabled : existing.tpReachedEnabled,
         },
       });
@@ -666,6 +667,7 @@ export class StrategiesService {
           stepId: finalStepId,
           strategyId: step.strategyId,
           beforeTPEnabled: createDto.beforeTPEnabled ?? true,
+          beforeTPPercentage: createDto.beforeTPPercentage ?? 2,
           tpReachedEnabled: createDto.tpReachedEnabled ?? true,
         },
       });
@@ -743,6 +745,7 @@ export class StrategiesService {
       where: { id: existing.id },
       data: {
         ...(updateDto.beforeTPEnabled !== undefined && { beforeTPEnabled: updateDto.beforeTPEnabled }),
+        ...(updateDto.beforeTPPercentage !== undefined && { beforeTPPercentage: updateDto.beforeTPPercentage }),
         ...(updateDto.tpReachedEnabled !== undefined && { tpReachedEnabled: updateDto.tpReachedEnabled }),
       },
     });
@@ -803,6 +806,7 @@ export class StrategiesService {
       stepId: alert.stepId,
       strategyId: alert.strategyId,
       beforeTPEnabled: alert.beforeTPEnabled,
+      beforeTPPercentage: alert.beforeTPPercentage ?? 2,
       tpReachedEnabled: alert.tpReachedEnabled,
       createdAt: alert.createdAt,
       updatedAt: alert.updatedAt,
