@@ -38,7 +38,7 @@ export function AccountDetails(): React.JSX.Element {
 			/>
 			<CardContent>
 				<Stack spacing={3}>
-					<Stack direction="row" spacing={2} sx={{ alignItems: "center" }}>
+					<Stack direction="row" spacing={2} sx={{ alignItems: "center", opacity: 0.5, cursor: "not-allowed" }}>
 						<Box
 							sx={{
 								border: "1px dashed var(--mui-palette-divider)",
@@ -55,22 +55,25 @@ export function AccountDetails(): React.JSX.Element {
 										borderRadius: "inherit",
 										bottom: 0,
 										color: "var(--mui-palette-common-white)",
-										cursor: "pointer",
+										cursor: "not-allowed",
 										display: "flex",
 										justifyContent: "center",
 										left: 0,
-										opacity: 0,
+										opacity: 0.7,
 										position: "absolute",
 										right: 0,
 										top: 0,
 										zIndex: 1,
-										"&:hover": { opacity: 1 },
+									}}
+									onClick={(e) => {
+										e.preventDefault();
+										e.stopPropagation();
 									}}
 								>
 									<Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
 										<CameraIcon fontSize="var(--icon-fontSize-md)" />
 										<Typography color="inherit" variant="subtitle2">
-											Select
+											Coming soon
 										</Typography>
 									</Stack>
 								</Box>
@@ -79,14 +82,15 @@ export function AccountDetails(): React.JSX.Element {
 								</Avatar>
 							</Box>
 						</Box>
-						<Button color="secondary" size="small">
+						<Button color="secondary" size="small" disabled>
 							Remove
 						</Button>
 					</Stack>
 					<Stack spacing={2}>
-						<FormControl>
+						<FormControl disabled>
 							<InputLabel>Full name</InputLabel>
-							<OutlinedInput defaultValue="" name="fullName" />
+							<OutlinedInput defaultValue={user?.firstName && user?.lastName ? `${user.firstName} ${user.lastName}` : ""} name="fullName" />
+							<FormHelperText>Coming soon</FormHelperText>
 						</FormControl>
 						<FormControl disabled>
 							<InputLabel>Email address</InputLabel>
@@ -96,7 +100,7 @@ export function AccountDetails(): React.JSX.Element {
 							</FormHelperText>
 						</FormControl>
 						<Stack direction="row" spacing={2}>
-							<FormControl sx={{ width: "160px" }}>
+							<FormControl disabled sx={{ width: "160px" }}>
 								<InputLabel>Dial code</InputLabel>
 								<Select
 									name="countryCode"
@@ -117,26 +121,28 @@ export function AccountDetails(): React.JSX.Element {
 									<Option value="+44">United Kingdom</Option>
 								</Select>
 							</FormControl>
-							<FormControl sx={{ flex: "1 1 auto" }}>
+							<FormControl disabled sx={{ flex: "1 1 auto" }}>
 								<InputLabel>Phone number</InputLabel>
 								<OutlinedInput name="phone" placeholder="Enter your phone number" />
+								<FormHelperText>Coming soon</FormHelperText>
 							</FormControl>
 						</Stack>
-						<FormControl>
+						<FormControl disabled>
 							<InputLabel>Title</InputLabel>
 							<OutlinedInput name="title" placeholder="e.g Crypto Trader" />
+							<FormHelperText>Coming soon</FormHelperText>
 						</FormControl>
-						<FormControl>
+						<FormControl disabled>
 							<InputLabel>Biography (optional)</InputLabel>
 							<OutlinedInput name="bio" placeholder="Describe yourself..." />
-							<FormHelperText>0/200 characters</FormHelperText>
+							<FormHelperText>Coming soon</FormHelperText>
 						</FormControl>
 					</Stack>
 				</Stack>
 			</CardContent>
 			<CardActions sx={{ justifyContent: "flex-end" }}>
-				<Button color="secondary">Cancel</Button>
-				<Button variant="contained">Save changes</Button>
+				<Button color="secondary" disabled>Cancel</Button>
+				<Button variant="contained" disabled>Save changes</Button>
 			</CardActions>
 		</Card>
 	);

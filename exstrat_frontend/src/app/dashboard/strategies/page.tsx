@@ -28,6 +28,7 @@ import { WarningIcon } from "@phosphor-icons/react/dist/ssr/Warning";
 import { strategiesApi } from "@/lib/strategies-api";
 import { getPortfolios, getPortfolioHoldings } from "@/lib/portfolios-api";
 import { transactionsApi } from "@/lib/transactions-api";
+import type { CreateStepAlertDto } from "@/types/configuration";
 import { formatCurrency, formatPercentage } from "@/lib/format";
 import type { StrategyResponse } from "@/types/strategies";
 import type { StrategyAlert, StepAlert } from "@/types/configuration";
@@ -424,7 +425,7 @@ function StrategiesPageContent(): React.JSX.Element {
 			} else {
 				console.log("🔔 [Frontend] Creating new step alert");
 				// Ne pas envoyer stepId dans le body car il est déjà dans l'URL
-				const createData: { beforeTPEnabled?: boolean; tpReachedEnabled?: boolean; beforeTPPercentage?: number } = {
+				const createData: CreateStepAlertDto = {
 					beforeTPEnabled: field === "beforeTPEnabled" ? (value as boolean) : true,
 					tpReachedEnabled: field === "tpReachedEnabled" ? (value as boolean) : true,
 				};

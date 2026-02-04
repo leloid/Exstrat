@@ -139,7 +139,7 @@ export interface UpdateStrategyAlertDto {
 }
 
 export interface CreateStepAlertDto {
-	stepId: string;
+	stepId?: string; // Optionnel car récupéré depuis l'URL
 	beforeTPEnabled?: boolean;
 	beforeTPPercentage?: number;
 	tpReachedEnabled?: boolean;

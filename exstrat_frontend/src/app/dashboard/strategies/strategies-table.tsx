@@ -52,7 +52,9 @@ interface StrategiesTableProps {
 	expandedStrategyId?: string | null;
 	onToggleExpand?: (strategyId: string) => void;
 	stepAlerts?: Map<string, StepAlert>;
-	onStepAlertChange?: (stepId: string, field: "beforeTPEnabled" | "tpReachedEnabled", value: boolean) => void;
+	onStepAlertChange?: (stepId: string, field: "beforeTPEnabled" | "tpReachedEnabled" | "beforeTPPercentage", value: boolean | number) => void;
+	strategyAlerts?: Map<string, StrategyAlert>;
+	onStrategyAlertToggle?: (strategyId: string, enabled: boolean) => Promise<void>;
 }
 
 export function StrategiesTable({
@@ -180,7 +182,9 @@ interface StrategyRowProps {
 	isExpanded?: boolean;
 	onToggleExpand?: (strategyId: string) => void;
 	stepAlerts?: Map<string, StepAlert>;
-	onStepAlertChange?: (stepId: string, field: "beforeTPEnabled" | "tpReachedEnabled", value: boolean) => void;
+	onStepAlertChange?: (stepId: string, field: "beforeTPEnabled" | "tpReachedEnabled" | "beforeTPPercentage", value: boolean | number) => void;
+	strategyAlerts?: Map<string, StrategyAlert>;
+	onStrategyAlertToggle?: (strategyId: string, enabled: boolean) => Promise<void>;
 }
 
 function StrategyRow({

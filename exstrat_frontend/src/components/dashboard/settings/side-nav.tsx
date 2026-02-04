@@ -19,32 +19,38 @@ import type { NavItemConfig } from "@/types/nav";
 import { paths } from "@/paths";
 import { isNavItemActive } from "@/lib/is-nav-item-active";
 import { useAuth } from "@/contexts/AuthContext";
+import Chip from "@mui/material/Chip";
 
 const navItems = [
 	{
 		key: "personal",
 		title: "Personal",
 		items: [
-			{ key: "account", title: "Account", href: paths.dashboard.settings.account, icon: "user-circle" },
-			{ key: "notifications", title: "Notifications", href: paths.dashboard.settings.notifications, icon: "bell" },
-			{ key: "security", title: "Security", href: paths.dashboard.settings.security, icon: "lock-key" },
+			{ key: "account", title: "Account", href: paths.dashboard.settings.account, icon: "user-circle", comingSoon: false },
+			{ key: "notifications", title: "Notifications", href: paths.dashboard.settings.notifications, icon: "bell", comingSoon: true },
+			{ key: "security", title: "Security", href: paths.dashboard.settings.security, icon: "lock-key", comingSoon: true },
 		],
 	},
 	{
 		key: "organization",
 		title: "Organization",
 		items: [
-			{ key: "billing", title: "Billing & plans", href: paths.dashboard.settings.billing, icon: "credit-card" },
-			{ key: "team", title: "Team", href: paths.dashboard.settings.team, icon: "users-three" },
+			{ key: "billing", title: "Billing & plans", href: paths.dashboard.settings.billing, icon: "credit-card", comingSoon: false },
+			{ key: "team", title: "Team", href: paths.dashboard.settings.team, icon: "users-three", comingSoon: true },
 			{
 				key: "integrations",
 				title: "Integrations",
 				href: paths.dashboard.settings.integrations,
 				icon: "plugs-connected",
+				comingSoon: true,
 			},
 		],
 	},
-] satisfies NavItemConfig[];
+] as Array<{
+	key: string;
+	title: string;
+	items: Array<NavItemConfig & { comingSoon?: boolean }>;
+}>;
 
 const icons = {
 	"credit-card": CreditCardIcon,
@@ -83,7 +89,7 @@ export function SideNav(): React.JSX.Element {
 							) : null}
 							<Stack component="ul" spacing={1} sx={{ listStyle: "none", m: 0, p: 0 }}>
 								{group.items.map((item) => (
-									<NavItem {...item} key={item.key} pathname={pathname} />
+									<NavItem {...item} key={item.key} pathname={pathname} comingSoon={(item as any).comingSoon || false} />
 								))}
 							</Stack>
 						</Stack>
@@ -111,39 +117,54 @@ export function SideNav(): React.JSX.Element {
 
 interface NavItemProps extends NavItemConfig {
 	pathname: string;
+	comingSoon?: boolean;
 }
 
-function NavItem({ disabled, external, href, icon, pathname, title }: NavItemProps): React.JSX.Element {
+function NavItem({ disabled, external, href, icon, pathname, title, comingSoon = false }: NavItemProps): React.JSX.Element {
 	const active = isNavItemActive({ disabled, external, href, pathname });
 	const Icon = icon ? icons[icon] : null;
+	const isComingSoon = comingSoon;
+
+	const handleClick = (e: React.MouseEvent) => {
+		if (isComingSoon) {
+			e.preventDefault();
+			e.stopPropagation();
+			console.log(`${title} - Coming soon`);
+		}
+	};
 
 	return (
 		<Box component="li" sx={{ userSelect: "none" }}>
 			<Box
-				{...(href
+				{...(href && !isComingSoon
 					? {
 							component: external ? "a" : RouterLink,
 							href,
 							target: external ? "_blank" : undefined,
 							rel: external ? "noreferrer" : undefined,
 						}
-					: { role: "button" })}
+					: { role: "button", onClick: handleClick })}
 				sx={{
 					alignItems: "center",
 					borderRadius: 1,
-					color: "var(--mui-palette-text-secondary)",
-					cursor: "pointer",
+					color: isComingSoon ? "var(--mui-palette-text-disabled)" : "var(--mui-palette-text-secondary)",
+					cursor: isComingSoon ? "pointer" : "pointer",
 					display: "flex",
 					flex: "0 0 auto",
 					gap: 1,
 					p: "6px 16px",
 					textDecoration: "none",
 					whiteSpace: "nowrap",
+					opacity: isComingSoon ? 0.6 : 1,
 					...(disabled && { color: "var(--mui-palette-text-disabled)", cursor: "not-allowed" }),
-					...(active && { bgcolor: "var(--mui-palette-action-selected)", color: "var(--mui-palette-text-primary)" }),
+					...(active && !isComingSoon && { bgcolor: "var(--mui-palette-action-selected)", color: "var(--mui-palette-text-primary)" }),
 					"&:hover": {
 						...(!active &&
-							!disabled && { bgcolor: "var(--mui-palette-action-hover)", color: "var(--mui-palette-text-primary)" }),
+							!disabled && { 
+								bgcolor: isComingSoon ? "var(--mui-palette-action-hover)" : "var(--mui-palette-action-hover)", 
+								color: isComingSoon ? "var(--mui-palette-text-disabled)" : "var(--mui-palette-text-primary)",
+								opacity: isComingSoon ? 0.8 : 1,
+							}),
 					},
 				}}
 				tabIndex={0}
@@ -151,19 +172,33 @@ function NavItem({ disabled, external, href, icon, pathname, title }: NavItemPro
 				{Icon ? (
 					<Box sx={{ alignItems: "center", display: "flex", justifyContent: "center", flex: "0 0 auto" }}>
 						<Icon
-							fill={active ? "var(--mui-palette-text-primary)" : "var(--mui-palette-text-secondary)"}
+							fill={active && !isComingSoon ? "var(--mui-palette-text-primary)" : isComingSoon ? "var(--mui-palette-text-disabled)" : "var(--mui-palette-text-secondary)"}
 							fontSize="var(--icon-fontSize-md)"
-							weight={active ? "fill" : undefined}
+							weight={active && !isComingSoon ? "fill" : undefined}
 						/>
 					</Box>
 				) : null}
-				<Box sx={{ flex: "1 1 auto" }}>
+				<Box sx={{ flex: "1 1 auto", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
 					<Typography
 						component="span"
 						sx={{ color: "inherit", fontSize: "0.875rem", fontWeight: 500, lineHeight: "28px" }}
 					>
 						{title}
 					</Typography>
+					{isComingSoon && (
+						<Chip 
+							label="Soon" 
+							size="small" 
+							color="primary"
+							sx={{
+								height: "18px",
+								fontSize: "0.65rem",
+								"& .MuiChip-label": {
+									px: 0.75,
+								},
+							}}
+						/>
+					)}
 				</Box>
 			</Box>
 		</Box>
