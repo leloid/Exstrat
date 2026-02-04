@@ -12,23 +12,23 @@ datasource db {
 }
 
 model User {
-  id                    String                @id @default(cuid())
-  email                 String                @unique
-  password              String
-  firstName             String?
-  lastName              String?
-  emailVerified         Boolean               @default(false)
+  id                     String                @id @default(cuid())
+  email                  String                @unique
+  password               String
+  firstName              String?
+  lastName               String?
+  emailVerified          Boolean               @default(false)
   emailVerificationToken String?
-  createdAt             DateTime              @default(now())
-  accounts              ExchangeAccount[]
-  strategies            Strategy[]
-  positions             Position[]
-  transactions          Transaction[]
-  portfolios            Portfolio[]
-  userStrategies        UserStrategy[]
-  theoreticalStrategies TheoreticalStrategy[]
-  forecasts             Forecast[]
-  alertConfigurations   AlertConfiguration[]
+  createdAt              DateTime              @default(now())
+  accounts               ExchangeAccount[]
+  strategies             Strategy[]
+  positions              Position[]
+  transactions           Transaction[]
+  portfolios             Portfolio[]
+  userStrategies         UserStrategy[]
+  theoreticalStrategies  TheoreticalStrategy[]
+  forecasts              Forecast[]
+  strategyAlerts         StrategyAlert[]
 }
 
 model ExchangeAccount {
@@ -110,22 +110,24 @@ model Strategy {
   createdAt         DateTime       @default(now())
   updatedAt         DateTime       @updatedAt
   steps             StrategyStep[]
+  strategyAlert     StrategyAlert?
   user              User           @relation(fields: [userId], references: [id])
 }
 
 model StrategyStep {
-  id          String    @id @default(cuid())
+  id          String     @id @default(cuid())
   strategyId  String
-  targetType  String    @default("percentage_of_average") // percentage_of_average | exact_price
-  targetPct   Decimal   @db.Decimal(10, 4) // +10 => 10
-  sellPct     Decimal   @db.Decimal(10, 4) // 20 => 20% de baseQty
-  targetPrice Decimal   @db.Decimal(38, 18)
-  state       String    @default("pending") // pending | triggered | done
+  targetType  String     @default("percentage_of_average") // percentage_of_average | exact_price
+  targetPct   Decimal    @db.Decimal(10, 4) // +10 => 10
+  sellPct     Decimal    @db.Decimal(10, 4) // 20 => 20% de baseQty
+  targetPrice Decimal    @db.Decimal(38, 18)
+  state       String     @default("pending") // pending | triggered | done
   notes       String? // notes optionnelles
   triggeredAt DateTime?
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-  strategy    Strategy  @relation(fields: [strategyId], references: [id])
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  strategy    Strategy   @relation(fields: [strategyId], references: [id], onDelete: Cascade)
+  stepAlert   StepAlert?
 
   @@index([strategyId, targetPrice])
 }
@@ -317,80 +319,49 @@ model TheoreticalStrategy {
 // ===== PRÉVISIONS (Forecasts) =====
 
 model Forecast {
-  id                 String              @id @default(cuid())
-  userId             String
-  portfolioId        String
-  name               String
-  appliedStrategies  Json // Record<string, string> - mapping holdingId -> strategyId
-  summary            Json // {totalInvested, totalCollected, totalProfit, returnPercentage, remainingTokensValue, tokenCount}
-  notes              String?
-  createdAt          DateTime            @default(now())
-  updatedAt          DateTime            @updatedAt
-  user               User                @relation(fields: [userId], references: [id])
-  alertConfiguration AlertConfiguration?
+  id                String   @id @default(cuid())
+  userId            String
+  portfolioId       String
+  name              String
+  appliedStrategies Json // Record<string, string> - mapping holdingId -> strategyId
+  summary           Json // {totalInvested, totalCollected, totalProfit, returnPercentage, remainingTokensValue, tokenCount}
+  notes             String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  user              User     @relation(fields: [userId], references: [id])
 
   @@index([userId])
   @@index([portfolioId])
 }
 
-// ===== MODULE CONFIGURATION - ALERTES (V1) =====
+// ===== MODULE CONFIGURATION - ALERTES (V2) =====
+// Alertes liées aux Strategies au lieu des Forecasts
 
-model AlertConfiguration {
-  id                   String       @id @default(cuid())
+model StrategyAlert {
+  id                   String   @id @default(cuid())
+  strategyId           String   @unique
   userId               String
-  forecastId           String       @unique
-  isActive             Boolean      @default(true)
+  isActive             Boolean  @default(true)
   notificationChannels Json // {email: boolean, push: boolean}
-  createdAt            DateTime     @default(now())
-  updatedAt            DateTime     @updatedAt
-  user                 User         @relation(fields: [userId], references: [id])
-  forecast             Forecast     @relation(fields: [forecastId], references: [id], onDelete: Cascade)
-  tokenAlerts          TokenAlert[]
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+  strategy             Strategy @relation(fields: [strategyId], references: [id], onDelete: Cascade)
+  user                 User     @relation(fields: [userId], references: [id])
 
   @@index([userId])
-  @@index([forecastId])
+  @@index([strategyId])
 }
 
-model TokenAlert {
-  id                   String             @id @default(cuid())
-  alertConfigurationId String
-  holdingId            String // Référence au holding/token
-  tokenSymbol          String
-  strategyId           String? // ID de la stratégie théorique associée
-  numberOfTargets      Int // Nombre de TP configurés
-  isActive             Boolean            @default(true)
-  createdAt            DateTime           @default(now())
-  updatedAt            DateTime           @updatedAt
-  alertConfiguration   AlertConfiguration @relation(fields: [alertConfigurationId], references: [id], onDelete: Cascade)
-  tpAlerts             TPAlert[]
+model StepAlert {
+  id               String       @id @default(cuid())
+  stepId           String       @unique
+  strategyId       String
+  beforeTPEnabled  Boolean      @default(true) // Alert before reached
+  tpReachedEnabled Boolean      @default(true) // Alert when reaching
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
+  step             StrategyStep @relation(fields: [stepId], references: [id], onDelete: Cascade)
 
-  @@unique([alertConfigurationId, holdingId])
-  @@index([alertConfigurationId])
-  @@index([holdingId])
-}
-
-model TPAlert {
-  id              String  @id @default(cuid())
-  tokenAlertId    String
-  tpOrder         Int // 1, 2, 3, etc. (ordre du TP)
-  targetPrice     Decimal @db.Decimal(38, 18) // Seuil de prix du TP
-  sellQuantity    Decimal @db.Decimal(38, 18) // Quantité à vendre
-  projectedAmount Decimal @db.Decimal(38, 18) // Montant encaissé projeté
-  remainingValue  Decimal @db.Decimal(38, 18) // Valeur restante après la vente
-
-  // Alerte "Avant le TP"
-  beforeTPEnabled Boolean  @default(true)
-  beforeTPValue   Decimal? @db.Decimal(10, 4) // Pourcentage ou valeur absolue (défaut: -10%)
-  beforeTPType    String   @default("percentage") // "percentage" | "absolute"
-
-  // Alerte "TP Atteint"
-  tpReachedEnabled Boolean @default(true)
-
-  isActive   Boolean    @default(true)
-  createdAt  DateTime   @default(now())
-  updatedAt  DateTime   @updatedAt
-  tokenAlert TokenAlert @relation(fields: [tokenAlertId], references: [id], onDelete: Cascade)
-
-  @@unique([tokenAlertId, tpOrder])
-  @@index([tokenAlertId])
+  @@index([stepId])
+  @@index([strategyId])
 }

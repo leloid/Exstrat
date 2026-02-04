@@ -134,16 +134,8 @@ export class PortfoliosService {
 
       this.logger.log(`Found ${forecasts.length} forecast(s) for portfolio ${portfolioId}`);
 
-      // 2. Supprimer les AlertConfiguration associées (et leurs TokenAlert/TPAlert en cascade)
-      // On doit les supprimer manuellement avant de supprimer les Forecast
-      // car onDelete: Cascade ne fonctionne que si on supprime directement le Forecast
-      if (forecasts.length > 0) {
-        const forecastIds = forecasts.map(f => f.id);
-        const deletedAlerts = await tx.alertConfiguration.deleteMany({
-          where: { forecastId: { in: forecastIds } },
-        });
-        this.logger.log(`Deleted ${deletedAlerts.count} alert configuration(s)`);
-      }
+      // 2. Note: Les AlertConfiguration n'existent plus, les alertes sont maintenant liées aux Strategies
+      // Aucune action nécessaire ici car les alertes ne sont plus liées aux Forecasts
 
       // 3. Supprimer les Forecast associés
       const deletedForecasts = await tx.forecast.deleteMany({

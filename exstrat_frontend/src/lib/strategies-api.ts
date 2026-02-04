@@ -13,6 +13,14 @@ import type {
 	StrategySummary,
 	StrategySearchDto,
 } from "@/types/strategies";
+import type {
+	StrategyAlert,
+	StepAlert,
+	CreateStrategyAlertDto,
+	UpdateStrategyAlertDto,
+	CreateStepAlertDto,
+	UpdateStepAlertDto,
+} from "@/types/configuration";
 
 const BASE_URL = "/strategies";
 
@@ -80,6 +88,88 @@ export const strategiesApi = {
 	 */
 	async deleteStrategy(id: string): Promise<void> {
 		await api.delete(`${BASE_URL}/${id}`);
+	},
+
+	// ===== STRATEGY ALERTS =====
+
+	/**
+	 * Create or update strategy alert
+	 */
+	async createOrUpdateStrategyAlert(strategyId: string, data: CreateStrategyAlertDto): Promise<StrategyAlert> {
+		const response = await api.post<StrategyAlert>(`${BASE_URL}/${strategyId}/alerts`, data);
+		return response.data;
+	},
+
+	/**
+	 * Get strategy alert
+	 */
+	async getStrategyAlert(strategyId: string): Promise<StrategyAlert | null> {
+		try {
+			const response = await api.get<StrategyAlert | null>(`${BASE_URL}/${strategyId}/alerts`);
+			return response.data;
+		} catch (error: any) {
+			// Si 404 ou 400, c'est normal (pas d'alerte configurée)
+			if (error.response?.status === 404 || error.response?.status === 400) {
+				return null;
+			}
+			throw error;
+		}
+	},
+
+	/**
+	 * Update strategy alert
+	 */
+	async updateStrategyAlert(strategyId: string, data: UpdateStrategyAlertDto): Promise<StrategyAlert> {
+		const response = await api.patch<StrategyAlert>(`${BASE_URL}/${strategyId}/alerts`, data);
+		return response.data;
+	},
+
+	/**
+	 * Delete strategy alert
+	 */
+	async deleteStrategyAlert(strategyId: string): Promise<void> {
+		await api.delete(`${BASE_URL}/${strategyId}/alerts`);
+	},
+
+	// ===== STEP ALERTS =====
+
+	/**
+	 * Create or update step alert
+	 */
+	async createOrUpdateStepAlert(stepId: string, data: CreateStepAlertDto): Promise<StepAlert> {
+		const response = await api.post<StepAlert>(`${BASE_URL}/steps/${stepId}/alerts`, data);
+		return response.data;
+	},
+
+	/**
+	 * Get step alert
+	 */
+	async getStepAlert(stepId: string): Promise<StepAlert | null> {
+		try {
+			const response = await api.get<StepAlert | null>(`${BASE_URL}/steps/${stepId}/alerts`);
+			return response.data;
+		} catch (error: any) {
+			// Si 404 ou 400, c'est normal (pas d'alerte configurée)
+			if (error.response?.status === 404 || error.response?.status === 400) {
+				return null;
+			}
+			throw error;
+		}
+	},
+
+	/**
+	 * Update step alert
+	 */
+	async updateStepAlert(stepId: string, data: UpdateStepAlertDto): Promise<StepAlert> {
+		const response = await api.patch<StepAlert>(`${BASE_URL}/steps/${stepId}/alerts`, data);
+		return response.data;
+	},
+
+	/**
+	 * Delete step alert
+	 */
+	async deleteStepAlert(stepId: string): Promise<void> {
+		await api.delete(`${BASE_URL}/steps/${stepId}/alerts`);
 	},
 };
 

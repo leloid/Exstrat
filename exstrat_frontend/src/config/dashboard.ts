@@ -45,13 +45,6 @@ export const dashboardConfig = {
 				{ key: "prevision", title: "Forecast", href: paths.dashboard.prevision, icon: "chart-line" },
 			],
 		},
-		{
-			key: "configuration",
-			title: undefined,
-			items: [
-				{ key: "configuration", title: "Alert Configuration", href: paths.dashboard.configuration, icon: "bell-ringing" },
-			],
-		},
 	],
 	// Getting Started et Settings séparés pour être affichés en bas
 	gettingStartedItem: {

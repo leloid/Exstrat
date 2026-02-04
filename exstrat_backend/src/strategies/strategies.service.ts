@@ -12,6 +12,14 @@ import {
   StrategyStatus,
   StepState
 } from './dto/strategy.dto';
+import {
+  CreateStrategyAlertDto,
+  UpdateStrategyAlertDto,
+  CreateStepAlertDto,
+  UpdateStepAlertDto,
+  StrategyAlertResponseDto,
+  StepAlertResponseDto,
+} from '../configuration/dto/strategy-alert.dto';
 import { Decimal } from '@prisma/client/runtime/library';
 
 @Injectable()
@@ -429,6 +437,375 @@ export class StrategiesService {
       notes: step.notes,
       createdAt: step.createdAt,
       updatedAt: step.updatedAt
+    };
+  }
+
+  // ===== GESTION DES ALERTES DE STRATÉGIE =====
+
+  /**
+   * Créer ou mettre à jour une configuration d'alertes pour une stratégie
+   */
+  async createOrUpdateStrategyAlert(
+    userId: string,
+    strategyId: string,
+    createDto: CreateStrategyAlertDto,
+  ): Promise<StrategyAlertResponseDto> {
+    // Vérifier que la stratégie existe et appartient à l'utilisateur
+    const strategy = await this.prisma.strategy.findUnique({
+      where: { id: strategyId },
+    });
+
+    if (!strategy) {
+      throw new NotFoundException('Stratégie non trouvée');
+    }
+
+    if (strategy.userId !== userId) {
+      throw new ForbiddenException('Vous n\'avez pas accès à cette stratégie');
+    }
+
+    // Vérifier si une alerte existe déjà
+    const existing = await this.prisma.strategyAlert.findUnique({
+      where: { strategyId },
+    });
+
+    if (existing) {
+      // Mettre à jour
+      const updated = await this.prisma.strategyAlert.update({
+        where: { id: existing.id },
+        data: {
+          isActive: createDto.isActive ?? existing.isActive,
+          notificationChannels: createDto.notificationChannels 
+            ? {
+                email: createDto.notificationChannels.email,
+                push: createDto.notificationChannels.push,
+              }
+            : undefined,
+        },
+      });
+
+      return this.mapToStrategyAlertResponseDto(updated);
+    } else {
+      // Créer
+      const created = await this.prisma.strategyAlert.create({
+        data: {
+          strategyId,
+          userId,
+          isActive: createDto.isActive ?? true,
+          notificationChannels: {
+            email: createDto.notificationChannels.email ?? true,
+            push: createDto.notificationChannels.push ?? true,
+          },
+        },
+      });
+
+      return this.mapToStrategyAlertResponseDto(created);
+    }
+  }
+
+  /**
+   * Récupérer la configuration d'alertes d'une stratégie
+   */
+  async getStrategyAlert(userId: string, strategyId: string): Promise<StrategyAlertResponseDto | null> {
+    console.log('🔔 [StrategiesService] getStrategyAlert called with userId:', userId, 'strategyId:', strategyId);
+    
+    const strategy = await this.prisma.strategy.findUnique({
+      where: { id: strategyId },
+    });
+
+    if (!strategy) {
+      console.log('🔔 [StrategiesService] Strategy not found');
+      throw new NotFoundException('Stratégie non trouvée');
+    }
+
+    if (strategy.userId !== userId) {
+      console.log('🔔 [StrategiesService] Access denied');
+      throw new ForbiddenException('Vous n\'avez pas accès à cette stratégie');
+    }
+
+    const alert = await this.prisma.strategyAlert.findUnique({
+      where: { strategyId },
+    });
+
+    if (!alert) {
+      console.log('🔔 [StrategiesService] Alert not found, returning null');
+      return null;
+    }
+
+    console.log('🔔 [StrategiesService] Alert found');
+    return this.mapToStrategyAlertResponseDto(alert);
+  }
+
+  /**
+   * Mettre à jour une configuration d'alertes
+   */
+  async updateStrategyAlert(
+    userId: string,
+    strategyId: string,
+    updateDto: UpdateStrategyAlertDto,
+  ): Promise<StrategyAlertResponseDto> {
+    const strategy = await this.prisma.strategy.findUnique({
+      where: { id: strategyId },
+    });
+
+    if (!strategy) {
+      throw new NotFoundException('Stratégie non trouvée');
+    }
+
+    if (strategy.userId !== userId) {
+      throw new ForbiddenException('Vous n\'avez pas accès à cette stratégie');
+    }
+
+    const existing = await this.prisma.strategyAlert.findUnique({
+      where: { strategyId },
+    });
+
+    if (!existing) {
+      throw new NotFoundException('Configuration d\'alertes non trouvée');
+    }
+
+    const updated = await this.prisma.strategyAlert.update({
+      where: { id: existing.id },
+      data: {
+        ...(updateDto.isActive !== undefined && { isActive: updateDto.isActive }),
+        ...(updateDto.notificationChannels && {
+          notificationChannels: {
+            email: updateDto.notificationChannels.email,
+            push: updateDto.notificationChannels.push,
+          },
+        }),
+      },
+    });
+
+    return this.mapToStrategyAlertResponseDto(updated);
+  }
+
+  /**
+   * Supprimer une configuration d'alertes
+   */
+  async deleteStrategyAlert(userId: string, strategyId: string): Promise<void> {
+    const strategy = await this.prisma.strategy.findUnique({
+      where: { id: strategyId },
+    });
+
+    if (!strategy) {
+      throw new NotFoundException('Stratégie non trouvée');
+    }
+
+    if (strategy.userId !== userId) {
+      throw new ForbiddenException('Vous n\'avez pas accès à cette stratégie');
+    }
+
+    const existing = await this.prisma.strategyAlert.findUnique({
+      where: { strategyId },
+    });
+
+    if (existing) {
+      await this.prisma.strategyAlert.delete({
+        where: { id: existing.id },
+      });
+    }
+  }
+
+  /**
+   * Créer ou mettre à jour une alerte pour un step
+   */
+  async createOrUpdateStepAlert(
+    userId: string,
+    stepId: string,
+    createDto: CreateStepAlertDto,
+  ): Promise<StepAlertResponseDto> {
+    console.log('🔔 [StrategiesService] createOrUpdateStepAlert called:', { userId, stepId, createDto });
+    
+    // Utiliser le stepId du paramètre si celui du DTO n'est pas fourni
+    const finalStepId = createDto.stepId || stepId;
+    console.log('🔔 [StrategiesService] Final stepId:', finalStepId);
+    
+    // Vérifier que le step existe et appartient à une stratégie de l'utilisateur
+    const step = await this.prisma.strategyStep.findUnique({
+      where: { id: finalStepId },
+      include: { strategy: true },
+    });
+
+    if (!step) {
+      console.log('❌ [StrategiesService] Step not found:', finalStepId);
+      throw new NotFoundException('Step non trouvé');
+    }
+
+    console.log('🔔 [StrategiesService] Step found:', { stepId: step.id, strategyId: step.strategyId, userId: step.strategy.userId });
+
+    if (step.strategy.userId !== userId) {
+      console.log('❌ [StrategiesService] Access denied:', { stepUserId: step.strategy.userId, requestUserId: userId });
+      throw new ForbiddenException('Vous n\'avez pas accès à ce step');
+    }
+
+    // Vérifier si une alerte existe déjà
+    const existing = await this.prisma.stepAlert.findUnique({
+      where: { stepId: finalStepId },
+    });
+
+    console.log('🔔 [StrategiesService] Existing step alert:', existing);
+
+    if (existing) {
+      // Mettre à jour
+      console.log('🔔 [StrategiesService] Updating existing step alert');
+      const updated = await this.prisma.stepAlert.update({
+        where: { id: existing.id },
+        data: {
+          beforeTPEnabled: createDto.beforeTPEnabled !== undefined ? createDto.beforeTPEnabled : existing.beforeTPEnabled,
+          tpReachedEnabled: createDto.tpReachedEnabled !== undefined ? createDto.tpReachedEnabled : existing.tpReachedEnabled,
+        },
+      });
+
+      console.log('✅ [StrategiesService] Step alert updated:', updated);
+      return this.mapToStepAlertResponseDto(updated);
+    } else {
+      // Créer
+      console.log('🔔 [StrategiesService] Creating new step alert');
+      const created = await this.prisma.stepAlert.create({
+        data: {
+          stepId: finalStepId,
+          strategyId: step.strategyId,
+          beforeTPEnabled: createDto.beforeTPEnabled ?? true,
+          tpReachedEnabled: createDto.tpReachedEnabled ?? true,
+        },
+      });
+
+      console.log('✅ [StrategiesService] Step alert created:', created);
+      return this.mapToStepAlertResponseDto(created);
+    }
+  }
+
+  /**
+   * Récupérer une alerte de step
+   */
+  async getStepAlert(userId: string, stepId: string): Promise<StepAlertResponseDto | null> {
+    const step = await this.prisma.strategyStep.findUnique({
+      where: { id: stepId },
+      include: { strategy: true },
+    });
+
+    if (!step) {
+      throw new NotFoundException('Step non trouvé');
+    }
+
+    if (step.strategy.userId !== userId) {
+      throw new ForbiddenException('Vous n\'avez pas accès à ce step');
+    }
+
+    const alert = await this.prisma.stepAlert.findUnique({
+      where: { stepId },
+    });
+
+    if (!alert) {
+      return null;
+    }
+
+    return this.mapToStepAlertResponseDto(alert);
+  }
+
+  /**
+   * Mettre à jour une alerte de step
+   */
+  async updateStepAlert(
+    userId: string,
+    stepId: string,
+    updateDto: UpdateStepAlertDto,
+  ): Promise<StepAlertResponseDto> {
+    console.log('🔔 [StrategiesService] updateStepAlert called:', { userId, stepId, updateDto });
+    
+    const step = await this.prisma.strategyStep.findUnique({
+      where: { id: stepId },
+      include: { strategy: true },
+    });
+
+    if (!step) {
+      console.log('❌ [StrategiesService] Step not found:', stepId);
+      throw new NotFoundException('Step non trouvé');
+    }
+
+    if (step.strategy.userId !== userId) {
+      console.log('❌ [StrategiesService] Access denied:', { stepUserId: step.strategy.userId, requestUserId: userId });
+      throw new ForbiddenException('Vous n\'avez pas accès à ce step');
+    }
+
+    const existing = await this.prisma.stepAlert.findUnique({
+      where: { stepId },
+    });
+
+    if (!existing) {
+      console.log('❌ [StrategiesService] Step alert not found:', stepId);
+      throw new NotFoundException('Alerte de step non trouvée');
+    }
+
+    console.log('🔔 [StrategiesService] Existing step alert:', existing);
+
+    const updated = await this.prisma.stepAlert.update({
+      where: { id: existing.id },
+      data: {
+        ...(updateDto.beforeTPEnabled !== undefined && { beforeTPEnabled: updateDto.beforeTPEnabled }),
+        ...(updateDto.tpReachedEnabled !== undefined && { tpReachedEnabled: updateDto.tpReachedEnabled }),
+      },
+    });
+
+    console.log('✅ [StrategiesService] Step alert updated:', updated);
+    return this.mapToStepAlertResponseDto(updated);
+  }
+
+  /**
+   * Supprimer une alerte de step
+   */
+  async deleteStepAlert(userId: string, stepId: string): Promise<void> {
+    const step = await this.prisma.strategyStep.findUnique({
+      where: { id: stepId },
+      include: { strategy: true },
+    });
+
+    if (!step) {
+      throw new NotFoundException('Step non trouvé');
+    }
+
+    if (step.strategy.userId !== userId) {
+      throw new ForbiddenException('Vous n\'avez pas accès à ce step');
+    }
+
+    const existing = await this.prisma.stepAlert.findUnique({
+      where: { stepId },
+    });
+
+    if (existing) {
+      await this.prisma.stepAlert.delete({
+        where: { id: existing.id },
+      });
+    }
+  }
+
+  /**
+   * Mapper StrategyAlert vers DTO de réponse
+   */
+  private mapToStrategyAlertResponseDto(alert: any): StrategyAlertResponseDto {
+    return {
+      id: alert.id,
+      strategyId: alert.strategyId,
+      userId: alert.userId,
+      isActive: alert.isActive,
+      notificationChannels: alert.notificationChannels as { email: boolean; push: boolean },
+      createdAt: alert.createdAt,
+      updatedAt: alert.updatedAt,
+    };
+  }
+
+  /**
+   * Mapper StepAlert vers DTO de réponse
+   */
+  private mapToStepAlertResponseDto(alert: any): StepAlertResponseDto {
+    return {
+      id: alert.id,
+      stepId: alert.stepId,
+      strategyId: alert.strategyId,
+      beforeTPEnabled: alert.beforeTPEnabled,
+      tpReachedEnabled: alert.tpReachedEnabled,
+      createdAt: alert.createdAt,
+      updatedAt: alert.updatedAt,
     };
   }
 }

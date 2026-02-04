@@ -30,6 +30,7 @@ import { getPortfolios, getPortfolioHoldings } from "@/lib/portfolios-api";
 import { transactionsApi } from "@/lib/transactions-api";
 import { formatCurrency, formatPercentage } from "@/lib/format";
 import type { StrategyResponse } from "@/types/strategies";
+import type { StrategyAlert, StepAlert } from "@/types/configuration";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import { CreateStrategyModal } from "./create-strategy-modal";
 import { EditStrategyModal } from "./edit-strategy-modal";
@@ -71,6 +72,10 @@ function StrategiesPageContent(): React.JSX.Element {
 	const [portfolios, setPortfolios] = React.useState<Portfolio[]>([]);
 	const [transactions, setTransactions] = React.useState<TransactionResponse[]>([]);
 	
+	// Alert states
+	const [strategyAlerts, setStrategyAlerts] = React.useState<Map<string, StrategyAlert>>(new Map());
+	const [stepAlerts, setStepAlerts] = React.useState<Map<string, StepAlert>>(new Map());
+	
 	// Pagination states
 	const [page, setPage] = React.useState(0);
 	const [rowsPerPage, setRowsPerPage] = React.useState(10);
@@ -89,6 +94,52 @@ function StrategiesPageContent(): React.JSX.Element {
 			});
 			setStrategies(response.strategies || []);
 			setTotalStrategies(response.total || 0);
+			
+			// Load alerts for all strategies (optionnel, on ne charge que si nécessaire)
+			// Pour l'instant, on initialise les maps vides et on chargera les alertes à la demande
+			const alertsMap = new Map<string, StrategyAlert>();
+			const stepAlertsMap = new Map<string, StepAlert>();
+			
+			// Charger les alertes en arrière-plan sans bloquer l'affichage
+			Promise.all(
+				(response.strategies || []).map(async (strategy) => {
+					try {
+						const alert = await strategiesApi.getStrategyAlert(strategy.id);
+						if (alert) {
+							alertsMap.set(strategy.id, alert);
+							
+							// Load step alerts for this strategy
+							if (strategy.steps && strategy.steps.length > 0) {
+								await Promise.all(
+									strategy.steps.map(async (step) => {
+										try {
+											const stepAlert = await strategiesApi.getStepAlert(step.id);
+											if (stepAlert) {
+												stepAlertsMap.set(step.id, stepAlert);
+											}
+										} catch (error: any) {
+											// Ignorer les erreurs 404/400 (pas d'alerte configurée)
+											if (error.response?.status !== 404 && error.response?.status !== 400) {
+												console.error(`Error loading step alert for step ${step.id}:`, error);
+											}
+										}
+									})
+								);
+							}
+						}
+					} catch (error: any) {
+						// Ignorer les erreurs 404/400 (pas d'alerte configurée)
+						if (error.response?.status !== 404 && error.response?.status !== 400) {
+							console.error(`Error loading alert for strategy ${strategy.id}:`, error);
+						}
+					}
+				})
+			).then(() => {
+				setStrategyAlerts(alertsMap);
+				setStepAlerts(stepAlertsMap);
+			}).catch((error) => {
+				console.error("Error loading alerts:", error);
+			});
 		} catch (error) {
 			console.error("Error loading strategies:", error);
 		} finally {
@@ -338,6 +389,65 @@ function StrategiesPageContent(): React.JSX.Element {
 		setPage(0);
 	}, []);
 
+	// Handle step alert changes
+	const handleStepAlertChange = React.useCallback(async (
+		stepId: string,
+		field: "beforeTPEnabled" | "tpReachedEnabled",
+		value: boolean
+	) => {
+		console.log("🔔 [Frontend] handleStepAlertChange called:", { stepId, field, value });
+		try {
+			const existing = stepAlerts.get(stepId);
+			console.log("🔔 [Frontend] Existing step alert:", existing);
+			
+			const updateData: { beforeTPEnabled?: boolean; tpReachedEnabled?: boolean } = {};
+			updateData[field] = value;
+			
+			if (existing) {
+				console.log("🔔 [Frontend] Updating existing step alert:", updateData);
+				await strategiesApi.updateStepAlert(stepId, updateData);
+				setStepAlerts((prev) => {
+					const updated = new Map(prev);
+					updated.set(stepId, { ...existing, [field]: value });
+					console.log("🔔 [Frontend] Updated step alerts map:", updated);
+					return updated;
+				});
+			} else {
+				console.log("🔔 [Frontend] Creating new step alert");
+				// Ne pas envoyer stepId dans le body car il est déjà dans l'URL
+				const createData = {
+					beforeTPEnabled: field === "beforeTPEnabled" ? value : true,
+					tpReachedEnabled: field === "tpReachedEnabled" ? value : true,
+				};
+				console.log("🔔 [Frontend] Create data:", createData);
+				await strategiesApi.createOrUpdateStepAlert(stepId, createData);
+				// Recharger l'alerte depuis le serveur pour obtenir les vraies valeurs
+				const stepAlert = await strategiesApi.getStepAlert(stepId);
+				console.log("🔔 [Frontend] Created step alert from server:", stepAlert);
+				if (stepAlert) {
+					setStepAlerts((prev) => {
+						const updated = new Map(prev);
+						updated.set(stepId, stepAlert);
+						console.log("🔔 [Frontend] Updated step alerts map with new alert:", updated);
+						return updated;
+					});
+				}
+			}
+			toast.success("Alert settings updated");
+		} catch (error: any) {
+			console.error("❌ [Frontend] Error updating step alert:", error);
+			console.error("❌ [Frontend] Error details:", {
+				message: error.message,
+				response: error.response?.data,
+				status: error.response?.status,
+			});
+			// Ignorer les erreurs 404/400 si c'est juste qu'il n'y a pas d'alerte
+			if (error.response?.status !== 404 && error.response?.status !== 400) {
+				toast.error("Failed to update alert settings");
+			}
+		}
+	}, [stepAlerts]);
+
 	// Reset selections when search query changes
 	React.useEffect(() => {
 		selection.deselectAll();
@@ -521,6 +631,8 @@ function StrategiesPageContent(): React.JSX.Element {
 										onToggleExpand={(strategyId) => {
 											setExpandedStrategyId((prev) => (prev === strategyId ? null : strategyId));
 										}}
+										stepAlerts={stepAlerts}
+										onStepAlertChange={handleStepAlertChange}
 									/>
 								</Box>
 								{totalStrategies > 0 && (

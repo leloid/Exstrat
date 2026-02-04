@@ -104,3 +104,47 @@ export interface UpdateAlertConfigurationDto {
 	isActive?: boolean;
 }
 
+// ===== NEW STRATEGY-BASED ALERTS =====
+
+export interface StrategyAlert {
+	id: string;
+	strategyId: string;
+	userId: string;
+	isActive: boolean;
+	notificationChannels: NotificationChannels;
+	createdAt: string;
+	updatedAt: string;
+}
+
+export interface StepAlert {
+	id: string;
+	stepId: string;
+	strategyId: string;
+	beforeTPEnabled: boolean;
+	tpReachedEnabled: boolean;
+	createdAt: string;
+	updatedAt: string;
+}
+
+export interface CreateStrategyAlertDto {
+	strategyId: string;
+	notificationChannels: NotificationChannels;
+	isActive?: boolean;
+}
+
+export interface UpdateStrategyAlertDto {
+	notificationChannels?: NotificationChannels;
+	isActive?: boolean;
+}
+
+export interface CreateStepAlertDto {
+	stepId: string;
+	beforeTPEnabled?: boolean;
+	tpReachedEnabled?: boolean;
+}
+
+export interface UpdateStepAlertDto {
+	beforeTPEnabled?: boolean;
+	tpReachedEnabled?: boolean;
+}
+

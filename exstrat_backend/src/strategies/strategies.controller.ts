@@ -8,7 +8,10 @@ import {
   Delete, 
   Query, 
   UseGuards,
-  ParseUUIDPipe
+  ParseUUIDPipe,
+  HttpCode,
+  HttpStatus,
+  NotFoundException
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiQuery, ApiParam } from '@nestjs/swagger';
 import { StrategiesService } from './strategies.service';
@@ -21,6 +24,14 @@ import {
   StrategySearchDto,
   StrategySummaryDto
 } from './dto/strategy.dto';
+import {
+  CreateStrategyAlertDto,
+  UpdateStrategyAlertDto,
+  CreateStepAlertDto,
+  UpdateStepAlertDto,
+  StrategyAlertResponseDto,
+  StepAlertResponseDto,
+} from '../configuration/dto/strategy-alert.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 
@@ -81,6 +92,137 @@ export class StrategiesController {
     @Param('symbol') symbol: string
   ): Promise<StrategyResponseDto[]> {
     return this.strategiesService.getStrategiesByToken(userId, symbol.toUpperCase());
+  }
+
+  // ===== GESTION DES ALERTES DE STRATÉGIE (doit être avant :id pour éviter les conflits de routes) =====
+
+  @Post(':strategyId/alerts')
+  @ApiOperation({ summary: 'Créer ou mettre à jour une configuration d\'alertes pour une stratégie' })
+  @ApiParam({ name: 'strategyId', description: 'ID de la stratégie' })
+  @ApiResponse({ status: 201, type: StrategyAlertResponseDto })
+  @ApiResponse({ status: 404, description: 'Stratégie non trouvée' })
+  async createOrUpdateStrategyAlert(
+    @CurrentUser('id') userId: string,
+    @Param('strategyId', ParseUUIDPipe) strategyId: string,
+    @Body() createDto: CreateStrategyAlertDto,
+  ): Promise<StrategyAlertResponseDto> {
+    return this.strategiesService.createOrUpdateStrategyAlert(userId, strategyId, createDto);
+  }
+
+  @Get(':strategyId/alerts')
+  @ApiOperation({ summary: 'Récupérer la configuration d\'alertes d\'une stratégie' })
+  @ApiParam({ name: 'strategyId', description: 'ID de la stratégie' })
+  @ApiResponse({ status: 200, type: StrategyAlertResponseDto })
+  @ApiResponse({ status: 404, description: 'Stratégie non trouvée ou pas d\'alerte configurée' })
+  async getStrategyAlert(
+    @CurrentUser('id') userId: string,
+    @Param('strategyId') strategyId: string,
+  ): Promise<StrategyAlertResponseDto | null> {
+    console.log('🔔 [StrategiesController] getStrategyAlert called with strategyId:', strategyId, 'userId:', userId);
+    try {
+      const alert = await this.strategiesService.getStrategyAlert(userId, strategyId);
+      console.log('🔔 [StrategiesController] getStrategyAlert result:', alert ? 'found' : 'not found');
+      return alert;
+    } catch (error) {
+      console.error('🔔 [StrategiesController] getStrategyAlert error:', error);
+      throw error;
+    }
+  }
+
+  @Patch(':strategyId/alerts')
+  @ApiOperation({ summary: 'Mettre à jour une configuration d\'alertes' })
+  @ApiParam({ name: 'strategyId', description: 'ID de la stratégie' })
+  @ApiResponse({ status: 200, type: StrategyAlertResponseDto })
+  @ApiResponse({ status: 404, description: 'Configuration non trouvée' })
+  async updateStrategyAlert(
+    @CurrentUser('id') userId: string,
+    @Param('strategyId', ParseUUIDPipe) strategyId: string,
+    @Body() updateDto: UpdateStrategyAlertDto,
+  ): Promise<StrategyAlertResponseDto> {
+    return this.strategiesService.updateStrategyAlert(userId, strategyId, updateDto);
+  }
+
+  @Delete(':strategyId/alerts')
+  @ApiOperation({ summary: 'Supprimer une configuration d\'alertes' })
+  @ApiParam({ name: 'strategyId', description: 'ID de la stratégie' })
+  @ApiResponse({ status: 200 })
+  async deleteStrategyAlert(
+    @CurrentUser('id') userId: string,
+    @Param('strategyId', ParseUUIDPipe) strategyId: string,
+  ): Promise<{ message: string }> {
+    await this.strategiesService.deleteStrategyAlert(userId, strategyId);
+    return { message: 'Configuration d\'alertes supprimée avec succès' };
+  }
+
+  // ===== GESTION DES ALERTES DE STEP =====
+
+  @Post('steps/:stepId/alerts')
+  @ApiOperation({ summary: 'Créer ou mettre à jour une alerte pour un step' })
+  @ApiParam({ name: 'stepId', description: 'ID du step' })
+  @ApiResponse({ status: 201, type: StepAlertResponseDto })
+  @ApiResponse({ status: 404, description: 'Step non trouvé' })
+  async createOrUpdateStepAlert(
+    @CurrentUser('id') userId: string,
+    @Param('stepId') stepId: string, // Retirer ParseUUIDPipe temporairement pour debug
+    @Body() createDto: CreateStepAlertDto,
+  ): Promise<StepAlertResponseDto> {
+    console.log('🔔 [StrategiesController] createOrUpdateStepAlert called:', { userId, stepId, createDto });
+    try {
+      const result = await this.strategiesService.createOrUpdateStepAlert(userId, stepId, createDto);
+      console.log('✅ [StrategiesController] createOrUpdateStepAlert success:', result);
+      return result;
+    } catch (error) {
+      console.error('❌ [StrategiesController] createOrUpdateStepAlert error:', error);
+      throw error;
+    }
+  }
+
+  @Get('steps/:stepId/alerts')
+  @ApiOperation({ summary: 'Récupérer une alerte de step' })
+  @ApiParam({ name: 'stepId', description: 'ID du step' })
+  @ApiResponse({ status: 200, type: StepAlertResponseDto })
+  @ApiResponse({ status: 404, description: 'Step non trouvé ou pas d\'alerte configurée' })
+  async getStepAlert(
+    @CurrentUser('id') userId: string,
+    @Param('stepId') stepId: string, // Retirer ParseUUIDPipe temporairement pour debug
+  ): Promise<StepAlertResponseDto | null> {
+    console.log('🔔 [StrategiesController] getStepAlert called with stepId:', stepId);
+    const alert = await this.strategiesService.getStepAlert(userId, stepId);
+    console.log('🔔 [StrategiesController] getStepAlert result:', alert ? 'found' : 'not found');
+    return alert;
+  }
+
+  @Patch('steps/:stepId/alerts')
+  @ApiOperation({ summary: 'Mettre à jour une alerte de step' })
+  @ApiParam({ name: 'stepId', description: 'ID du step' })
+  @ApiResponse({ status: 200, type: StepAlertResponseDto })
+  @ApiResponse({ status: 404, description: 'Alerte non trouvée' })
+  async updateStepAlert(
+    @CurrentUser('id') userId: string,
+    @Param('stepId') stepId: string, // Retirer ParseUUIDPipe temporairement pour debug
+    @Body() updateDto: UpdateStepAlertDto,
+  ): Promise<StepAlertResponseDto> {
+    console.log('🔔 [StrategiesController] updateStepAlert called:', { userId, stepId, updateDto });
+    try {
+      const result = await this.strategiesService.updateStepAlert(userId, stepId, updateDto);
+      console.log('✅ [StrategiesController] updateStepAlert success:', result);
+      return result;
+    } catch (error) {
+      console.error('❌ [StrategiesController] updateStepAlert error:', error);
+      throw error;
+    }
+  }
+
+  @Delete('steps/:stepId/alerts')
+  @ApiOperation({ summary: 'Supprimer une alerte de step' })
+  @ApiParam({ name: 'stepId', description: 'ID du step' })
+  @ApiResponse({ status: 200 })
+  async deleteStepAlert(
+    @CurrentUser('id') userId: string,
+    @Param('stepId', ParseUUIDPipe) stepId: string,
+  ): Promise<{ message: string }> {
+    await this.strategiesService.deleteStepAlert(userId, stepId);
+    return { message: 'Alerte de step supprimée avec succès' };
   }
 
   @Get(':id')

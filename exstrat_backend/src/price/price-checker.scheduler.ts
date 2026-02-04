@@ -107,26 +107,30 @@ export class PriceCheckerScheduler {
         }
       }
 
-      // 2. Récupérer les tokens depuis les TPAlerts actives
-      const activeTPAlerts = await this.prisma.tPAlert.findMany({
+      // 2. Récupérer les tokens depuis les StepAlerts actives (nouvelle structure)
+      const activeStepAlerts = await this.prisma.stepAlert.findMany({
         where: {
-          isActive: true,
+          tpReachedEnabled: true,
         },
         include: {
-          tokenAlert: {
+          step: {
             include: {
-              alertConfiguration: true,
+              strategy: {
+                include: {
+                  strategyAlert: true,
+                },
+              },
             },
           },
         },
       });
 
-      for (const tpAlert of activeTPAlerts) {
-        if (tpAlert.tokenAlert.alertConfiguration.isActive) {
+      for (const stepAlert of activeStepAlerts) {
+        if (stepAlert.step.strategy.strategyAlert?.isActive) {
           // Récupérer le cmcId depuis la table Token
           const token = await this.prisma.token.findFirst({
             where: {
-              symbol: tpAlert.tokenAlert.tokenSymbol,
+              symbol: stepAlert.step.strategy.asset,
             },
             select: {
               cmcId: true,

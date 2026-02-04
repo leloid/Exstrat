@@ -117,15 +117,9 @@ export class EmailProcessor {
         tpOrder,
       });
 
-      // Désactiver le TPAlert pour éviter les renvois
-      await this.prisma.tPAlert.update({
-        where: { id: tpAlertId },
-        data: {
-          isActive: false,
-        },
-      });
-
-      this.logger.log(`TP alert email sent successfully to ${user.email}. TPAlert ${tpAlertId} deactivated.`);
+      // Note: Les alertes sont maintenant gérées via StepAlert, pas TPAlert
+      // La désactivation de l'alerte sera gérée par le service d'alertes
+      this.logger.log(`TP alert email sent successfully to ${user.email}.`);
     } catch (error) {
       this.logger.error(`Error processing TP alert email:`, error);
       throw error; // BullMQ va retry automatiquement

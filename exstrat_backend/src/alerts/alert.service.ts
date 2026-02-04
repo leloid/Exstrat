@@ -102,46 +102,56 @@ export class AlertService {
         return;
       }
 
-      // Récupérer les TPAlerts actives pour ce token
-      const tpAlerts = await this.prisma.tPAlert.findMany({
+      // Récupérer les StepAlerts actives pour ce token via les StrategySteps
+      // TODO: Mettre à jour cette logique pour utiliser StrategyAlert et StepAlert
+      // Pour l'instant, on récupère les steps des stratégies actives qui ont des alertes activées
+      const stepAlerts = await this.prisma.stepAlert.findMany({
         where: {
-          isActive: true,
-          tokenAlert: {
-            tokenSymbol: token.symbol,
-            alertConfiguration: {
-              isActive: true,
+          tpReachedEnabled: true,
+          step: {
+            strategy: {
+              asset: token.symbol,
+              status: 'active',
+              strategyAlert: {
+                isActive: true,
+              },
             },
           },
         },
         include: {
-          tokenAlert: {
+          step: {
             include: {
-              alertConfiguration: true,
+              strategy: {
+                include: {
+                  strategyAlert: true,
+                },
+              },
             },
           },
         },
       });
 
-      for (const tpAlert of tpAlerts) {
-        const targetPrice = Number(tpAlert.targetPrice);
+      for (const stepAlert of stepAlerts) {
+        const targetPrice = Number(stepAlert.step.targetPrice);
 
         // Vérifier si le TP est atteint
         if (currentPrice >= targetPrice) {
-          const lockKey = `alert:lock:tp:${tpAlert.tokenAlert.alertConfiguration.userId}:${tpAlert.id}`;
+          const lockKey = `alert:lock:step:${stepAlert.step.strategy.userId}:${stepAlert.id}`;
           const acquired = await this.acquireLock(lockKey);
 
           if (acquired) {
             this.logger.log(
-              `TP Alert triggered: ${tpAlert.id} - $${currentPrice} >= $${targetPrice}`,
+              `Step Alert triggered: ${stepAlert.id} - $${currentPrice} >= $${targetPrice}`,
             );
 
             await this.emailQueue.add('send-tp-alert', {
-              userId: tpAlert.tokenAlert.alertConfiguration.userId,
-              tpAlertId: tpAlert.id,
-              tokenSymbol: tpAlert.tokenAlert.tokenSymbol,
+              userId: stepAlert.step.strategy.userId,
+              stepAlertId: stepAlert.id,
+              stepId: stepAlert.stepId,
+              tokenSymbol: stepAlert.step.strategy.asset,
               currentPrice,
               targetPrice,
-              tpOrder: tpAlert.tpOrder,
+              strategyId: stepAlert.step.strategyId,
             });
           }
         }

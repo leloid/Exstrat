@@ -28,6 +28,10 @@ import { NoteIcon } from "@phosphor-icons/react/dist/ssr/Note";
 
 import { formatCurrency, formatPercentage } from "@/lib/format";
 import type { StrategyResponse } from "@/types/strategies";
+import type { StepAlert } from "@/types/configuration";
+import { strategiesApi } from "@/lib/strategies-api";
+import { toast } from "@/components/core/toaster";
+import FormControlLabel from "@mui/material/FormControlLabel";
 
 interface StrategiesTableProps {
 	rows: StrategyResponse[];
@@ -42,6 +46,8 @@ interface StrategiesTableProps {
 	isLoadingPrices?: boolean;
 	expandedStrategyId?: string | null;
 	onToggleExpand?: (strategyId: string) => void;
+	stepAlerts?: Map<string, StepAlert>;
+	onStepAlertChange?: (stepId: string, field: "beforeTPEnabled" | "tpReachedEnabled", value: boolean) => void;
 }
 
 export function StrategiesTable({
@@ -57,6 +63,8 @@ export function StrategiesTable({
 	isLoadingPrices = false,
 	expandedStrategyId = null,
 	onToggleExpand,
+	stepAlerts = new Map(),
+	onStepAlertChange,
 }: StrategiesTableProps): React.JSX.Element {
 	const allSelected = rows.length > 0 && selectedIds.size === rows.length;
 	const someSelected = selectedIds.size > 0 && selectedIds.size < rows.length;
@@ -140,6 +148,8 @@ export function StrategiesTable({
 						isLoadingPrice={isLoadingPrices}
 						isExpanded={expandedStrategyId === row.id}
 						onToggleExpand={onToggleExpand}
+						stepAlerts={stepAlerts}
+						onStepAlertChange={onStepAlertChange}
 					/>
 				))}
 			</TableBody>
@@ -159,6 +169,8 @@ interface StrategyRowProps {
 	isLoadingPrice: boolean;
 	isExpanded?: boolean;
 	onToggleExpand?: (strategyId: string) => void;
+	stepAlerts?: Map<string, StepAlert>;
+	onStepAlertChange?: (stepId: string, field: "beforeTPEnabled" | "tpReachedEnabled", value: boolean) => void;
 }
 
 function StrategyRow({
@@ -173,6 +185,8 @@ function StrategyRow({
 	isLoadingPrice,
 	isExpanded = false,
 	onToggleExpand,
+	stepAlerts = new Map(),
+	onStepAlertChange,
 }: StrategyRowProps): React.JSX.Element {
 	// Memoize calculations
 	const calculations = React.useMemo(() => {
@@ -530,6 +544,46 @@ function StrategyRow({
 																)}
 															</Box>
 														</Stack>
+														{onStepAlertChange && (
+															<Stack spacing={1} sx={{ mt: 1, pt: 1, borderTop: "1px solid", borderColor: "divider" }}>
+																<FormControlLabel
+																	control={
+																		<Checkbox
+																			size="small"
+																			checked={stepAlerts.get(step.id)?.beforeTPEnabled ?? true}
+																			onChange={(e) => {
+																				e.stopPropagation();
+																				onStepAlertChange(step.id, "beforeTPEnabled", e.target.checked);
+																			}}
+																		/>
+																	}
+																	label={
+																		<Typography variant="caption" sx={{ fontSize: "0.7rem" }}>
+																			Alert before reached
+																		</Typography>
+																	}
+																	sx={{ m: 0 }}
+																/>
+																<FormControlLabel
+																	control={
+																		<Checkbox
+																			size="small"
+																			checked={stepAlerts.get(step.id)?.tpReachedEnabled ?? true}
+																			onChange={(e) => {
+																				e.stopPropagation();
+																				onStepAlertChange(step.id, "tpReachedEnabled", e.target.checked);
+																			}}
+																		/>
+																	}
+																	label={
+																		<Typography variant="caption" sx={{ fontSize: "0.7rem" }}>
+																			Alert when reaching
+																		</Typography>
+																	}
+																	sx={{ m: 0 }}
+																/>
+															</Stack>
+														)}
 													</Stack>
 												</Box>
 											</Grid>
