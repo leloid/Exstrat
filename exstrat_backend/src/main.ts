@@ -1,7 +1,8 @@
 import { NestFactory } from '@nestjs/core';
-import { ValidationPipe } from '@nestjs/common';
+import { ValidationPipe, BadRequestException } from '@nestjs/common';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { AppModule } from './app.module';
+import { ValidationExceptionFilter } from './common/filters/validation-exception.filter';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -15,8 +16,21 @@ async function bootstrap() {
       transformOptions: {
         enableImplicitConversion: true, // Conversion implicite des types
       },
+      skipMissingProperties: false, // Ne pas sauter les propriétés manquantes
+      skipNullProperties: false, // Ne pas sauter les propriétés null
+      skipUndefinedProperties: true, // Sauter les propriétés undefined (pour les mises à jour partielles)
+      exceptionFactory: (errors) => {
+        console.error('❌ [ValidationPipe] Validation errors:', JSON.stringify(errors, null, 2));
+        return new BadRequestException({
+          message: 'Validation failed',
+          errors: errors,
+        });
+      },
     }),
   );
+
+  // Ajouter le filter pour logger les erreurs de validation
+  app.useGlobalFilters(new ValidationExceptionFilter());
 
   // Configuration CORS
   const isProduction = process.env.NODE_ENV === 'production';

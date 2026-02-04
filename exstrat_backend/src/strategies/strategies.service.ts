@@ -560,15 +560,19 @@ export class StrategiesService {
     strategyId: string,
     updateDto: UpdateStrategyAlertDto,
   ): Promise<StrategyAlertResponseDto> {
+    console.log('🔔 [StrategiesService] updateStrategyAlert called:', { userId, strategyId, updateDto });
+    
     const strategy = await this.prisma.strategy.findUnique({
       where: { id: strategyId },
     });
 
     if (!strategy) {
+      console.error('❌ [StrategiesService] Strategy not found:', strategyId);
       throw new NotFoundException('Stratégie non trouvée');
     }
 
     if (strategy.userId !== userId) {
+      console.error('❌ [StrategiesService] User does not own strategy:', { userId, strategyUserId: strategy.userId });
       throw new ForbiddenException('Vous n\'avez pas accès à cette stratégie');
     }
 
@@ -577,21 +581,35 @@ export class StrategiesService {
     });
 
     if (!existing) {
+      console.error('❌ [StrategiesService] StrategyAlert not found for strategyId:', strategyId);
       throw new NotFoundException('Configuration d\'alertes non trouvée');
     }
 
+    console.log('🔔 [StrategiesService] Existing alert:', existing);
+    console.log('🔔 [StrategiesService] Update data:', {
+      isActive: updateDto.isActive !== undefined ? updateDto.isActive : undefined,
+      notificationChannels: updateDto.notificationChannels,
+    });
+
+    const updateData: any = {};
+    if (updateDto.isActive !== undefined) {
+      updateData.isActive = updateDto.isActive;
+    }
+    if (updateDto.notificationChannels) {
+      updateData.notificationChannels = {
+        email: updateDto.notificationChannels.email,
+        push: updateDto.notificationChannels.push,
+      } as any;
+    }
+
+    console.log('🔔 [StrategiesService] Final updateData:', updateData);
+
     const updated = await this.prisma.strategyAlert.update({
       where: { id: existing.id },
-      data: {
-        ...(updateDto.isActive !== undefined && { isActive: updateDto.isActive }),
-        ...(updateDto.notificationChannels && {
-          notificationChannels: {
-            email: updateDto.notificationChannels.email,
-            push: updateDto.notificationChannels.push,
-          },
-        }),
-      },
+      data: updateData,
     });
+
+    console.log('✅ [StrategiesService] Updated alert:', updated);
 
     return this.mapToStrategyAlertResponseDto(updated);
   }

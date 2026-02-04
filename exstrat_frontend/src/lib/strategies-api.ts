@@ -120,8 +120,23 @@ export const strategiesApi = {
 	 * Update strategy alert
 	 */
 	async updateStrategyAlert(strategyId: string, data: UpdateStrategyAlertDto): Promise<StrategyAlert> {
-		const response = await api.patch<StrategyAlert>(`${BASE_URL}/${strategyId}/alerts`, data);
-		return response.data;
+		console.log("🔔 [strategies-api] updateStrategyAlert called:", { strategyId, data });
+		console.log("🔔 [strategies-api] data type:", typeof data);
+		console.log("🔔 [strategies-api] data.isActive:", data?.isActive, "type:", typeof data?.isActive);
+		console.log("🔔 [strategies-api] data.notificationChannels:", data?.notificationChannels);
+		console.log("🔔 [strategies-api] JSON.stringify(data):", JSON.stringify(data));
+		
+		try {
+			const response = await api.patch<StrategyAlert>(`${BASE_URL}/${strategyId}/alerts`, data);
+			console.log("✅ [strategies-api] updateStrategyAlert success:", response.data);
+			return response.data;
+		} catch (error: any) {
+			console.error("❌ [strategies-api] updateStrategyAlert error:", error);
+			console.error("❌ [strategies-api] Error response data:", error.response?.data);
+			console.error("❌ [strategies-api] Error response status:", error.response?.status);
+			console.error("❌ [strategies-api] Error response headers:", error.response?.headers);
+			throw error;
+		}
 	},
 
 	/**

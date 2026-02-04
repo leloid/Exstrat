@@ -11,7 +11,8 @@ import {
   ParseUUIDPipe,
   HttpCode,
   HttpStatus,
-  NotFoundException
+  NotFoundException,
+  BadRequestException
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiQuery, ApiParam } from '@nestjs/swagger';
 import { StrategiesService } from './strategies.service';
@@ -142,12 +143,40 @@ export class StrategiesController {
   @ApiParam({ name: 'strategyId', description: 'ID de la stratégie' })
   @ApiResponse({ status: 200, type: StrategyAlertResponseDto })
   @ApiResponse({ status: 404, description: 'Configuration non trouvée' })
+  @ApiResponse({ status: 400, description: 'Données invalides' })
   async updateStrategyAlert(
     @CurrentUser('id') userId: string,
-    @Param('strategyId', ParseUUIDPipe) strategyId: string,
+    @Param('strategyId') strategyId: string,
     @Body() updateDto: UpdateStrategyAlertDto,
   ): Promise<StrategyAlertResponseDto> {
-    return this.strategiesService.updateStrategyAlert(userId, strategyId, updateDto);
+    console.log('🔔 [StrategiesController] updateStrategyAlert called');
+    console.log('🔔 [StrategiesController] userId:', userId);
+    console.log('🔔 [StrategiesController] strategyId:', strategyId);
+    console.log('🔔 [StrategiesController] Raw body received:', JSON.stringify(updateDto, null, 2));
+    console.log('🔔 [StrategiesController] updateDto type:', typeof updateDto);
+    console.log('🔔 [StrategiesController] updateDto.isActive:', updateDto?.isActive, 'type:', typeof updateDto?.isActive);
+    console.log('🔔 [StrategiesController] updateDto.notificationChannels:', updateDto?.notificationChannels);
+    
+    // Validation manuelle pour debug
+    if (!updateDto || (updateDto.isActive === undefined && !updateDto.notificationChannels)) {
+      console.error('❌ [StrategiesController] Invalid updateDto - at least one field must be provided');
+      throw new BadRequestException('Au moins un champ doit être fourni pour la mise à jour');
+    }
+    
+    try {
+      const result = await this.strategiesService.updateStrategyAlert(userId, strategyId, updateDto);
+      console.log('✅ [StrategiesController] updateStrategyAlert success:', result);
+      return result;
+    } catch (error) {
+      console.error('❌ [StrategiesController] updateStrategyAlert error:', error);
+      console.error('❌ [StrategiesController] Error name:', error?.constructor?.name);
+      console.error('❌ [StrategiesController] Error message:', error?.message);
+      console.error('❌ [StrategiesController] Error stack:', error?.stack);
+      if (error?.response) {
+        console.error('❌ [StrategiesController] Error response:', error.response);
+      }
+      throw error;
+    }
   }
 
   @Delete(':strategyId/alerts')
