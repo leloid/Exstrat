@@ -322,7 +322,7 @@ export function CreateStrategyModal({ onClose, onSuccess, open }: CreateStrategy
 			newTargets.push({
 				id: `target-${i}`,
 				targetType: "price",
-				targetValue: currentTokenPrice > 0 ? currentTokenPrice : 0, // Use current token price as default
+				targetValue: 0, // Start empty, user must enter value
 				sellPercentage: 0, // Start at 0, user can set custom percentages
 			});
 		}
@@ -346,6 +346,43 @@ export function CreateStrategyModal({ onClose, onSuccess, open }: CreateStrategy
 			(target) => target.targetType === "price" && target.targetValue > 0 && target.targetValue < currentTokenPrice
 		);
 	}, [profitTargets, currentTokenPrice]);
+
+	// Helper function to get the actual target value (price) for comparison
+	const getTargetPrice = (target: ProfitTarget): number => {
+		const avgPrice = parseFloat(strategyAveragePrice) || 0;
+		if (target.targetType === "percentage") {
+			return avgPrice * (1 + target.targetValue / 100);
+		} else {
+			return target.targetValue;
+		}
+	};
+
+	// Check if targets are in ascending order
+	const getTargetOrderError = (targetIndex: number): string | null => {
+		const target = profitTargets[targetIndex];
+		if (!target || target.targetValue <= 0) return null;
+
+		const currentPrice = getTargetPrice(target);
+		if (currentPrice <= 0) return null;
+
+		// Check previous targets
+		for (let i = 0; i < targetIndex; i++) {
+			const prevPrice = getTargetPrice(profitTargets[i]);
+			if (prevPrice > 0 && currentPrice <= prevPrice) {
+				return `TP${targetIndex + 1} must be greater than TP${i + 1}. Take Profit targets must be in ascending order.`;
+			}
+		}
+
+		// Check next targets
+		for (let i = targetIndex + 1; i < profitTargets.length; i++) {
+			const nextPrice = getTargetPrice(profitTargets[i]);
+			if (nextPrice > 0 && currentPrice >= nextPrice) {
+				return `TP${targetIndex + 1} must be less than TP${i + 1}. Take Profit targets must be in ascending order.`;
+			}
+		}
+
+		return null;
+	};
 
 	// Calculate strategy info for each target
 	const strategyInfo = React.useMemo<StrategyInfo[]>(() => {
@@ -419,11 +456,10 @@ export function CreateStrategyModal({ onClose, onSuccess, open }: CreateStrategy
 			toast.error("Maximum 6 exits allowed");
 			return;
 		}
-		const currentTokenPrice = selectedToken?.quote?.USD?.price || parseFloat(strategyAveragePrice) || 0;
 		const newTarget: ProfitTarget = {
 			id: `target-${profitTargets.length}`,
 			targetType: "price",
-			targetValue: currentTokenPrice > 0 ? currentTokenPrice : 0,
+			targetValue: 0, // Start empty, user must enter value
 			sellPercentage: 0,
 		};
 		setProfitTargets((prev) => [...prev, newTarget]);
@@ -870,6 +906,20 @@ export function CreateStrategyModal({ onClose, onSuccess, open }: CreateStrategy
 																targetPrice = target.targetValue;
 															}
 
+															// Calculate minimum price for this TP
+															// TP1 uses currentTokenPrice, TP2+ uses previous TP price
+															let minPrice = currentTokenPrice;
+															if (targetIndex > 0) {
+																const prevTarget = profitTargets[targetIndex - 1];
+																if (prevTarget) {
+																	if (prevTarget.targetType === "percentage") {
+																		minPrice = avgPrice * (1 + prevTarget.targetValue / 100);
+																	} else {
+																		minPrice = prevTarget.targetValue;
+																	}
+																}
+															}
+
 															return (
 																<Card key={target.id} variant="outlined">
 																	<CardContent>
@@ -925,9 +975,47 @@ export function CreateStrategyModal({ onClose, onSuccess, open }: CreateStrategy
 																								<TextField
 																									fullWidth
 																									type="number"
-																									value={target.targetValue}
-																									onChange={(e) => handleTargetChange(targetIndex, "targetValue", parseFloat(e.target.value) || 0)}
+																									value={target.targetValue > 0 ? target.targetValue : ""}
+																									onChange={(e) => {
+																										const inputValue = e.target.value;
+																										if (inputValue === "" || inputValue === ".") {
+																											handleTargetChange(targetIndex, "targetValue", 0);
+																											return;
+																										}
+																										const newValue = parseFloat(inputValue);
+																										if (!isNaN(newValue)) {
+																											handleTargetChange(targetIndex, "targetValue", newValue);
+																										}
+																									}}
+																									onBlur={(e) => {
+																										// Validate ascending order on blur for percentage field
+																										const value = parseFloat(e.target.value) || 0;
+																										if (value > 0) {
+																											const updatedTarget = { ...profitTargets[targetIndex], targetValue: value };
+																											const currentPrice = getTargetPrice(updatedTarget);
+																											
+																											// Check previous targets (should be less than current)
+																											for (let i = 0; i < targetIndex; i++) {
+																												const prevPrice = getTargetPrice(profitTargets[i]);
+																												if (prevPrice > 0 && currentPrice > 0 && currentPrice <= prevPrice) {
+																													toast.error(`TP${targetIndex + 1} must be greater than TP${i + 1}. Take Profit targets must be in ascending order.`);
+																													return;
+																												}
+																											}
+
+																											// Check next targets (should be greater than current)
+																											for (let i = targetIndex + 1; i < profitTargets.length; i++) {
+																												const nextPrice = getTargetPrice(profitTargets[i]);
+																												if (nextPrice > 0 && currentPrice > 0 && currentPrice >= nextPrice) {
+																													toast.error(`TP${targetIndex + 1} must be less than TP${i + 1}. Take Profit targets must be in ascending order.`);
+																													return;
+																												}
+																											}
+																										}
+																									}}
 																									inputProps={{ step: "0.01" }}
+																									error={!!getTargetOrderError(targetIndex)}
+																									helperText={getTargetOrderError(targetIndex) || undefined}
 																								/>
 																								<IconButton
 																									onClick={() => handleTargetChange(targetIndex, "targetValue", target.targetValue + 10)}
@@ -941,7 +1029,7 @@ export function CreateStrategyModal({ onClose, onSuccess, open }: CreateStrategy
 																								<TextField
 																									fullWidth
 																									type="number"
-																									value={rawPriceInputs[targetIndex] !== undefined ? rawPriceInputs[targetIndex] : (target.targetValue || "")}
+																									value={rawPriceInputs[targetIndex] !== undefined ? rawPriceInputs[targetIndex] : (target.targetValue > 0 ? target.targetValue : "")}
 																									onChange={(e) => {
 																										const inputValue = e.target.value;
 																										// Store raw input value to allow empty field and prevent "0" prefix
@@ -973,36 +1061,34 @@ export function CreateStrategyModal({ onClose, onSuccess, open }: CreateStrategy
 																										// On blur, validate and correct if value is invalid
 																										const value = parseFloat(e.target.value) || 0;
 																										if (value > 0) {
-																											if (currentTokenPrice > 0 && value < currentTokenPrice) {
-																												handleTargetChange(targetIndex, "targetValue", currentTokenPrice);
-																												toast.error(`Price has been corrected to current price (${formatCurrency(currentTokenPrice, "$", 2)}) as it cannot be below the current price`);
+																											if (minPrice > 0 && value < minPrice) {
+																												handleTargetChange(targetIndex, "targetValue", minPrice);
+																												toast.error(`Price has been corrected to minimum price (${formatCurrency(minPrice, "$", 2)}) as it cannot be below ${targetIndex === 0 ? "the current price" : `TP${targetIndex}`}`);
 																											} else {
 																												handleTargetChange(targetIndex, "targetValue", value);
 																											}
-																										} else if (target.targetValue === 0) {
-																											// If field is empty and targetValue is 0, set to current price or keep 0
-																											if (currentTokenPrice > 0) {
-																												handleTargetChange(targetIndex, "targetValue", currentTokenPrice);
-																											}
+																										} else {
+																											// If field is empty, keep it at 0 (empty)
+																											handleTargetChange(targetIndex, "targetValue", 0);
 																										}
 																									}}
 																									onKeyDown={(e) => {
 																										// Prevent Enter key if value is invalid
 																										if (e.key === "Enter") {
 																											const value = parseFloat((e.target as HTMLInputElement).value) || 0;
-																											if (currentTokenPrice > 0 && value > 0 && value < currentTokenPrice) {
+																											if (minPrice > 0 && value > 0 && value < minPrice) {
 																												e.preventDefault();
-																												toast.error(`Price must be greater than or equal to the current price (${formatCurrency(currentTokenPrice, "$", 2)})`);
+																												toast.error(`Price must be greater than or equal to ${targetIndex === 0 ? "the current price" : `TP${targetIndex}`} (${formatCurrency(minPrice, "$", 2)})`);
 																											}
 																										}
 																									}}
 																									inputProps={{ 
 																										step: "0.01", 
-																										min: currentTokenPrice > 0 ? currentTokenPrice : 0,
+																										min: minPrice > 0 ? minPrice : 0,
 																										onInvalid: (e) => {
 																											// HTML5 validation fallback
-																											if (currentTokenPrice > 0) {
-																												(e.target as HTMLInputElement).setCustomValidity(`Price must be greater than or equal to ${formatCurrency(currentTokenPrice, "$", 2)}`);
+																											if (minPrice > 0) {
+																												(e.target as HTMLInputElement).setCustomValidity(`Price must be greater than or equal to ${formatCurrency(minPrice, "$", 2)}`);
 																											}
 																										},
 																										onInput: (e) => {
@@ -1011,14 +1097,16 @@ export function CreateStrategyModal({ onClose, onSuccess, open }: CreateStrategy
 																										}
 																									}}
 																									error={
-																										currentTokenPrice > 0 && target.targetType === "price" && target.targetValue > 0 && target.targetValue < currentTokenPrice
+																										(minPrice > 0 && target.targetType === "price" && target.targetValue > 0 && target.targetValue < minPrice) ||
+																										!!getTargetOrderError(targetIndex)
 																									}
 																									helperText={
-																										currentTokenPrice > 0 && target.targetType === "price" && target.targetValue > 0 && target.targetValue < currentTokenPrice
-																											? `Impossible: you cannot sell tokens at a price that has already been reached (current price: ${formatCurrency(currentTokenPrice, "$", 2)})`
-																											: currentTokenPrice > 0
-																											? `Minimum price: ${formatCurrency(currentTokenPrice, "$", 2)}`
-																											: undefined
+																										getTargetOrderError(targetIndex) ||
+																										(minPrice > 0 && target.targetType === "price" && target.targetValue > 0 && target.targetValue < minPrice
+																											? `Impossible: you cannot sell tokens at a price that has already been reached (${targetIndex === 0 ? "current price" : `TP${targetIndex}`}: ${formatCurrency(minPrice, "$", 2)})`
+																											: minPrice > 0
+																											? `Minimum price: ${formatCurrency(minPrice, "$", 2)}${targetIndex > 0 ? ` (from TP${targetIndex})` : ""}`
+																											: undefined)
 																									}
 																								/>
 																							</>
