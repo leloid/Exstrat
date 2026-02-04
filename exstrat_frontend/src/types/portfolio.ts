@@ -198,6 +198,7 @@ export interface CreateForecastDto {
 		remainingTokensValue: number;
 		tokenCount: number;
 	};
+	notes?: string;
 }
 
 export interface ForecastResponse {
@@ -214,6 +215,7 @@ export interface ForecastResponse {
 		remainingTokensValue: number;
 		tokenCount: number;
 	};
+	notes?: string;
 	createdAt: string;
 	updatedAt: string;
 }

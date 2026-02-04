@@ -12,6 +12,7 @@ import DialogContent from "@mui/material/DialogContent";
 import DialogTitle from "@mui/material/DialogTitle";
 import Divider from "@mui/material/Divider";
 import FormControl from "@mui/material/FormControl";
+import Grid from "@mui/material/Grid";
 import IconButton from "@mui/material/IconButton";
 import Collapse from "@mui/material/Collapse";
 import Checkbox from "@mui/material/Checkbox";
@@ -53,6 +54,7 @@ export function CreateForecastModal({ onClose, onSuccess, open }: CreateForecast
 	const [isSubmitting, setIsSubmitting] = React.useState(false);
 	const [selectedPortfolioId, setSelectedPortfolioId] = React.useState<string>("");
 	const [forecastName, setForecastName] = React.useState<string>("");
+	const [notes, setNotes] = React.useState<string>("");
 	const [theoreticalStrategies, setTheoreticalStrategies] = React.useState<TheoreticalStrategyResponse[]>([]);
 	const [holdings, setHoldings] = React.useState<any[]>([]);
 	const [appliedStrategies, setAppliedStrategies] = React.useState<Record<string, string>>({});
@@ -320,6 +322,7 @@ export function CreateForecastModal({ onClose, onSuccess, open }: CreateForecast
 				name: forecastName.trim(),
 				appliedStrategies,
 				summary,
+				notes: notes.trim() || undefined,
 			};
 
 			await createForecast(forecastData);
@@ -336,6 +339,7 @@ export function CreateForecastModal({ onClose, onSuccess, open }: CreateForecast
 	const handleClose = () => {
 		setSelectedPortfolioId("");
 		setForecastName("");
+		setNotes("");
 		setHoldings([]);
 		setAppliedStrategies({});
 		setFieldErrors({
@@ -350,15 +354,15 @@ export function CreateForecastModal({ onClose, onSuccess, open }: CreateForecast
 
 	return (
 		<Dialog fullWidth maxWidth="lg" onClose={handleClose} open={open}>
-			<DialogTitle>
+			<DialogTitle sx={{ pb: 2 }}>
 				<Stack direction="row" spacing={2} sx={{ alignItems: "center", justifyContent: "space-between" }}>
-					<Typography variant="h6">Create Forecast</Typography>
+					<Typography variant="h5" sx={{ fontWeight: 700 }}>Forecast Creation</Typography>
 					<IconButton onClick={handleClose} size="small">
 						<XIcon />
 					</IconButton>
 				</Stack>
 			</DialogTitle>
-			<DialogContent dividers>
+			<DialogContent dividers sx={{ pt: 3 }}>
 				<Stack spacing={4}>
 					{/* Error Alert */}
 					{(fieldErrors.portfolioId || fieldErrors.forecastName || fieldErrors.strategies) && (
@@ -373,9 +377,18 @@ export function CreateForecastModal({ onClose, onSuccess, open }: CreateForecast
 					)}
 
 					{/* Configuration Section */}
-					<Stack spacing={2}>
-						<Typography variant="h6">Configuration</Typography>
-						<Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
+					<Card variant="outlined" sx={{ bgcolor: "var(--mui-palette-background-level1)" }}>
+									<CardContent>
+										<Stack spacing={2.5}>
+											<Box>
+												<Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 0.5, color: "text.secondary" }}>
+													Configuration
+												</Typography>
+												<Typography color="text.secondary" variant="body2">
+													Set up your forecast name and select the wallet to analyze
+												</Typography>
+											</Box>
+								<Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
 							<FormControl fullWidth error={fieldErrors.portfolioId}>
 								<InputLabel>Select a wallet</InputLabel>
 								<Select
@@ -417,7 +430,9 @@ export function CreateForecastModal({ onClose, onSuccess, open }: CreateForecast
 								helperText={fieldErrors.forecastName ? "This field is required" : ""}
 							/>
 						</Stack>
-					</Stack>
+						</Stack>
+					</CardContent>
+				</Card>
 
 					{/* Holdings and Strategy Assignment */}
 					{selectedPortfolioId && (
@@ -436,37 +451,30 @@ export function CreateForecastModal({ onClose, onSuccess, open }: CreateForecast
 								</Card>
 							) : (
 								<>
-									<Stack spacing={2}>
-										<Stack direction="row" spacing={2} sx={{ alignItems: "center", justifyContent: "space-between" }}>
-											<Box>
-										<Typography variant="h6">Apply Strategies to Tokens</Typography>
-										<Typography color="text.secondary" variant="body2">
-											For each token in your wallet, choose a profit-taking strategy.
-										</Typography>
-											</Box>
-											{fieldErrors.strategies && (
-												<Alert severity="error" sx={{ py: 0.5 }}>
-													At least one strategy required
-												</Alert>
-											)}
-										</Stack>
-									</Stack>
-									<Box sx={{ overflowX: "auto" }}>
+									<Card variant="outlined">
+										<CardContent>
+											<Stack spacing={3}>
+												<Box>
+													<Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 0.5 }}>
+														Apply Strategies to Tokens
+													</Typography>
+													<Typography color="text.secondary" variant="body2">
+														For each token in your wallet, choose a profit-taking strategy to simulate potential outcomes.
+													</Typography>
+												</Box>
+												<Box sx={{ overflowX: "auto" }}>
 										<Table>
 											<TableHead>
 												<TableRow>
 													<TableCell sx={{ width: "40px", fontWeight: 600 }} />
-													<TableCell sx={{ fontWeight: 600 }}>Token</TableCell>
-													<TableCell align="right" sx={{ fontWeight: 600 }}>
-														Quantity
-													</TableCell>
-													<TableCell align="right" sx={{ fontWeight: 600 }}>
-														Invested
-													</TableCell>
+													<TableCell sx={{ fontWeight: 600 }}>Strategy Name</TableCell>
+													<TableCell align="right" sx={{ fontWeight: 600 }}>Total Invested</TableCell>
+													<TableCell align="right" sx={{ fontWeight: 600 }}>Quantity</TableCell>
+													<TableCell align="right" sx={{ fontWeight: 600 }}>Total Amount Collected</TableCell>
+													<TableCell align="right" sx={{ fontWeight: 600 }}>Net Result</TableCell>
+													<TableCell align="right" sx={{ fontWeight: 600 }}>Bag Percentage Sold</TableCell>
+													<TableCell align="right" sx={{ fontWeight: 600 }}>Remaining Token</TableCell>
 													<TableCell sx={{ fontWeight: 600 }}>Strategy</TableCell>
-													<TableCell align="right" sx={{ fontWeight: 600 }}>
-														Projected Return
-													</TableCell>
 												</TableRow>
 											</TableHead>
 											<TableBody>
@@ -478,6 +486,17 @@ export function CreateForecastModal({ onClose, onSuccess, open }: CreateForecast
 													const result = calculateTokenResult(holding);
 													const isExpanded = expandedTokens.has(holding.id);
 													const selectedStrategy = theoreticalStrategies.find((s) => s.id === selectedStrategyId);
+
+													// Calculate values for display
+													const quantity = holding.quantity || 0;
+													const averagePrice = holding.averagePrice || 0;
+													const totalInvested = quantity * averagePrice;
+													const totalAmountCollected = result?.amountCollected || 0;
+													const netResult = result ? (result.amountCollected - totalInvested) : 0;
+													const bagPercentageSold = selectedStrategy 
+														? selectedStrategy.profitTargets.reduce((sum, target) => sum + target.sellPercentage, 0)
+														: 0;
+													const remainingTokens = result?.remainingTokens || quantity;
 
 													return (
 														<React.Fragment key={holding.id}>
@@ -498,24 +517,86 @@ export function CreateForecastModal({ onClose, onSuccess, open }: CreateForecast
 																	)}
 																</TableCell>
 																<TableCell>
-																	<Typography variant="subtitle2">
-																		{holding.token?.symbol || holding.symbol || "Unknown"}
-																	</Typography>
-																	<Typography color="text.secondary" variant="caption">
-																		{holding.token?.name || holding.tokenName || ""}
+																	{selectedStrategy ? (
+																		<>
+																			<Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
+																				{selectedStrategy.name}
+																			</Typography>
+																			<Typography color="text.secondary" variant="body2">
+																				{holding.token?.symbol || holding.symbol || "Unknown"}
+																			</Typography>
+																		</>
+																	) : (
+																		<Typography color="text.secondary" variant="body2">
+																			No strategy
+																		</Typography>
+																	)}
+																</TableCell>
+																<TableCell align="right">
+																	<Typography variant="body2" sx={{ color: "success.main" }}>
+																		{formatCurrency(totalInvested, "$", 2)}
 																	</Typography>
 																</TableCell>
 																<TableCell align="right">
 																	<Typography variant="body2">
-																		{(holding.quantity || 0).toLocaleString(undefined, {
+																		{quantity.toLocaleString(undefined, {
 																			maximumFractionDigits: 8,
 																		})}
 																	</Typography>
+																	<Typography color="text.secondary" variant="caption">
+																		{holding.token?.symbol || holding.symbol || ""}
+																	</Typography>
 																</TableCell>
 																<TableCell align="right">
-																	<Typography variant="body2">
-																		{formatCurrency((holding.quantity || 0) * (holding.averagePrice || 0), "$", 2)}
-																	</Typography>
+																	{result ? (
+																		<Typography variant="body2" sx={{ color: "success.main" }}>
+																			{formatCurrency(totalAmountCollected, "$", 2)}
+																		</Typography>
+																	) : (
+																		<Typography color="text.secondary" variant="body2">
+																			-
+																		</Typography>
+																	)}
+																</TableCell>
+																<TableCell align="right">
+																	{result ? (
+																		<Typography
+																			variant="body2"
+																			sx={{ color: netResult >= 0 ? "success.main" : "error.main" }}
+																		>
+																			{formatCurrency(netResult, "$", 2)}
+																		</Typography>
+																	) : (
+																		<Typography color="text.secondary" variant="body2">
+																			-
+																		</Typography>
+																	)}
+																</TableCell>
+																<TableCell align="right">
+																	{selectedStrategy ? (
+																		<Typography variant="body2">
+																			{formatPercentage(bagPercentageSold)}
+																		</Typography>
+																	) : (
+																		<Typography color="text.secondary" variant="body2">
+																			-
+																		</Typography>
+																	)}
+																</TableCell>
+																<TableCell align="right">
+																	{result ? (
+																		<Typography variant="body2" sx={{ color: "warning.main" }}>
+																			{remainingTokens.toLocaleString(undefined, {
+																				maximumFractionDigits: 8,
+																			})}
+																		</Typography>
+																	) : (
+																		<Typography color="text.secondary" variant="body2">
+																			{quantity.toLocaleString(undefined, {
+																				maximumFractionDigits: 8,
+																			})}
+																		</Typography>
+																	)}
 																</TableCell>
 																<TableCell>
 																	<FormControl fullWidth size="small">
@@ -532,29 +613,10 @@ export function CreateForecastModal({ onClose, onSuccess, open }: CreateForecast
 																		</Select>
 																	</FormControl>
 																</TableCell>
-																<TableCell align="right">
-																	{result ? (
-																		<Stack spacing={0.5}>
-																			<Typography
-																				color={result.returnPercentage >= 0 ? "success.main" : "error.main"}
-																				variant="body2"
-																			>
-																				{formatPercentage(result.returnPercentage)}
-																			</Typography>
-																			<Typography color="text.secondary" variant="caption">
-																				{formatCurrency(result.amountCollected, "$", 2)}
-																			</Typography>
-																		</Stack>
-																	) : (
-																		<Typography color="text.secondary" variant="body2">
-																			-
-																		</Typography>
-																	)}
-																</TableCell>
 															</TableRow>
 															{selectedStrategyId !== "none" && result && (
 																<TableRow>
-																	<TableCell colSpan={6} sx={{ py: 0, borderBottom: isExpanded ? "1px solid var(--mui-palette-divider)" : "none" }}>
+																	<TableCell colSpan={9} sx={{ py: 0, borderBottom: isExpanded ? "1px solid var(--mui-palette-divider)" : "none" }}>
 																		<Collapse in={isExpanded} timeout="auto" unmountOnExit>
 																			<Box sx={{ py: 2 }}>
 																				<Card variant="outlined" sx={{ bgcolor: "var(--mui-palette-background-level1)" }}>
@@ -594,6 +656,9 @@ export function CreateForecastModal({ onClose, onSuccess, open }: CreateForecast
 											</TableBody>
 										</Table>
 									</Box>
+											</Stack>
+										</CardContent>
+									</Card>
 								</>
 							)}
 						</>
@@ -601,56 +666,151 @@ export function CreateForecastModal({ onClose, onSuccess, open }: CreateForecast
 
 					{/* Summary Section */}
 					{selectedPortfolioId && holdings.length > 0 && (
-						<Card variant="outlined" sx={{ bgcolor: "var(--mui-palette-background-level1)" }}>
+						<Card 
+							variant="outlined" 
+							sx={{ 
+								bgcolor: "var(--mui-palette-background-level1)",
+								border: "1px solid",
+								borderColor: "primary.main",
+								borderWidth: 2,
+							}}
+						>
 							<CardContent>
-								<Typography variant="subtitle1" sx={{ mb: 2 }}>
-									Summary
-								</Typography>
-								<Stack direction="row" spacing={4} sx={{ flexWrap: "wrap" }}>
-									<Box>
-										<Typography color="text.secondary" variant="caption">
-											Total Invested
-										</Typography>
-										<Typography variant="h6">{formatCurrency(summary.totalInvested, "$", 2)}</Typography>
-									</Box>
-									<Box>
-										<Typography color="text.secondary" variant="caption">
-											Total Collected
-										</Typography>
-										<Typography color="success.main" variant="h6">
-											{formatCurrency(summary.totalCollected, "$", 2)}
-										</Typography>
-									</Box>
-									<Box>
-										<Typography color="text.secondary" variant="caption">
-											Total Profit
-										</Typography>
-										<Typography
-											color={summary.totalProfit >= 0 ? "success.main" : "error.main"}
-											variant="h6"
+								<Box sx={{ mb: 3 }}>
+									<Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 0.5 }}>
+										Forecast Summary
+									</Typography>
+									<Typography color="text.secondary" variant="body2">
+										Overview of your portfolio forecast based on applied strategies
+									</Typography>
+								</Box>
+								<Grid container spacing={3}>
+									<Grid size={{ xs: 12, sm: 6, md: 4 }}>
+										<Box
+											sx={{
+												p: 2,
+												bgcolor: "background.paper",
+												borderRadius: 2,
+												border: "1px solid",
+												borderColor: "divider",
+											}}
 										>
-											{formatCurrency(summary.totalProfit, "$", 2)}
-										</Typography>
-									</Box>
-									<Box>
-										<Typography color="text.secondary" variant="caption">
-											Return %
-										</Typography>
-										<Typography
-											color={summary.returnPercentage >= 0 ? "success.main" : "error.main"}
-											variant="h6"
+											<Typography color="text.secondary" variant="caption" sx={{ fontWeight: 600, display: "block", mb: 0.5 }}>
+												Total Invested
+											</Typography>
+											<Typography variant="h6" sx={{ fontWeight: 700 }}>
+												{formatCurrency(summary.totalInvested, "$", 2)}
+											</Typography>
+										</Box>
+									</Grid>
+									<Grid size={{ xs: 12, sm: 6, md: 4 }}>
+										<Box
+											sx={{
+												p: 2,
+												bgcolor: "background.paper",
+												borderRadius: 2,
+												border: "1px solid",
+												borderColor: "divider",
+											}}
 										>
-											{formatPercentage(summary.returnPercentage)}
-										</Typography>
-									</Box>
-									<Box>
-										<Typography color="text.secondary" variant="caption">
-											Remaining Tokens Value
-										</Typography>
-										<Typography variant="h6">
-											{formatCurrency(summary.remainingTokensValue, "$", 2)}
-										</Typography>
-									</Box>
+											<Typography color="text.secondary" variant="caption" sx={{ fontWeight: 600, display: "block", mb: 0.5 }}>
+												Total Collected
+											</Typography>
+											<Typography color="success.main" variant="h6" sx={{ fontWeight: 700 }}>
+												{formatCurrency(summary.totalCollected, "$", 2)}
+											</Typography>
+										</Box>
+									</Grid>
+									<Grid size={{ xs: 12, sm: 6, md: 4 }}>
+										<Box
+											sx={{
+												p: 2,
+												bgcolor: "background.paper",
+												borderRadius: 2,
+												border: "1px solid",
+												borderColor: "divider",
+											}}
+										>
+											<Typography color="text.secondary" variant="caption" sx={{ fontWeight: 600, display: "block", mb: 0.5 }}>
+												Total Profit
+											</Typography>
+											<Typography
+												color={summary.totalProfit >= 0 ? "success.main" : "error.main"}
+												variant="h6"
+												sx={{ fontWeight: 700 }}
+											>
+												{formatCurrency(summary.totalProfit, "$", 2)}
+											</Typography>
+										</Box>
+									</Grid>
+									<Grid size={{ xs: 12, sm: 6, md: 4 }}>
+										<Box
+											sx={{
+												p: 2,
+												bgcolor: "background.paper",
+												borderRadius: 2,
+												border: "1px solid",
+												borderColor: "divider",
+											}}
+										>
+											<Typography color="text.secondary" variant="caption" sx={{ fontWeight: 600, display: "block", mb: 0.5 }}>
+												Return %
+											</Typography>
+											<Typography
+												color={summary.returnPercentage >= 0 ? "success.main" : "error.main"}
+												variant="h6"
+												sx={{ fontWeight: 700 }}
+											>
+												{formatPercentage(summary.returnPercentage)}
+											</Typography>
+										</Box>
+									</Grid>
+									<Grid size={{ xs: 12, sm: 6, md: 4 }}>
+										<Box
+											sx={{
+												p: 2,
+												bgcolor: "background.paper",
+												borderRadius: 2,
+												border: "1px solid",
+												borderColor: "divider",
+											}}
+										>
+											<Typography color="text.secondary" variant="caption" sx={{ fontWeight: 600, display: "block", mb: 0.5 }}>
+												Remaining Tokens Value
+											</Typography>
+											<Typography variant="h6" sx={{ fontWeight: 700 }}>
+												{formatCurrency(summary.remainingTokensValue, "$", 2)}
+											</Typography>
+										</Box>
+									</Grid>
+								</Grid>
+							</CardContent>
+						</Card>
+					)}
+
+					{/* Notes Section */}
+					{selectedPortfolioId && holdings.length > 0 && (
+						<Card variant="outlined" sx={{ bgcolor: "var(--mui-palette-background-level1)" }}>
+							<CardContent sx={{ p: 2 }}>
+								<Stack spacing={1.5}>
+									<Typography variant="subtitle2" sx={{ fontWeight: 600, color: "text.secondary" }}>
+										Notes
+									</Typography>
+									<TextField
+										fullWidth
+										multiline
+										rows={2}
+										value={notes}
+										onChange={(e) => setNotes(e.target.value)}
+										placeholder="Add optional notes..."
+										variant="outlined"
+										size="small"
+										sx={{
+											"& .MuiOutlinedInput-root": {
+												fontSize: "0.875rem",
+											},
+										}}
+									/>
 								</Stack>
 							</CardContent>
 						</Card>

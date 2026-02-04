@@ -26,6 +26,11 @@ export class CreateForecastDto {
     remainingTokensValue: number;
     tokenCount: number;
   };
+
+  @ApiProperty({ description: 'Notes optionnelles', required: false })
+  @IsString()
+  @IsOptional()
+  notes?: string;
 }
 
 export class UpdateForecastDto {
@@ -50,6 +55,11 @@ export class UpdateForecastDto {
     remainingTokensValue: number;
     tokenCount: number;
   };
+
+  @ApiProperty({ description: 'Notes optionnelles', required: false })
+  @IsString()
+  @IsOptional()
+  notes?: string;
 }
 
 export class ForecastResponseDto {
@@ -74,6 +84,9 @@ export class ForecastResponseDto {
     remainingTokensValue: number;
     tokenCount: number;
   };
+
+  @ApiProperty({ required: false })
+  notes?: string;
 
   @ApiProperty()
   createdAt: Date;

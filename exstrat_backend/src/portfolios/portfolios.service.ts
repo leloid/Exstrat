@@ -1313,6 +1313,7 @@ export class PortfoliosService {
         name: createForecastDto.name,
         appliedStrategies: createForecastDto.appliedStrategies as any,
         summary: createForecastDto.summary as any,
+        notes: createForecastDto.notes || null,
       },
     });
 
@@ -1332,6 +1333,7 @@ export class PortfoliosService {
         returnPercentage: parsedSummary?.returnPercentage ? Number(parsedSummary.returnPercentage) : 0,
         remainingTokensValue: parsedSummary?.remainingTokensValue ? Number(parsedSummary.remainingTokensValue) : 0,
       },
+      notes: forecast.notes || undefined,
       createdAt: forecast.createdAt.toISOString(),
       updatedAt: forecast.updatedAt.toISOString(),
     };
@@ -1385,6 +1387,7 @@ export class PortfoliosService {
           remainingTokensValue: parsedSummary?.remainingTokensValue ? Number(parsedSummary.remainingTokensValue) : 0,
         },
         appliedStrategies: forecast.appliedStrategies as Record<string, string>,
+        notes: forecast.notes || undefined,
       };
     });
   }
@@ -1423,12 +1426,17 @@ export class PortfoliosService {
         returnPercentage: parsedSummary?.returnPercentage ? Number(parsedSummary.returnPercentage) : 0,
         remainingTokensValue: parsedSummary?.remainingTokensValue ? Number(parsedSummary.remainingTokensValue) : 0,
       },
+      notes: forecast.notes || undefined,
       createdAt: forecast.createdAt.toISOString(),
       updatedAt: forecast.updatedAt.toISOString(),
     };
   }
 
   async updateForecast(userId: string, id: string, updateForecastDto: UpdateForecastDto) {
+    // Handle notes: if notes is an empty string, set it to null
+    const notesValue = updateForecastDto.notes !== undefined 
+      ? (updateForecastDto.notes.trim() === '' ? null : updateForecastDto.notes.trim())
+      : undefined;
     const forecast = await this.prisma.forecast.findFirst({
       where: { id, userId },
     });
@@ -1447,6 +1455,7 @@ export class PortfoliosService {
         ...(updateForecastDto.summary && {
           summary: updateForecastDto.summary as any,
         }),
+        ...(notesValue !== undefined && { notes: notesValue }),
       },
     });
 
@@ -1466,6 +1475,7 @@ export class PortfoliosService {
         returnPercentage: parsedSummary?.returnPercentage ? Number(parsedSummary.returnPercentage) : 0,
         remainingTokensValue: parsedSummary?.remainingTokensValue ? Number(parsedSummary.remainingTokensValue) : 0,
       },
+      notes: updated.notes || undefined,
       createdAt: updated.createdAt.toISOString(),
       updatedAt: updated.updatedAt.toISOString(),
     };
