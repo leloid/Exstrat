@@ -28,7 +28,7 @@ export const dashboardConfig = {
 			key: "investissements",
 			title: undefined,
 			items: [
-				{ key: "investissements", title: "Investissement", href: paths.dashboard.investissements, icon: "pencil" },
+				{ key: "investissements", title: "Investments", href: paths.dashboard.investissements, icon: "pencil" },
 			],
 		},
 		{
