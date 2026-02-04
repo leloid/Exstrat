@@ -277,7 +277,7 @@ function ForecastPageContent(): React.JSX.Element {
 								<Typography color="text.secondary" variant="body1" sx={{ maxWidth: 400, mx: "auto" }}>
 									{searchQuery
 										? "No forecasts found matching your search. Try adjusting your search criteria."
-										: "Start predicting your portfolio performance by creating your first forecast. Analyze potential outcomes and plan your investment strategy."}
+										: "Create a portfolio forecast to combine all your token strategies into a single view, helping you assess results and compare scenarios."}
 								</Typography>
 							</Stack>
 							{!searchQuery && (
