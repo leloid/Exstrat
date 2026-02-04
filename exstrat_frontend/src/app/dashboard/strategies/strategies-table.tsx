@@ -561,7 +561,7 @@ function StrategyRow({
 																	sx={{ 
 																		color: "text.secondary", 
 																		fontWeight: 600,
-																		fontSize: "0.7rem",
+																		fontSize: "0.65rem",
 																		textTransform: "uppercase",
 																		letterSpacing: "0.5px",
 																		mb: 0.5,
@@ -575,7 +575,7 @@ function StrategyRow({
 																	sx={{ 
 																		color: "primary.main", 
 																		fontWeight: 700,
-																		fontSize: "1.125rem",
+																		fontSize: "0.9375rem",
 																		lineHeight: 1.3,
 																	}}
 																>
@@ -590,7 +590,7 @@ function StrategyRow({
 																	sx={{ 
 																		color: "text.secondary", 
 																		fontWeight: 600,
-																		fontSize: "0.7rem",
+																		fontSize: "0.65rem",
 																		textTransform: "uppercase",
 																		letterSpacing: "0.5px",
 																		mb: 0.5,
@@ -604,7 +604,7 @@ function StrategyRow({
 																	sx={{ 
 																		color: "text.primary",
 																		fontWeight: 600,
-																		fontSize: "0.9375rem",
+																		fontSize: "0.8125rem",
 																	}}
 																>
 																	{tokensToSell.toLocaleString(undefined, { maximumFractionDigits: 6 })} {row.symbol}
@@ -618,7 +618,7 @@ function StrategyRow({
 																	sx={{ 
 																		color: "text.secondary", 
 																		fontWeight: 600,
-																		fontSize: "0.7rem",
+																		fontSize: "0.65rem",
 																		textTransform: "uppercase",
 																		letterSpacing: "0.5px",
 																		mb: 0.5,
@@ -632,56 +632,11 @@ function StrategyRow({
 																	sx={{ 
 																		color: "success.main", 
 																		fontWeight: 700,
-																		fontSize: "0.9375rem",
+																		fontSize: "0.8125rem",
 																	}}
 																>
 																	{formatCurrency(amountCollected, "$", 2)}
 																</Typography>
-															</Box>
-															
-															{/* Status */}
-															<Box>
-																<Typography 
-																	variant="caption" 
-																	sx={{ 
-																		color: "text.secondary", 
-																		fontWeight: 600,
-																		fontSize: "0.7rem",
-																		textTransform: "uppercase",
-																		letterSpacing: "0.5px",
-																		mb: 0.75,
-																		display: "block",
-																	}}
-																>
-																	Status
-																</Typography>
-																<Box>
-																	{step.state === "triggered" ? (
-																		<Chip
-																			label="Triggered"
-																			size="small"
-																			color="success"
-																			sx={{ 
-																				fontSize: "0.7rem", 
-																				height: "24px",
-																				fontWeight: 600,
-																			}}
-																		/>
-																	) : (
-																		<Chip
-																			label="Pending"
-																			size="small"
-																			variant="outlined"
-																			sx={{
-																				fontSize: "0.7rem",
-																				height: "24px",
-																				borderColor: "text.secondary",
-																				color: "text.primary",
-																				fontWeight: 600,
-																			}}
-																		/>
-																	)}
-																</Box>
 															</Box>
 														</Stack>
 														{onStepAlertChange && (
@@ -698,6 +653,32 @@ function StrategyRow({
 																	pb: 2,
 																}}
 															>
+																{/* Alert Title */}
+																<Box
+																	sx={{
+																		display: "inline-flex",
+																		px: 1.5,
+																		py: 0.5,
+																		bgcolor: "background.paper",
+																		border: "1.5px solid",
+																		borderColor: "divider",
+																		borderRadius: 1,
+																		mb: 1,
+																	}}
+																>
+																	<Typography 
+																		variant="caption" 
+																		sx={{ 
+																			color: "text.secondary", 
+																			fontWeight: 700, 
+																			fontSize: "0.7rem",
+																			textTransform: "uppercase",
+																			letterSpacing: "0.5px",
+																		}}
+																	>
+																		Alert
+																	</Typography>
+																</Box>
 																{/* Pre-reaching Alert */}
 																<Box>
 																	<Typography 
@@ -705,14 +686,14 @@ function StrategyRow({
 																		sx={{ 
 																			color: "text.secondary", 
 																			fontWeight: 600, 
-																			fontSize: "0.7rem",
+																			fontSize: "0.65rem",
 																			textTransform: "uppercase",
 																			letterSpacing: "0.5px",
 																			mb: 1,
 																			display: "block",
 																		}}
 																	>
-																		Pre-reaching Alert
+																		Pre-reaching
 																	</Typography>
 																	<Stack direction="row" spacing={0.75} sx={{ alignItems: "center" }}>
 																		<IconButton
@@ -787,14 +768,14 @@ function StrategyRow({
 																		sx={{ 
 																			color: "text.secondary", 
 																			fontWeight: 600, 
-																			fontSize: "0.7rem",
+																			fontSize: "0.65rem",
 																			textTransform: "uppercase",
 																			letterSpacing: "0.5px",
 																			mb: 1,
 																			display: "block",
 																		}}
 																	>
-																		Reaching Alert
+																		Reaching
 																	</Typography>
 																	<FormControlLabel
 																		control={
