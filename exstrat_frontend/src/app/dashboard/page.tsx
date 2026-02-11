@@ -62,7 +62,7 @@ function WalletFilterSelector({
 	const [open, setOpen] = React.useState(false);
 
 	const selectedValue = isGlobalView ? "global" : currentPortfolio?.id || "";
-	const selectedLabel = isGlobalView ? "Portefeuille Global" : currentPortfolio?.name || "Sélectionner un portefeuille";
+	const selectedLabel = isGlobalView ? "Global Portfolio" : currentPortfolio?.name || "Select a portfolio";
 	const primaryMain = theme.palette.primary.main;
 
 	// Tokens: contrast fort en dark — texte blanc / gris clair lisible
@@ -101,7 +101,7 @@ function WalletFilterSelector({
 					color: tokens.label,
 				}}
 			>
-				Vue du portefeuille
+				Wallet view
 			</Typography>
 			<FormControl fullWidth>
 				<Select
@@ -166,10 +166,10 @@ function WalletFilterSelector({
 									</Box>
 									<Stack spacing={0}>
 										<Typography variant="body1" sx={{ fontWeight: 600, color: tokens.triggerText, fontSize: "1rem", lineHeight: 1.3 }}>
-											Portefeuille Global
+											Global Portfolio
 										</Typography>
 										<Typography variant="caption" sx={{ color: tokens.triggerSub, fontSize: "0.75rem" }}>
-											Tous les portefeuilles
+											All portfolios
 										</Typography>
 									</Stack>
 								</Stack>
@@ -196,7 +196,7 @@ function WalletFilterSelector({
 										{portfolio?.name || selectedLabel}
 									</Typography>
 									<Typography variant="caption" sx={{ color: tokens.triggerSub, fontSize: "0.75rem" }}>
-										{portfolio?.isDefault ? "Portefeuille par défaut" : "Portefeuille individuel"}
+										{portfolio?.isDefault ? "Default portfolio" : "Individual portfolio"}
 									</Typography>
 								</Stack>
 							</Stack>
@@ -249,7 +249,7 @@ function WalletFilterSelector({
 								<GlobeIcon fontSize="1.2rem" weight="fill" style={{ color: isGlobalView ? primaryMain : tokens.chevron }} />
 							</Box>
 							<Typography variant="body1" sx={{ fontWeight: isGlobalView ? 600 : 500, color: "inherit", fontSize: "0.9375rem" }}>
-								Portefeuille Global
+								Global Portfolio
 							</Typography>
 						</Stack>
 					</MenuItem>
@@ -289,7 +289,7 @@ function WalletFilterSelector({
 													fontWeight: 500,
 												}}
 											>
-												Défaut
+												Default
 											</Typography>
 										)}
 									</Stack>

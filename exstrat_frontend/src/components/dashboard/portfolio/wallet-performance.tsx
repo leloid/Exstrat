@@ -10,7 +10,7 @@ import ToggleButton from "@mui/material/ToggleButton";
 import ToggleButtonGroup from "@mui/material/ToggleButtonGroup";
 import Typography from "@mui/material/Typography";
 import useMediaQuery from "@mui/material/useMediaQuery";
-import { useTheme } from "@mui/material/styles";
+import { useTheme, useColorScheme } from "@mui/material/styles";
 import { ChartLineIcon } from "@phosphor-icons/react/dist/ssr/ChartLine";
 import { GlobeIcon } from "@phosphor-icons/react/dist/ssr/Globe";
 import {
@@ -83,7 +83,8 @@ export function WalletPerformance({ portfolios, transactions, portfolioData, sel
 	const [timePeriod, setTimePeriod] = React.useState<TimePeriod>("ALL");
 	
 	// Design tokens: contrast fort en dark pour lisibilité (blanc / gris clair sur fond sombre)
-	const isDarkMode = theme.palette.mode === "dark";
+	const { colorScheme } = useColorScheme();
+	const isDarkMode = colorScheme === "dark";
 	const tokens = {
 		// Header — texte blanc pur, date gris très lisible
 		headerBg: isDarkMode ? "rgba(255, 255, 255, 0.07)" : "rgba(0, 0, 0, 0.03)",
@@ -662,16 +663,23 @@ export function WalletPerformance({ portfolios, transactions, portfolioData, sel
 		>
 			{/* Header bar: fond dédié pour contraste garanti dark/light */}
 			<Box
+				className="WalletPerformance-header"
 				sx={{
 					px: 3,
 					py: 2.5,
 					bgcolor: tokens.headerBg,
 					borderBottom: `1px solid ${tokens.headerBorder}`,
+					// Force blanc sur titre et valeur en dark (priorité sur tout le thème)
+					...(isDarkMode && {
+						"& .WalletPerformance-title": { color: "#FFFFFF !important" },
+						"& .WalletPerformance-value": { color: "#FFFFFF !important" },
+					}),
 				}}
 			>
 				<Stack direction="row" spacing={2} sx={{ alignItems: "flex-start", justifyContent: "space-between", flexWrap: "wrap", gap: 2 }}>
 					<Stack spacing={0.5}>
 						<Typography
+							className="WalletPerformance-title"
 							variant="h5"
 							sx={{
 								fontWeight: 700,
@@ -689,6 +697,7 @@ export function WalletPerformance({ portfolios, transactions, portfolioData, sel
 					</Stack>
 					{activePortfolioData && (
 						<Typography
+							className="WalletPerformance-value"
 							variant="h4"
 							sx={{
 								fontWeight: 800,
