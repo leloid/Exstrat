@@ -40,18 +40,18 @@ export function QuickStats({
 				>
 					<Card sx={{ height: "100%", display: "flex", flexDirection: "column", overflow: "visible" }}>
 						<Stack spacing={1} sx={{ p: { xs: 2, sm: 3 }, flex: "1 1 auto" }}>
-							<Typography color="text.secondary" variant="overline">
-								Current Value
-							</Typography>
-							<Stack direction="row" spacing={1} sx={{ alignItems: "center", flexWrap: "wrap" }}>
-								<Typography variant="h5" sx={{ fontSize: { xs: "1.25rem", sm: "1.5rem" } }}>{formatCompactCurrency(valeurActuelle, "$", 0, secretMode)}</Typography>
-								<Chip
-									color={isPositive ? "success" : "error"}
-									label={formatPercentage(pnlRelatif)}
-									size="small"
-									variant="soft"
-								/>
-							</Stack>
+								<Typography color="text.secondary" variant="overline">
+									Current Value
+								</Typography>
+								<Stack direction="row" spacing={1} sx={{ alignItems: "center", flexWrap: "wrap" }}>
+									<Typography variant="h5" sx={{ fontSize: { xs: "1.25rem", sm: "1.5rem" } }}>{formatCompactCurrency(valeurActuelle, "$", 0, secretMode)}</Typography>
+									<Chip
+										color={isPositive ? "success" : "error"}
+										label={formatPercentage(pnlRelatif)}
+										size="small"
+										variant="soft"
+									/>
+								</Stack>
 						</Stack>
 					</Card>
 				</Grid>
@@ -66,10 +66,10 @@ export function QuickStats({
 				>
 					<Card sx={{ height: "100%", display: "flex", flexDirection: "column" }}>
 						<Stack spacing={1} sx={{ p: { xs: 2, sm: 3 }, flex: "1 1 auto" }}>
-							<Typography color="text.secondary" variant="overline">
-								Invested Capital
-							</Typography>
-							<Typography variant="h5" sx={{ fontSize: { xs: "1.25rem", sm: "1.5rem" } }}>{formatCompactCurrency(capitalInvesti, "$", 0, secretMode)}</Typography>
+								<Typography color="text.secondary" variant="overline">
+									Invested Capital
+								</Typography>
+								<Typography variant="h5" sx={{ fontSize: { xs: "1.25rem", sm: "1.5rem" } }}>{formatCompactCurrency(capitalInvesti, "$", 0, secretMode)}</Typography>
 						</Stack>
 					</Card>
 				</Grid>
@@ -93,13 +93,13 @@ export function QuickStats({
 						}}
 					>
 						<Stack spacing={1} sx={{ p: { xs: 2, sm: 3 }, flex: "1 1 auto" }}>
-							<Typography color="inherit" variant="overline">
-								Profit / Loss
-							</Typography>
-							<Typography color="inherit" variant="h5" sx={{ fontSize: { xs: "1.25rem", sm: "1.5rem" } }}>
-								{isPositive ? "+" : ""}
-								{formatCompactCurrency(pnlAbsolu, "$", 2, secretMode)}
-							</Typography>
+								<Typography color="inherit" variant="overline">
+									Profit / Loss
+								</Typography>
+								<Typography color="inherit" variant="h5" sx={{ fontSize: { xs: "1.25rem", sm: "1.5rem" } }}>
+									{isPositive ? "+" : ""}
+									{formatCompactCurrency(pnlAbsolu, "$", 2, secretMode)}
+								</Typography>
 							<Typography color="inherit" variant="body1" sx={{ fontSize: { xs: "0.875rem", sm: "1rem" }, opacity: 0.9 }}>
 								{formatPercentage(pnlRelatif)}
 							</Typography>

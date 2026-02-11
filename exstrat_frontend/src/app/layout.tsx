@@ -69,6 +69,13 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
   gtag('config', 'G-XCQNB0RS8R');`,
 					}}
 				/>
+				{/* Crisp Chat */}
+				<script
+					type="text/javascript"
+					dangerouslySetInnerHTML={{
+						__html: `window.$crisp=[];window.CRISP_WEBSITE_ID="b0661e11-900f-4e6d-8391-067b0c1a778a";(function(){d=document;s=d.createElement("script");s.src="https://client.crisp.chat/l.js";s.async=1;d.getElementsByTagName("head")[0].appendChild(s);})();`,
+					}}
+				/>
 			</head>
 			<body>
 				{/* Google Tag Manager (noscript) */}

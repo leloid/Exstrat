@@ -844,9 +844,9 @@ export function WalletPerformance({ portfolios, transactions, portfolioData, sel
 												data={{
 													labels: walletPerformanceByWalletData.data.map(d => d.name),
 													datasets: walletPerformanceByWalletData.wallets.map((wallet, index) => {
-														const walletKey = wallet.name.replace(/\s+/g, "_");
+												const walletKey = wallet.name.replace(/\s+/g, "_");
 														const colors = ["#1976d2", "#9c27b0", "#2e7d32"];
-														const color = colors[index % colors.length];
+												const color = colors[index % colors.length];
 														return {
 															label: wallet.name,
 															data: walletPerformanceByWalletData.data.map(d => d[walletKey] as number),
@@ -913,7 +913,7 @@ export function WalletPerformance({ portfolios, transactions, portfolioData, sel
 												<Typography color="text.secondary">No data available</Typography>
 											</Box>
 										)}
-									</NoSsr>
+								</NoSsr>
 								</Box>
 							</Stack>
 						) : (
@@ -1072,15 +1072,15 @@ function PerformanceTooltipContent({ active, payload, label }: PerformanceToolti
 					</Typography>
 				)}
 				<Stack direction="row" spacing={2} sx={{ alignItems: "center" }}>
-					<Box
-						sx={{
+						<Box
+							sx={{
 							bgcolor: "#FFB800",
 							borderRadius: "4px",
 							height: "12px",
 							width: "12px",
 							boxShadow: "0 2px 4px rgba(255, 184, 0, 0.3)"
-						}}
-					/>
+							}}
+						/>
 					<Stack spacing={0.5} sx={{ flex: "1 1 auto" }}>
 						<Typography 
 							variant="caption" 
@@ -1101,8 +1101,8 @@ function PerformanceTooltipContent({ active, payload, label }: PerformanceToolti
 								letterSpacing: "-0.02em"
 							}}
 						>
-							{formatCompactCurrency(entry.value, "$", 2, secretMode)}
-						</Typography>
+						{formatCompactCurrency(entry.value, "$", 2, secretMode)}
+					</Typography>
 					</Stack>
 				</Stack>
 			</Stack>
