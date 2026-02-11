@@ -306,7 +306,7 @@ export function FeedbackButton(): React.JSX.Element {
 														backgroundColor: "rgba(0, 0, 0, 0.6)",
 														color: "white",
 													}}
-												/>
+						/>
 											</Box>
 										))}
 									</Stack>

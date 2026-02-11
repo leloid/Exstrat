@@ -393,8 +393,8 @@ function StrategyRow({
 									whiteSpace: "nowrap"
 								}}
 							>
-								{row.name}
-							</Typography>
+									{row.name}
+								</Typography>
 							<Typography 
 								color="text.secondary" 
 								variant="body2" 
@@ -406,9 +406,9 @@ function StrategyRow({
 									whiteSpace: "nowrap"
 								}}
 							>
-								{row.symbol} - {row.tokenName}
-							</Typography>
-						</Stack>
+									{row.symbol} - {row.tokenName}
+								</Typography>
+							</Stack>
 						</Stack>
 					</Tooltip>
 				</TableCell>
@@ -419,20 +419,20 @@ function StrategyRow({
 				</TableCell>
 				<TableCell align="right" sx={{ py: 1 }}>
 					<Typography variant="body2" sx={{ fontSize: "0.8125rem", whiteSpace: "nowrap" }}>
-						{row.baseQuantity.toLocaleString(undefined, { maximumFractionDigits: 6 })} {row.symbol}
-					</Typography>
+							{row.baseQuantity.toLocaleString(undefined, { maximumFractionDigits: 6 })} {row.symbol}
+						</Typography>
 				</TableCell>
 				<TableCell align="right" sx={{ py: 1 }}>
 					<Typography variant="body2" sx={{ fontSize: "0.8125rem", whiteSpace: "nowrap", color: "success.main" }}>
 						{formatCurrency(calculations.totalCashedIn, "$", 2)}
-					</Typography>
+						</Typography>
 				</TableCell>
 				<TableCell align="right" sx={{ py: 1 }}>
-					<Typography
-						variant="body2"
-						sx={{
+						<Typography
+							variant="body2"
+							sx={{
 							fontSize: "0.8125rem",
-							whiteSpace: "nowrap",
+								whiteSpace: "nowrap",
 							color: calculations.netResult >= 0 ? "success.main" : "error.main",
 						}}
 					>
@@ -505,13 +505,13 @@ function StrategyRow({
 						<Collapse in={isExpanded} timeout="auto" unmountOnExit>
 							<Box sx={{ py: 2, px: 2, bgcolor: "var(--mui-palette-background-paper)" }}>
 								<Grid container spacing={2}>
-									{row.steps.map((step, index) => {
-										const targetPrice = step.targetPrice || 0;
-										const tokensToSell = step.sellQuantity || (row.baseQuantity * step.sellPercentage) / 100;
-										const amountCollected = tokensToSell * targetPrice;
-										const targetType = step.targetType === "percentage_of_average" ? "percentage" : "price";
+										{row.steps.map((step, index) => {
+											const targetPrice = step.targetPrice || 0;
+											const tokensToSell = step.sellQuantity || (row.baseQuantity * step.sellPercentage) / 100;
+											const amountCollected = tokensToSell * targetPrice;
+											const targetType = step.targetType === "percentage_of_average" ? "percentage" : "price";
 
-										return (
+											return (
 											<Grid key={step.id || index} size={{ xs: 12, sm: 6, md: 2 }}>
 												<Box
 													sx={{
@@ -569,7 +569,7 @@ function StrategyRow({
 																	}}
 																>
 																	Target
-																</Typography>
+														</Typography>
 																<Typography 
 																	variant="h6" 
 																	sx={{ 
@@ -580,7 +580,7 @@ function StrategyRow({
 																	}}
 																>
 																	{formatCurrency(targetPrice, "$", 2)}
-																</Typography>
+														</Typography>
 															</Box>
 															
 															{/* Token quantity to sell */}
@@ -598,7 +598,7 @@ function StrategyRow({
 																	}}
 																>
 																	Token quantity to sell
-																</Typography>
+														</Typography>
 																<Typography 
 																	variant="body1" 
 																	sx={{ 
@@ -608,7 +608,7 @@ function StrategyRow({
 																	}}
 																>
 																	{tokensToSell.toLocaleString(undefined, { maximumFractionDigits: 6 })} {row.symbol}
-																</Typography>
+														</Typography>
 															</Box>
 															
 															{/* Amount collected */}
@@ -626,7 +626,7 @@ function StrategyRow({
 																	}}
 																>
 																	Amount collected
-																</Typography>
+														</Typography>
 																<Typography 
 																	variant="body1" 
 																	sx={{ 
@@ -635,8 +635,8 @@ function StrategyRow({
 																		fontSize: "0.8125rem",
 																	}}
 																>
-																	{formatCurrency(amountCollected, "$", 2)}
-																</Typography>
+															{formatCurrency(amountCollected, "$", 2)}
+														</Typography>
 															</Box>
 														</Stack>
 														{onStepAlertChange && (
@@ -697,7 +697,7 @@ function StrategyRow({
 																	</Typography>
 																	<Stack direction="row" spacing={0.75} sx={{ alignItems: "center" }}>
 																		<IconButton
-																			size="small"
+																size="small"
 																			onClick={(e) => {
 																				e.stopPropagation();
 																				const current = stepAlerts.get(step.id)?.beforeTPPercentage ?? 2;
@@ -737,7 +737,7 @@ function StrategyRow({
 																			</Typography>
 																		</Box>
 																		<IconButton
-																			size="small"
+																size="small"
 																			onClick={(e) => {
 																				e.stopPropagation();
 																				const current = stepAlerts.get(step.id)?.beforeTPPercentage ?? 2;
@@ -765,10 +765,10 @@ function StrategyRow({
 																<Box>
 																	<Typography 
 																		variant="caption" 
-																		sx={{ 
+																sx={{
 																			color: "text.secondary", 
 																			fontWeight: 600, 
-																			fontSize: "0.65rem",
+																	fontSize: "0.65rem",
 																			textTransform: "uppercase",
 																			letterSpacing: "0.5px",
 																			mb: 1,
@@ -789,9 +789,9 @@ function StrategyRow({
 																				sx={{
 																					"& .MuiSvgIcon-root": {
 																						fontSize: 20,
-																					},
-																				}}
-																			/>
+																	},
+																}}
+															/>
 																		}
 																		label={
 																			<Typography variant="body2" sx={{ fontSize: "0.8125rem", fontWeight: 500 }}>
@@ -806,8 +806,8 @@ function StrategyRow({
 													</Stack>
 												</Box>
 											</Grid>
-										);
-									})}
+											);
+										})}
 								</Grid>
 							</Box>
 						</Collapse>

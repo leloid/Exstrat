@@ -1914,23 +1914,23 @@ export default function Page(): React.JSX.Element {
 								<PlusIcon fontSize="var(--icon-fontSize-lg)" />
 								<Typography variant="h6">Transactions</Typography>
 								{portfolios.length >= 2 && (
-									<FormControl size="small" sx={{ minWidth: 150 }}>
-										<Select
-											value={transactionWalletFilter}
-											onChange={(e) => {
-												setTransactionWalletFilter(e.target.value);
-												setTransactionPage(0); // Reset to first page on filter change
-											}}
-											displayEmpty
-										>
-											<MenuItem value="global">Global</MenuItem>
-											{portfolios.map((portfolio) => (
-												<MenuItem key={portfolio.id} value={portfolio.id}>
-													{portfolio.name}
-												</MenuItem>
-											))}
-										</Select>
-									</FormControl>
+										<FormControl size="small" sx={{ minWidth: 150 }}>
+											<Select
+												value={transactionWalletFilter}
+												onChange={(e) => {
+													setTransactionWalletFilter(e.target.value);
+													setTransactionPage(0); // Reset to first page on filter change
+												}}
+												displayEmpty
+											>
+												<MenuItem value="global">Global</MenuItem>
+												{portfolios.map((portfolio) => (
+													<MenuItem key={portfolio.id} value={portfolio.id}>
+														{portfolio.name}
+													</MenuItem>
+												))}
+											</Select>
+										</FormControl>
 								)}
 								{selectedTransactionIds.size > 0 && (
 									<Button

@@ -650,30 +650,30 @@ export function CreateTransactionModal({
 																	<Stack spacing={2.5}>
 																		{/* Token Info */}
 																		<Stack direction="row" spacing={2} sx={{ alignItems: "center" }}>
-																			{tokenLogoUrl ? (
+																		{tokenLogoUrl ? (
 																				<Avatar src={tokenLogoUrl} sx={{ width: 48, height: 48 }} />
-																			) : (
+																		) : (
 																				<Avatar sx={{ width: 48, height: 48, bgcolor: "primary.main" }}>
-																					{selectedToken.symbol.charAt(0)}
-																				</Avatar>
-																			)}
+																				{selectedToken.symbol.charAt(0)}
+																			</Avatar>
+																		)}
 																			<Box sx={{ flex: 1 }}>
 																				<Typography variant="h6" fontWeight={600}>
-																					{selectedToken.symbol}
-																				</Typography>
-																				<Typography color="text.secondary" variant="body2">
-																					{selectedToken.name}
-																				</Typography>
-																			</Box>
-																			<Chip
-																				label={transactionType}
-																				size="medium"
-																				sx={{ 
-																					fontWeight: 600,
+																				{selectedToken.symbol}
+																			</Typography>
+																			<Typography color="text.secondary" variant="body2">
+																				{selectedToken.name}
+																			</Typography>
+																		</Box>
+																	<Chip
+																		label={transactionType}
+																		size="medium"
+																		sx={{ 
+																			fontWeight: 600,
 																					bgcolor: transactionType === "BUY" ? "success.light" : "error.light",
 																					color: transactionType === "BUY" ? "success.dark" : "error.dark",
-																				}}
-																			/>
+																		}}
+																	/>
 																		</Stack>
 
 																		<Divider />
@@ -720,11 +720,11 @@ export function CreateTransactionModal({
 																					Quantity
 																				</Typography>
 																				<Typography variant="h6" fontWeight={700}>
-																					{quantity}
-																				</Typography>
+																		{quantity}
+																	</Typography>
 																			</Box>
-																		</Grid>
-																		<Grid size={{ xs: 12, sm: 4 }}>
+																</Grid>
+																<Grid size={{ xs: 12, sm: 4 }}>
 																			<Box
 																				sx={{
 																					p: 1.5,
@@ -734,14 +734,14 @@ export function CreateTransactionModal({
 																				}}
 																			>
 																				<Typography color="text.secondary" variant="caption" sx={{ fontWeight: 600, display: "block", mb: 0.5 }}>
-																					Amount Invested
-																				</Typography>
+																		Amount Invested
+																	</Typography>
 																				<Typography variant="h6" fontWeight={700} color="primary.main">
-																					{formatCurrency(parseFloat(amountInvested), "$", 2)}
-																				</Typography>
+																		{formatCurrency(parseFloat(amountInvested), "$", 2)}
+																	</Typography>
 																			</Box>
-																		</Grid>
-																		<Grid size={{ xs: 12, sm: 4 }}>
+																</Grid>
+																<Grid size={{ xs: 12, sm: 4 }}>
 																			<Box
 																				sx={{
 																					p: 1.5,
@@ -751,14 +751,14 @@ export function CreateTransactionModal({
 																				}}
 																			>
 																				<Typography color="text.secondary" variant="caption" sx={{ fontWeight: 600, display: "block", mb: 0.5 }}>
-																					Average Price
-																				</Typography>
+																		Average Price
+																	</Typography>
 																				<Typography variant="h6" fontWeight={700}>
-																					{formatCurrency(parseFloat(averagePrice), "$", 8)}
-																				</Typography>
+																		{formatCurrency(parseFloat(averagePrice), "$", 8)}
+																	</Typography>
 																			</Box>
 																		</Grid>
-																	</Grid>
+																</Grid>
 																</Box>
 
 																{/* Notes Section */}

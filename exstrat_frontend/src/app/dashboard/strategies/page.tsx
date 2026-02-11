@@ -306,7 +306,7 @@ function StrategiesPageContent(): React.JSX.Element {
 
 		// Filter by search query
 		if (debouncedSearchQuery.trim()) {
-			const query = debouncedSearchQuery.toLowerCase();
+		const query = debouncedSearchQuery.toLowerCase();
 			filtered = filtered.filter(
 				(strategy) =>
 					strategy.name.toLowerCase().includes(query) ||
@@ -349,17 +349,17 @@ function StrategiesPageContent(): React.JSX.Element {
 	const confirmDeleteStrategy = React.useCallback(async () => {
 		if (!strategyToDelete) return;
 		
-		try {
+				try {
 			await strategiesApi.deleteStrategy(strategyToDelete);
-			await loadStrategies();
+					await loadStrategies();
 			selection.deselectOne(strategyToDelete);
 			setShowDeleteStrategyModal(false);
 			setStrategyToDelete(null);
-			toast.success("Strategy deleted successfully");
-		} catch (error) {
-			console.error("Error deleting strategy:", error);
-			toast.error("Failed to delete strategy. Please try again.");
-		}
+					toast.success("Strategy deleted successfully");
+				} catch (error) {
+					console.error("Error deleting strategy:", error);
+					toast.error("Failed to delete strategy. Please try again.");
+				}
 	}, [strategyToDelete, loadStrategies, selection]);
 
 	const confirmDeleteMultipleStrategies = React.useCallback(async () => {
@@ -664,18 +664,18 @@ function StrategiesPageContent(): React.JSX.Element {
 			<Stack spacing={4}>
 				{/* Header */}
 				{hasStrategies && (
-					<Stack direction={{ xs: "column", sm: "row" }} spacing={3} sx={{ alignItems: "flex-start" }}>
-						<Box sx={{ flex: "1 1 auto" }} />
-						<Button onClick={handleCreateStrategy} startIcon={<PlusIcon />} variant="contained">
-							Create Strategy
-						</Button>
-					</Stack>
+				<Stack direction={{ xs: "column", sm: "row" }} spacing={3} sx={{ alignItems: "flex-start" }}>
+					<Box sx={{ flex: "1 1 auto" }} />
+					<Button onClick={handleCreateStrategy} startIcon={<PlusIcon />} variant="contained">
+						Create Strategy
+					</Button>
+				</Stack>
 				)}
 
 				{/* Strategies Table */}
 				{!hasStrategies ? (
 					<Card
-						sx={{
+									sx={{
 							width: "100%",
 							py: { xs: 6, sm: 8 },
 							px: { xs: 3, sm: 4 },
@@ -692,10 +692,10 @@ function StrategiesPageContent(): React.JSX.Element {
 						}}
 					>
 						<Stack spacing={3} sx={{ alignItems: "center", maxWidth: 500, mx: "auto" }}>
-							<Stack spacing={1}>
+								<Stack spacing={1}>
 								<Typography variant="h5" sx={{ fontWeight: 600 }}>
 									Create Your First Strategy
-								</Typography>
+									</Typography>
 								<Typography color="text.secondary" variant="body1" sx={{ maxWidth: 400, mx: "auto" }}>
 									Start automating your profit-taking by creating your first token strategy. Set target prices and let the system manage your exits automatically.
 								</Typography>
@@ -796,39 +796,39 @@ function StrategiesPageContent(): React.JSX.Element {
 						) : (
 							<>
 								<Box sx={{ overflowX: "auto", width: "100%" }}>
-									<StrategiesTable
-										onDelete={handleDeleteStrategy}
-										onEdit={handleEditStrategy}
-										rows={displayStrategies}
-										selectedIds={selection.selected}
-										tokenPrices={tokenPrices}
-										onSelect={selection.selectOne}
-										onDeselect={selection.deselectOne}
-										onSelectAll={selection.selectAll}
-										onDeselectAll={selection.deselectAll}
-										isLoadingPrices={isLoadingPrices}
-										expandedStrategyId={expandedStrategyId}
-										onToggleExpand={(strategyId) => {
-											setExpandedStrategyId((prev) => (prev === strategyId ? null : strategyId));
-										}}
+							<StrategiesTable
+								onDelete={handleDeleteStrategy}
+								onEdit={handleEditStrategy}
+								rows={displayStrategies}
+								selectedIds={selection.selected}
+								tokenPrices={tokenPrices}
+								onSelect={selection.selectOne}
+								onDeselect={selection.deselectOne}
+								onSelectAll={selection.selectAll}
+								onDeselectAll={selection.deselectAll}
+								isLoadingPrices={isLoadingPrices}
+								expandedStrategyId={expandedStrategyId}
+								onToggleExpand={(strategyId) => {
+									setExpandedStrategyId((prev) => (prev === strategyId ? null : strategyId));
+								}}
 										stepAlerts={stepAlerts}
 										onStepAlertChange={handleStepAlertChange}
 										strategyAlerts={strategyAlerts}
 										onStrategyAlertToggle={handleStrategyAlertToggle}
-									/>
-								</Box>
-								{totalStrategies > 0 && (
-									<TablePagination
-										component="div"
-										count={totalStrategies}
-										onPageChange={handlePageChange}
-										onRowsPerPageChange={handleRowsPerPageChange}
-										page={page}
-										rowsPerPage={rowsPerPage}
-										rowsPerPageOptions={[5, 10, 25, 50]}
-										labelRowsPerPage="Rows per page:"
-										labelDisplayedRows={({ from, to, count }) => `${from}-${to} of ${count !== -1 ? count : `more than ${to}`}`}
-									/>
+							/>
+						</Box>
+						{totalStrategies > 0 && (
+							<TablePagination
+								component="div"
+								count={totalStrategies}
+								onPageChange={handlePageChange}
+								onRowsPerPageChange={handleRowsPerPageChange}
+								page={page}
+								rowsPerPage={rowsPerPage}
+								rowsPerPageOptions={[5, 10, 25, 50]}
+								labelRowsPerPage="Rows per page:"
+								labelDisplayedRows={({ from, to, count }) => `${from}-${to} of ${count !== -1 ? count : `more than ${to}`}`}
+							/>
 								)}
 							</>
 						)}

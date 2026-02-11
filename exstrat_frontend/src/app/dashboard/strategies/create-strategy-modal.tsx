@@ -1026,9 +1026,9 @@ export function CreateStrategyModal({ onClose, onSuccess, open }: CreateStrategy
 																							</Stack>
 																						) : (
 																							<>
-																								<TextField
-																									fullWidth
-																									type="number"
+																							<TextField
+																								fullWidth
+																								type="number"
 																									value={rawPriceInputs[targetIndex] !== undefined ? rawPriceInputs[targetIndex] : (target.targetValue > 0 ? target.targetValue : "")}
 																									onChange={(e) => {
 																										const inputValue = e.target.value;
@@ -1565,11 +1565,11 @@ export function CreateStrategyModal({ onClose, onSuccess, open }: CreateStrategy
 										</Typography>
 										<Stack spacing={2}>
 											{/* Line 1: Strategy name | Total invested */}
-											<Grid container spacing={2}>
-												<Grid size={6}>
+										<Grid container spacing={2}>
+											<Grid size={6}>
 													<Typography color="text.secondary" variant="body2">
 														Strategy name
-													</Typography>
+												</Typography>
 													<Typography variant="body2" sx={{ fontWeight: 600 }}>
 														{strategyName || "—"}
 													</Typography>
@@ -1579,54 +1579,54 @@ export function CreateStrategyModal({ onClose, onSuccess, open }: CreateStrategy
 														Total invested
 													</Typography>
 													<Typography color="success.main" variant="body2" sx={{ fontWeight: 600 }}>
-														{formatCurrency(parseFloat(strategyQuantity) * parseFloat(strategyAveragePrice), "$", 2)}
-													</Typography>
-												</Grid>
+													{formatCurrency(parseFloat(strategyQuantity) * parseFloat(strategyAveragePrice), "$", 2)}
+												</Typography>
+											</Grid>
 											</Grid>
 											{/* Line 2: Total amount collected | Net result */}
 											<Grid container spacing={2}>
-												<Grid size={6}>
+											<Grid size={6}>
 													<Typography color="text.secondary" variant="body2">
 														Total amount collected
-													</Typography>
+												</Typography>
 													<Typography color="success.main" variant="body2" sx={{ fontWeight: 600 }}>
-														{formatCurrency(
-															strategyInfo.reduce((sum, info) => sum + info.amountCollected, 0),
-															"$",
-															2
-														)}
-													</Typography>
-												</Grid>
-												<Grid size={6}>
+													{formatCurrency(
+														strategyInfo.reduce((sum, info) => sum + info.amountCollected, 0),
+														"$",
+														2
+													)}
+												</Typography>
+											</Grid>
+											<Grid size={6}>
 													<Typography color="text.secondary" variant="body2">
-														Net result
-													</Typography>
+													Net result
+												</Typography>
 													<Typography
 														color="success.main"
 														variant="body2"
 														sx={{ fontWeight: 600 }}
 													>
-														{formatCurrency(
-															strategyInfo.reduce((sum, info) => sum + info.amountCollected, 0) -
-																parseFloat(strategyQuantity) * parseFloat(strategyAveragePrice),
-															"$",
-															2
-														)}
-													</Typography>
-												</Grid>
+													{formatCurrency(
+														strategyInfo.reduce((sum, info) => sum + info.amountCollected, 0) -
+															parseFloat(strategyQuantity) * parseFloat(strategyAveragePrice),
+														"$",
+														2
+													)}
+												</Typography>
+											</Grid>
 											</Grid>
 											{/* Line 3: Remaining tokens | Bag percentage sold */}
 											<Grid container spacing={2}>
-												<Grid size={6}>
+											<Grid size={6}>
 													<Typography color="text.secondary" variant="body2">
-														Remaining tokens
-													</Typography>
+													Remaining tokens
+												</Typography>
 													<Typography color="warning.main" variant="body2" sx={{ fontWeight: 600 }}>
-														{strategyInfo.length > 0
+													{strategyInfo.length > 0
 															? strategyInfo[strategyInfo.length - 1].remainingTokens.toFixed(8)
 															: "0.00000000"}
-													</Typography>
-												</Grid>
+												</Typography>
+											</Grid>
 												<Grid size={6}>
 													<Typography color="text.secondary" variant="body2">
 														Bag percentage sold
@@ -1644,7 +1644,7 @@ export function CreateStrategyModal({ onClose, onSuccess, open }: CreateStrategy
 													>
 														{profitTargets.reduce((sum, t) => sum + t.sellPercentage, 0).toFixed(1)}%
 													</Typography>
-												</Grid>
+										</Grid>
 											</Grid>
 										</Stack>
 									</CardContent>

@@ -297,12 +297,12 @@ function ConfigurationPageContent(): React.JSX.Element {
 			<Stack spacing={4}>
 				{/* Header */}
 				{alertConfigurations.length > 0 && (
-					<Stack direction={{ xs: "column", sm: "row" }} spacing={3} sx={{ alignItems: "flex-start" }}>
-						<Box sx={{ flex: "1 1 auto" }} />
-						<Button startIcon={<PlusIcon />} variant="contained" onClick={() => setShowAddModal(true)}>
-							Add Alert
-						</Button>
-					</Stack>
+				<Stack direction={{ xs: "column", sm: "row" }} spacing={3} sx={{ alignItems: "flex-start" }}>
+					<Box sx={{ flex: "1 1 auto" }} />
+					<Button startIcon={<PlusIcon />} variant="contained" onClick={() => setShowAddModal(true)}>
+						Add Alert
+					</Button>
+				</Stack>
 				)}
 
 				{/* Alerts Table */}
@@ -335,7 +335,7 @@ function ConfigurationPageContent(): React.JSX.Element {
 										: "Start receiving automated alerts for your strategies by creating your first alert configuration. Get notified when your target prices are reached."}
 								</Typography>
 							</Stack>
-							{!searchQuery && (
+								{!searchQuery && (
 								<Button
 									variant="contained"
 									size="large"
@@ -364,9 +364,9 @@ function ConfigurationPageContent(): React.JSX.Element {
 									}}
 								>
 									Create My First Alert
-								</Button>
-							)}
-						</Stack>
+									</Button>
+								)}
+							</Stack>
 					</Card>
 				) : (
 					<Card sx={{ width: "100%" }}>

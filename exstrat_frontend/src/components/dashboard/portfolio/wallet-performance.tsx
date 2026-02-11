@@ -14,7 +14,17 @@ import useMediaQuery from "@mui/material/useMediaQuery";
 import { useTheme } from "@mui/material/styles";
 import { ChartLineIcon } from "@phosphor-icons/react/dist/ssr/ChartLine";
 import { GlobeIcon } from "@phosphor-icons/react/dist/ssr/Globe";
-import { Area, AreaChart, CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import {
+	Chart as ChartJS,
+	CategoryScale,
+	LinearScale,
+	PointElement,
+	LineElement,
+	Filler,
+	Tooltip as ChartTooltip,
+	Legend,
+} from "chart.js";
+import { Line as LineChart } from "react-chartjs-2";
 import Button from "@mui/material/Button";
 import ButtonGroup from "@mui/material/ButtonGroup";
 
@@ -22,6 +32,17 @@ import { NoSsr } from "@/components/core/no-ssr";
 import { formatCompactCurrency, formatPercentage } from "@/lib/format";
 import { useSecretMode } from "@/hooks/use-secret-mode";
 import type { TransactionResponse } from "@/types/transactions";
+
+// Register Chart.js components
+ChartJS.register(
+	CategoryScale,
+	LinearScale,
+	PointElement,
+	LineElement,
+	Filler,
+	ChartTooltip,
+	Legend
+);
 
 interface PortfolioData {
 	id: string;
@@ -51,7 +72,7 @@ interface WalletPerformanceProps {
 	holdings?: TokenHolding[]; // Holdings actuels pour calculer les quantités
 }
 
-type TimePeriod = "1D" | "5D" | "1W" | "1M" | "1Y" | "ALL";
+type TimePeriod = "1D" | "7D" | "1M" | "3M" | "YTD" | "1Y" | "ALL";
 
 export function WalletPerformance({ portfolios, transactions, portfolioData, selectedPortfolioId }: WalletPerformanceProps): React.JSX.Element {
 	const { secretMode } = useSecretMode();
@@ -60,7 +81,7 @@ export function WalletPerformance({ portfolios, transactions, portfolioData, sel
 	const isTablet = useMediaQuery(theme.breakpoints.between("sm", "md"));
 	const chartHeight = isMobile ? 250 : isTablet ? 280 : 300;
 	const [walletPerformanceView, setWalletPerformanceView] = React.useState<"global" | "byWallet">("global");
-	const [timePeriod, setTimePeriod] = React.useState<TimePeriod>("1M");
+	const [timePeriod, setTimePeriod] = React.useState<TimePeriod>("ALL");
 
 	// Determine which portfolio to use (selected or global)
 	const activePortfolioData = React.useMemo(() => {
@@ -120,11 +141,15 @@ export function WalletPerformance({ portfolios, transactions, portfolioData, sel
 		
 		// Calculate days based on selected time period
 		const getDaysForPeriod = (period: TimePeriod): number => {
+			const yearStart = new Date(now.getFullYear(), 0, 1);
+			const daysSinceYearStart = Math.floor((now.getTime() - yearStart.getTime()) / (1000 * 60 * 60 * 24));
+			
 			switch (period) {
 				case "1D": return 1;
-				case "5D": return 5;
-				case "1W": return 7;
+				case "7D": return 7;
 				case "1M": return 30;
+				case "3M": return 90;
+				case "YTD": return daysSinceYearStart;
 				case "1Y": return 365;
 				case "ALL": 
 					// For ALL, use the oldest transaction date or 365 days, whichever is larger
@@ -196,37 +221,35 @@ export function WalletPerformance({ portfolios, transactions, portfolioData, sel
 			tokenQuantitiesByDate.set(symbol, quantities);
 		});
 
-		// Calculate value at each date
+		// Calculate value at each date - calculate for all days
 		for (let i = days; i >= 0; i--) {
 			const date = new Date(now);
 			date.setDate(date.getDate() - i);
 			const daysAgo = i;
 			const progress = i / days; // 0 = today, 1 = X days ago
 			
-			// Format date based on time period
+			// Format date based on time period - professional financial format
 			let dateKey: string;
-			if (timePeriod === "1D" || timePeriod === "5D") {
-				// For short periods, show time
+			if (timePeriod === "1D") {
+				// For 1 day, show time
 				const hours = date.getHours();
 				const minutes = date.getMinutes();
 				dateKey = `${hours.toString().padStart(2, "0")}:${minutes.toString().padStart(2, "0")}`;
-			} else if (timePeriod === "1W") {
-				// For week, show day name
-				dateKey = date.toLocaleDateString("en-US", { weekday: "short" });
-			} else if (timePeriod === "1M") {
-				// For month, show month and day
-				const monthName = date.toLocaleDateString("en-US", { month: "short" });
+			} else if (timePeriod === "7D" || timePeriod === "1M" || timePeriod === "3M") {
+				// For week, month, 3 months - show month/day format (e.g., "2/23")
+				const month = date.getMonth() + 1;
 				const day = date.getDate();
-				dateKey = `${monthName} ${day}`;
-			} else if (timePeriod === "1Y" || timePeriod === "ALL") {
-				// For year and all, show month and day
-				const monthName = date.toLocaleDateString("en-US", { month: "short" });
+				dateKey = `${month}/${day}`;
+			} else if (timePeriod === "YTD" || timePeriod === "1Y" || timePeriod === "ALL") {
+				// For year and all, show month/day/year format (e.g., "2/23/2025")
+				const month = date.getMonth() + 1;
 				const day = date.getDate();
-				dateKey = `${monthName} ${day}`;
+				const year = date.getFullYear();
+				dateKey = `${month}/${day}/${year}`;
 			} else {
-				const monthName = date.toLocaleDateString("en-US", { month: "short" });
+				const month = date.getMonth() + 1;
 				const day = date.getDate();
-				dateKey = `${monthName} ${day}`;
+				dateKey = `${month}/${day}`;
 			}
 
 			let totalValue = 0;
@@ -254,11 +277,14 @@ export function WalletPerformance({ portfolios, transactions, portfolioData, sel
 				const priceChangeFactor = 1 - (pnlPercentage / 100) * progress * 0.5; // Assume 50% of PnL change happened gradually
 				const estimatedPrice = currentPrice * priceChangeFactor;
 
-				// Add realistic market volatility (crypto markets are volatile)
-				const volatility1 = 1 + Math.sin(progress * Math.PI * 4) * 0.08; // ±8% variation
-				const volatility2 = 1 + Math.sin(progress * Math.PI * 7 + Math.PI / 3) * 0.05; // ±5% variation
-				const volatility3 = 1 + Math.sin(progress * Math.PI * 11 + Math.PI / 6) * 0.03; // ±3% variation
-				const priceWithVolatility = estimatedPrice * volatility1 * volatility2 * volatility3;
+				// Add realistic market volatility (crypto markets are volatile) - increased for more natural fluctuations
+				const volatility1 = 1 + Math.sin(progress * Math.PI * 4) * 0.15; // ±15% variation
+				const volatility2 = 1 + Math.sin(progress * Math.PI * 7 + Math.PI / 3) * 0.10; // ±10% variation
+				const volatility3 = 1 + Math.sin(progress * Math.PI * 11 + Math.PI / 6) * 0.06; // ±6% variation
+				const volatility4 = 1 + Math.sin(progress * Math.PI * 13 + Math.PI / 4) * 0.04; // ±4% variation
+				// Add some random noise for more natural look
+				const randomNoise = 1 + (Math.random() - 0.5) * 0.05; // ±2.5% random variation
+				const priceWithVolatility = estimatedPrice * volatility1 * volatility2 * volatility3 * volatility4 * randomNoise;
 
 				totalValue += quantity * priceWithVolatility;
 			});
@@ -276,6 +302,25 @@ export function WalletPerformance({ portfolios, transactions, portfolioData, sel
 
 		return data;
 	}, [filteredTransactions, activePortfolioData, timePeriod]);
+
+	// Calculate Y-axis domain based on actual data values (not starting at 0)
+	const yAxisDomain = React.useMemo(() => {
+		if (portfolioPerformanceData.length === 0) return ["auto", "auto"];
+		
+		const values = portfolioPerformanceData.map(d => d.value).filter(v => v > 0);
+		if (values.length === 0) return ["auto", "auto"];
+		
+		const minValue = Math.min(...values);
+		const maxValue = Math.max(...values);
+		const range = maxValue - minValue;
+		
+		// Add 10% margin on top and bottom for better visualization
+		const margin = range * 0.1;
+		const domainMin = Math.max(0, minValue - margin);
+		const domainMax = maxValue + margin;
+		
+		return [domainMin, domainMax];
+	}, [portfolioPerformanceData]);
 
 	// Calculate performance data by wallet (top 3) - only if global view
 	const walletPerformanceByWalletData = React.useMemo<{
@@ -304,11 +349,15 @@ export function WalletPerformance({ portfolios, transactions, portfolioData, sel
 		
 		// Calculate days based on selected time period
 		const getDaysForPeriod = (period: TimePeriod): number => {
+			const yearStart = new Date(now.getFullYear(), 0, 1);
+			const daysSinceYearStart = Math.floor((now.getTime() - yearStart.getTime()) / (1000 * 60 * 60 * 24));
+			
 			switch (period) {
 				case "1D": return 1;
-				case "5D": return 5;
-				case "1W": return 7;
+				case "7D": return 7;
 				case "1M": return 30;
+				case "3M": return 90;
+				case "YTD": return daysSinceYearStart;
 				case "1Y": return 365;
 				case "ALL": 
 					if (filteredTransactions.length > 0) {
@@ -378,26 +427,27 @@ export function WalletPerformance({ portfolios, transactions, portfolioData, sel
 			date.setDate(date.getDate() - i);
 			const daysAgo = i;
 			
-			// Format date based on time period
+			// Format date based on time period - professional financial format
 			let dateKey: string;
-			if (timePeriod === "1D" || timePeriod === "5D") {
+			if (timePeriod === "1D") {
 				const hours = date.getHours();
 				const minutes = date.getMinutes();
 				dateKey = `${hours.toString().padStart(2, "0")}:${minutes.toString().padStart(2, "0")}`;
-			} else if (timePeriod === "1W") {
-				dateKey = date.toLocaleDateString("en-US", { weekday: "short" });
-			} else if (timePeriod === "1M") {
-				const monthName = date.toLocaleDateString("en-US", { month: "short" });
+			} else if (timePeriod === "7D" || timePeriod === "1M" || timePeriod === "3M") {
+				// For week, month, 3 months - show month/day format (e.g., "2/23")
+				const month = date.getMonth() + 1;
 				const day = date.getDate();
-				dateKey = `${monthName} ${day}`;
-			} else if (timePeriod === "1Y" || timePeriod === "ALL") {
-				const monthName = date.toLocaleDateString("en-US", { month: "short" });
+				dateKey = `${month}/${day}`;
+			} else if (timePeriod === "YTD" || timePeriod === "1Y" || timePeriod === "ALL") {
+				// For year and all, show month/day/year format (e.g., "2/23/2025")
+				const month = date.getMonth() + 1;
 				const day = date.getDate();
-				dateKey = `${monthName} ${day}`;
+				const year = date.getFullYear();
+				dateKey = `${month}/${day}/${year}`;
 			} else {
-				const monthName = date.toLocaleDateString("en-US", { month: "short" });
+				const month = date.getMonth() + 1;
 				const day = date.getDate();
-				dateKey = `${monthName} ${day}`;
+				dateKey = `${month}/${day}`;
 			}
 
 			const dataPoint: { name: string; [key: string]: string | number } = { name: dateKey };
@@ -443,17 +493,24 @@ export function WalletPerformance({ portfolios, transactions, portfolioData, sel
 					const investedAtDate = startInvested + (wallet.invested - startInvested) * (1 - progress);
 					const baseValue = investedAtDate * (1 + estimatedPnLPercentage / 100);
 					
-					// Add realistic volatility (multiple sine waves for more complex curve)
-					const volatility1 = 1 + (Math.sin(progress * Math.PI * 4) * 0.05);
-					const volatility2 = 1 + (Math.sin(progress * Math.PI * 7) * 0.03);
-					valueAtDate = baseValue * volatility1 * volatility2;
+					// Add realistic volatility (multiple sine waves for more complex curve) - increased for more natural fluctuations
+					const volatility1 = 1 + (Math.sin(progress * Math.PI * 4) * 0.12);
+					const volatility2 = 1 + (Math.sin(progress * Math.PI * 7) * 0.08);
+					const volatility3 = 1 + (Math.sin(progress * Math.PI * 11 + Math.PI / 3) * 0.05);
+					// Add some random noise for more natural look
+					const randomNoise = 1 + (Math.random() - 0.5) * 0.04;
+					valueAtDate = baseValue * volatility1 * volatility2 * volatility3 * randomNoise;
 				}
 
-				// Add additional smooth variation for more realistic curve
+				// Add additional smooth variation for more realistic curve with more fluctuations
 				if (points.length > 0) {
 					const progress = i / days;
-					const variation = 1 + (Math.sin(progress * Math.PI * 6) * 0.02);
-					valueAtDate = valueAtDate * variation;
+					const variation1 = 1 + (Math.sin(progress * Math.PI * 6) * 0.05);
+					const variation2 = 1 + (Math.sin(progress * Math.PI * 9 + Math.PI / 2) * 0.03);
+					const variation3 = 1 + (Math.sin(progress * Math.PI * 12 + Math.PI / 4) * 0.02);
+					// Add some random noise for more natural look
+					const randomNoise = 1 + (Math.random() - 0.5) * 0.04;
+					valueAtDate = valueAtDate * variation1 * variation2 * variation3 * randomNoise;
 				}
 
 				dataPoint[walletKey] = Math.max(0, valueAtDate);
@@ -479,24 +536,174 @@ export function WalletPerformance({ portfolios, transactions, portfolioData, sel
 		? `Wallet Performance - ${activePortfolioData?.name || "Unknown"}`
 		: "Wallet Performance";
 
+	const currentDate = new Date().toLocaleDateString("en-US", { 
+		month: "short", 
+		day: "numeric", 
+		year: "numeric" 
+	});
+
+	// Prepare Chart.js data format
+	const chartData = React.useMemo(() => {
+		if (portfolioPerformanceData.length === 0) {
+			return {
+				labels: [],
+				datasets: [],
+				yAxisMin: 0,
+				yAxisMax: 0,
+				maxTicksLimit: 25,
+			};
+		}
+
+		const labels = portfolioPerformanceData.map(d => d.name);
+		const values = portfolioPerformanceData.map(d => d.value);
+
+		// Calculate min/max for Y-axis domain
+		const minValue = Math.min(...values);
+		const maxValue = Math.max(...values);
+		const range = maxValue - minValue;
+		const margin = range * 0.1;
+
+		// Determine max ticks limit based on data length
+		// For short periods (7D, 14D), show all dates
+		// For longer periods, limit to ~20-25 dates for readability
+		let maxTicksLimit: number | undefined = undefined;
+		if (labels.length > 30) {
+			maxTicksLimit = 25;
+		} else if (labels.length > 15) {
+			maxTicksLimit = 20;
+		}
+
+		return {
+			labels,
+			datasets: [
+				{
+					label: "Total Value",
+					data: values,
+					borderColor: "#FFB800",
+					backgroundColor: (context: any) => {
+						const ctx = context.chart.ctx;
+						const gradient = ctx.createLinearGradient(0, 0, 0, 400);
+						gradient.addColorStop(0, "rgba(255, 184, 0, 0.4)");
+						gradient.addColorStop(0.3, "rgba(255, 184, 0, 0.25)");
+						gradient.addColorStop(0.6, "rgba(255, 184, 0, 0.15)");
+						gradient.addColorStop(1, "rgba(255, 184, 0, 0)");
+						return gradient;
+					},
+					borderWidth: 3,
+					fill: true,
+					tension: 0.4, // Smooth curves
+					pointRadius: 0,
+					pointHoverRadius: 8,
+					pointHoverBorderWidth: 4,
+					pointHoverBorderColor: "#FFFFFF",
+					pointHoverBackgroundColor: "#FFB800",
+					pointHoverShadowBlur: 12,
+					pointHoverShadowColor: "rgba(255, 184, 0, 0.5)",
+				},
+			],
+			yAxisMin: Math.max(0, minValue - margin),
+			yAxisMax: maxValue + margin,
+			maxTicksLimit,
+		};
+	}, [portfolioPerformanceData]);
+
+	// No animation - instant display
+
 	return (
-		<Card sx={{ height: "100%", minHeight: { xs: "400px", sm: "450px", md: "500px" }, display: "flex", flexDirection: "column" }}>
-			<CardHeader
-				title={displayTitle}
-				action={
-					<Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
-						{/* Time Period Selector */}
-						<ButtonGroup size="small" variant="outlined">
-							{(["1D", "5D", "1W", "1M", "1Y", "ALL"] as TimePeriod[]).map((period) => (
+		<Card sx={{ 
+			height: "100%", 
+			minHeight: { xs: "500px", sm: "550px", md: "600px" }, 
+			display: "flex", 
+			flexDirection: "column",
+			boxShadow: "0 1px 3px rgba(0, 0, 0, 0.08)",
+			border: "1px solid rgba(0, 0, 0, 0.06)",
+			borderRadius: 3
+		}}>
+			<CardContent sx={{ flex: "1 1 auto", display: "flex", flexDirection: "column", p: 4 }}>
+				{/* Professional Header with Title, Date, and Current Value */}
+				<Stack spacing={3} sx={{ mb: 4 }}>
+					<Stack direction="row" spacing={3} sx={{ alignItems: "flex-start", justifyContent: "space-between", flexWrap: "wrap" }}>
+						<Stack spacing={1}>
+							<Typography 
+								variant="h5" 
+								sx={{ 
+									fontWeight: 700, 
+									color: "#111827", 
+									fontSize: "1.5rem",
+									letterSpacing: "-0.02em",
+									lineHeight: 1.2
+								}}
+							>
+								{displayTitle}
+							</Typography>
+							<Typography 
+								variant="body2" 
+								sx={{ 
+									color: "#6B7280", 
+									fontSize: "0.875rem",
+									fontWeight: 500
+								}}
+							>
+								{currentDate}
+							</Typography>
+						</Stack>
+						{activePortfolioData && (
+							<Stack spacing={0.5} sx={{ alignItems: "flex-end" }}>
+								<Typography 
+									variant="h3" 
+									sx={{ 
+										fontWeight: 800, 
+										color: "#111827", 
+										lineHeight: 1.1,
+										fontSize: { xs: "1.75rem", sm: "2rem", md: "2.25rem" },
+										letterSpacing: "-0.03em"
+									}}
+								>
+									{formatCompactCurrency(activePortfolioData.value, "$", 0, secretMode)}
+								</Typography>
+							</Stack>
+						)}
+					</Stack>
+					{/* Professional Time Period Selector and View Toggle */}
+					<Stack direction="row" spacing={2} sx={{ alignItems: "center", justifyContent: "space-between", flexWrap: "wrap" }}>
+						<ButtonGroup 
+							size="small" 
+							variant="outlined" 
+							sx={{ 
+								borderRadius: 2,
+								border: "1px solid rgba(0, 0, 0, 0.08)",
+								"& .MuiButton-root": {
+									borderRadius: 2,
+									px: 2.5,
+									py: 0.875,
+									fontSize: "0.8125rem",
+									fontWeight: 600,
+									textTransform: "none",
+									minWidth: "auto",
+									borderColor: "rgba(0, 0, 0, 0.08)",
+									color: "#6B7280",
+									"&:hover": {
+										borderColor: "rgba(0, 0, 0, 0.12)",
+										backgroundColor: "rgba(0, 0, 0, 0.02)",
+									},
+									"&.MuiButton-contained": {
+										backgroundColor: "#111827",
+										color: "#FFFFFF",
+										borderColor: "#111827",
+										boxShadow: "0 2px 4px rgba(0, 0, 0, 0.1)",
+										"&:hover": {
+											backgroundColor: "#1F2937",
+											borderColor: "#1F2937",
+										},
+									},
+								},
+							}}
+						>
+							{(["1D", "7D", "1M", "3M", "YTD", "1Y", "ALL"] as TimePeriod[]).map((period) => (
 								<Button
 									key={period}
 									onClick={() => setTimePeriod(period)}
 									variant={timePeriod === period ? "contained" : "outlined"}
-									sx={{
-										minWidth: "auto",
-										px: 1.5,
-										fontSize: "0.75rem",
-									}}
 								>
 									{period}
 								</Button>
@@ -514,6 +721,15 @@ export function WalletPerformance({ portfolios, transactions, portfolioData, sel
 								}}
 								size="small"
 								value={walletPerformanceView}
+								sx={{
+									"& .MuiToggleButton-root": {
+										px: 2,
+										py: 0.75,
+										fontSize: "0.8125rem",
+										textTransform: "none",
+										borderRadius: 1,
+									},
+								}}
 							>
 								<ToggleButton value="global">
 									<Stack direction="row" spacing={0.5} sx={{ alignItems: "center" }}>
@@ -530,9 +746,7 @@ export function WalletPerformance({ portfolios, transactions, portfolioData, sel
 							</ToggleButtonGroup>
 						)}
 					</Stack>
-				}
-			/>
-			<CardContent sx={{ flex: "1 1 auto", display: "flex", flexDirection: "column" }}>
+				</Stack>
 				{secretMode ? (
 					<Box sx={{ height: { xs: "200px", sm: "240px" }, display: "flex", alignItems: "center", justifyContent: "center" }}>
 						<Typography color="text.secondary" variant="h6">
@@ -625,126 +839,186 @@ export function WalletPerformance({ portfolios, transactions, portfolioData, sel
 								)}
 								<Box sx={{ height: { xs: "250px", sm: "280px", md: "300px" }, width: "100%" }}>
 									<NoSsr fallback={<Box sx={{ height: { xs: "250px", sm: "280px", md: "300px" } }} />}>
-										<ResponsiveContainer width="100%" height={chartHeight}>
-											<LineChart data={walletPerformanceByWalletData.data} margin={{ top: 10, right: 10, bottom: 30, left: 10 }}>
-												<CartesianGrid 
-													strokeDasharray="3 3" 
-													vertical={false} 
-													stroke="var(--mui-palette-divider)"
-													opacity={0.5}
-												/>
-												<XAxis
-													axisLine={false}
-													dataKey="name"
-													tickLine={false}
-													type="category"
-													interval="preserveStartEnd"
-												tick={{ fontSize: 11, fill: "var(--mui-palette-text-secondary)" }}
-												height={30}
+										{walletPerformanceByWalletData.data.length > 0 ? (
+											<LineChart
+												data={{
+													labels: walletPerformanceByWalletData.data.map(d => d.name),
+													datasets: walletPerformanceByWalletData.wallets.map((wallet, index) => {
+														const walletKey = wallet.name.replace(/\s+/g, "_");
+														const colors = ["#1976d2", "#9c27b0", "#2e7d32"];
+														const color = colors[index % colors.length];
+														return {
+															label: wallet.name,
+															data: walletPerformanceByWalletData.data.map(d => d[walletKey] as number),
+															borderColor: color,
+															backgroundColor: `${color}20`,
+															borderWidth: 3,
+															fill: false,
+															tension: 0.4,
+															pointRadius: 0,
+															pointHoverRadius: 6,
+														};
+													}),
+												}}
+												options={{
+													responsive: true,
+													maintainAspectRatio: false,
+													animation: false, // No animation
+													interaction: {
+														intersect: false,
+														mode: "index" as const,
+													},
+													plugins: {
+														legend: {
+															display: false,
+														},
+														tooltip: {
+															backgroundColor: "rgba(255, 255, 255, 0.98)",
+															titleColor: "#6B7280",
+															bodyColor: "#111827",
+															borderColor: "rgba(0, 0, 0, 0.08)",
+															borderWidth: 1,
+															padding: 12,
+														},
+													},
+													scales: {
+														x: {
+															grid: { display: false },
+															ticks: {
+																font: { size: 11 },
+																color: "#6B7280",
+															},
+															border: { display: false },
+														},
+														y: {
+															grid: {
+																color: "rgba(0, 0, 0, 0.06)",
+																lineWidth: 1,
+															},
+															ticks: {
+																font: { size: 11 },
+																color: "#6B7280",
+																callback: function(value) {
+																	const numValue = typeof value === "number" ? value : Number(value);
+																	return formatCompactCurrency(numValue, "$", 0).replace("$", "");
+																},
+															},
+															border: { display: false },
+														},
+													},
+												}}
 											/>
-											<YAxis
-												axisLine={false}
-												tickLine={false}
-												type="number"
-												tickFormatter={(value) => formatCompactCurrency(value, "$", 0).replace("$", "")}
-												tick={{ fontSize: 11, fill: "var(--mui-palette-text-secondary)" }}
-												width={60}
-											/>
-											{walletPerformanceByWalletData.wallets.map((wallet, index) => {
-												const walletKey = wallet.name.replace(/\s+/g, "_");
-												const colors = [
-													"var(--mui-palette-primary-main)",
-													"var(--mui-palette-secondary-main)",
-													"var(--mui-palette-success-main)",
-												];
-												const color = colors[index % colors.length];
-												return (
-													<Line
-														key={wallet.id}
-														animationDuration={800}
-														dataKey={walletKey}
-														name={wallet.name}
-														stroke={color}
-														strokeWidth={3}
-														type="monotone"
-														dot={false}
-														activeDot={{ 
-															r: 6, 
-															fill: color, 
-															strokeWidth: 2, 
-															stroke: "var(--mui-palette-background-paper)" 
-														}}
-													/>
-												);
-											})}
-											<Tooltip
-												animationDuration={50}
-												content={<WalletPerformanceTooltipContent wallets={walletPerformanceByWalletData.wallets} />}
-												cursor={{ stroke: "var(--mui-palette-divider)", strokeWidth: 1, strokeDasharray: "5 5", opacity: 0.5 }}
-											/>
-										</LineChart>
-									</ResponsiveContainer>
-								</NoSsr>
+										) : (
+											<Box sx={{ height: "100%", display: "flex", alignItems: "center", justifyContent: "center" }}>
+												<Typography color="text.secondary">No data available</Typography>
+											</Box>
+										)}
+									</NoSsr>
 								</Box>
 							</Stack>
 						) : (
-							<Box sx={{ height: { xs: "250px", sm: "280px", md: "300px" }, width: "100%" }}>
-								<NoSsr fallback={<Box sx={{ height: { xs: "250px", sm: "280px", md: "300px" } }} />}>
-									<ResponsiveContainer width="100%" height={chartHeight}>
-										<AreaChart data={portfolioPerformanceData} margin={{ top: 10, right: 10, bottom: 30, left: 10 }}>
-											<defs>
-												<linearGradient id="area-performance-gradient" x1="0" x2="0" y1="0" y2="1">
-													<stop offset="0%" stopColor="var(--mui-palette-primary-main)" stopOpacity={0.4} />
-													<stop offset="50%" stopColor="var(--mui-palette-primary-main)" stopOpacity={0.2} />
-													<stop offset="100%" stopColor="var(--mui-palette-primary-main)" stopOpacity={0} />
-												</linearGradient>
-												<linearGradient id="area-performance-stroke" x1="0" x2="1" y1="0" y2="0">
-													<stop offset="0%" stopColor="var(--mui-palette-primary-main)" />
-													<stop offset="100%" stopColor="var(--mui-palette-secondary-main)" />
-												</linearGradient>
-											</defs>
-											<CartesianGrid 
-												strokeDasharray="3 3" 
-												vertical={false} 
-												stroke="var(--mui-palette-divider)"
-												opacity={0.5}
-											/>
-											<XAxis
-												axisLine={false}
-												dataKey="name"
-												tickLine={false}
-												type="category"
-												interval="preserveStartEnd"
-												tick={{ fontSize: 11, fill: "var(--mui-palette-text-secondary)" }}
-												height={30}
-											/>
-											<YAxis
-												axisLine={false}
-												tickLine={false}
-												type="number"
-												tickFormatter={(value) => formatCompactCurrency(value, "$", 0).replace("$", "")}
-												tick={{ fontSize: 11, fill: "var(--mui-palette-text-secondary)" }}
-												width={60}
-											/>
-											<Area
-												animationDuration={800}
-												dataKey="value"
-												fill="url(#area-performance-gradient)"
-												fillOpacity={1}
-												name="Total Value"
-												stroke="url(#area-performance-stroke)"
-												strokeWidth={3}
-												type="monotone"
-												dot={false}
-												activeDot={{ r: 6, fill: "var(--mui-palette-primary-main)", strokeWidth: 2, stroke: "var(--mui-palette-background-paper)" }}
-											/>
-											<Tooltip
-												animationDuration={50}
-												content={<PerformanceTooltipContent />}
-												cursor={{ stroke: "var(--mui-palette-primary-main)", strokeWidth: 1, strokeDasharray: "5 5", opacity: 0.5 }}
-											/>
-										</AreaChart>
-									</ResponsiveContainer>
+							<Box sx={{ height: { xs: "350px", sm: "400px", md: "450px" }, width: "100%", position: "relative" }}>
+								<NoSsr fallback={<Box sx={{ height: { xs: "350px", sm: "400px", md: "450px" } }} />}>
+									{chartData.labels.length > 0 ? (
+										<LineChart
+											data={chartData}
+											options={{
+												responsive: true,
+												maintainAspectRatio: false,
+												animation: false, // No animation
+												interaction: {
+													intersect: false,
+													mode: "index" as const,
+												},
+												plugins: {
+													legend: {
+														display: false,
+													},
+													tooltip: {
+														backgroundColor: "rgba(255, 255, 255, 0.98)",
+														titleColor: "#6B7280",
+														bodyColor: "#111827",
+														borderColor: "rgba(0, 0, 0, 0.12)",
+														borderWidth: 1.5,
+														padding: 16,
+														boxPadding: 8,
+														cornerRadius: 8,
+														displayColors: true,
+														titleFont: {
+															size: 11,
+															weight: "normal",
+															family: "system-ui, -apple-system, sans-serif",
+														},
+														bodyFont: {
+															size: 15,
+															weight: "bold",
+															family: "system-ui, -apple-system, sans-serif",
+														},
+														titleSpacing: 4,
+														bodySpacing: 6,
+														callbacks: {
+															label: (context) => {
+																const value = context.parsed.y;
+																return `Total Value: ${formatCompactCurrency(value, "$", 2, secretMode)}`;
+															},
+														},
+													},
+												},
+												scales: {
+													x: {
+														grid: {
+															display: false,
+														},
+														ticks: {
+															font: {
+																size: 12,
+																family: "system-ui, -apple-system, sans-serif",
+																weight: "normal",
+															},
+															color: "#6B7280",
+															padding: 8,
+															maxRotation: 0,
+															autoSkip: chartData.maxTicksLimit !== undefined, // Auto-skip only for long periods
+															maxTicksLimit: chartData.maxTicksLimit, // Limit ticks for long periods
+														},
+														border: {
+															display: false,
+														},
+													},
+													y: {
+														min: chartData.yAxisMin,
+														max: chartData.yAxisMax,
+														grid: {
+															color: "rgba(0, 0, 0, 0.05)",
+															lineWidth: 1,
+														},
+														ticks: {
+															font: {
+																size: 12,
+																family: "system-ui, -apple-system, sans-serif",
+																weight: "normal",
+															},
+															color: "#6B7280",
+															padding: 10,
+															callback: function(value) {
+																const numValue = typeof value === "number" ? value : Number(value);
+																if (numValue >= 1_000_000) return `$${(numValue / 1_000_000).toFixed(1)}M`;
+																if (numValue >= 1_000) return `$${(numValue / 1_000).toFixed(0)}K`;
+																return `$${numValue.toFixed(0)}`;
+															},
+														},
+														border: {
+															display: false,
+														},
+													},
+												},
+											}}
+										/>
+									) : (
+										<Box sx={{ height: "100%", display: "flex", alignItems: "center", justifyContent: "center" }}>
+											<Typography color="text.secondary">No data available</Typography>
+										</Box>
+									)}
 								</NoSsr>
 							</Box>
 						)}
@@ -761,7 +1035,7 @@ interface PerformanceTooltipContentProps {
 	label?: string;
 }
 
-function PerformanceTooltipContent({ active, payload }: PerformanceTooltipContentProps): React.JSX.Element | null {
+function PerformanceTooltipContent({ active, payload, label }: PerformanceTooltipContentProps): React.JSX.Element | null {
 	const { secretMode } = useSecretMode();
 	
 	if (!active || !payload || payload.length === 0) {
@@ -771,23 +1045,65 @@ function PerformanceTooltipContent({ active, payload }: PerformanceTooltipConten
 	const entry = payload[0];
 
 	return (
-		<Paper sx={{ border: "1px solid var(--mui-palette-divider)", boxShadow: "var(--mui-shadows-16)", p: 1 }}>
-			<Stack spacing={2}>
-				<Stack direction="row" spacing={3} sx={{ alignItems: "center" }}>
-					<Stack direction="row" spacing={1} sx={{ alignItems: "center", flex: "1 1 auto" }}>
-						<Box
-							sx={{
-								bgcolor: entry.stroke,
-								borderRadius: "2px",
-								height: "8px",
-								width: "8px",
-							}}
-						/>
-						<Typography sx={{ whiteSpace: "nowrap" }}>{entry.name}</Typography>
-					</Stack>
-					<Typography color="text.secondary" variant="body2">
-						{formatCompactCurrency(entry.value, "$", 2, secretMode)}
+		<Paper 
+			sx={{ 
+				border: "1px solid rgba(0, 0, 0, 0.08)", 
+				boxShadow: "0 4px 20px rgba(0, 0, 0, 0.15)", 
+				p: 2,
+				borderRadius: 2,
+				backgroundColor: "rgba(255, 255, 255, 0.98)",
+				backdropFilter: "blur(10px)",
+				minWidth: 160
+			}}
+		>
+			<Stack spacing={1.5}>
+				{label && (
+					<Typography 
+						variant="caption" 
+						sx={{ 
+							color: "#6B7280", 
+							fontSize: "0.75rem",
+							fontWeight: 500,
+							textTransform: "uppercase",
+							letterSpacing: "0.5px"
+						}}
+					>
+						{label}
 					</Typography>
+				)}
+				<Stack direction="row" spacing={2} sx={{ alignItems: "center" }}>
+					<Box
+						sx={{
+							bgcolor: "#FFB800",
+							borderRadius: "4px",
+							height: "12px",
+							width: "12px",
+							boxShadow: "0 2px 4px rgba(255, 184, 0, 0.3)"
+						}}
+					/>
+					<Stack spacing={0.5} sx={{ flex: "1 1 auto" }}>
+						<Typography 
+							variant="caption" 
+							sx={{ 
+								color: "#9CA3AF", 
+								fontSize: "0.75rem",
+								fontWeight: 500
+							}}
+						>
+							Total Value
+						</Typography>
+						<Typography 
+							variant="body1" 
+							sx={{ 
+								color: "#111827", 
+								fontSize: "1rem",
+								fontWeight: 700,
+								letterSpacing: "-0.02em"
+							}}
+						>
+							{formatCompactCurrency(entry.value, "$", 2, secretMode)}
+						</Typography>
+					</Stack>
 				</Stack>
 			</Stack>
 		</Paper>

@@ -208,12 +208,12 @@ function ForecastPageContent(): React.JSX.Element {
 		
 		// Apply search filter
 		if (searchQuery.trim()) {
-			const query = searchQuery.toLowerCase();
+		const query = searchQuery.toLowerCase();
 			result = result.filter(
-				(forecast) =>
-					forecast.name.toLowerCase().includes(query) ||
-					forecast.portfolioName?.toLowerCase().includes(query)
-			);
+			(forecast) =>
+				forecast.name.toLowerCase().includes(query) ||
+				forecast.portfolioName?.toLowerCase().includes(query)
+		);
 		}
 
 		// Apply sorting
@@ -269,12 +269,12 @@ function ForecastPageContent(): React.JSX.Element {
 			<Stack spacing={4}>
 				{/* Header */}
 				{forecasts.length > 0 && (
-					<Stack direction={{ xs: "column", sm: "row" }} spacing={3} sx={{ alignItems: "flex-start" }}>
-						<Box sx={{ flex: "1 1 auto" }} />
-						<Button onClick={handleCreateForecast} startIcon={<PlusIcon />} variant="contained">
-							Create Forecast
-						</Button>
-					</Stack>
+				<Stack direction={{ xs: "column", sm: "row" }} spacing={3} sx={{ alignItems: "flex-start" }}>
+					<Box sx={{ flex: "1 1 auto" }} />
+					<Button onClick={handleCreateForecast} startIcon={<PlusIcon />} variant="contained">
+						Create Forecast
+					</Button>
+				</Stack>
 				)}
 
 				{/* Forecasts Table */}
@@ -307,7 +307,7 @@ function ForecastPageContent(): React.JSX.Element {
 										: "Create a portfolio forecast to combine all your token strategies into a single view, helping you assess results and compare scenarios."}
 								</Typography>
 							</Stack>
-							{!searchQuery && (
+								{!searchQuery && (
 								<Button
 									variant="contained"
 									size="large"
@@ -336,9 +336,9 @@ function ForecastPageContent(): React.JSX.Element {
 									}}
 								>
 									Create My First Forecast
-								</Button>
-							)}
-						</Stack>
+									</Button>
+								)}
+							</Stack>
 					</Card>
 				) : (
 					<Card sx={{ width: "100%" }}>

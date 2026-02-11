@@ -58,8 +58,8 @@ export class EmailService {
       this.logger.log(`Loading logo from: ${logoPath}`);
       const logoBuffer = fs.readFileSync(logoPath);
       this.logoBase64 = logoBuffer.toString('base64');
-      
-      this.logger.log(`Email service configured with FROM: ${this.fromEmail}`);
+    
+    this.logger.log(`Email service configured with FROM: ${this.fromEmail}`);
       this.logger.log(`Logo loaded successfully as base64 (${Math.round(this.logoBase64.length / 1024)}KB)`);
       this.logger.log(`Logo URL fallback: ${this.logoUrl}`);
     } catch (error: any) {
@@ -1041,7 +1041,7 @@ export class EmailService {
               <p class="message">
                 Thank you for signing up. To activate your account and start using exStrat,
                 please verify your email address by clicking the button below.
-              </p>
+                </p>
 
               <p class="action-text">Click the button to verify your email</p>
               

@@ -113,7 +113,7 @@ export class AlertService {
               asset: token.symbol,
               status: 'active',
               strategyAlert: {
-                isActive: true,
+          isActive: true,
               },
             },
           },
