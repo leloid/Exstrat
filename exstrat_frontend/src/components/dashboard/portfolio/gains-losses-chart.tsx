@@ -312,12 +312,36 @@ export function GainsLossesChart({ holdings }: GainsLossesChartProps): React.JSX
 						) : (
 							<>
 								<Stack spacing={2}>
-									<Typography color="primary.main" variant="h2">
+									<Typography 
+										variant="h2" 
+										sx={{ 
+											color: "#10B981", 
+											fontWeight: 800,
+											letterSpacing: "-0.02em",
+											lineHeight: 1.1,
+											fontSize: { xs: "2rem", sm: "2.5rem", md: "3rem" }
+										}}
+									>
 										{secretMode ? "***" : formatCurrency(valuationStats.totalMarketValue, "$", 0)}
 									</Typography>
-									<Typography color="text.secondary">
+									<Typography 
+										color="text.secondary" 
+										variant="body1"
+										sx={{ 
+											fontSize: { xs: "0.9375rem", sm: "1rem" },
+											fontWeight: 500
+										}}
+									>
 										total market value from{" "}
-										<Typography color="text.primary" component="span" sx={{ fontWeight: 600 }}>
+										<Typography 
+											color="#6B7280" 
+											component="span" 
+											sx={{ 
+												fontWeight: 700,
+												fontSize: { xs: "1.125rem", sm: "1.25rem", md: "1.375rem" },
+												letterSpacing: "-0.01em"
+											}}
+										>
 											{secretMode ? "***" : formatCurrency(valuationStats.totalInvested, "$", 0)}
 										</Typography>{" "}
 										invested
@@ -326,7 +350,14 @@ export function GainsLossesChart({ holdings }: GainsLossesChartProps): React.JSX
 								<Box>
 									{valuationStats.topToken && (
 										<Typography color="text.secondary" variant="body2">
-											<Typography color="primary.main" component="span" variant="subtitle2" sx={{ fontWeight: 600 }}>
+											<Typography 
+												component="span" 
+												variant="subtitle2" 
+												sx={{ 
+													fontWeight: 700,
+													color: "#111827"
+												}}
+											>
 												{valuationStats.topToken.symbol}
 											</Typography>{" "}
 											is your top holding with {secretMode ? "***" : formatCurrency(valuationStats.topToken.value, "$", 0)} value
@@ -367,7 +398,7 @@ export function GainsLossesChart({ holdings }: GainsLossesChartProps): React.JSX
 											animationDuration={300}
 											barSize={32}
 											dataKey="valAchat"
-											fill="var(--mui-palette-primary-400)"
+											fill="#6B7280"
 											name="Purchase Value"
 											radius={[5, 5, 5, 5]}
 										/>
@@ -375,7 +406,7 @@ export function GainsLossesChart({ holdings }: GainsLossesChartProps): React.JSX
 											animationDuration={300}
 											barSize={32}
 											dataKey="valMarche"
-											fill="var(--mui-palette-primary-600)"
+											fill="#10B981"
 											name="Market Value"
 											radius={[5, 5, 5, 5]}
 										/>
@@ -480,38 +511,52 @@ export function GainsLossesChart({ holdings }: GainsLossesChartProps): React.JSX
 						</NoSsr>
 						</Box>
 						{/* Legend */}
-						<Stack direction="row" spacing={2}>
+						<Stack direction="row" spacing={3}>
 							{chartType === "valuation" ? (
 								<>
-									<Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
+									<Stack direction="row" spacing={1.5} sx={{ alignItems: "center" }}>
 										<Box
 											sx={{
-												bgcolor: "var(--mui-palette-primary-400)",
-												borderRadius: "2px",
-												height: "4px",
-												width: "16px",
+												bgcolor: "#6B7280",
+												borderRadius: "3px",
+												height: "6px",
+												width: "24px",
 											}}
 										/>
-										<Typography color="text.secondary" variant="caption">
+										<Typography 
+											color="text.secondary" 
+											variant="body2"
+											sx={{ 
+												fontSize: "0.875rem",
+												fontWeight: 500
+											}}
+										>
 											Purchase Value
 										</Typography>
 									</Stack>
-									<Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
+									<Stack direction="row" spacing={1.5} sx={{ alignItems: "center" }}>
 										<Box
 											sx={{
-												bgcolor: "var(--mui-palette-primary-600)",
-												borderRadius: "2px",
-												height: "4px",
-												width: "16px",
+												bgcolor: "#10B981",
+												borderRadius: "3px",
+												height: "6px",
+												width: "24px",
 											}}
 										/>
-										<Typography color="text.secondary" variant="caption">
+										<Typography 
+											color="text.secondary" 
+											variant="body2"
+											sx={{ 
+												fontSize: "0.875rem",
+												fontWeight: 500
+											}}
+										>
 											Market Value
 										</Typography>
 									</Stack>
 								</>
 							) : (
-								<Typography color="text.secondary" variant="caption">
+								<Typography color="text.secondary" variant="body2">
 									Performance of each token in percentage
 								</Typography>
 							)}

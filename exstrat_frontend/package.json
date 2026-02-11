@@ -12,7 +12,10 @@
     "format": "prettier --check \"**/*.{js,jsx,mjs,ts,tsx,mdx}\" --cache",
     "format:fix": "prettier --write \"**/*.{js,jsx,mjs,ts,tsx,mdx}\" --cache",
     "typecheck": "tsc --noEmit",
-    "test": "jest --watch"
+    "test": "jest --watch",
+    "clean": "rm -rf .next node_modules/.cache .swc",
+    "clean:dev": "rm -rf .next node_modules/.cache .swc && npm run dev",
+    "clean:full": "rm -rf .next node_modules/.cache .swc *.tsbuildinfo && find . -name '*.tsbuildinfo' -type f -delete 2>/dev/null || true"
   },
   "dependencies": {
     "@auth0/nextjs-auth0": "4.6.1",

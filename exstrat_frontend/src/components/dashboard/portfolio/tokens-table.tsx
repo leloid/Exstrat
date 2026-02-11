@@ -18,8 +18,6 @@ import TablePagination from "@mui/material/TablePagination";
 import Typography from "@mui/material/Typography";
 import Tooltip from "@mui/material/Tooltip";
 import { useColorScheme } from "@mui/material/styles";
-import { ArrowDownIcon } from "@phosphor-icons/react/dist/ssr/ArrowDown";
-import { ArrowUpIcon } from "@phosphor-icons/react/dist/ssr/ArrowUp";
 import { CaretDownIcon } from "@phosphor-icons/react/dist/ssr/CaretDown";
 import { CaretUpIcon } from "@phosphor-icons/react/dist/ssr/CaretUp";
 import { InfoIcon } from "@phosphor-icons/react/dist/ssr/Info";
@@ -289,9 +287,9 @@ export function TokensTable({ holdings, portfolioId, onTokenClick }: TokensTable
 			<CardContent>
 				<Box sx={{ overflowX: "auto" }}>
 					<Table>
-						<TableHead>
-							<TableRow>
-								<TableCell>
+						<TableHead sx={{ bgcolor: "transparent" }}>
+							<TableRow sx={{ bgcolor: "transparent" }}>
+								<TableCell sx={{ bgcolor: "transparent" }}>
 									<TableSortLabel
 										active={sortField === "symbol"}
 										direction={sortField === "symbol" ? sortDirection : "asc"}
@@ -303,7 +301,7 @@ export function TokensTable({ holdings, portfolioId, onTokenClick }: TokensTable
 										</Typography>
 									</TableSortLabel>
 								</TableCell>
-								<TableCell align="right">
+								<TableCell align="right" sx={{ bgcolor: "transparent" }}>
 									<TableSortLabel
 										active={sortField === "quantity"}
 										direction={sortField === "quantity" ? sortDirection : "asc"}
@@ -316,7 +314,7 @@ export function TokensTable({ holdings, portfolioId, onTokenClick }: TokensTable
 									</TableSortLabel>
 								</TableCell>
 								{!secretMode && (
-									<TableCell align="right">
+									<TableCell align="right" sx={{ bgcolor: "transparent" }}>
 										<TableSortLabel
 											active={sortField === "investedAmount"}
 											direction={sortField === "investedAmount" ? sortDirection : "asc"}
@@ -329,7 +327,7 @@ export function TokensTable({ holdings, portfolioId, onTokenClick }: TokensTable
 										</TableSortLabel>
 									</TableCell>
 								)}
-								<TableCell align="right">
+								<TableCell align="right" sx={{ bgcolor: "transparent" }}>
 									<TableSortLabel
 										active={sortField === "currentValue"}
 										direction={sortField === "currentValue" ? sortDirection : "asc"}
@@ -342,7 +340,7 @@ export function TokensTable({ holdings, portfolioId, onTokenClick }: TokensTable
 									</TableSortLabel>
 								</TableCell>
 								{!secretMode && (
-									<TableCell align="right">
+									<TableCell align="right" sx={{ bgcolor: "transparent" }}>
 										<TableSortLabel
 											active={sortField === "pnl"}
 											direction={sortField === "pnl" ? sortDirection : "asc"}
@@ -355,7 +353,7 @@ export function TokensTable({ holdings, portfolioId, onTokenClick }: TokensTable
 										</TableSortLabel>
 									</TableCell>
 								)}
-								<TableCell align="right">
+								<TableCell align="right" sx={{ bgcolor: "transparent" }}>
 									<TableSortLabel
 										active={sortField === "pnlPercentage"}
 										direction={sortField === "pnlPercentage" ? sortDirection : "asc"}
@@ -367,7 +365,7 @@ export function TokensTable({ holdings, portfolioId, onTokenClick }: TokensTable
 										</Typography>
 									</TableSortLabel>
 								</TableCell>
-								<TableCell>
+								<TableCell sx={{ bgcolor: "transparent" }}>
 									<TableSortLabel
 										active={sortField === "strategy"}
 										direction={sortField === "strategy" ? sortDirection : "asc"}
@@ -379,7 +377,7 @@ export function TokensTable({ holdings, portfolioId, onTokenClick }: TokensTable
 										</Typography>
 									</TableSortLabel>
 								</TableCell>
-								<TableCell align="center">
+								<TableCell align="center" sx={{ bgcolor: "transparent" }}>
 									<TableSortLabel
 										active={sortField === "tpProgress"}
 										direction={sortField === "tpProgress" ? sortDirection : "asc"}
@@ -395,8 +393,18 @@ export function TokensTable({ holdings, portfolioId, onTokenClick }: TokensTable
 						</TableHead>
 						<TableBody>
 							{paginatedHoldings.map((holding) => {
-								const isPositive = (holding.pnl || 0) >= 0;
+								const pnl = holding.pnl || 0;
+								const isPositive = pnl > 0;
+								const isNegative = pnl < 0;
 								const alertInfo = getTokenAlertInfo(holding);
+
+								// Determine background color based on PNL
+								let rowBgColor = "transparent";
+								if (isPositive) {
+									rowBgColor = "rgba(16, 185, 129, 0.08)"; // Green light
+								} else if (isNegative) {
+									rowBgColor = "rgba(239, 68, 68, 0.08)"; // Red light
+								}
 
 								return (
 									<TableRow
@@ -404,8 +412,13 @@ export function TokensTable({ holdings, portfolioId, onTokenClick }: TokensTable
 										onClick={() => onTokenClick?.(holding)}
 										sx={{
 											cursor: "pointer",
+											bgcolor: rowBgColor,
 											"&:hover": {
-												bgcolor: "var(--mui-palette-action-hover)",
+												bgcolor: isPositive 
+													? "rgba(16, 185, 129, 0.12)" 
+													: isNegative 
+													? "rgba(239, 68, 68, 0.12)" 
+													: "var(--mui-palette-action-hover)",
 											},
 										}}
 									>
@@ -501,17 +514,8 @@ export function TokensTable({ holdings, portfolioId, onTokenClick }: TokensTable
 													return (
 														<Tooltip title={full} arrow placement="top">
 															<Stack direction="row" spacing={0.5} sx={{ alignItems: "center", justifyContent: "flex-end" }}>
-																{isPositive ? (
-																	<Box sx={{ color: "success.main" }}>
-																		<ArrowUpIcon size={16} />
-																	</Box>
-																) : (
-																	<Box sx={{ color: "error.main" }}>
-																		<ArrowDownIcon size={16} />
-																	</Box>
-																)}
-																<Typography variant="body2" sx={{ fontWeight: 600, color: isPositive ? "success.main" : "error.main" }}>
-																	{isPositive ? "+" : "-"}${display}
+																<Typography variant="body2" sx={{ fontWeight: 600, color: isPositive ? "success.main" : isNegative ? "error.main" : "text.primary" }}>
+																	{isPositive ? "+" : isNegative ? "-" : ""}${display}
 																</Typography>
 																{absPnl < 1 && absPnl > 0 && (
 																	<InfoIcon fontSize="var(--icon-fontSize-xs)" style={{ opacity: 0.6 }} />
