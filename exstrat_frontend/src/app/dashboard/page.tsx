@@ -24,6 +24,9 @@ import { InfoIcon } from "@phosphor-icons/react/dist/ssr/Info";
 import { PlusIcon } from "@phosphor-icons/react/dist/ssr/Plus";
 import { ArrowRightIcon } from "@phosphor-icons/react/dist/ssr/ArrowRight";
 import { ArrowSquareOutIcon } from "@phosphor-icons/react/dist/ssr/ArrowSquareOut";
+import { GlobeIcon } from "@phosphor-icons/react/dist/ssr/Globe";
+import { CaretDownIcon } from "@phosphor-icons/react/dist/ssr/CaretDown";
+import { useTheme } from "@mui/material/styles";
 import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip as RechartsTooltip } from "recharts";
 
 import { usePortfolio } from "@/contexts/PortfolioContext";
@@ -40,6 +43,265 @@ import type { Holding } from "@/types/portfolio";
 import * as portfoliosApi from "@/lib/portfolios-api";
 import { transactionsApi } from "@/lib/transactions-api";
 import type { TransactionResponse } from "@/types/transactions";
+
+interface WalletFilterSelectorProps {
+	portfolios: Array<{ id: string; name: string; isDefault?: boolean }>;
+	isGlobalView: boolean;
+	currentPortfolio: { id: string; name: string } | null;
+	onPortfolioChange: (value: string) => void;
+}
+
+function WalletFilterSelector({
+	portfolios,
+	isGlobalView,
+	currentPortfolio,
+	onPortfolioChange,
+}: WalletFilterSelectorProps): React.JSX.Element {
+	const theme = useTheme();
+	const isDarkMode = theme.palette.mode === "dark";
+	const [open, setOpen] = React.useState(false);
+
+	const selectedValue = isGlobalView ? "global" : currentPortfolio?.id || "";
+	const selectedLabel = isGlobalView ? "Portefeuille Global" : currentPortfolio?.name || "Sélectionner un portefeuille";
+	const primaryMain = theme.palette.primary.main;
+
+	// Tokens: contrast fort en dark — texte blanc / gris clair lisible
+	const tokens = {
+		label: isDarkMode ? "#B8C4CE" : "#64748B",
+		triggerBg: isDarkMode ? "rgba(255, 255, 255, 0.08)" : "#FFFFFF",
+		triggerBorder: isDarkMode ? "rgba(255, 255, 255, 0.25)" : "rgba(0, 0, 0, 0.12)",
+		triggerText: isDarkMode ? "#FFFFFF" : "#0F172A",
+		triggerSub: isDarkMode ? "#B8C4CE" : "#64748B",
+		menuBg: isDarkMode ? "#1E293B" : "#FFFFFF",
+		menuBorder: isDarkMode ? "rgba(255, 255, 255, 0.18)" : "rgba(0, 0, 0, 0.08)",
+		itemText: isDarkMode ? "#F1F5F9" : "#334155",
+		itemHover: isDarkMode ? "rgba(255, 255, 255, 0.08)" : "rgba(0, 0, 0, 0.04)",
+		selectedBg: isDarkMode ? `${primaryMain}22` : `${primaryMain}12`,
+		selectedText: primaryMain,
+		badge: isDarkMode ? "#94A3B8" : "#94A3B8",
+		chevron: isDarkMode ? "#E2E8F0" : "#64748B",
+	};
+
+	const handleChange = (e: SelectChangeEvent<string>) => {
+		onPortfolioChange(e.target.value);
+		setOpen(false);
+	};
+
+	return (
+		<Box sx={{ width: "100%", maxWidth: { xs: "100%", sm: 360 } }}>
+			<Typography
+				variant="caption"
+				sx={{
+					display: "block",
+					mb: 1,
+					fontWeight: 600,
+					fontSize: "0.75rem",
+					letterSpacing: "0.04em",
+					textTransform: "uppercase",
+					color: tokens.label,
+				}}
+			>
+				Vue du portefeuille
+			</Typography>
+			<FormControl fullWidth>
+				<Select
+					value={selectedValue}
+					onChange={handleChange}
+					onOpen={() => setOpen(true)}
+					onClose={() => setOpen(false)}
+					open={open}
+					displayEmpty
+					IconComponent={() => (
+						<CaretDownIcon
+							style={{
+								color: tokens.chevron,
+								fontSize: "1.25rem",
+								marginRight: 12,
+								transform: open ? "rotate(180deg)" : "none",
+								transition: "transform 0.2s ease",
+							}}
+						/>
+					)}
+					sx={{
+						height: 56,
+						borderRadius: 2,
+						bgcolor: tokens.triggerBg,
+						border: `1px solid ${tokens.triggerBorder}`,
+						transition: "border-color 0.2s, box-shadow 0.2s",
+						"&:hover": {
+							borderColor: isDarkMode ? "rgba(255, 255, 255, 0.2)" : "rgba(0, 0, 0, 0.2)",
+							boxShadow: isDarkMode ? "0 0 0 1px rgba(255,255,255,0.08)" : "0 0 0 1px rgba(0,0,0,0.06)",
+						},
+						"&.Mui-focused": {
+							borderColor: primaryMain,
+							boxShadow: `0 0 0 2px ${primaryMain}30`,
+						},
+						"& .MuiSelect-select": {
+							py: 0,
+							px: 2,
+							height: "100%",
+							display: "flex",
+							alignItems: "center",
+							boxSizing: "border-box",
+						},
+						"& .MuiOutlinedInput-notchedOutline": { display: "none" },
+						"& fieldset": { display: "none" },
+					}}
+					renderValue={(value) => {
+						if (value === "global" || value === "") {
+							return (
+								<Stack direction="row" spacing={1.5} sx={{ alignItems: "center", flex: 1 }}>
+									<Box
+										sx={{
+											width: 40,
+											height: 40,
+											borderRadius: 1.5,
+											bgcolor: `${primaryMain}18`,
+											display: "flex",
+											alignItems: "center",
+											justifyContent: "center",
+										}}
+									>
+										<GlobeIcon fontSize="1.35rem" weight="fill" style={{ color: primaryMain }} />
+									</Box>
+									<Stack spacing={0}>
+										<Typography variant="body1" sx={{ fontWeight: 600, color: tokens.triggerText, fontSize: "1rem", lineHeight: 1.3 }}>
+											Portefeuille Global
+										</Typography>
+										<Typography variant="caption" sx={{ color: tokens.triggerSub, fontSize: "0.75rem" }}>
+											Tous les portefeuilles
+										</Typography>
+									</Stack>
+								</Stack>
+							);
+						}
+						const portfolio = portfolios.find((p) => p.id === value);
+						return (
+							<Stack direction="row" spacing={1.5} sx={{ alignItems: "center", flex: 1 }}>
+								<Box
+									sx={{
+										width: 40,
+										height: 40,
+										borderRadius: 1.5,
+										bgcolor: `${primaryMain}18`,
+										display: "flex",
+										alignItems: "center",
+										justifyContent: "center",
+									}}
+								>
+									<WalletIcon fontSize="1.35rem" weight="fill" style={{ color: primaryMain }} />
+								</Box>
+								<Stack spacing={0}>
+									<Typography variant="body1" sx={{ fontWeight: 600, color: tokens.triggerText, fontSize: "1rem", lineHeight: 1.3 }}>
+										{portfolio?.name || selectedLabel}
+									</Typography>
+									<Typography variant="caption" sx={{ color: tokens.triggerSub, fontSize: "0.75rem" }}>
+										{portfolio?.isDefault ? "Portefeuille par défaut" : "Portefeuille individuel"}
+									</Typography>
+								</Stack>
+							</Stack>
+						);
+					}}
+					MenuProps={{
+						PaperProps: {
+							sx: {
+								mt: 1.5,
+								borderRadius: 2,
+								boxShadow: isDarkMode ? "0 12px 40px rgba(0, 0, 0, 0.5)" : "0 12px 40px rgba(0, 0, 0, 0.12)",
+								border: `1px solid ${tokens.menuBorder}`,
+								bgcolor: tokens.menuBg,
+								maxHeight: 380,
+								py: 0.5,
+								"& .MuiList-root": { py: 0 },
+								"& .MuiMenuItem-root": {
+									py: 1.5,
+									px: 2,
+									minHeight: 52,
+									borderRadius: 1,
+									mx: 0.5,
+									color: tokens.itemText,
+									"&:hover": { bgcolor: tokens.itemHover },
+									"&.Mui-selected": {
+										bgcolor: tokens.selectedBg,
+										color: tokens.selectedText,
+										fontWeight: 600,
+										"&:hover": { bgcolor: isDarkMode ? `${primaryMain}28` : `${primaryMain}18` },
+									},
+								},
+							},
+						},
+						MenuListProps: { disablePadding: true },
+					}}
+				>
+					<MenuItem value="global">
+						<Stack direction="row" spacing={1.5} sx={{ alignItems: "center", width: "100%" }}>
+							<Box
+								sx={{
+									width: 36,
+									height: 36,
+									borderRadius: 1.25,
+									bgcolor: isGlobalView ? `${primaryMain}22` : (isDarkMode ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.06)"),
+									display: "flex",
+									alignItems: "center",
+									justifyContent: "center",
+								}}
+							>
+								<GlobeIcon fontSize="1.2rem" weight="fill" style={{ color: isGlobalView ? primaryMain : tokens.chevron }} />
+							</Box>
+							<Typography variant="body1" sx={{ fontWeight: isGlobalView ? 600 : 500, color: "inherit", fontSize: "0.9375rem" }}>
+								Portefeuille Global
+							</Typography>
+						</Stack>
+					</MenuItem>
+					{portfolios.map((portfolio) => {
+						const selected = currentPortfolio?.id === portfolio.id;
+						return (
+							<MenuItem key={portfolio.id} value={portfolio.id}>
+								<Stack direction="row" spacing={1.5} sx={{ alignItems: "center", width: "100%" }}>
+									<Box
+										sx={{
+											width: 36,
+											height: 36,
+											borderRadius: 1.25,
+											bgcolor: selected ? `${primaryMain}22` : (isDarkMode ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.06)"),
+											display: "flex",
+											alignItems: "center",
+											justifyContent: "center",
+										}}
+									>
+										<WalletIcon fontSize="1.2rem" weight="fill" style={{ color: selected ? primaryMain : tokens.chevron }} />
+									</Box>
+									<Stack direction="row" spacing={1} sx={{ alignItems: "center", flex: 1, minWidth: 0 }}>
+										<Typography variant="body1" sx={{ fontWeight: selected ? 600 : 500, color: "inherit", fontSize: "0.9375rem" }} noWrap>
+											{portfolio.name}
+										</Typography>
+										{portfolio.isDefault && (
+											<Typography
+												component="span"
+												variant="caption"
+												sx={{
+													px: 1,
+													py: 0.25,
+													borderRadius: 1,
+													bgcolor: isDarkMode ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.06)",
+													color: tokens.badge,
+													fontSize: "0.7rem",
+													fontWeight: 500,
+												}}
+											>
+												Défaut
+											</Typography>
+										)}
+									</Stack>
+								</Stack>
+							</MenuItem>
+						);
+					})}
+				</Select>
+			</FormControl>
+		</Box>
+	);
+}
 
 export default function Page(): React.JSX.Element {
 	const router = useRouter();
@@ -358,8 +620,7 @@ export default function Page(): React.JSX.Element {
 
 	// Memoize handlers to prevent unnecessary re-renders
 	const handlePortfolioChange = React.useCallback(
-		(e: SelectChangeEvent<string>) => {
-			const value = e.target.value;
+		(value: string) => {
 			if (value === "global") {
 				setIsGlobalView(true);
 			} else {
@@ -409,20 +670,12 @@ export default function Page(): React.JSX.Element {
 			<Stack spacing={{ xs: 2, sm: 3, md: 4 }}>
 				{/* Header */}
 				{portfolios.length > 0 && transactions.length > 0 && (
-					<Stack direction={{ xs: "column", sm: "row" }} spacing={{ xs: 2, sm: 3 }} sx={{ alignItems: "flex-start" }}>
-						<Box sx={{ flex: "1 1 auto", width: { xs: "100%", sm: "auto" } }} />
-						<FormControl size="small" sx={{ minWidth: { xs: "100%", sm: 200 }, width: { xs: "100%", sm: "auto" } }}>
-							<Select value={isGlobalView ? "global" : currentPortfolio?.id || ""} onChange={handlePortfolioChange}>
-								<MenuItem value="global">🌐 Portefeuille Global</MenuItem>
-								{portfolios.map((portfolio) => (
-									<MenuItem key={portfolio.id} value={portfolio.id}>
-										{portfolio.name}
-										{portfolio.isDefault && " (par défaut)"}
-									</MenuItem>
-								))}
-							</Select>
-						</FormControl>
-					</Stack>
+					<WalletFilterSelector
+						portfolios={portfolios}
+						isGlobalView={isGlobalView}
+						currentPortfolio={currentPortfolio}
+						onPortfolioChange={handlePortfolioChange}
+					/>
 				)}
 
 				{/* Empty State */}

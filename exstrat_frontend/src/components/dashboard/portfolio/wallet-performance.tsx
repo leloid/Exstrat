@@ -4,7 +4,6 @@ import * as React from "react";
 import Box from "@mui/material/Box";
 import Card from "@mui/material/Card";
 import CardContent from "@mui/material/CardContent";
-import CardHeader from "@mui/material/CardHeader";
 import Paper from "@mui/material/Paper";
 import Stack from "@mui/material/Stack";
 import ToggleButton from "@mui/material/ToggleButton";
@@ -82,6 +81,37 @@ export function WalletPerformance({ portfolios, transactions, portfolioData, sel
 	const chartHeight = isMobile ? 250 : isTablet ? 280 : 300;
 	const [walletPerformanceView, setWalletPerformanceView] = React.useState<"global" | "byWallet">("global");
 	const [timePeriod, setTimePeriod] = React.useState<TimePeriod>("ALL");
+	
+	// Design tokens: contrast fort en dark pour lisibilité (blanc / gris clair sur fond sombre)
+	const isDarkMode = theme.palette.mode === "dark";
+	const tokens = {
+		// Header — texte blanc pur, date gris très lisible
+		headerBg: isDarkMode ? "rgba(255, 255, 255, 0.07)" : "rgba(0, 0, 0, 0.03)",
+		headerBorder: isDarkMode ? "rgba(255, 255, 255, 0.12)" : "rgba(0, 0, 0, 0.06)",
+		title: isDarkMode ? "#FFFFFF" : "#0F172A",
+		date: isDarkMode ? "#B8C4CE" : "#64748B",
+		value: isDarkMode ? "#FFFFFF" : "#0F172A",
+		// Filtres / boutons — texte blanc, bordures visibles
+		btnText: isDarkMode ? "#FFFFFF" : "#475569",
+		btnBorder: isDarkMode ? "rgba(255, 255, 255, 0.3)" : "rgba(0, 0, 0, 0.12)",
+		btnBgHover: isDarkMode ? "rgba(255, 255, 255, 0.1)" : "rgba(0, 0, 0, 0.04)",
+		// Cartes wallet (Top Wallets)
+		cardBg: isDarkMode ? "rgba(255, 255, 255, 0.06)" : "#FFFFFF",
+		cardBorder: isDarkMode ? "rgba(255, 255, 255, 0.15)" : "rgba(0, 0, 0, 0.08)",
+		cardLabel: isDarkMode ? "#E2E8F0" : "#334155",
+		cardValue: isDarkMode ? "#FFFFFF" : "#0F172A",
+		// Chart — axes et labels bien visibles
+		axis: isDarkMode ? "#E2E8F0" : "#64748B",
+		grid: isDarkMode ? "rgba(255, 255, 255, 0.12)" : "rgba(0, 0, 0, 0.06)",
+		tooltipBg: isDarkMode ? "#1E293B" : "#F8FAFC",
+		tooltipTitle: isDarkMode ? "#B8C4CE" : "#64748B",
+		tooltipBody: isDarkMode ? "#FFFFFF" : "#0F172A",
+		// Card container
+		cardOuterBorder: isDarkMode ? "rgba(255, 255, 255, 0.15)" : "rgba(0, 0, 0, 0.08)",
+		bodyBg: "transparent",
+	};
+	const primaryMain = theme.palette.primary.main;
+	const actionHover = theme.palette.action.hover;
 
 	// Determine which portfolio to use (selected or global)
 	const activePortfolioData = React.useMemo(() => {
@@ -579,14 +609,21 @@ export function WalletPerformance({ portfolios, transactions, portfolioData, sel
 				{
 					label: "Total Value",
 					data: values,
-					borderColor: "#FFB800",
+					borderColor: isDarkMode ? "#FFD700" : "#FFB800", // Plus clair en mode dark
 					backgroundColor: (context: any) => {
 						const ctx = context.chart.ctx;
 						const gradient = ctx.createLinearGradient(0, 0, 0, 400);
-						gradient.addColorStop(0, "rgba(255, 184, 0, 0.4)");
-						gradient.addColorStop(0.3, "rgba(255, 184, 0, 0.25)");
-						gradient.addColorStop(0.6, "rgba(255, 184, 0, 0.15)");
-						gradient.addColorStop(1, "rgba(255, 184, 0, 0)");
+						if (isDarkMode) {
+							gradient.addColorStop(0, "rgba(255, 215, 0, 0.5)");
+							gradient.addColorStop(0.3, "rgba(255, 215, 0, 0.3)");
+							gradient.addColorStop(0.6, "rgba(255, 215, 0, 0.2)");
+							gradient.addColorStop(1, "rgba(255, 215, 0, 0)");
+						} else {
+							gradient.addColorStop(0, "rgba(255, 184, 0, 0.4)");
+							gradient.addColorStop(0.3, "rgba(255, 184, 0, 0.25)");
+							gradient.addColorStop(0.6, "rgba(255, 184, 0, 0.15)");
+							gradient.addColorStop(1, "rgba(255, 184, 0, 0)");
+						}
 						return gradient;
 					},
 					borderWidth: 3,
@@ -595,161 +632,171 @@ export function WalletPerformance({ portfolios, transactions, portfolioData, sel
 					pointRadius: 0,
 					pointHoverRadius: 8,
 					pointHoverBorderWidth: 4,
-					pointHoverBorderColor: "#FFFFFF",
-					pointHoverBackgroundColor: "#FFB800",
+					pointHoverBorderColor: isDarkMode ? "#1A1A1A" : "#FFFFFF",
+					pointHoverBackgroundColor: isDarkMode ? "#FFD700" : "#FFB800",
 					pointHoverShadowBlur: 12,
-					pointHoverShadowColor: "rgba(255, 184, 0, 0.5)",
+					pointHoverShadowColor: isDarkMode ? "rgba(255, 215, 0, 0.6)" : "rgba(255, 184, 0, 0.5)",
 				},
 			],
 			yAxisMin: Math.max(0, minValue - margin),
 			yAxisMax: maxValue + margin,
 			maxTicksLimit,
 		};
-	}, [portfolioPerformanceData]);
+	}, [portfolioPerformanceData, isDarkMode]);
 
 	// No animation - instant display
 
 	return (
-		<Card sx={{ 
-			height: "100%", 
-			minHeight: { xs: "500px", sm: "550px", md: "600px" }, 
-			display: "flex", 
-			flexDirection: "column",
-			boxShadow: "0 1px 3px rgba(0, 0, 0, 0.08)",
-			border: "1px solid rgba(0, 0, 0, 0.06)",
-			borderRadius: 3
-		}}>
-			<CardContent sx={{ flex: "1 1 auto", display: "flex", flexDirection: "column", p: 4 }}>
-				{/* Professional Header with Title, Date, and Current Value */}
-				<Stack spacing={3} sx={{ mb: 4 }}>
-					<Stack direction="row" spacing={3} sx={{ alignItems: "flex-start", justifyContent: "space-between", flexWrap: "wrap" }}>
-						<Stack spacing={1}>
-							<Typography 
-								variant="h5" 
-								sx={{ 
-									fontWeight: 700, 
-									color: "#111827", 
-									fontSize: "1.5rem",
-									letterSpacing: "-0.02em",
-									lineHeight: 1.2
-								}}
-							>
-								{displayTitle}
-							</Typography>
-							<Typography 
-								variant="body2" 
-								sx={{ 
-									color: "#6B7280", 
-									fontSize: "0.875rem",
-									fontWeight: 500
-								}}
-							>
-								{currentDate}
-							</Typography>
-						</Stack>
-						{activePortfolioData && (
-							<Stack spacing={0.5} sx={{ alignItems: "flex-end" }}>
-								<Typography 
-									variant="h3" 
-									sx={{ 
-										fontWeight: 800, 
-										color: "#111827", 
-										lineHeight: 1.1,
-										fontSize: { xs: "1.75rem", sm: "2rem", md: "2.25rem" },
-										letterSpacing: "-0.03em"
-									}}
-								>
-									{formatCompactCurrency(activePortfolioData.value, "$", 0, secretMode)}
-								</Typography>
-							</Stack>
-						)}
+		<Card
+			elevation={0}
+			sx={{
+				height: "100%",
+				minHeight: { xs: "500px", sm: "550px", md: "600px" },
+				display: "flex",
+				flexDirection: "column",
+				borderRadius: 2,
+				border: `1px solid ${tokens.cardOuterBorder}`,
+				overflow: "hidden",
+				bgcolor: tokens.bodyBg,
+			}}
+		>
+			{/* Header bar: fond dédié pour contraste garanti dark/light */}
+			<Box
+				sx={{
+					px: 3,
+					py: 2.5,
+					bgcolor: tokens.headerBg,
+					borderBottom: `1px solid ${tokens.headerBorder}`,
+				}}
+			>
+				<Stack direction="row" spacing={2} sx={{ alignItems: "flex-start", justifyContent: "space-between", flexWrap: "wrap", gap: 2 }}>
+					<Stack spacing={0.5}>
+						<Typography
+							variant="h5"
+							sx={{
+								fontWeight: 700,
+								color: tokens.title,
+								fontSize: "1.35rem",
+								letterSpacing: "-0.02em",
+								lineHeight: 1.2,
+							}}
+						>
+							{displayTitle}
+						</Typography>
+						<Typography variant="body2" sx={{ color: tokens.date, fontSize: "0.8125rem", fontWeight: 500 }}>
+							{currentDate}
+						</Typography>
 					</Stack>
-					{/* Professional Time Period Selector and View Toggle */}
-					<Stack direction="row" spacing={2} sx={{ alignItems: "center", justifyContent: "space-between", flexWrap: "wrap" }}>
-						<ButtonGroup 
-							size="small" 
-							variant="outlined" 
-							sx={{ 
-								borderRadius: 2,
-								border: "1px solid rgba(0, 0, 0, 0.08)",
-								"& .MuiButton-root": {
-									borderRadius: 2,
-									px: 2.5,
-									py: 0.875,
-									fontSize: "0.8125rem",
-									fontWeight: 600,
-									textTransform: "none",
-									minWidth: "auto",
-									borderColor: "rgba(0, 0, 0, 0.08)",
-									color: "#6B7280",
+					{activePortfolioData && (
+						<Typography
+							variant="h4"
+							sx={{
+								fontWeight: 800,
+								color: tokens.value,
+								fontSize: { xs: "1.75rem", sm: "2rem", md: "2.25rem" },
+								letterSpacing: "-0.03em",
+								lineHeight: 1.1,
+							}}
+						>
+							{formatCompactCurrency(activePortfolioData.value, "$", 0, secretMode)}
+						</Typography>
+					)}
+				</Stack>
+			</Box>
+			<CardContent sx={{ flex: "1 1 auto", display: "flex", flexDirection: "column", p: 3, pt: 3 }}>
+				{/* Filtres période + vue Global / Top Wallets */}
+				<Stack direction="row" spacing={2} sx={{ alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", mb: 3 }}>
+					<ButtonGroup
+						size="small"
+						variant="outlined"
+						sx={{
+							borderRadius: 1.5,
+							border: `1px solid ${tokens.btnBorder}`,
+							"& .MuiButton-root": {
+								borderRadius: 1.5,
+								px: 2,
+								py: 0.75,
+								fontSize: "0.8125rem",
+								fontWeight: 600,
+								textTransform: "none",
+								minWidth: "auto",
+								borderColor: tokens.btnBorder,
+								color: tokens.btnText,
+								backgroundColor: "transparent",
+								"&:hover": {
+									borderColor: primaryMain,
+									backgroundColor: tokens.btnBgHover,
+									color: primaryMain,
+								},
+								"&.MuiButton-contained": {
+									backgroundColor: primaryMain,
+									color: theme.palette.primary.contrastText,
+									borderColor: primaryMain,
 									"&:hover": {
-										borderColor: "rgba(0, 0, 0, 0.12)",
-										backgroundColor: "rgba(0, 0, 0, 0.02)",
+										backgroundColor: theme.palette.primary.dark,
+										borderColor: theme.palette.primary.dark,
 									},
-									"&.MuiButton-contained": {
-										backgroundColor: "#111827",
-										color: "#FFFFFF",
-										borderColor: "#111827",
-										boxShadow: "0 2px 4px rgba(0, 0, 0, 0.1)",
-										"&:hover": {
-											backgroundColor: "#1F2937",
-											borderColor: "#1F2937",
-										},
+								},
+							},
+						}}
+					>
+						{(["1D", "7D", "1M", "3M", "YTD", "1Y", "ALL"] as TimePeriod[]).map((period) => (
+							<Button
+								key={period}
+								onClick={() => setTimePeriod(period)}
+								variant={timePeriod === period ? "contained" : "outlined"}
+							>
+								{period}
+							</Button>
+						))}
+					</ButtonGroup>
+					{!selectedPortfolioId && (
+						<ToggleButtonGroup
+							color="primary"
+							exclusive
+							onChange={(_, value) => {
+								if (value !== null) setWalletPerformanceView(value);
+							}}
+							size="small"
+							value={walletPerformanceView}
+							sx={{
+								border: `1px solid ${tokens.btnBorder}`,
+								borderRadius: 1.5,
+								"& .MuiToggleButton-root": {
+									px: 2,
+									py: 0.75,
+									fontSize: "0.8125rem",
+									textTransform: "none",
+									borderRadius: 1.5,
+									color: tokens.btnText,
+									borderColor: tokens.btnBorder,
+									"&.Mui-selected": {
+										backgroundColor: primaryMain,
+										color: theme.palette.primary.contrastText,
+										"&:hover": { backgroundColor: theme.palette.primary.dark },
 									},
+									"&:hover": { backgroundColor: tokens.btnBgHover },
 								},
 							}}
 						>
-							{(["1D", "7D", "1M", "3M", "YTD", "1Y", "ALL"] as TimePeriod[]).map((period) => (
-								<Button
-									key={period}
-									onClick={() => setTimePeriod(period)}
-									variant={timePeriod === period ? "contained" : "outlined"}
-								>
-									{period}
-								</Button>
-							))}
-						</ButtonGroup>
-						{/* Global/Top Wallets Toggle (only in global mode) */}
-						{!selectedPortfolioId && (
-							<ToggleButtonGroup
-								color="primary"
-								exclusive
-								onChange={(_, value) => {
-									if (value !== null) {
-										setWalletPerformanceView(value);
-									}
-								}}
-								size="small"
-								value={walletPerformanceView}
-								sx={{
-									"& .MuiToggleButton-root": {
-										px: 2,
-										py: 0.75,
-										fontSize: "0.8125rem",
-										textTransform: "none",
-										borderRadius: 1,
-									},
-								}}
-							>
-								<ToggleButton value="global">
-									<Stack direction="row" spacing={0.5} sx={{ alignItems: "center" }}>
-										<GlobeIcon fontSize="var(--icon-fontSize-md)" />
-										<Typography variant="body2">Global</Typography>
-									</Stack>
-								</ToggleButton>
-								<ToggleButton value="byWallet">
-									<Stack direction="row" spacing={0.5} sx={{ alignItems: "center" }}>
-										<ChartLineIcon fontSize="var(--icon-fontSize-md)" />
-										<Typography variant="body2">Top Wallets</Typography>
-									</Stack>
-								</ToggleButton>
-							</ToggleButtonGroup>
-						)}
-					</Stack>
+							<ToggleButton value="global">
+								<Stack direction="row" spacing={0.5} sx={{ alignItems: "center", color: "inherit" }}>
+									<GlobeIcon fontSize="var(--icon-fontSize-md)" />
+									<Typography variant="body2" sx={{ color: "inherit", fontWeight: 600 }}>Global</Typography>
+								</Stack>
+							</ToggleButton>
+							<ToggleButton value="byWallet">
+								<Stack direction="row" spacing={0.5} sx={{ alignItems: "center", color: "inherit" }}>
+									<ChartLineIcon fontSize="var(--icon-fontSize-md)" />
+									<Typography variant="body2" sx={{ color: "inherit", fontWeight: 600 }}>Top Wallets</Typography>
+								</Stack>
+							</ToggleButton>
+						</ToggleButtonGroup>
+					)}
 				</Stack>
 				{secretMode ? (
 					<Box sx={{ height: { xs: "200px", sm: "240px" }, display: "flex", alignItems: "center", justifyContent: "center" }}>
-						<Typography color="text.secondary" variant="h6">
+						<Typography variant="h6" sx={{ color: tokens.date }}>
 							Secret mode activé
 						</Typography>
 					</Box>
@@ -761,71 +808,71 @@ export function WalletPerformance({ portfolios, transactions, portfolioData, sel
 								{walletPerformanceByWalletData.wallets.length > 0 && (
 									<Stack direction="row" spacing={2} sx={{ flexWrap: "wrap", justifyContent: "center", gap: 2 }}>
 										{walletPerformanceByWalletData.wallets.map((wallet, index) => {
-											const colors = [
-												"var(--mui-palette-primary-main)",
-												"var(--mui-palette-secondary-main)",
-												"var(--mui-palette-success-main)",
+											const accentColors = [
+												theme.palette.primary.main,
+												theme.palette.secondary.main,
+												theme.palette.success.main,
 											];
-											const color = colors[index % colors.length];
+											const accent = accentColors[index % accentColors.length];
 											return (
-												<Card 
-													key={wallet.id} 
-													variant="outlined"
-													sx={{ 
+												<Card
+													key={wallet.id}
+													elevation={0}
+													sx={{
 														minWidth: "200px",
 														flex: "1 1 auto",
-														borderLeft: `4px solid ${color}`,
+														bgcolor: tokens.cardBg,
+														border: `1px solid ${tokens.cardBorder}`,
+														borderLeft: `4px solid ${accent}`,
+														borderRadius: 1.5,
 														position: "relative",
 													}}
 												>
 													<Box
 														sx={{
 															position: "absolute",
-															top: 8,
-															right: 8,
-															bgcolor: color,
-															color: "white",
+															top: 10,
+															right: 10,
+															bgcolor: accent,
+															color: "#fff",
 															borderRadius: "50%",
-															width: 24,
-															height: 24,
+															width: 22,
+															height: 22,
 															display: "flex",
 															alignItems: "center",
 															justifyContent: "center",
 															fontWeight: 700,
-															fontSize: "0.75rem",
+															fontSize: "0.7rem",
 														}}
 													>
 														{index + 1}
 													</Box>
 													<CardContent sx={{ p: 2, "&:last-child": { pb: 2 } }}>
-														<Stack spacing={1}>
+														<Stack spacing={1.5}>
 															<Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
-																<Box
-																	sx={{
-																		bgcolor: color,
-																		borderRadius: "4px",
-																		height: "12px",
-																		width: "12px",
-																	}}
-																/>
-																<Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
+																<Box sx={{ bgcolor: accent, borderRadius: "4px", height: 10, width: 10 }} />
+																<Typography variant="subtitle2" sx={{ fontWeight: 600, color: tokens.cardLabel }}>
 																	{wallet.name}
 																</Typography>
 															</Stack>
-															<Typography variant="h6" sx={{ fontWeight: 600 }}>
+															<Typography variant="h6" sx={{ fontWeight: 700, color: tokens.cardValue, fontSize: "1.125rem" }}>
 																{formatCompactCurrency(wallet.value, "$", 2, secretMode)}
 															</Typography>
-															<Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
-																<Typography 
-																	color={wallet.pnl >= 0 ? "success.main" : "error.main"}
+															<Stack direction="row" spacing={1} sx={{ alignItems: "center", flexWrap: "wrap" }}>
+																<Typography
 																	variant="body2"
-																	sx={{ fontWeight: 600 }}
+																	sx={{
+																		fontWeight: 600,
+																		color: wallet.pnl >= 0 ? (isDarkMode ? "#4ADE80" : "#16A34A") : (isDarkMode ? "#F87171" : "#DC2626"),
+																	}}
 																>
 																	{formatCompactCurrency(wallet.pnl, "$", 2, secretMode)}
 																</Typography>
-																<Typography 
-																	color={wallet.pnlPercentage >= 0 ? "success.main" : "error.main"}
+																<Typography
 																	variant="caption"
+																	sx={{
+																		color: wallet.pnlPercentage >= 0 ? (isDarkMode ? "#4ADE80" : "#16A34A") : (isDarkMode ? "#F87171" : "#DC2626"),
+																	}}
 																>
 																	({formatPercentage(wallet.pnlPercentage, 2)})
 																</Typography>
@@ -845,7 +892,11 @@ export function WalletPerformance({ portfolios, transactions, portfolioData, sel
 													labels: walletPerformanceByWalletData.data.map(d => d.name),
 													datasets: walletPerformanceByWalletData.wallets.map((wallet, index) => {
 												const walletKey = wallet.name.replace(/\s+/g, "_");
-														const colors = ["#1976d2", "#9c27b0", "#2e7d32"];
+														const colors = [
+															theme.palette.primary.main,
+															theme.palette.secondary.main,
+															theme.palette.success.main,
+														];
 												const color = colors[index % colors.length];
 														return {
 															label: wallet.name,
@@ -872,32 +923,27 @@ export function WalletPerformance({ portfolios, transactions, portfolioData, sel
 														legend: {
 															display: false,
 														},
-														tooltip: {
-															backgroundColor: "rgba(255, 255, 255, 0.98)",
-															titleColor: "#6B7280",
-															bodyColor: "#111827",
-															borderColor: "rgba(0, 0, 0, 0.08)",
-															borderWidth: 1,
-															padding: 12,
-														},
+													tooltip: {
+														backgroundColor: tokens.tooltipBg,
+														titleColor: tokens.tooltipTitle,
+														bodyColor: tokens.tooltipBody,
+														borderColor: tokens.cardBorder,
+														borderWidth: 1,
+														padding: 12,
+														cornerRadius: 8,
+													},
 													},
 													scales: {
 														x: {
 															grid: { display: false },
-															ticks: {
-																font: { size: 11 },
-																color: "#6B7280",
-															},
+															ticks: { font: { size: 11 }, color: tokens.axis },
 															border: { display: false },
 														},
 														y: {
-															grid: {
-																color: "rgba(0, 0, 0, 0.06)",
-																lineWidth: 1,
-															},
+															grid: { color: tokens.grid, lineWidth: 1 },
 															ticks: {
 																font: { size: 11 },
-																color: "#6B7280",
+																color: tokens.axis,
 																callback: function(value) {
 																	const numValue = typeof value === "number" ? value : Number(value);
 																	return formatCompactCurrency(numValue, "$", 0).replace("$", "");
@@ -910,7 +956,7 @@ export function WalletPerformance({ portfolios, transactions, portfolioData, sel
 											/>
 										) : (
 											<Box sx={{ height: "100%", display: "flex", alignItems: "center", justifyContent: "center" }}>
-												<Typography color="text.secondary">No data available</Typography>
+												<Typography sx={{ color: tokens.date }}>No data available</Typography>
 											</Box>
 										)}
 								</NoSsr>
@@ -935,25 +981,17 @@ export function WalletPerformance({ portfolios, transactions, portfolioData, sel
 														display: false,
 													},
 													tooltip: {
-														backgroundColor: "rgba(255, 255, 255, 0.98)",
-														titleColor: "#6B7280",
-														bodyColor: "#111827",
-														borderColor: "rgba(0, 0, 0, 0.12)",
+														backgroundColor: tokens.tooltipBg,
+														titleColor: tokens.tooltipTitle,
+														bodyColor: tokens.tooltipBody,
+														borderColor: tokens.cardBorder,
 														borderWidth: 1.5,
 														padding: 16,
 														boxPadding: 8,
 														cornerRadius: 8,
 														displayColors: true,
-														titleFont: {
-															size: 11,
-															weight: "normal",
-															family: "system-ui, -apple-system, sans-serif",
-														},
-														bodyFont: {
-															size: 15,
-															weight: "bold",
-															family: "system-ui, -apple-system, sans-serif",
-														},
+														titleFont: { size: 11, weight: "normal", family: "system-ui, -apple-system, sans-serif" },
+														bodyFont: { size: 15, weight: "bold", family: "system-ui, -apple-system, sans-serif" },
 														titleSpacing: 4,
 														bodySpacing: 6,
 														callbacks: {
@@ -966,39 +1004,24 @@ export function WalletPerformance({ portfolios, transactions, portfolioData, sel
 												},
 												scales: {
 													x: {
-														grid: {
-															display: false,
-														},
+														grid: { display: false },
 														ticks: {
-															font: {
-																size: 12,
-																family: "system-ui, -apple-system, sans-serif",
-																weight: "normal",
-															},
-															color: "#6B7280",
+															font: { size: 12, family: "system-ui, -apple-system, sans-serif", weight: "normal" },
+															color: tokens.axis,
 															padding: 8,
 															maxRotation: 0,
-															autoSkip: chartData.maxTicksLimit !== undefined, // Auto-skip only for long periods
-															maxTicksLimit: chartData.maxTicksLimit, // Limit ticks for long periods
+															autoSkip: chartData.maxTicksLimit !== undefined,
+															maxTicksLimit: chartData.maxTicksLimit,
 														},
-														border: {
-															display: false,
-														},
+														border: { display: false },
 													},
 													y: {
 														min: chartData.yAxisMin,
 														max: chartData.yAxisMax,
-														grid: {
-															color: "rgba(0, 0, 0, 0.05)",
-															lineWidth: 1,
-														},
+														grid: { color: tokens.grid, lineWidth: 1 },
 														ticks: {
-															font: {
-																size: 12,
-																family: "system-ui, -apple-system, sans-serif",
-																weight: "normal",
-															},
-															color: "#6B7280",
+															font: { size: 12, family: "system-ui, -apple-system, sans-serif", weight: "normal" },
+															color: tokens.axis,
 															padding: 10,
 															callback: function(value) {
 																const numValue = typeof value === "number" ? value : Number(value);
@@ -1007,16 +1030,14 @@ export function WalletPerformance({ portfolios, transactions, portfolioData, sel
 																return `$${numValue.toFixed(0)}`;
 															},
 														},
-														border: {
-															display: false,
-														},
+														border: { display: false },
 													},
 												},
 											}}
 										/>
 									) : (
 										<Box sx={{ height: "100%", display: "flex", alignItems: "center", justifyContent: "center" }}>
-											<Typography color="text.secondary">No data available</Typography>
+											<Typography sx={{ color: tokens.date }}>No data available</Typography>
 										</Box>
 									)}
 								</NoSsr>
@@ -1037,6 +1058,8 @@ interface PerformanceTooltipContentProps {
 
 function PerformanceTooltipContent({ active, payload, label }: PerformanceTooltipContentProps): React.JSX.Element | null {
 	const { secretMode } = useSecretMode();
+	const theme = useTheme();
+	const isDarkMode = theme.palette.mode === "dark";
 	
 	if (!active || !payload || payload.length === 0) {
 		return null;
@@ -1047,11 +1070,13 @@ function PerformanceTooltipContent({ active, payload, label }: PerformanceToolti
 	return (
 		<Paper 
 			sx={{ 
-				border: "1px solid rgba(0, 0, 0, 0.08)", 
-				boxShadow: "0 4px 20px rgba(0, 0, 0, 0.15)", 
+				border: `1px solid ${theme.palette.divider}`, 
+				boxShadow: isDarkMode 
+					? "0 4px 20px rgba(0, 0, 0, 0.5)" 
+					: "0 4px 20px rgba(0, 0, 0, 0.15)", 
 				p: 2,
 				borderRadius: 2,
-				backgroundColor: "rgba(255, 255, 255, 0.98)",
+				backgroundColor: theme.palette.background.paper,
 				backdropFilter: "blur(10px)",
 				minWidth: 160
 			}}
@@ -1061,7 +1086,7 @@ function PerformanceTooltipContent({ active, payload, label }: PerformanceToolti
 					<Typography 
 						variant="caption" 
 						sx={{ 
-							color: "#6B7280", 
+							color: theme.palette.text.secondary, 
 							fontSize: "0.75rem",
 							fontWeight: 500,
 							textTransform: "uppercase",
@@ -1074,18 +1099,20 @@ function PerformanceTooltipContent({ active, payload, label }: PerformanceToolti
 				<Stack direction="row" spacing={2} sx={{ alignItems: "center" }}>
 						<Box
 							sx={{
-							bgcolor: "#FFB800",
+							bgcolor: isDarkMode ? "#FFD700" : "#FFB800",
 							borderRadius: "4px",
 							height: "12px",
 							width: "12px",
-							boxShadow: "0 2px 4px rgba(255, 184, 0, 0.3)"
+							boxShadow: isDarkMode 
+								? "0 2px 4px rgba(255, 215, 0, 0.4)" 
+								: "0 2px 4px rgba(255, 184, 0, 0.3)"
 							}}
 						/>
 					<Stack spacing={0.5} sx={{ flex: "1 1 auto" }}>
 						<Typography 
 							variant="caption" 
 							sx={{ 
-								color: "#9CA3AF", 
+								color: theme.palette.text.secondary, 
 								fontSize: "0.75rem",
 								fontWeight: 500
 							}}
@@ -1095,7 +1122,7 @@ function PerformanceTooltipContent({ active, payload, label }: PerformanceToolti
 						<Typography 
 							variant="body1" 
 							sx={{ 
-								color: "#111827", 
+								color: theme.palette.text.primary, 
 								fontSize: "1rem",
 								fontWeight: 700,
 								letterSpacing: "-0.02em"
