@@ -353,15 +353,17 @@ model StrategyAlert {
 }
 
 model StepAlert {
-  id                String       @id @default(cuid())
-  stepId            String       @unique
-  strategyId        String
-  beforeTPEnabled   Boolean      @default(true) // Alert before reached
-  beforeTPPercentage Float?      // Percentage before TP (e.g., 2 for 2%)
-  tpReachedEnabled  Boolean      @default(true) // Alert when reaching
-  createdAt         DateTime     @default(now())
-  updatedAt         DateTime     @updatedAt
-  step              StrategyStep @relation(fields: [stepId], references: [id], onDelete: Cascade)
+  id                    String       @id @default(cuid())
+  stepId                String       @unique
+  strategyId            String
+  beforeTPEnabled       Boolean      @default(true) // Alert before reached
+  beforeTPPercentage    Float?       // Percentage before TP (e.g., 2 for 2%)
+  tpReachedEnabled      Boolean      @default(true) // Alert when reaching
+  beforeTPEmailSentAt   DateTime?    // Date d'envoi de l'email "before TP"
+  tpReachedEmailSentAt  DateTime?    // Date d'envoi de l'email "TP reached"
+  createdAt             DateTime     @default(now())
+  updatedAt             DateTime     @updatedAt
+  step                  StrategyStep @relation(fields: [stepId], references: [id], onDelete: Cascade)
 
   @@index([stepId])
   @@index([strategyId])

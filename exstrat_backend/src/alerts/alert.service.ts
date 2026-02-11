@@ -27,66 +27,11 @@ export class AlertService {
 
   /**
    * Vérifie les alertes pour un token donné
+   * Utilise uniquement StepAlert et StrategyAlert (nouveau système)
    * @param cmcId CoinMarketCap ID du token
    * @param currentPrice Prix actuel du token
    */
   async checkAlertsForToken(cmcId: number, currentPrice: number): Promise<void> {
-    try {
-      // 1. Récupérer toutes les stratégies avec ce token qui ont des steps pending
-      const strategies = await this.getStrategiesWithToken(cmcId);
-
-      for (const strategy of strategies) {
-        // Récupérer les steps pending de cette stratégie
-        const pendingSteps = await this.prisma.strategyStep.findMany({
-          where: {
-            strategyId: strategy.id,
-            state: 'pending',
-          },
-        });
-
-        for (const step of pendingSteps) {
-          const targetPrice = Number(step.targetPrice);
-
-          // Vérifier si le target price est atteint
-          if (this.isTargetReached(currentPrice, targetPrice, step.targetType)) {
-            // Vérifier le lock pour éviter les doublons
-            const lockKey = `alert:lock:${strategy.userId}:${strategy.id}:${step.id}`;
-            const acquired = await this.acquireLock(lockKey);
-
-            if (acquired) {
-              this.logger.log(
-                `Target price reached for strategy ${strategy.id}, step ${step.id}: $${currentPrice} >= $${targetPrice}`,
-              );
-
-              // Ajouter à la queue d'email
-              await this.emailQueue.add('send-alert', {
-                userId: strategy.userId,
-                strategyId: strategy.id,
-                stepId: step.id,
-                tokenSymbol: strategy.asset,
-                currentPrice,
-                targetPrice,
-                stepOrder: step.targetPct.toString(),
-              });
-            } else {
-              this.logger.debug(`Lock already exists for ${lockKey}, skipping`);
-            }
-          }
-        }
-      }
-
-      // 2. Vérifier les TPAlerts
-      await this.checkTPAlerts(cmcId, currentPrice);
-    } catch (error) {
-      this.logger.error(`Error checking alerts for token ${cmcId}:`, error);
-      throw error;
-    }
-  }
-
-  /**
-   * Vérifie les TPAlerts pour un token
-   */
-  private async checkTPAlerts(cmcId: number, currentPrice: number): Promise<void> {
     try {
       // Récupérer le token depuis la table Token
       const token = await this.prisma.token.findFirst({
@@ -102,18 +47,19 @@ export class AlertService {
         return;
       }
 
-      // Récupérer les StepAlerts actives pour ce token via les StrategySteps
-      // TODO: Mettre à jour cette logique pour utiliser StrategyAlert et StepAlert
-      // Pour l'instant, on récupère les steps des stratégies actives qui ont des alertes activées
+      // Récupérer toutes les StepAlerts actives pour ce token
       const stepAlerts = await this.prisma.stepAlert.findMany({
         where: {
-          tpReachedEnabled: true,
           step: {
             strategy: {
               asset: token.symbol,
               status: 'active',
               strategyAlert: {
-          isActive: true,
+                isActive: true,
+                notificationChannels: {
+                  path: ['email'],
+                  equals: true,
+                },
               },
             },
           },
@@ -124,6 +70,11 @@ export class AlertService {
               strategy: {
                 include: {
                   strategyAlert: true,
+                  steps: {
+                    orderBy: {
+                      targetPrice: 'asc',
+                    },
+                  },
                 },
               },
             },
@@ -133,70 +84,81 @@ export class AlertService {
 
       for (const stepAlert of stepAlerts) {
         const targetPrice = Number(stepAlert.step.targetPrice);
+        const step = stepAlert.step;
+        const strategy = step.strategy;
 
-        // Vérifier si le TP est atteint
-        if (currentPrice >= targetPrice) {
-          const lockKey = `alert:lock:step:${stepAlert.step.strategy.userId}:${stepAlert.id}`;
-          const acquired = await this.acquireLock(lockKey);
+        // Vérifier si l'email est activé dans les canaux de notification
+        const notificationChannels = strategy.strategyAlert?.notificationChannels as { email?: boolean } | null;
+        if (!notificationChannels?.email) {
+          continue;
+        }
 
-          if (acquired) {
-            this.logger.log(
-              `Step Alert triggered: ${stepAlert.id} - $${currentPrice} >= $${targetPrice}`,
-            );
+        // Calculer l'ordre du step (index dans la liste triée + 1)
+        const stepOrder = strategy.steps.findIndex((s) => s.id === step.id) + 1;
 
-            await this.emailQueue.add('send-tp-alert', {
-              userId: stepAlert.step.strategy.userId,
-              stepAlertId: stepAlert.id,
-              stepId: stepAlert.stepId,
-              tokenSymbol: stepAlert.step.strategy.asset,
-              currentPrice,
-              targetPrice,
-              strategyId: stepAlert.step.strategyId,
-            });
+        // 1. Vérifier l'alerte "beforeTP" (avant d'atteindre le TP)
+        const beforeTPEmailSentAt = (stepAlert as any).beforeTPEmailSentAt;
+        if (stepAlert.beforeTPEnabled && stepAlert.beforeTPPercentage && !beforeTPEmailSentAt) {
+          const beforeTPPrice = targetPrice * (1 - stepAlert.beforeTPPercentage / 100);
+          
+          if (currentPrice >= beforeTPPrice && currentPrice < targetPrice) {
+            // Le prix est dans la zone "before TP" et l'email n'a pas encore été envoyé
+            const lockKey = `alert:lock:beforeTP:${strategy.userId}:${stepAlert.id}`;
+            const acquired = await this.acquireLock(lockKey);
+
+            if (acquired) {
+              this.logger.log(
+                `Before TP Alert triggered: ${stepAlert.id} - $${currentPrice} >= $${beforeTPPrice} (${stepAlert.beforeTPPercentage}% before TP $${targetPrice})`,
+              );
+
+              await this.emailQueue.add('send-step-alert', {
+                userId: strategy.userId,
+                stepAlertId: stepAlert.id,
+                stepId: stepAlert.stepId,
+                strategyId: strategy.id,
+                tokenSymbol: strategy.asset,
+                currentPrice,
+                targetPrice,
+                alertType: 'beforeTP',
+                stepOrder,
+              });
+            }
+          }
+        }
+
+        // 2. Vérifier l'alerte "tpReached" (TP atteint)
+        const tpReachedEmailSentAt = (stepAlert as any).tpReachedEmailSentAt;
+        if (stepAlert.tpReachedEnabled && !tpReachedEmailSentAt) {
+          if (this.isTargetReached(currentPrice, targetPrice, step.targetType)) {
+            const lockKey = `alert:lock:tpReached:${strategy.userId}:${stepAlert.id}`;
+            const acquired = await this.acquireLock(lockKey);
+
+            if (acquired) {
+              this.logger.log(
+                `TP Reached Alert triggered: ${stepAlert.id} - $${currentPrice} >= $${targetPrice}`,
+              );
+
+              await this.emailQueue.add('send-step-alert', {
+                userId: strategy.userId,
+                stepAlertId: stepAlert.id,
+                stepId: stepAlert.stepId,
+                strategyId: strategy.id,
+                tokenSymbol: strategy.asset,
+                currentPrice,
+                targetPrice,
+                alertType: 'tpReached',
+                stepOrder,
+              });
+            }
           }
         }
       }
     } catch (error) {
-      this.logger.error(`Error checking TP alerts:`, error);
+      this.logger.error(`Error checking alerts for token ${cmcId}:`, error);
+      throw error;
     }
   }
 
-  /**
-   * Récupère toutes les stratégies actives qui utilisent ce token
-   */
-  private async getStrategiesWithToken(cmcId: number): Promise<any[]> {
-    // Récupérer le symbol depuis la table Token
-    const token = await this.prisma.token.findFirst({
-      where: {
-        cmcId,
-      },
-      select: {
-        symbol: true,
-      },
-    });
-
-    if (!token) {
-      return [];
-    }
-
-    // Récupérer les stratégies actives avec ce symbol
-    const strategies = await this.prisma.strategy.findMany({
-      where: {
-        asset: token.symbol,
-        status: 'active',
-      },
-      include: {
-        steps: {
-          where: {
-            state: 'pending',
-          },
-        },
-      },
-    });
-
-    // Filtrer pour ne garder que celles qui ont des steps pending
-    return strategies.filter((s) => s.steps.length > 0);
-  }
 
   /**
    * Vérifie si le target price est atteint
