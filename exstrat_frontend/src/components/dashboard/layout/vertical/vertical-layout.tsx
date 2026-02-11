@@ -9,7 +9,6 @@ import { useSettings } from "@/components/core/settings/settings-context";
 
 import { MainNav } from "./main-nav";
 import { SideNav } from "./side-nav";
-import { FeedbackButton } from "../feedback-button";
 
 export interface VerticalLayoutProps {
 	children?: React.ReactNode;
@@ -64,7 +63,6 @@ export function VerticalLayout({ children }: VerticalLayoutProps): React.JSX.Ele
 					</Box>
 				</Box>
 			</Box>
-			<FeedbackButton />
 		</React.Fragment>
 	);
 }
