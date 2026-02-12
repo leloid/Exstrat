@@ -107,10 +107,10 @@ export class PriceCheckerScheduler {
         }
       }
 
-      // 2. Récupérer les tokens depuis les StepAlerts actives (nouvelle structure)
+      // 2. Récupérer les tokens depuis les StepAlerts actives (before TP ou TP reached)
       const activeStepAlerts = await this.prisma.stepAlert.findMany({
         where: {
-          tpReachedEnabled: true,
+          OR: [{ beforeTPEnabled: true }, { tpReachedEnabled: true }],
         },
         include: {
           step: {
