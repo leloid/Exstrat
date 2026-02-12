@@ -86,6 +86,39 @@ export class EmailController {
   }
 
   /**
+   * Endpoint de test pour les alertes step (before TP et TP reached).
+   * POST /email/test/step-alert
+   * Body: { "email": "optional@email.com", "type": "beforeTP" | "tpReached" }
+   * 
+   * En local: configure RESEND_API_KEY puis appelle cet endpoint pour recevoir
+   * un email identique à celui envoyé par les alertes réelles.
+   */
+  @Post('test/step-alert')
+  async testStepAlert(@Body() body?: { email?: string; type?: 'beforeTP' | 'tpReached' }) {
+    const testEmail = body?.email || 'delivered@resend.dev';
+    const type = body?.type || 'tpReached';
+
+    const stepOrder = type === 'beforeTP'
+      ? 'TP 2 (2% avant)'
+      : 'TP 2';
+
+    await this.emailService.sendStrategyAlert({
+      to: testEmail,
+      userName: 'Test User',
+      strategyName: 'Ma Stratégie BTC',
+      tokenSymbol: 'BTC',
+      currentPrice: type === 'beforeTP' ? 49000 : 50000,
+      targetPrice: 50000,
+      stepOrder,
+    });
+
+    return {
+      success: true,
+      message: `Test step alert (${type}) sent to ${testEmail}`,
+    };
+  }
+
+  /**
    * Endpoint pour envoyer un feedback utilisateur
    * POST /email/feedback
    */
