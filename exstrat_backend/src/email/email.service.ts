@@ -22,7 +22,6 @@ export class EmailService {
       this.logger.error('Please add RESEND_API_KEY to your Railway environment variables.');
     } else {
       this.resend = new Resend(apiKey);
-      this.logger.log('Resend email service initialized successfully');
     }
 
     this.fromEmail =
@@ -54,14 +53,8 @@ export class EmailService {
       if (!logoPath) {
         throw new Error(`Logo file not found. Tried: ${possiblePaths.join(', ')}`);
       }
-      
-      this.logger.log(`Loading logo from: ${logoPath}`);
       const logoBuffer = fs.readFileSync(logoPath);
       this.logoBase64 = logoBuffer.toString('base64');
-    
-    this.logger.log(`Email service configured with FROM: ${this.fromEmail}`);
-      this.logger.log(`Logo loaded successfully as base64 (${Math.round(this.logoBase64.length / 1024)}KB)`);
-      this.logger.log(`Logo URL fallback: ${this.logoUrl}`);
     } catch (error: any) {
       this.logger.error(`Failed to load logo: ${error.message}`);
       this.logger.error(`Current working directory: ${process.cwd()}`);
@@ -105,18 +98,12 @@ export class EmailService {
         stepOrder,
       });
 
-      this.logger.log(`Attempting to send strategy alert email to ${to} from ${this.fromEmail}`);
-      
-      const result = await this.resend.emails.send({
+      await this.resend.emails.send({
         from: this.fromEmail,
         to,
         subject,
         html,
       });
-
-      const emailId = result.data?.id || 'N/A';
-      this.logger.log(`Strategy alert email sent successfully to ${to}. Resend ID: ${emailId}`);
-      this.logger.debug(`Resend response:`, JSON.stringify(result, null, 2));
     } catch (error: any) {
       this.logger.error(`Error sending strategy alert email to ${to}:`, error);
       this.logger.error(`Error details:`, {
@@ -157,18 +144,12 @@ export class EmailService {
         tpOrder,
       });
 
-      this.logger.log(`Attempting to send TP alert email to ${to} from ${this.fromEmail}`);
-      
-      const result = await this.resend.emails.send({
+      await this.resend.emails.send({
         from: this.fromEmail,
         to,
         subject,
         html,
       });
-
-      const emailId = result.data?.id || 'N/A';
-      this.logger.log(`TP alert email sent successfully to ${to}. Resend ID: ${emailId}`);
-      this.logger.debug(`Resend response:`, JSON.stringify(result, null, 2));
     } catch (error: any) {
       this.logger.error(`Error sending TP alert email to ${to}:`, error);
       this.logger.error(`Error details:`, {

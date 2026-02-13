@@ -52,8 +52,6 @@ export class StrategiesController {
     @CurrentUser('id') userId: string,
     @Body() createStrategyDto: CreateStrategyDto
   ): Promise<StrategyResponseDto> {
-    console.log('POST /strategies - userId:', userId);
-    console.log('Données reçues:', createStrategyDto);
     return this.strategiesService.createStrategy(userId, createStrategyDto);
   }
 
@@ -69,18 +67,7 @@ export class StrategiesController {
     @CurrentUser('id') userId: string,
     @Query() searchDto: StrategySearchDto
   ): Promise<{ strategies: StrategyResponseDto[], total: number, page: number, limit: number }> {
-    console.log('🎯 [StrategiesController] findAll called');
-    console.log('🎯 [StrategiesController] userId:', userId);
-    console.log('🎯 [StrategiesController] searchDto:', searchDto);
-    
-    try {
-      const result = await this.strategiesService.findAll(userId, searchDto);
-      console.log('✅ [StrategiesController] Success, returning result');
-      return result;
-    } catch (error) {
-      console.log('❌ [StrategiesController] Error:', error);
-      throw error;
-    }
+    return this.strategiesService.findAll(userId, searchDto);
   }
 
   @Get('token/:symbol')
@@ -104,18 +91,10 @@ export class StrategiesController {
   @ApiResponse({ status: 404, description: 'Stratégie non trouvée' })
   async createOrUpdateStrategyAlert(
     @CurrentUser('id') userId: string,
-    @Param('strategyId') strategyId: string, // Retirer ParseUUIDPipe temporairement pour debug
+    @Param('strategyId') strategyId: string,
     @Body() createDto: CreateStrategyAlertDto,
   ): Promise<StrategyAlertResponseDto> {
-    console.log('🔔 [StrategiesController] createOrUpdateStrategyAlert called:', { userId, strategyId, createDto });
-    try {
-      const result = await this.strategiesService.createOrUpdateStrategyAlert(userId, strategyId, createDto);
-      console.log('✅ [StrategiesController] createOrUpdateStrategyAlert success:', result);
-      return result;
-    } catch (error) {
-      console.error('❌ [StrategiesController] createOrUpdateStrategyAlert error:', error);
-      throw error;
-    }
+    return this.strategiesService.createOrUpdateStrategyAlert(userId, strategyId, createDto);
   }
 
   @Get(':strategyId/alerts')

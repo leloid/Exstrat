@@ -22,7 +22,6 @@ export class AlertService {
       this.configService.get<string>('ALERT_LOCK_TTL_SECONDS') || '300',
       10,
     );
-    this.logger.log(`Alert lock TTL configured to ${this.LOCK_TTL} seconds (${this.LOCK_TTL / 60} minutes)`);
   }
 
   /**
@@ -107,9 +106,7 @@ export class AlertService {
             const acquired = await this.acquireLock(lockKey);
 
             if (acquired) {
-              this.logger.log(
-                `Before TP Alert triggered: ${stepAlert.id} - $${currentPrice} >= $${beforeTPPrice} (${stepAlert.beforeTPPercentage}% before TP $${targetPrice})`,
-              );
+              this.logger.log(`Alert beforeTP: stepAlert ${stepAlert.id} → queue`);
 
               await this.emailQueue.add('send-step-alert', {
                 userId: strategy.userId,
@@ -134,9 +131,7 @@ export class AlertService {
             const acquired = await this.acquireLock(lockKey);
 
             if (acquired) {
-              this.logger.log(
-                `TP Reached Alert triggered: ${stepAlert.id} - $${currentPrice} >= $${targetPrice}`,
-              );
+              this.logger.log(`Alert tpReached: stepAlert ${stepAlert.id} → queue`);
 
               await this.emailQueue.add('send-step-alert', {
                 userId: strategy.userId,

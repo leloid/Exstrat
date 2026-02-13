@@ -20,27 +20,19 @@ export class PriceProcessor {
   @Process('check-batch')
   async handlePriceCheck(job: Job<PriceCheckJob>) {
     const { cmcIds } = job.data;
-    this.logger.log(`Processing price check for ${cmcIds.length} tokens`);
-
     try {
-      // 1. Récupérer les prix en batch
       const prices = await this.priceService.getBatchPrices(cmcIds);
-
-      // 2. Pour chaque token, vérifier les alertes
       for (const [cmcId, currentPrice] of prices.entries()) {
         try {
           await this.alertService.checkAlertsForToken(cmcId, currentPrice);
-        this.logger.debug(`Checked alerts for token ${cmcId} at price $${currentPrice}`);
         } catch (error) {
-          this.logger.error(`Error checking alerts for token ${cmcId}:`, error);
-          // Continuer avec les autres tokens même en cas d'erreur
+          this.logger.error(`Alert check failed token ${cmcId}:`, error);
         }
       }
-
-      this.logger.log(`Completed price check for ${cmcIds.length} tokens`);
+      this.logger.log(`Price check: ${cmcIds.length} tokens`);
     } catch (error) {
-      this.logger.error(`Error processing price check job:`, error);
-      throw error; // BullMQ va retry automatiquement
+      this.logger.error(`Price check job failed:`, error);
+      throw error;
     }
   }
 }

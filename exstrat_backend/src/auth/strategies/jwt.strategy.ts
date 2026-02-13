@@ -20,10 +20,13 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
   }
 
   async validate(payload: any) {
+    console.log('🎫 [JwtStrategy] Validating payload:', payload);
     try {
       const user = await this.authService.validateUser(payload.sub);
+      console.log('✅ [JwtStrategy] User validated:', user ? `ID: ${user.id}, Email: ${user.email}` : 'None');
       return user;
     } catch (error) {
+      console.log('❌ [JwtStrategy] Validation failed:', error.message);
       throw new UnauthorizedException('Token invalide ou expiré');
     }
   }

@@ -452,6 +452,8 @@ export class PortfoliosService {
       },
     });
 
+    this.logger.log(`Add holding: ${token.symbol} portfolio=${portfolioId}`);
+
     return this.formatHoldingResponse(holding);
   }
 

@@ -14,12 +14,6 @@ export class PriceCheckerScheduler {
     private readonly prisma: PrismaService,
     private readonly configService: ConfigService,
   ) {
-    // Afficher l'intervalle configuré au démarrage
-    const intervalSeconds = parseInt(
-      this.configService.get<string>('PRICE_CHECK_INTERVAL_SECONDS') || '60',
-      10,
-    );
-    this.logger.log(`✅ Price checker scheduler initialized - checking prices every ${intervalSeconds} seconds`);
   }
 
   /**
@@ -31,33 +25,19 @@ export class PriceCheckerScheduler {
    */
   @Cron('*/60 * * * * *') // Toutes les 60 secondes
   async checkPrices() {
-    this.logger.log('Starting scheduled price check...');
-
     try {
-      // 1. Récupérer tous les tokens uniques avec alertes actives
       const uniqueTokens = await this.getUniqueTokensWithActiveAlerts();
+      if (uniqueTokens.length === 0) return;
 
-      if (uniqueTokens.length === 0) {
-        this.logger.debug('No active alerts found, skipping price check');
-        return;
-      }
-
-      this.logger.log(`Found ${uniqueTokens.length} unique tokens with active alerts`);
-
-      // 2. Grouper par batch de 100 (limite CoinMarketCap)
       const BATCH_SIZE = 100;
       const batches: number[][] = [];
-
       for (let i = 0; i < uniqueTokens.length; i += BATCH_SIZE) {
         batches.push(uniqueTokens.slice(i, i + BATCH_SIZE));
       }
-
-      // 3. Ajouter chaque batch à la queue
       for (const batch of batches) {
         await this.priceCheckQueue.add('check-batch', { cmcIds: batch });
       }
-
-      this.logger.log(`Added ${batches.length} batch(es) to price-check queue`);
+      this.logger.log(`Alerts: ${uniqueTokens.length} tokens → ${batches.length} batch(es)`);
     } catch (error) {
       this.logger.error('Error in scheduled price check:', error);
     }

@@ -49,8 +49,6 @@ export class EmailProcessor {
     const { userId, strategyId, stepId, tokenSymbol, currentPrice, targetPrice, stepOrder } =
       job.data;
 
-    this.logger.log(`Processing strategy alert email for user ${userId}, strategy ${strategyId}`);
-
     try {
       // Récupérer l'utilisateur pour obtenir l'email
       const user = await this.prisma.user.findUnique({
@@ -94,7 +92,7 @@ export class EmailProcessor {
         },
       });
 
-      this.logger.log(`Strategy alert email sent successfully to ${user.email}. Step ${stepId} marked as triggered.`);
+      this.logger.log(`Email sent: strategy-alert → ${user.email}`);
     } catch (error) {
       this.logger.error(`Error processing strategy alert email:`, error);
       throw error; // BullMQ va retry automatiquement
@@ -104,8 +102,6 @@ export class EmailProcessor {
   @Process('send-tp-alert')
   async handleTPAlert(job: Job<TPAlertJob>) {
     const { userId, tpAlertId, tokenSymbol, currentPrice, targetPrice, tpOrder } = job.data;
-
-    this.logger.log(`Processing TP alert email for user ${userId}, TP alert ${tpAlertId}`);
 
     try {
       // Récupérer l'utilisateur pour obtenir l'email
@@ -131,7 +127,7 @@ export class EmailProcessor {
 
       // Note: Les alertes sont maintenant gérées via StepAlert, pas TPAlert
       // La désactivation de l'alerte sera gérée par le service d'alertes
-      this.logger.log(`TP alert email sent successfully to ${user.email}.`);
+      this.logger.log(`Email sent: tp-alert → ${user.email}`);
     } catch (error) {
       this.logger.error(`Error processing TP alert email:`, error);
       throw error; // BullMQ va retry automatiquement
@@ -141,8 +137,6 @@ export class EmailProcessor {
   @Process('send-step-alert')
   async handleStepAlert(job: Job<StepAlertJob>) {
     const { userId, stepAlertId, stepId, strategyId, tokenSymbol, currentPrice, targetPrice, alertType, stepOrder } = job.data;
-
-    this.logger.log(`Processing step alert email for user ${userId}, stepAlert ${stepAlertId}, type: ${alertType}`);
 
     try {
       // Vérifier que l'email n'a pas déjà été envoyé (double vérification)
@@ -156,15 +150,8 @@ export class EmailProcessor {
       }
 
       // Vérifier si l'email a déjà été envoyé pour ce type d'alerte
-      if (alertType === 'beforeTP' && stepAlert.beforeTPEmailSentAt) {
-        this.logger.warn(`BeforeTP email already sent for stepAlert ${stepAlertId} at ${stepAlert.beforeTPEmailSentAt}, skipping`);
-        return;
-      }
-
-      if (alertType === 'tpReached' && stepAlert.tpReachedEmailSentAt) {
-        this.logger.warn(`TPReached email already sent for stepAlert ${stepAlertId} at ${stepAlert.tpReachedEmailSentAt}, skipping`);
-        return;
-      }
+      if (alertType === 'beforeTP' && stepAlert.beforeTPEmailSentAt) return;
+      if (alertType === 'tpReached' && stepAlert.tpReachedEmailSentAt) return;
 
       // Récupérer l'utilisateur pour obtenir l'email
       const user = await this.prisma.user.findUnique({
@@ -229,9 +216,7 @@ export class EmailProcessor {
         data: updateData,
       });
 
-      this.logger.log(
-        `${alertType} alert email sent successfully to ${user.email}. StepAlert ${stepAlertId} marked as sent.`,
-      );
+      this.logger.log(`Email sent: ${alertType} → ${user.email}`);
     } catch (error) {
       this.logger.error(`Error processing step alert email:`, error);
       throw error; // BullMQ va retry automatiquement
