@@ -106,7 +106,9 @@ export class AlertService {
             const acquired = await this.acquireLock(lockKey);
 
             if (acquired) {
-              this.logger.log(`Alert beforeTP: stepAlert ${stepAlert.id} → queue`);
+              this.logger.log(
+                `Alert beforeTP: ${strategy.asset} price=$${currentPrice} TP=$${targetPrice} stepAlert=${stepAlert.id} → queue`,
+              );
 
               await this.emailQueue.add('send-step-alert', {
                 userId: strategy.userId,
@@ -131,7 +133,9 @@ export class AlertService {
             const acquired = await this.acquireLock(lockKey);
 
             if (acquired) {
-              this.logger.log(`Alert tpReached: stepAlert ${stepAlert.id} → queue`);
+              this.logger.log(
+                `Alert tpReached: ${strategy.asset} price=$${currentPrice} TP=$${targetPrice} stepAlert=${stepAlert.id} → queue`,
+              );
 
               await this.emailQueue.add('send-step-alert', {
                 userId: strategy.userId,

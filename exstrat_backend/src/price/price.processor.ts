@@ -22,6 +22,11 @@ export class PriceProcessor {
     const { cmcIds } = job.data;
     try {
       const prices = await this.priceService.getBatchPrices(cmcIds);
+      const priceList = Array.from(prices.entries())
+        .map(([id, p]) => `${id}: $${typeof p === 'number' ? p.toLocaleString(undefined, { maximumFractionDigits: 2 }) : p}`)
+        .join(', ');
+      this.logger.log(`Price check: ${prices.size} tokens | ${priceList}`);
+
       for (const [cmcId, currentPrice] of prices.entries()) {
         try {
           await this.alertService.checkAlertsForToken(cmcId, currentPrice);
@@ -29,7 +34,6 @@ export class PriceProcessor {
           this.logger.error(`Alert check failed token ${cmcId}:`, error);
         }
       }
-      this.logger.log(`Price check: ${cmcIds.length} tokens`);
     } catch (error) {
       this.logger.error(`Price check job failed:`, error);
       throw error;
