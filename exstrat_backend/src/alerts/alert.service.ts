@@ -81,6 +81,13 @@ export class AlertService {
         },
       });
 
+      if (stepAlerts.length === 0) {
+        this.logger.log(
+          `Alerts: no eligible step-alerts for ${token.symbol} (strategy must be status=active and alerts enabled)`,
+        );
+        return;
+      }
+
       for (const stepAlert of stepAlerts) {
         const targetPrice = Number(stepAlert.step.targetPrice);
         const step = stepAlert.step;

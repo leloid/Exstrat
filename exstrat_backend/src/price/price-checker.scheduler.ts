@@ -23,7 +23,7 @@ export class PriceCheckerScheduler {
    * Pour changer l'intervalle, utilisez PRICE_CHECK_INTERVAL_SECONDS dans .env
    * Note: Le cron doit être modifié manuellement dans le code si vous voulez un autre intervalle
    */
-  @Cron('*/60 * * * * *') // Toutes les 60 secondes
+  @Cron('*/10 * * * * *') // Toutes les 10 secondes (pour tests ; était */60 = 60 s en prod)
   async checkPrices() {
     try {
       const uniqueTokens = await this.getUniqueTokensWithActiveAlerts();
@@ -106,11 +106,11 @@ export class PriceCheckerScheduler {
       });
 
       for (const stepAlert of activeStepAlerts) {
-        if (stepAlert.step.strategy.strategyAlert?.isActive) {
-          // Récupérer le cmcId depuis la table Token
+        const strategy = stepAlert.step.strategy;
+        if (strategy.status === 'active' && strategy.strategyAlert?.isActive) {
           const token = await this.prisma.token.findFirst({
             where: {
-              symbol: stepAlert.step.strategy.asset,
+              symbol: strategy.asset,
             },
             select: {
               cmcId: true,
