@@ -440,6 +440,9 @@ export class StrategiesService {
         where: { id: existing.id },
         data: updateData,
       });
+      if (updated.isActive) {
+        await this.prisma.strategy.update({ where: { id: strategyId }, data: { status: StrategyStatus.ACTIVE } });
+      }
       this.logger.log(`Alert updated: strategy=${strategyId} isActive=${updated.isActive}`);
       return this.mapToStrategyAlertResponseDto(updated);
     } else {
@@ -454,6 +457,9 @@ export class StrategiesService {
           },
         },
       });
+      if (created.isActive) {
+        await this.prisma.strategy.update({ where: { id: strategyId }, data: { status: StrategyStatus.ACTIVE } });
+      }
       this.logger.log(`Alert created: strategy=${strategyId} isActive=${created.isActive}`);
       return this.mapToStrategyAlertResponseDto(created);
     }
@@ -512,6 +518,10 @@ export class StrategiesService {
       where: { id: existing.id },
       data: updateData,
     });
+
+    if (updated.isActive) {
+      await this.prisma.strategy.update({ where: { id: strategyId }, data: { status: StrategyStatus.ACTIVE } });
+    }
 
     return this.mapToStrategyAlertResponseDto(updated);
   }
