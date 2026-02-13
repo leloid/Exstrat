@@ -442,6 +442,7 @@ export class StrategiesService {
       });
       if (updated.isActive) {
         await this.prisma.strategy.update({ where: { id: strategyId }, data: { status: StrategyStatus.ACTIVE } });
+        await this.ensureStepAlertsForStrategy(strategyId);
       }
       this.logger.log(`Alert updated: strategy=${strategyId} isActive=${updated.isActive}`);
       return this.mapToStrategyAlertResponseDto(updated);
@@ -459,9 +460,38 @@ export class StrategiesService {
       });
       if (created.isActive) {
         await this.prisma.strategy.update({ where: { id: strategyId }, data: { status: StrategyStatus.ACTIVE } });
+        await this.ensureStepAlertsForStrategy(strategyId);
       }
       this.logger.log(`Alert created: strategy=${strategyId} isActive=${created.isActive}`);
       return this.mapToStrategyAlertResponseDto(created);
+    }
+  }
+
+  /**
+   * Crée des StepAlerts par défaut pour chaque step de la stratégie s'ils n'existent pas.
+   * Permet que les alertes (beforeTP / tpReached) soient évaluées dès que l'utilisateur active les alertes.
+   */
+  private async ensureStepAlertsForStrategy(strategyId: string): Promise<void> {
+    const steps = await this.prisma.strategyStep.findMany({
+      where: { strategyId },
+      select: { id: true },
+    });
+    for (const step of steps) {
+      const existing = await this.prisma.stepAlert.findUnique({
+        where: { stepId: step.id },
+      });
+      if (!existing) {
+        await this.prisma.stepAlert.create({
+          data: {
+            stepId: step.id,
+            strategyId,
+            beforeTPEnabled: true,
+            beforeTPPercentage: 2,
+            tpReachedEnabled: true,
+          },
+        });
+        this.logger.log(`StepAlert created by default: step=${step.id} strategy=${strategyId}`);
+      }
     }
   }
 
@@ -521,6 +551,7 @@ export class StrategiesService {
 
     if (updated.isActive) {
       await this.prisma.strategy.update({ where: { id: strategyId }, data: { status: StrategyStatus.ACTIVE } });
+      await this.ensureStepAlertsForStrategy(strategyId);
     }
 
     return this.mapToStrategyAlertResponseDto(updated);
