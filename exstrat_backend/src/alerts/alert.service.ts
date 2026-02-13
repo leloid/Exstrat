@@ -47,11 +47,12 @@ export class AlertService {
       }
 
       // Récupérer toutes les StepAlerts actives pour ce token
+      // asset : comparaison insensible à la casse (ex. BNB vs bnb)
       const stepAlerts = await this.prisma.stepAlert.findMany({
         where: {
           step: {
             strategy: {
-              asset: token.symbol,
+              asset: { equals: token.symbol, mode: 'insensitive' },
               status: 'active',
               strategyAlert: {
                 isActive: true,
@@ -82,8 +83,27 @@ export class AlertService {
       });
 
       if (stepAlerts.length === 0) {
+        // Diagnostic: identifier pourquoi aucune step-alert n'est éligible
+        const strategiesWithAsset = await this.prisma.strategy.count({
+          where: { asset: token.symbol },
+        });
+        const strategiesActive = await this.prisma.strategy.count({
+          where: { asset: token.symbol, status: 'active' },
+        });
+        const strategiesWithAlertOn = await this.prisma.strategy.count({
+          where: {
+            asset: token.symbol,
+            status: 'active',
+            strategyAlert: { isActive: true },
+          },
+        });
+        const stepAlertsForAsset = await this.prisma.stepAlert.count({
+          where: {
+            step: { strategy: { asset: token.symbol } },
+          },
+        });
         this.logger.log(
-          `Alerts: no eligible step-alerts for ${token.symbol} (strategy must be status=active and alerts enabled)`,
+          `Alerts: no eligible step-alerts for ${token.symbol} | strategies(asset=${strategiesWithAsset} active=${strategiesActive} alertOn=${strategiesWithAlertOn}) stepAlerts=${stepAlertsForAsset}`,
         );
         return;
       }
