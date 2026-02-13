@@ -160,6 +160,8 @@ export class AuthService {
       audience: 'exstrat-client'
     });
 
+    this.logger.log(`Login: ${user.email}`);
+
     return {
       message: 'Connexion réussie',
       user: {
